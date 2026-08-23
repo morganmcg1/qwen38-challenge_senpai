@@ -55149,3 +55149,497 @@ CLOSED: wired slack ladder (F236 null); KV-cache placement and step=1280
 
 Nobody is idle. The two zero-GPU unclaimed items, Idea 3's rung 0 and the nibble
 entropy bound, are the first things to hand out when a student frees up.
+
+## 308 — 2026-08-23 07:50Z — THE ORACLE PARADOX WAS AN ARTEFACT OF A FLAT COST TABLE; THE PREFILL RETILE SIGN IS SETTLED BY ARITHMETIC; THE CANDIDATE-LEG READ IS UNBIASED ON SEVEN DECLARED NULLS
+
+Base at time of writing: `77676714a0553e974c4d9a47b8e2bf9122cac8a7`.
+Bar unchanged: `684821ed` at `3.71959722580154`, `promotedSourceRef` `eb5eadc7`.
+`7226dc9a` (alphonse, E147 rungs A+B) still `validating` at 07:47Z, 60 minutes in.
+
+### 1. FINDING 238 — the 128x32 NAX seed retile: the cold activation model is arithmetically impossible
+
+Alphonse's rung E-0 (zero GPU, `research/e147_rungE0.py`) found the fact the assignment
+did not have: `qmm_t_nax_tgp_impl` stages **only** the weight tile. Its signature takes
+`threadgroup T* Ws` and nothing else, and the k-loop reads the activation straight from
+device memory (`Atile.load(xk + kk1, K)`). Machine-checked:
+
+```
+nax_qmm_t_declares_Xs                  false
+nax_qmm_t_reads_x_from_device_in_kloop true
+non_nax_qmm_t_declares_Xs              true
+```
+
+Activation traffic is therefore `WN * M * K * (N / BN)`. Halving `BN` doubles it. His cost
+model at `M = 512`, `BM = BN = 64`, `WN = 2`, bf16, affine-4 g64 at `0.5625` B/element:
+
+```
+tiling    X term     W term     cold       vs 64x64  Xcached   acc regs
+128x32    0.125000   0.004395   0.129395   1.8151    0.5000    32
+64x64     0.062500   0.008789   0.071289   1.0000    1.0000    32
+32x128    0.031250   0.017578   0.048828   0.6849    2.0000    32
+16x256    0.015625   0.035156   0.050781   0.7123    4.0000    32
+```
+
+The two models disagree on the **sign**, not the magnitude, and he could not settle it from
+source. He also cannot settle it by measurement: his host is `applegpu_g16s` with no `_nax`,
+so a retile confined to `quantized_nax.h` measures exactly zero locally. He asked for a ruling
+instead of guessing. Correct call.
+
+**The clock settles it.** `_advisor_scratch/f238.py`, scored transposed projections,
+`lm_head` excluded:
+
+```
+gemm                K      N   n  X dist MB  W dist MB  X reuse  W reuse
+gdn.in_proj      5120  16480  48       5.24      47.46    515.0      8.0
+fa.qkv           5120  14336  16       5.24      41.29    448.0      8.0
+mlp.gate_up      5120  34816  64       5.24     100.27   1088.0      8.0
+gdn.out_proj     6144   5120  48       6.29      17.69    160.0      8.0
+fa.o_proj        6144   5120  16       6.29      17.69    160.0      8.0
+mlp.down        17408   5120  64      17.83      50.14    160.0      8.0
+
+distinct weight bytes                13.697 GB   (F21's 14.4123 GB includes lm_head)
+W DRAM traffic  (BM=64, 8 passes)   109.58 GB
+X cold traffic  (BN=64)             779.22 GB
+X/W ratio                             7.111      (reproduces alphonse's 7.11 exactly)
+
+ranked seed prefill wall time        0.5265 s    (bar, 0.001028291 x 512)
+  B= 265 GB/s   cold model 3.354 s ( 6.37x measured)   W-only 0.414 s   f <= 0.0384
+  B= 400 GB/s   cold model 2.222 s ( 4.22x measured)   W-only 0.274 s   f <= 0.1296
+  B= 546 GB/s   cold model 1.628 s ( 3.09x measured)   W-only 0.201 s   f <= 0.2283
+  B= 700 GB/s   cold model 1.270 s ( 2.41x measured)   W-only 0.157 s   f <= 0.3323
+  B= 900 GB/s   cold model 0.988 s ( 1.88x measured)   W-only 0.122 s   f <= 0.4675
+```
+
+`f` is the fraction of activation re-reads that actually reach DRAM; the cold model sets
+`f = 1`. At every bandwidth worth granting an M5 Max the cold model predicts a prefill
+`1.9x` to `6.4x` longer than the one the board publishes. **It is refuted, not merely
+disfavoured.**
+
+The structural reason is in columns 5 to 8. **The distinct activation matrix is 5.24 to
+17.83 MB and is re-read 160 to 1,088 times; the distinct weight matrix is 17.7 to 100.3 MB
+and is re-read exactly 8 times.** X is a small hot working set with enormous reuse; W is a
+large cold stream. The cold model charges them at the same rate per byte. That is the error.
+
+Retile pricing:
+
+```
+64x64 -> 128x32 : W passes 8 -> 4, X copies N/32 -> N/16
+  W DRAM saving              54.79 GB
+  X extra (cold charge)     779.22 GB
+  break-even f* = 0.07031
+    B=400 GB/s : W saving alone = 137.0 ms = 26.02 % of measured prefill
+    B=546 GB/s : W saving alone = 100.3 ms = 19.06 % of measured prefill
+    B=700 GB/s : W saving alone =  78.3 ms = 14.87 % of measured prefill
+```
+
+The retile wins whenever `f < 0.0703`, and the arithmetic ceiling on `f` is `0.038` to
+`0.33` before accounting for the fact that a 5 MB working set with 1,088x reuse does not
+reach DRAM at all.
+
+**And the mechanism already has a ranked M5 receipt.** `5cdc9c17`, BitWonka, rejected at
+`3.18067509` on the old `474c750` frontier, note "generalized NAX seed retile with a 128x32
+rectangular tile", "each weight region loaded 4x instead of 8x":
+
+```
+prefill 0.000977163 vs bar 0.001028291 = -4.972 %     <- best seed prefill on the board
+```
+
+The DRAM model predicts `-15 %` to `-26 %` and the receipt says `-5.0 %`, so the model
+over-predicts by `3x` to `5x` — consistent with prefill being partly compute-bound at
+`M = 512` and with some cross-M-tile weight caching. **Forecast `-5 %`, not the model.**
+Priced through F227 that is **`+0.375 %` of the published median**, the same order as the
+whole `composed67 + pb6` decode move.
+
+Rule 97 applies: a model that contradicts a ranked receipt loses until the difference is
+named. The difference is named.
+
+**Ruling issued (F6 on PR #147).** Build `128x32`. Do not run the local sign probe. Do run
+the non-NAX path as a **correctness harness**, because the six-line index re-derivation is
+the real risk and a wrong `bx`/`by` burns a submission slot on a `failed` row with no score
+and no evidence. Sequence: implement the re-derivation in `quantized.h` `qmm_t_impl` at
+`(BM=64, BN=16)`; prove a full local 512-token exactness leg with a Rule 101 control; port
+the identical pattern to `quantized_nax.h` at `(128, 32)`; give a static accumulation-order
+proof for the NAX arm; revert the non-NAX retile before submission.
+
+Accepted corrections from rung E-0, all now campaign record:
+
+- the `BK = 32` template default is at `quantized_nax.h:1299`, **not** `:1201`; line 1201 is
+  inside `qmm_n_nax_tgp_impl`, the non-transposed sibling;
+- `NAXWsStagingPlan` uses `BK_padded = BK + 16 / sizeof(T)`, so bf16 pads 64 to 72. One `Ws`
+  half at `BN=32` is **4,608 B**, doubled **9,216 B** — not 4,096 / 8,192;
+- `BN=32` makes float32 pipelinable at 17,408 B where `BN=64` could not at 34,816 B;
+- `32x128` does not fit at `BK=64` (36,864 B); it would need `BK=32`, giving 20,480 B doubled;
+- registers are **not** neutral on the operand tiles: at `128x32`, `Atile` grows 32 -> 64
+  halves per lane and `Btile` shrinks 32 -> 16, a net **+8 registers per lane**;
+- the gate needs `N % BN == 0` added to `M >= 128 && M % 128 == 0`;
+- grid cardinality is preserved exactly at the 512-row seed for all seven projection shapes
+  because `128 * 32 == 64 * 64`, so the retile is entirely in-kernel and needs no host change.
+
+### 2. RUNG A IS INERT ON THE RANKED RUNNER — `7226dc9a` IS A PURE RUNG-B EXPERIMENT
+
+Read this session from `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:697`:
+
+```c++
+if (metal::is_nax_available() && transpose && (K % 64 == 0) &&
+    (env::enable_tf32() || x.dtype() != float32)) {
+  return qmm_nax(...);
+}
+```
+
+Every scored prefill GEMM is transposed, has `K` in `{5120, 6144, 17408}` — all `% 64 == 0` —
+and runs bf16 activations, so `x.dtype() != float32` holds. On the ranked M5 with `_nax`
+available **every one of them takes the NAX branch and `qmm_t_impl` is never reached.**
+
+Consequence: rung A's local `-1.0657 % ± 0.104` measured a kernel the M5 does not execute.
+`7226dc9a`'s prefill delta must be attributed entirely to rung B, which has never been
+measured anywhere. If the receipt comes back flat, that is evidence about rung B alone.
+
+### 3. RULE 138 — THE ADMISSIBILITY THEOREM (edward, E145 R7-0)
+
+Over all monotone non-negative reach vectors, `max E(M')/E(M) = M'/M`, attained at the
+all-accept vertex. Therefore a wider width can beat a narrower one **if and only if**
+`C(M')/M' < C(M)/M`.
+
+**RULE 138. A draft width is admissible if and only if its measured cost per token is a new
+running minimum over all smaller widths. Admissibility is a property of the cost curve alone.
+Never argue for a width from acceptance evidence without first showing it clears this test.**
+
+The bound is attained, so this is exact and model-free. On the measured curve (basis
+`us_mean_from_blocks`, R2b measured width-1 anchor 65,778.9 us):
+
+```
+| width | cost us   | cost/token us | admissible | misses by |
+|     1 |  65,778.9 |      65,778.9 | yes        |           |
+|     2 |  70,905.3 |      35,452.7 | yes        |           |
+|     3 |  76,196.5 |      25,398.8 | yes        |           |
+|     4 |  84,374.3 |      21,093.6 | yes        |           |
+|     5 |  95,820.3 |      19,164.1 | yes        | minimum   |
+|     6 | 124,257.1 |      20,709.5 | NO         | + 8.0644 %|
+|     7 | 150,803.2 |      21,543.3 | NO         | +12.4152 %|
+|     8 | 153,965.4 |      19,245.7 | NO         | + 0.4259 %|
+```
+
+`e145_r7_admissible_set = [1,2,3,4,5]`. **Width 7 can never be optimal under any acceptance
+model.** 2000 Gaussian draws with per-width `1σ` from the half-range of R2's two legs:
+widths 1-5 admissible 100 %, width 6 `0.00 %`, width 7 `0.00 %`, width 8 `4.30 %`. Set
+frequencies `{1..5}` 95.70 %, `{1..5,8}` 4.30 %. On the **replayed** curve the admissible set
+is `{1,2,3,4,5,8}` — my F9 expectation was a property of the replayed curve; the measured
+curve prunes 8 as well.
+
+**The shipped policy spends 26.75 % of rounds at widths that can never be optimal, 16.37 % of
+them at width 8.** Both halves of that sentence must always be published together with the
+next one: the argmax that removes those rounds is worth only `+0.1338 %`, because width 8
+misses width 5's cost per token by `0.43 %`. The over-drafted rounds are very nearly optimal.
+
+### 4. ADVISOR ERROR 167 — I CLOSED THE ACCEPTANCE-ESTIMATOR AXIS ON A RESULT THAT ONLY HOLDS UNDER A FLAT PRICE
+
+R7-1, 6 seeds, 200 windows, attachment gate 12 legs / 1494 attached / 0 mismatches:
+
+```
+| arm                        | median % | sd     | mean depth | w8 %    | inadmissible % |
+| A_ship (flat, greedy)      |  +0.0000 | 0.0000 |     4.3823 | 16.3692 |        26.7488 |
+| C_flatlook (flat, argmax)  |  +0.0000 | 0.0000 |     4.3823 | 16.3692 |        26.7488 |
+| argmax_full (measured)     |  +0.1338 | 0.0537 |     3.1269 |  0.0000 |         0.0000 |
+| argmax_admissible          |  +0.1338 | 0.0537 |     3.1269 |  0.0000 |         0.0000 |
+| argmax_admissible_plus8    |  +0.1338 | 0.0537 |     3.1269 |  0.0000 |         0.0000 |
+| oracle_full                |  +6.3508 | 0.0890 |     2.6735 |  0.0000 |         0.0000 |
+| argmax_full_on_replayed    |  -3.1234 | 0.0902 |     3.4411 |  0.0000 |         0.0000 |
+| oracle_full_on_replayed    |  +8.9390 | 0.0736 |     4.0468 | 28.5311 |        28.5311 |
+```
+
+Cross-validated against R3's independently written simulator to four decimal places on three
+arms.
+
+**H140's "+0.0000 pp from lookahead" is reproduced and explained.** With the shipped flat
+price the objective is unimodal in width, so first-break **is** the argmax. That was never
+evidence that lookahead is worthless; it was evidence that the shipped price is flat. No
+estimator improvement can be expressed through a policy whose objective is already unimodal.
+
+After E140 I wrote into the campaign record: *"A PERFECT ACCEPTANCE ESTIMATOR MAKES IT WORSE
+(oracle -4.5296 % vs -3.1350 %)"*, and closed **all pure acceptance predictors** on it. Three
+literature leads were rejected against that closure.
+
+**ADVISOR ERROR 167. That closure was conditioned on a cost model now known to be wrong. Under
+the measured cost table the same oracle is worth `+6.3508 %` against the shipped estimator's
+`+0.1338 %`. The acceptance-estimator axis is REOPENED with `+6.2170` pp of headroom.**
+
+Consequence for the depth-price direction: `+0.1338 %` is below edward's `+0.25 %` stop rule
+and `drop` is the right call for a *mechanism*. It is not a mechanism. **It is an enabler**,
+and its option value is the largest single number on the board. Recorded as
+`enabler, standalone +0.1338 %, unlocks +6.2170 pp`. **Do not mark it closed.**
+
+**One reconciliation gates the whole reopening (R7-2, zero GPU, assigned).** Two oracle
+numbers on the replayed curve now exist:
+
+```
+E140  oracle on replayed curve   -4.5296 %
+R7    oracle_full_on_replayed    +8.9390 %
+```
+
+The two simulators agree on the argmax arm to `0.012` pp (`-3.1350` vs `-3.1234`) and
+disagree on the oracle arm by `13.5` pp. One oracle arm is mis-specified. If E140's is the
+correct one, the reopening dies.
+
+**R7-3 assigned (zero GPU): how good must a predictor be?** Shrinkage sweep
+`p_hat = lam * p_true + (1-lam) * p_ship` and noise sweep `p_hat = clip(p_true + N(0,s))`,
+reporting the captured fraction of the `6.2170` pp gap and the smallest `s` at which capture
+falls below 10 %. The literature disagrees by an order of magnitude on exactly this quantity —
+DISCO (2405.04304 Table 1) puts an oracle at `+12 %` to `+24 %` over a good dynamic heuristic
+under a flat cost, while Delay-Adaptive (2606.20591) reports a bandit within `0.2 %` to
+`2.4 %` of an offline oracle once the cost model is right. The replayer settles it for free.
+
+If R7-2 reconciles in R7's favour, the two unclaimed literature items that were rejected under
+the closure come back to the front of the queue: **first-error focal loss on `mtp-head/`
+(arXiv 2606.11552, `+21 %` to `+76 %` accepted draft length, no extra forward passes, no
+exactness change)** and **margin-based certified lower bounds on `E[tokens|M]`
+(arXiv 2606.30265, the only acceptance theory for the greedy exact-match regime, evaluated on
+Qwen3)**. The second is the one that survives the oracle result on its own terms: a certified
+bound is not a predictor.
+
+### 5. FINDING 239 — THE CANDIDATE-LEG READ IS UNBIASED ON SEVEN INDEPENDENT DECLARED NULLS
+
+Askeladd's E148 R-B, `harness=ranked`, zero GPU. Board pulled at `2026-08-23T06:59Z`:
+1,199 rows, 880 scored with a complete eight-prompt receipt.
+
+```
+e148_cohort_count (size >= 4)   16
+e148_rows_classified            693
+e148_rows_unclassifiable        187
+five largest cohorts            269, 233, 30, 30, 24
+```
+
+F234's six-prompt key is confirmed on the live board: it merges two eight-prompt families and
+the modern cohort gains 29 rows. Parent attribution over 880 scored rows: 613 cited-same-cohort,
+181 cited-cross-schedule, 86 no-parent.
+
+**The eleven zero-truth controls split by the lattice point they sit on:**
+
+```
+| row      | steps | exact  | corrected % | verdict |
+| 106573b9 |     0 | -0.015 |     -0.0516 | at zero |
+| 64508884 |     0 | -0.013 |     +0.0027 | at zero |
+| aff3b543 |     0 | -0.000 |     +0.0210 | at zero |
+| b8e0f27c |     0 | +0.012 |     +0.0516 | at zero |
+| 3a18ff21 |     0 | +0.014 |     +0.0147 | at zero |
+| b6cb0fea |     0 | +0.043 |     +0.1065 | at zero |
+| f7d59543 |     0 | +0.058 |     +0.0011 | at zero |
+| a4ac742e |     1 | +0.572 |     -0.8371 | nonzero |
+| e987b29b |     1 | +0.696 |     -0.5929 | nonzero |
+| 452b0055 |     1 | +1.002 |     -0.1322 | nonzero |
+| e7770562 |     1 | +1.061 |     +0.0767 | nonzero |
+
+e148_control_zero_delta_abs_pct_max_at_zero  = 0.1065 pp, n=7, rms 0.0498,
+                                               sd 0.0488, mean +0.0209  -> PASS (gate 0.15)
+e148_control_zero_delta_abs_pct_max_nonzero  = 0.8371 pp, n=4, rms 0.5186 -> FAIL
+```
+
+The pre-registered whole-block gate FAILED at `0.7930` pp six-prompt and `0.8371` pp
+weighted-five. Repricing alone does not save it. What saves it is the split above, and the
+interpretation is the finding: **at the zero lattice point the corrector subtracts nothing, so
+the passing block does not validate the corrector. It validates that the raw weighted-five
+candidate-leg read is already an unbiased estimate of the mechanism, to `0.1065` pp worst case
+over seven independent declared nulls.** Rule 118 has been a model since F201. It is now
+measured. Together with F237's bit-identical pair (`sd 0.0297 %` on the weighted five) the
+campaign has two independent lines putting the candidate-leg instrument at roughly `0.05` pp
+`1σ`, at zero GPU cost.
+
+Parent-attribution error was ruled out on the two worst rows: `a4ac742e` names `c0dbec0` ->
+`48423d09`, `e987b29b` names `41bad1c` -> `51b9bf85`, both correct. **The failures are the
+classifier, not the attribution.**
+
+**The state lattice, read off all 609 attributable rows:**
+
+```
+ -0.2 steps  13 | -0.1  75 |  0.0 221 |  0.1  30 |  0.2  16 |  0.3   8
+  0.4   3 <- |  0.5   3 <- |  0.6  11 <-  VALLEY   |  0.7  23 |  0.8  34
+  0.9  38 |  1.0  33 |  1.1  17
+zero mode centre  -0.0068 steps (-6.0 us/dr), sd 0.0937, n=367
+one  mode centre  +0.9162 steps (+805.4 us/dr), sd 0.1534, n=157
+valley [0.40, 0.60] holds 6 rows, 0.99 % of the population
+```
+
+This is the strongest direct evidence the campaign has that the state is quantized rather than
+continuous.
+
+**Operative rule approved for R-C onward:** price a row only when its fitted step is zero;
+refuse every nonzero-step row and publish it as unpriceable, never as a null and never as a
+find. It reads the fit, so it is response-dependent and askeladd declared it as such. It is a
+refusal rule, not a filter on the answer, and the refusal rate and refused IDs must be
+published with every table.
+
+Coverage and power: 375 of 609 attributable rows sit at the zero point (`61.6 %`); with the
+at-zero control `sd 0.0488` pp the `2σ` MDE is `0.098` pp and the expected most-negative null
+draw over 375 rows is `-0.168` pp. The H148 target of `-0.30` pp is `6.1σ` out.
+
+**Second finding, and it constrains how the campaign may use E146's corrector.** The sign
+block reads `0.8136` correct with **no** correction, `0.6949` with the schedule-matched
+correction, `0.7250` restricted to zero-step rows. **Blind application of the corrector makes
+the sign worse than doing nothing.** This does not retract E146 — its per-row corrections were
+gated on a mode classifier with out-of-sample AUC `0.820` against a permuted null p95 of
+`0.669`, and those calls stand. But a population-scale correction applied without that gate is
+harmful. No later experiment may subtract the step from a row it has not classified.
+
+**`promotedSourceRef` semantics corrected.** It is populated on the 82 promoted rows only and
+it never equals another row's `submissionCommitSha` (`0 of 81` resolvable rows match). It is
+the ref of the row's **own** promoted source tree, not a pointer to its parent. `eb5eadc7...`
+is `684821ed`'s own `promotedSourceRef`, which is why solvers write "the promoted tree
+`eb5eadc`". The parent pointer must be recovered from note text against a tree index, and
+rejected rows carry no `promotedSourceRef` at all — which is exactly where unclaimed mechanisms
+live.
+
+Two specification faults in my assignment, both found and fixed from note text alone:
+`7e5172fa` and `3d75f016` were listed as zero-delta controls because F220 refuted the
+flush-fold warm twice, but **a refuted belief is not a declaration** — their own note titles
+claim a mechanism. `3d75f016` and `04c79081` are `failed` with no `officialMetrics` and could
+never have entered the scored corpus.
+
+### 6. THE TWO-PROMPT COLLAPSE — RULE 116 CONFIRMED ON 233 REAL RECEIPTS, AND AMENDED
+
+Inside a cohort the published median does not spread over five prompts. It collapses onto two:
+
+```
+cohort n=269 (febb7e27):                 beagle 0.498, medicine 0.496, rest < 0.005
+cohort n=233 (89cbdc02, modern crown):   beagle 0.500, essays   0.485, rest < 0.010
+```
+
+F196 derived `w_beagle = 0.478`, `w_essays = 0.522` analytically. Askeladd's `0.500 / 0.485` is
+an independent empirical confirmation on 233 real receipts. **Rule 116 was a model; it is now
+measured.**
+
+**Amendment, because Rule 129 still holds.** The upper median slot is a *minimum over a
+four-way tie* `min(essays, republic, medicine, botany)` and the tie flips live — `684821ed`
+seats medicine, `f7d59543` seats essays. So `0.485` on essays is an expectation over the
+lottery, not a structural weight. Operationally:
+
+- **beagle carries `0.500` unconditionally** — it owns the lower slot `214/214`;
+- **an essays-only gain captures about `0.485`** of the upper slot;
+- **a gain uniform across all four of `{essays, republic, medicine, botany}` captures the full
+  `0.500`**, because whichever one is the minimum moves with it.
+
+Never quote a prompt-specific gain without stating which of the three cases it is. Askeladd
+will report a `median_pair` price and a uniform-four column beside the weighted-five price
+from R-C onward.
+
+Also withdrawn this session: **"medicine is the F237 pair outlier" is not a general claim.**
+Alphonse replayed the F237 statistics over `572b2cc4` and got mean `+0.0656 %`, `z = 1.34`
+against `se 0.0490` — consistent with the zero prefill change that tree had — but per-prompt
+dispersion `sd 0.1989 %`, `1.44x` the pair's `0.1385 %`, with the worst residual **travel at
+`+0.355 %`** and medicine only fourth at `+0.144 %`. One pair does not establish a per-prompt
+structure.
+
+### 7. THE 879 us STEP IS IN DISPUTE, AND ASKELADD'S BIAS ARGUMENT IS INVERTED
+
+```
+paired control step        881.4 us/dr
+population one-step mode   805.4 us/dr, se 12.2, n=157
+E146 clean observations    823.8, 880.7, 932.4  (sd 54.3, n=3, se 59.8)
+```
+
+Askeladd argued: rows carrying a real slowdown land in the same band, that contamination pushes
+the estimate **up**, so the true step is at most 805 and 879 is too high.
+
+**Check the sign.** If contamination pushes the population estimate up, the population reads
+*above* the truth. He observes the population reading `9 %` *below* the clean paired estimate.
+His own mechanism predicts the opposite ordering from the one he measured.
+
+The account that fits is the mirror image: a one-step row's fitted `k` is
+`true_step + mechanism`, and this corpus is submissions attempting to be faster, so the
+mechanism distribution inside the band is plausibly centred **negative**, dragging the
+population mode **down**. On that account `805.4` is biased low and `879` is closer to truth.
+
+Neither direction is settled. Recorded as an **open discrepancy of `2` to `3` sigma**.
+Requested, all zero GPU: the exact derivation of the `881.4` figure (it does not match any of
+E146's three clean observations); the mechanism-sign distribution inside the one-step band,
+split by whether the note claims a speedup; and `e148_state_step_us_clean` from declared nulls
+only with its `n` and standard error, beside `e148_state_step_us_population`.
+
+**`879.0` remains the campaign constant** until a clean estimate moves it, because F234,
+Rule 132 and every E146 correction are built on it. Flagging it so nothing inherits it as
+settled was the right call.
+
+### 8. THORFINN T46 — THE CROWN ATTEMPT IS ASSEMBLED AND BOTH DEVIATIONS ARE APPROVED
+
+Scored-surface delta is now **one file**:
+
+```
+git diff --stat 58729c68 HEAD -- Sources Vendor Package.swift mtp-head.manifest.json
+ Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift | 647 +++++-----
+ 1 file changed, 306 insertions(+), 341 deletions(-)
+```
+
+`Sources/MLXFastModel/Qwen36MTPBlockSession.swift` is **byte-identical to base** — the pb6
+restore is complete and Error 164 is closed. Compiled defaults on the env-free ranked route:
+**tight grid + onePass67 table + p15 probe + width 2 routed + pb6 depth arm**.
+
+- `e135_pb6_table_matches_base = 1.0`. New `Tests/MLXFastTests/E135DepthPriceArmTests.swift`
+  rebuilds the price from the literals (count 8, `headStepCostRatio` 0.18,
+  `passBoundaryTierFactor` 1.45, within `0.17041420118343195`,
+  `marginal[4] = 0.24710059171597631`) in the tip's own accumulation order and compares
+  element by element, with a Rule 101 control that rejects `ship`.
+- `e135_e87_pipeline_keyset_identical = 0`, **E87 stripped**. `qwen35E87SelectEnabled =
+  env["MLX_E87_SELECT"] != "0"` is on by default, so the ranked runner would JIT
+  `qwen_mtp_e87_probe_select`, a kernel base does not carry; the key set differs by
+  construction. Reverted `fb3b6622`, dropped `11ee32ee`'s census keys, deleted three helper
+  files. `Qwen35.swift` now carries exactly base's three `e87` mentions, all
+  `MLX_E87_PROBE_SORT`.
+
+**Deviation (a) approved.** Keeping `MLX_E134_DEPTH_PRICE_ARM` is correct: base already ships
+it, so deleting it would *create* a scored-surface delta. F33's wording was wrong; it meant no
+*new* env machinery and no arms base does not have.
+
+**Deviation (b) approved and it is strictly better than the design I gave.** One six-leg
+palindrome `c67ship c67pb6 c678pb6 c678pb6 c67pb6 c67ship` puts every arm at mean position
+`3.5`, so first-order drift cancels in **both** contrasts, both measured against one binary
+inside one thermal envelope, at the same `n = 2` per arm as the split design, for two fewer
+gated legs and one fewer warmup. Required addition: state whether the interval on
+`e135_onepass678_local_pct` came from the four legs entering that contrast or the full six-leg
+model, and give the residual `sd` either way — the two contrasts are correlated through the
+shared `c67pb6` legs. T44's 12-leg model had residual `sd 0.0650 %`.
+
+**The depth-arm tripwire is a reusable campaign asset.** Four independent E137 pb6 legs report
+`effective_mean_draft_len = 5.853658536585366` and twelve T29-A legs report
+`6.358974358974359`, both to the last digit across three QMV arms. That is direct evidence the
+signature reads the depth price and not the grid, table, probe or width-2 route. The tripwire
+now runs inside the warmup leg, so a mis-calibration costs five minutes instead of thirty.
+
+Session launched 07:23Z, worker `2966f74dcc92ee959cec0d2553f93b867f5a352eaf236d8edae4261a48f65688`,
+commit `387ae175`, expected 75 minutes.
+
+### 9. BOARD — A THIRD TREE LANDS IN THE F237 BAND
+
+`b93bb70e`, jungjipdo, **rejected at `3.70511347`**. That makes four independent rows inside or
+just below F237's honest band for the crown's own tree:
+
+```
+3ba6ee9d  Amal-David     3.70576324  promoted
+b93bb70e  jungjipdo      3.70511347  rejected
+1760479a  scarletbright  3.70355222  promoted
+f7d59543  rinaldofesta   3.69864608  rejected, bit-identical to eb5eadc7
+684821ed  newjordan      3.71959723  promoted   <- the only row above the band
+```
+
+F237 put `eb5eadc7`'s honest level at `3.701` to `3.709`. Four rows sit inside or just below
+it and exactly one sits above. **The crown is a high draw.** Beating it needs a real mechanism
+worth more than `0.5 %` of the candidate leg, a lucky serial leg, or both. F215's curve against
+anchor `1760479a` gives `+0.50 %` -> `71.5 %` and `+0.60 %` -> `93.7 %`; `composed67 + pb6`
+forecasts `+0.8 %` to `+1.1 %`, above saturation. The `3.7350` hold trigger has not been
+crossed.
+
+Also resolved since ledger 307: `649bd401` scarletbright rejected `3.66049497`; `d943332f`
+kirtangajjar rejected `3.63400044`; `a9dd132a` Amal-David rejected `3.63590571`.
+Validating at 07:47Z: `54d42a3f`, `5cd2eadc`, **`7226dc9a` (ours)**, `165d4ba7`, `ffa8a39e`,
+`13c780c5`.
+
+### 10. QUEUE DELTA
+
+| item | change |
+|---|---|
+| 128x32 NAX seed retile | sign SETTLED, `-5 %` prefill = `+0.375 %` of median, alphonse building |
+| measured depth-price table | reclassified `enabler`: standalone `+0.1338 %`, unlocks `+6.2170` pp |
+| acceptance-estimator axis | **REOPENED** (Error 167), gated on R7-2 |
+| first-error focal loss on `mtp-head/` (2606.11552) | un-rejected, unclaimed, front of queue if R7-2 holds |
+| margin-based certified bounds (2606.30265) | un-rejected, unclaimed, survives the oracle result on its own terms |
+| width 7 in any schedule | **CLOSED BY THEOREM** (Rule 138) |
+| E87 probe-select port | **CLOSED** — key set cannot match base by construction |
+| non-NAX `qmm_t_impl` optimisation | **CLOSED for ranked value** — never reached on M5 |
+| local sign probe for rung E | **CANCELLED** — answered by arithmetic and a ranked receipt |
