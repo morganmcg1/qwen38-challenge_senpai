@@ -161,18 +161,6 @@ public final class Qwen36MTPBlockSession {
     public private(set) var rollbackRoundCount = 0
     public private(set) var began = false
 
-    /// E154 R2 instrument state. Counts DRAFTING rounds only, so a
-    /// non-drafting round never consumes a sweep level and the levels stay
-    /// balanced over the rounds that carry the injection. `e154Filler` holds
-    /// the round's dummy chain so the blocking eval can join it and the
-    /// device work cannot outlive the round that ordered it.
-    ///
-    /// Records accumulate in a process-wide buffer written at process exit. A file
-    /// write inside the round is what makes `MLX_QWEN_MTP_TRACE` legs
-    /// `timing_valid=false`, and this instrument exists to time rounds.
-    private var draftingRoundCount = 0
-    private var e154Filler: MLXArray?
-
     public init(
         model: any Qwen36MTPTarget,
         stopTokens: Set<Int>,
@@ -819,127 +807,6 @@ public final class Qwen36MTPBlockSession {
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
 
-    /// E154 R2 boundedness instrument. RESEARCH ONLY, env-gated, default off,
-    /// and stripped before any submission.
-    ///
-    /// Both arms only ADD work at a point where the round reads nothing from
-    /// them, so neither can change a token, a draft, an acceptance, a row or
-    /// the schedule. The CPU arm never calls MLX and never touches device
-    /// memory; the GPU arm builds a chain that no round value depends on.
-    ///
-    /// Levels cycle by DRAFTING-round index rather than running as separate
-    /// legs. One leg then carries the whole sweep, the zero level is
-    /// interleaved through it by construction, and monotone thermal drift is
-    /// shared equally by every level instead of being confounded with it.
-    enum E154Instrument {
-        /// `MLX_E154_CPU_DELAY_US`: microsecond levels, comma separated.
-        static let cpuLevels: [Double] = levels("MLX_E154_CPU_DELAY_US")
-        /// `MLX_E154_GPU_CHAIN`: dependent-matmul counts, comma separated.
-        static let gpuLevels: [Int] = levels("MLX_E154_GPU_CHAIN").map { Int($0) }
-        /// Square side of the filler matmul; sets the cost of one chain step.
-        static let gpuWidth: Int = Int(
-            ProcessInfo.processInfo.environment["MLX_E154_GPU_WIDTH"] ?? "") ?? 512
-        /// `MLX_E154_CPU_SITE`: `preverify` puts the CPU burn where only the
-        /// head chain is outstanding on the device; `preeval` puts it after the
-        /// verify graph has been built and its asyncEval ladder submitted, so
-        /// the whole round's device work is outstanding. The two sites measure
-        /// slack at different points and a single site cannot stand for the
-        /// round.
-        static let cpuSite: String =
-            ProcessInfo.processInfo.environment["MLX_E154_CPU_SITE"] ?? "preverify"
-        /// `MLX_E154_OUT`: per-round record file, written once at teardown.
-        static let outPath: String? = {
-            let p = ProcessInfo.processInfo.environment["MLX_E154_OUT"] ?? ""
-            return p.isEmpty ? nil : p
-        }()
-        /// The per-round accounting is free and answers the boundedness
-        /// question directly, so it runs whenever an output path is given even
-        /// with every sweep level empty. That is the zero-injection control.
-        static let enabled = !cpuLevels.isEmpty || !gpuLevels.isEmpty
-            || outPath != nil
-
-        private static func levels(_ key: String) -> [Double] {
-            guard let raw = ProcessInfo.processInfo.environment[key], !raw.isEmpty
-            else { return [] }
-            return raw.split(separator: ",").compactMap { Double($0) }
-        }
-
-        static func cpuMicroseconds(draftingRound: Int) -> Double {
-            cpuLevels.isEmpty ? 0 : cpuLevels[draftingRound % cpuLevels.count]
-        }
-
-        static func gpuSteps(draftingRound: Int) -> Int {
-            gpuLevels.isEmpty ? 0 : gpuLevels[draftingRound % gpuLevels.count]
-        }
-
-        /// Pure-CPU spin. No syscall in the loop, so the thread stays runnable
-        /// and the wall clock and the thread CPU clock advance together.
-        @inline(__always)
-        static func burnCPU(microseconds: Double) {
-            guard microseconds > 0 else { return }
-            let deadline = DispatchTime.now().uptimeNanoseconds
-                + UInt64(microseconds * 1_000.0)
-            while DispatchTime.now().uptimeNanoseconds < deadline {}
-        }
-
-        /// Per-round records append immediately to a descriptor opened once.
-        /// Deferred flushing does not work here: the trusted parent stops the
-        /// worker with `SIGTERM` and then `SIGKILL`, so neither `atexit` nor
-        /// `deinit` ever runs and both earlier debug legs produced no file.
-        /// The caller takes the round wall clock BEFORE calling this, so the
-        /// one `write` per drafting round cannot enter the reported metric.
-        nonisolated(unsafe) private static var fileDescriptor: Int32 = -1
-        nonisolated(unsafe) private static var openAttempted = false
-
-        static func record(_ line: String) {
-            if !openAttempted {
-                openAttempted = true
-                if let path = outPath {
-                    fileDescriptor = open(
-                        path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
-                }
-            }
-            guard fileDescriptor >= 0 else { return }
-            var body = Array((line + "\n").utf8)
-            _ = body.withUnsafeBytes {
-                write(fileDescriptor, $0.baseAddress, $0.count)
-            }
-        }
-
-        /// Process-wide CPU microseconds, user plus system, summed over EVERY
-        /// thread. MLX encodes command buffers on its own scheduler thread, so
-        /// a calling-thread-only clock would report the host as idle while the
-        /// encoder saturates a core. That is exactly the failure mode the
-        /// dispatch-bound hypothesis predicts, so the process clock is the one
-        /// that can falsify it.
-        @inline(__always)
-        static func processCPUMicroseconds() -> Double {
-            var usage = rusage()
-            guard getrusage(RUSAGE_SELF, &usage) == 0 else { return 0 }
-            let user = Double(usage.ru_utime.tv_sec) * 1_000_000
-                + Double(usage.ru_utime.tv_usec)
-            let system = Double(usage.ru_stime.tv_sec) * 1_000_000
-                + Double(usage.ru_stime.tv_usec)
-            return user + system
-        }
-    }
-
-    /// Allocated once per session. Rebuilding the operand every round would
-    /// charge the CPU arm's cost to the GPU arm. `MLXArray` is not `Sendable`,
-    /// so this is instance state rather than a static.
-    private lazy var e154FillerOperand: MLXArray = MLXArray.ones(
-        [Self.E154Instrument.gpuWidth, Self.E154Instrument.gpuWidth],
-        dtype: .float32) / Float(Self.E154Instrument.gpuWidth)
-
-    /// A dependent chain, so the device cannot run the steps in parallel and
-    /// the cost is linear in `steps`.
-    private func e154GPUFiller(steps: Int) -> MLXArray? {
-        guard steps > 0 else { return nil }
-        var x = e154FillerOperand
-        for _ in 0 ..< steps { x = matmul(x, e154FillerOperand) }
-        return x
-    }
-
     /// Attribution probe only. `verify_build_us` measures the window in which
     /// the host builds the verify graph WHILE the asynchronously submitted head
     /// chain runs on the GPU, so a head-chain stall is indistinguishable from
@@ -1583,16 +1450,6 @@ public final class Qwen36MTPBlockSession {
         // the single blocking eval's GPU wall. Never on in a ranked run.
         let tRound0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
         let cpuRound0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
-        // E154 R2 accounting, independent of the phase trace because a traced
-        // leg cannot be timed. Three clocks per round: wall, this thread's CPU,
-        // and the whole process's CPU. `wall - process_cpu` is the host's idle
-        // share of the round and it needs no model.
-        let e154Wall0 = Self.E154Instrument.enabled
-            ? DispatchTime.now().uptimeNanoseconds : 0
-        let e154Thread0 = Self.E154Instrument.enabled
-            ? Self.threadCPUNanoseconds() : 0
-        let e154Process0 = Self.E154Instrument.enabled
-            ? Self.E154Instrument.processCPUMicroseconds() : 0
         var tDraftBuilt: UInt64 = 0
         var tSnapshotDone: UInt64 = 0
         var tVerifyBuilt: UInt64 = 0
@@ -1798,29 +1655,6 @@ public final class Qwen36MTPBlockSession {
         if Self.traceSyncHeadChain {
             eval(draftIdArrays[draftIdArrays.count - 1])
         }
-
-        // E154 R2 injection point, and the placement is the whole experiment.
-        // The head chain is submitted and the 64-layer verify graph is not yet
-        // built, so this is the round's only window where the host works while
-        // the device already has work. Delay added HERE is absorbed if the
-        // device is the binding constraint and is paid in full if the host is.
-        var e154CPUInjectedUS = 0.0
-        var e154GPUChainSteps = 0
-        if Self.E154Instrument.enabled {
-            e154CPUInjectedUS = Self.E154Instrument.cpuMicroseconds(
-                draftingRound: draftingRoundCount)
-            e154GPUChainSteps = Self.E154Instrument.gpuSteps(
-                draftingRound: draftingRoundCount)
-            draftingRoundCount += 1
-            if let filler = e154GPUFiller(steps: e154GPUChainSteps) {
-                asyncEval(filler)
-                e154Filler = filler
-            }
-            if Self.E154Instrument.cpuSite == "preverify" {
-                Self.E154Instrument.burnCPU(microseconds: e154CPUInjectedUS)
-            }
-        }
-
         if Self.traceRounds { tDraftBuilt = DispatchTime.now().uptimeNanoseconds }
 
         // 2. Keep the generic pre-verify snapshot as a fallback, but use the
@@ -1865,19 +1699,6 @@ public final class Qwen36MTPBlockSession {
         let (top2IDs, top2Values) = Self.linearTopTwoRows(verifyLogits)
         var bundle: [MLXArray] = [top2IDs, top2Values]
         bundle.append(contentsOf: draftIdArrays)
-        // Joined so the filler cannot leak its cost into a later round. The
-        // round still reads nothing from it.
-        if let filler = e154Filler {
-            bundle.append(filler)
-            e154Filler = nil
-        }
-        // The `preeval` site sits after the verify graph and its asyncEval
-        // ladder, so the whole round's device work is outstanding here. The
-        // `preverify` site has only the head chain outstanding. Comparing the
-        // two slack numbers is what stops one placement standing for the round.
-        if Self.E154Instrument.cpuSite == "preeval" {
-            Self.E154Instrument.burnCPU(microseconds: e154CPUInjectedUS)
-        }
         eval(cache.flatMap { $0.state } + bundle)
         if Self.traceRounds { tEvalDone = DispatchTime.now().uptimeNanoseconds }
 
@@ -2087,29 +1908,6 @@ public final class Qwen36MTPBlockSession {
                     + "t_verify_built=\(tVerifyBuilt) t_eval_done=\(tEvalDone) "
                     + "t_read_done=\(tReadDone) t_commit_done=\(tCommitDone) "
                     + "t_tail_done=\(tTailDone)\n")
-        }
-        // E154 R2. The arm assignment is RECORDED, not reconstructed from the
-        // schedule: a reader that re-derives `round % levels.count` cannot see
-        // a non-drafting round shifting the cycle.
-        if Self.E154Instrument.enabled {
-            let wallUS = Double(
-                DispatchTime.now().uptimeNanoseconds &- e154Wall0) / 1_000.0
-            let threadUS = Double(
-                Self.threadCPUNanoseconds() &- e154Thread0) / 1_000.0
-            let processUS =
-                Self.E154Instrument.processCPUMicroseconds() - e154Process0
-            Self.E154Instrument.record(
-                "e154-arm: round=\(roundCount) "
-                    + "drafting_round=\(draftingRoundCount - 1) "
-                    + "d=\(draftCount) acc=\(acceptedCount) "
-                    + "cpu_injected_us=\(e154CPUInjectedUS) "
-                    + "cpu_site=\(Self.E154Instrument.cpuSite) "
-                    + "gpu_chain_steps=\(e154GPUChainSteps) "
-                    + "gpu_chain_width=\(Self.E154Instrument.gpuWidth) "
-                    + "wall_us=\(wallUS) thread_cpu_us=\(threadUS) "
-                    + "process_cpu_us=\(processUS) "
-                    + "blocking_evals=1 async_evals=\(e154GPUChainSteps > 0 ? 3 : 2) "
-                    + "pid=\(ProcessInfo.processInfo.processIdentifier)")
         }
         // No trailing eval: every host-read value was materialised by the
         // round bundle above. A successful wide-prefix replay intentionally
