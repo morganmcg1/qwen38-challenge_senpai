@@ -690,16 +690,6 @@ struct QuantizedBlockLoader {
       biases += group_stride;
     }
   }
-
-  // E151 rung R2. Retarget the threadgroup destination by `delta` elements.
-  // The software-pipelined (double-buffered) k-loop alternates the staging
-  // half between loads. Only the threadgroup address moves: `src`, `scales`
-  // and `biases` are untouched, so the same device bytes are read, the same
-  // dequantization runs, and the same values are written. The affine path had
-  // no such helper; `fp_quantized_nax.h:248` is the precedent this copies.
-  void shift_dst(const int delta) {
-    dst += delta;
-  }
 };
 
 template <
@@ -840,13 +830,6 @@ struct QuantizedBlockLoader<
       biases += n_groups * group_stride;
     }
   }
-
-  // E151 rung R2. The `group_size == 32` specialization needs the same helper
-  // as the generic form: it is a separate class, not a base, so an edit to one
-  // is invisible to the other. See the note on the generic `shift_dst`.
-  void shift_dst(const int delta) {
-    dst += delta;
-  }
 };
 
 template <typename T>
@@ -953,12 +936,7 @@ template <
     const int WM = 2,
     const int WN = 2,
     const int kHostBM = BM,
-    const int kHostBN = BN,
-    // E151 rung R2. Opt-in software pipelining of the k-loop. The caller owns
-    // the `Ws` allocation, so the caller, not this function, decides whether
-    // two staging halves fit. Defaulting to false keeps every other call site
-    // on the original single-buffered loop, byte for byte.
-    const bool kDoubleBuffer = false>
+    const int kHostBN = BN>
 METAL_FUNC void qmm_t_nax_tgp_impl(
     const device uint32_t* w,
     const device T* scales,
@@ -1062,134 +1040,43 @@ METAL_FUNC void qmm_t_nax_tgp_impl(
 
     dispatch_bool(!is_unaligned_sm, [&](auto kAlignedM) {
       dispatch_bool(aligned_N || !is_unaligned_bn, [&](auto kAlignedN) {
-        if constexpr (kDoubleBuffer) {
-          // E151 rung R2. Software-pipelined k-loop over a double-buffered
-          // `Ws`. The caller has allocated 2 * BN * BK_padded elements. While
-          // the mma consumes the tile staged in one half, the loader streams
-          // the next k tile into the other half. The single barrier per
-          // iteration does both jobs: it publishes the half that is about to
-          // be read, and it guarantees that every reader of the half about to
-          // be overwritten has finished. The device load and dequantize
-          // sequence and the per-element mma sequence are unchanged; only the
-          // phases overlap, so the arithmetic is bit-identical to the
-          // unpipelined loop. Ported from `fp_quantized_nax.h:366-380`, which
-          // is the only pipelined loop in this repository.
-          //
-          // GRID-STRIDE NOTE, which the fp precedent does NOT cover. Under a
-          // retile this lambda runs once per tile in a grid-stride loop, so a
-          // threadgroup can reach the prologue of tile i+1. That prologue
-          // writes `Ws` and must not race the last mma read of tile i. It
-          // cannot: the `threadgroup_barrier` below, before `Dtile.store`,
-          // separates them, and every read of `Ws` in tile i is issued before
-          // it. `loader_w` is constructed per tile, so `dst` is reset and no
-          // `shift_dst` phase leaks from one tile into the next.
-          //
-          // Two independent facts make that safe, and the scored shapes
-          // need only the first. Every scored prefill call has M = 512 or
-          // M = 511, where the required tile count never exceeds the
-          // launched threadgroup count, so this loop body runs at most
-          // once and no tile boundary exists. A second tile is reachable
-          // only when ceil(M/128) == ceil(M/64), that is M <= 64, and
-          // there the pre-store barrier is the only thing separating the
-          // two tiles. `research/e151_r2_race_model.py` models this
-          // ordering over barrier epochs and catches four defeated
-          // variants of it, including removal of that barrier.
-          constexpr int Ws_tile = BN * BK_padded;
+        for (int k = 0; k < K; k += BK) {
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+          if constexpr (kAlignedN.value) {
+            loader_w.load_unsafe();
+          } else {
+            loader_w.load_safe(short2(BK, tgp_bn));
+          }
 
-          // Prologue: stage tile 0 into the first half.
-          if (K > 0) {
-            if constexpr (kAlignedN.value) {
-              loader_w.load_unsafe();
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+
+          STEEL_PRAGMA_NO_UNROLL
+          for (int kk1 = 0; kk1 < BK; kk1 += SK) {
+            NAXTile<T, TM, TK> Atile;
+            NAXTile<T, TN, TK> Btile;
+
+            volatile int compiler_barrier;
+
+            if constexpr (kAlignedM.value) {
+              Atile.load(xt + kk1, K);
             } else {
-              loader_w.load_safe(short2(BK, tgp_bn));
+              Atile.load_safe(xt + kk1, K, short2(SK, sgp_sm));
             }
-            loader_w.next();
-            loader_w.shift_dst(Ws_tile);
+
+            Btile.template load<T, BK_padded, 1>(Ws + tn * BK_padded + kk1);
+
+            tile_matmad_nax(
+                Dtile,
+                Atile,
+                metal::bool_constant<transpose_a>{},
+                Btile,
+                metal::bool_constant<transpose_b>{});
+
+            (void)compiler_barrier;
           }
 
-          short cur = 0;
-          for (int k = 0; k < K; k += BK) {
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-
-            if (k + BK < K) {
-              if constexpr (kAlignedN.value) {
-                loader_w.load_unsafe();
-              } else {
-                loader_w.load_safe(short2(BK, tgp_bn));
-              }
-              loader_w.next();
-              loader_w.shift_dst(cur ? Ws_tile : -Ws_tile);
-            }
-
-            const threadgroup T* Wk = Ws + cur * Ws_tile;
-
-            STEEL_PRAGMA_NO_UNROLL
-            for (int kk1 = 0; kk1 < BK; kk1 += SK) {
-              NAXTile<T, TM, TK> Atile;
-              NAXTile<T, TN, TK> Btile;
-
-              volatile int compiler_barrier;
-
-              if constexpr (kAlignedM.value) {
-                Atile.load(xt + kk1, K);
-              } else {
-                Atile.load_safe(xt + kk1, K, short2(SK, sgp_sm));
-              }
-
-              Btile.template load<T, BK_padded, 1>(Wk + tn * BK_padded + kk1);
-
-              tile_matmad_nax(
-                  Dtile,
-                  Atile,
-                  metal::bool_constant<transpose_a>{},
-                  Btile,
-                  metal::bool_constant<transpose_b>{});
-
-              (void)compiler_barrier;
-            }
-
-            xt += BK;
-            cur ^= 1;
-          }
-        } else {
-          for (int k = 0; k < K; k += BK) {
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            if constexpr (kAlignedN.value) {
-              loader_w.load_unsafe();
-            } else {
-              loader_w.load_safe(short2(BK, tgp_bn));
-            }
-
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-
-            STEEL_PRAGMA_NO_UNROLL
-            for (int kk1 = 0; kk1 < BK; kk1 += SK) {
-              NAXTile<T, TM, TK> Atile;
-              NAXTile<T, TN, TK> Btile;
-
-              volatile int compiler_barrier;
-
-              if constexpr (kAlignedM.value) {
-                Atile.load(xt + kk1, K);
-              } else {
-                Atile.load_safe(xt + kk1, K, short2(SK, sgp_sm));
-              }
-
-              Btile.template load<T, BK_padded, 1>(Ws + tn * BK_padded + kk1);
-
-              tile_matmad_nax(
-                  Dtile,
-                  Atile,
-                  metal::bool_constant<transpose_a>{},
-                  Btile,
-                  metal::bool_constant<transpose_b>{});
-
-              (void)compiler_barrier;
-            }
-
-            xt += BK;
-            loader_w.next();
-          }
+          xt += BK;
+          loader_w.next();
         }
 
         // Store results to device memory
@@ -1214,12 +1101,8 @@ METAL_FUNC void qmm_t_nax_tgp_impl(
     const int required = tiles_y * tiles_x;
     /* tid.y * tiles_x_host + tid.x is a bijection onto [0, launched), so
        striding by launched visits every t in [0, required) exactly once.
-       The staged tile is never torn across the tile boundary: the last Ws
-       read of one tile precedes `compute_tile`'s pre-store barrier and the
-       first Ws write of the next tile follows it. That holds for both
-       k-loops. The single-buffered loop adds a second barrier at the top of
-       its first k iteration; the E151 R2 pipelined loop writes its prologue
-       straight after the pre-store barrier and needs no second one. */
+       Two threadgroup barriers separate the last Ws read of one tile from
+       the first Ws write of the next, so the staged tile is never torn. */
     for (int t = int(tid.y) * tiles_x_host + int(tid.x); t < required;
          t += launched) {
       compute_tile((t / tiles_x) * BM, (t % tiles_x) * BN);
@@ -1446,56 +1329,7 @@ template <
           kE147NaxRetiled,
       "the scored affine group-64 4-bit tile must take the retile arm");
 
-  // E151 rung R2. Software-pipeline the k-loop over two staging halves, so the
-  // dequantize of k tile i+1 overlaps the mma of k tile i. This is the
-  // published 43925f29 mechanism. It is independent of the R1 retile: R1 cuts
-  // how many times each weight region is read, R2 hides the latency of the
-  // reads that remain, and either may ship without the other.
-  //
-  // The staged width is the TILE's BN, which the retile halves, so the two
-  // halves of the armed shape fit inside the host-sized allocation already
-  // made for the unretiled tile and the composition costs zero extra bytes.
-  // With the retile off the allocation has to grow, and at `T = float` with a
-  // 64-wide tile two halves do not fit at all. Rather than shrink a tile to
-  // fit, the arm carries its own capacity predicate and such a cell keeps the
-  // single-buffered loop and its original AIR.
-  //
-  //   T          staged BN   1 half    2 halves   armed
-  //   bfloat16      32        4608 B     9216 B   yes, allocation unchanged
-  //   bfloat16      64        9216 B    18432 B   yes, allocation grows
-  //   float         32        8704 B    17408 B   yes, allocation unchanged
-  //   float         64       17408 B    34816 B   NO, over the 32768 B limit
-  //
-  // The flag is the whole switch. It is ON in the submitted default.
-  constexpr bool kE151NaxDoubleBufferOn = true;
-  constexpr int kE151MaxTgpBytes = 32768;
-  constexpr int kE151StagedBN = kE147NaxRetileBN;
-  constexpr int kE151WsElems = kTgBN * BK_padded;
-  constexpr int kE151DbElems = 2 * kE151StagedBN * BK_padded;
-  constexpr int kE151DbAllocElems =
-      kE151DbElems > kE151WsElems ? kE151DbElems : kE151WsElems;
-  constexpr bool kE151DoubleBufferFits =
-      kE151DbAllocElems * int(sizeof(T)) <= kE151MaxTgpBytes;
-  constexpr bool kE151NaxDoubleBufferArmed =
-      kE151NaxDoubleBufferOn && kE151DoubleBufferFits;
-  constexpr int kTgWsElems =
-      kE151NaxDoubleBufferArmed ? kE151DbAllocElems : kE151WsElems;
-
-  // Fail closed. Defeating the capacity predicate must stop the build here
-  // rather than emit a kernel the driver refuses to create a pipeline for.
-  static_assert(
-      kTgWsElems * int(sizeof(T)) <= kE151MaxTgpBytes,
-      "the staged weight tile does not fit in threadgroup memory");
-
-  // A capacity predicate that is too strict would silently disarm the scored
-  // tile, and the experiment would measure nothing while passing every build.
-  static_assert(
-      !(kE151NaxDoubleBufferOn && group_size == 64 && bits == 4 && BM == 64 &&
-        BN == 64 && sizeof(T) <= 2) ||
-          kE151NaxDoubleBufferArmed,
-      "the scored affine group-64 4-bit tile must take the double-buffer arm");
-
-  threadgroup T Ws[kTgWsElems];
+  threadgroup T Ws[kTgBN * BK_padded];
 
   if (batched) {
     adjust_matrix_offsets<T>(
@@ -1527,23 +1361,10 @@ template <
         WM,
         WN,
         BM,
-        BN,
-        kE151NaxDoubleBufferArmed>(
+        BN>(
         w, scales, biases, x, y, Ws, K, N, M, tid, lid, simd_gid, simd_lid);
   } else {
-    qmm_t_nax_tgp_impl<
-        T,
-        group_size,
-        bits,
-        aligned_N,
-        BM,
-        BK,
-        BN,
-        WM,
-        WN,
-        BM,
-        BN,
-        kE151NaxDoubleBufferArmed>(
+    qmm_t_nax_tgp_impl<T, group_size, bits, aligned_N, BM, BK, BN, WM, WN>(
         w, scales, biases, x, y, Ws, K, N, M, tid, lid, simd_gid, simd_lid);
   }
 }
