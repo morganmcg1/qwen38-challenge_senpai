@@ -51499,3 +51499,308 @@ Pre-registered price: point `+3.0 %`, band `+1.5 %` to `+5.0 %`, minimum useful 
 | #142 | askeladd | the certified exact verify readout on the 715 MB lm_head | new |
 
 Forecast for the width-2 archive from our own receipt: `3.66219 x 1.024683 x 1.002653 x 1.002603 x 1.00495 = 3.78295`, against a crown of `3.70355`, margin **+2.14 %**.
+
+## 299 — FINDINGS 208 to 210: the certified-screen family closes, and the published median is a sorted order statistic that our own composition inverted
+
+Recorded 2026-08-23 ~01:00Z. Advisor base `892dc5e1` (Merge PR #142). Campaign base `origin/main` `770a3ff2`. Board crown `1760479a` (scarletbright) at `3.70355222`, source `e8f14c44`.
+
+`e003a86d` resolved. It scored `3.57502547` and was rejected. Forecast was `3.7747`. This is the largest prediction failure of the campaign and it is the subject of most of this entry.
+
+### 299.1 — FINDING 209: our composition lost 2.38 percent of median, and every point of it is a reorder
+
+`e003a86d` carried the tight launch grid, `depthPriceArm = .pb6` at tier 1.45, probe fraction 0.15 and `Table.compiledDefault = .shipped`, against our own tight-grid receipt `572b2cc4`.
+
+```
+572b2cc4   3.66218564   rejected   tight grid alone
+e003a86d   3.57502547   rejected   the composition
+1760479a   3.70355222   PROMOTED   crown
+```
+
+Per prompt, priced on the candidate leg under Rule 118:
+
+```
+prompt      raw A     raw B    raw d%   cand d%   draftlen A/B    nondraft A/B
+plutarch   1.25899   2.37669  +88.78    -47.09   0.1540/2.6995      449/0
+drama      2.08138   2.02845   -2.54     +2.53   2.2976/2.2948        0/0
+travel     2.39973   2.32939   -2.93     +3.33   2.6557/2.6343        0/0
+beagle     3.51170   3.38309   -3.66     +3.65   4.3818/4.2069        0/0
+republic   3.86063   3.76696   -2.43     +2.39   4.9892/4.7938        0/0
+essays     3.81267   3.93608   +3.24     -2.90   5.0870/5.2955        0/0
+medicine   3.87183   3.84714   -0.64     +0.74   5.2556/5.2222        0/0
+botany     3.90545   3.86117   -1.13     +1.32   6.1481/5.8118        0/0
+
+serial 8-prompt mean +0.0476 %, sd 0.1787   -> the serial leg is null
+candidate mean excluding plutarch           -> +1.58 % SLOWER
+```
+
+Draft length moved on all eight prompts and plutarch went from 449 non-drafting rounds to zero. Probe 0.15 and `Table.shipped` have never moved a draft length on any receipt in this campaign. Attribution to `pb6` is unambiguous.
+
+**The sorted vectors.**
+
+```
+sorted at 572b2cc4                     sorted at e003a86d
+0 plutarch  1.2590                     0 drama     2.0284
+1 drama     2.0814                     1 travel    2.3294
+2 travel    2.3997                     2 plutarch  2.3767   <- rose two ranks
+3 beagle    3.5117  <- pair            3 beagle    3.3831   <- pair
+4 essays    3.8127  <- pair            4 republic  3.7670   <- pair
+5 republic  3.8606                     5 medicine  3.8471
+6 medicine  3.8718                     6 botany    3.8612
+7 botany    3.9055                     7 essays    3.9361   <- LEFT the pair
+median      3.66219                    median      3.57503
+```
+
+**The counterfactual is the finding.** Hold the median pair fixed at beagle and essays:
+
+```
+(3.38309 + 3.93608) / 2 = 3.65959   ->  -0.07 % versus 3.66219.  A NULL.
+```
+
+`pb6` is approximately neutral on the beagle-and-essays pair. The entire −2.38 % is that essays improved itself **out** of the pair and republic took the upper slot at a value 4.30 % below where essays landed. Plutarch gained 88.78 % and was paid exactly nothing, which is Rule 116's zero weight working precisely as documented.
+
+### 299.2 — FINDING 210: `makeBoundaryDepthPrice` holds the total, so `pb6` is a boundary price plus a hidden 5.3 percent global depth subsidy
+
+Read at `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1030-1041`:
+
+```swift
+let within = Double(count) * headStepCostRatio / (Double(count - 1) + tier)
+var marginal = [Double](repeating: within, count: count)
+marginal[width - 2] = within * tier
+```
+
+With `count = 8`, `headStepCostRatio = 0.18`, `tier = 1.45`:
+
+```
+within      = 8 * 0.18 / (7 + 1.45) = 1.44 / 8.45 = 0.1704142
+marginal[4] = 0.1704142 * 1.45               = 0.2471006
+every other marginal                          = 0.1704142      (was 0.18)
+```
+
+The arm holds the TOTAL. The scheduler never reads the total. It reads `price.marginal[depth] * (1 + expected) / price.cumulative[depth]`. Dropping the common `(1 + expected)` factor:
+
+```
+depth   threshold ship   threshold pb6   pb6 / ship
+  0        0.180000        0.170414        0.9467
+  1        0.152542        0.145601        0.9545
+  2        0.132353        0.127096        0.9603
+  3        0.116883        0.112763        0.9648
+  4        0.104651        0.146942        1.4041   <- the priced boundary
+  5        0.094737        0.088354        0.9326
+  6        0.086538        0.081181        0.9381
+  7        0.079646        0.075086        0.9428
+```
+
+**`pb6` cuts the depth price at seven of eight depths by 3.5 to 6.7 percent and raises it 40.4 percent at one.** The source comment "an arm changes the SHAPE of the price and never its level" is true of the sum and false of every quantity the scheduler consumes.
+
+This predicts the receipt line by line:
+
+- **plutarch.** Its depth-0 decision sat just above the 0.180000 threshold in 449 of 487 rounds. A 5.3 % cut to 0.170414 unlocked every one. No width-6 boundary is involved.
+- **essays.** Thresholds at depths 5, 6 and 7 all fell, so it drafted deeper, 5.0870 to 5.2955.
+- **beagle.** It lives on the boundary, pays the +40.4 % at depth 4 in full, and collects the subsidy elsewhere. Its draft length fell 4.0 % and its round cost rose. It is the only prompt that pays the boundary price at full strength and the one prompt whose value cannot be replaced.
+
+Consequence for E134: `tier` and `within` are the same constant. The E134 tier grid swept a one-dimensional diagonal through a two-dimensional space and reported it as a tier optimum. **The `(h, tier)` plane has never been searched.** This is a second failure mode alongside Rule 117: one named constant silently moves an unnamed one.
+
+### 299.3 — CAMPAIGN RULE 121: price on the sorted order statistic, never on fixed marginal weights
+
+The published median is the mean of **sorted** positions 3 and 4. Rule 116's `w_beagle = 0.478` and `w_essays = 0.522` are exact derivatives at zero and are valid only while the rank order survives.
+
+Instrument committed as `research/f209_reorder_value.py`. Against `572b2cc4`:
+
+```
+sorted raw ratios
+  0 plutarch   1.25899   gap to next +65.322 %
+  1 drama      2.08138   gap to next +15.296 %
+  2 travel     2.39973   gap to next +46.337 %
+  3 beagle     3.51170   gap to next  +8.570 %   <== median pair
+  4 essays     3.81267   gap to next  +1.258 %   <== median pair
+  5 republic   3.86063   gap to next  +0.290 %
+  6 medicine   3.87183   gap to next  +0.868 %
+  7 botany     3.90545
+
+SINGLE-PROMPT SATURATION
+  prompt     dM/dx at 0    CEILING x    CEILING value
+  beagle       0.4795        9.940 %      +4.7639 %
+  essays       0.5205        1.260 %      +0.6548 %
+  all others   0.0000        0.000 %      +0.0000 %
+```
+
+On the live crown `1760479a` the shape is the same and the essays window is tighter: beagle ceiling **+4.6336 %** at 9.670 %, essays ceiling **+0.4957 %** at 0.955 %.
+
+**RULE 121.** Before pricing any mechanism whose per-prompt spread can exceed the binding inter-rank gap, predict the eight raw ratios, **sort them, and read positions 3 and 4**. Report the predicted rank vector next to the predicted median. Three durable consequences:
+
+1. **A uniform relative gain across all eight preserves order and converts exactly 1:1, with no ceiling.** Broad mechanisms are the safest class on this benchmark.
+2. **Beagle is the only prompt-specific axis with real headroom, worth up to +4.76 % of published median.**
+3. **Essays gains saturate at 1.258 % and do not stack.** If one mechanism claims 0.92 % of essays headroom, the next mechanism's essays half collapses to 0.338 %. The first mechanism to arrive gets it.
+
+The objective function is therefore `median = (beagle + min(essays, republic, medicine, botany)) / 2`, with plutarch, drama and travel at exactly zero at any magnitude.
+
+### 299.4 — CAMPAIGN RULE 122: a fixed-trajectory replay is not decision-grade for a scheduler change
+
+The scheduler's output feeds its own acceptance EMA, so the realised trajectory under the treatment arm is not the recorded trajectory under the control arm. Edward's FM1 check validated the replay of the SHIP arm against its own recording on all 617 scored rounds, which is sound, and says nothing about the pb6 arm's realised trajectory.
+
+His live same-binary ABBA in E134 item 5b was real evidence, but it ran on `benchfixture` at accept 0.877 and draft 6.359. Beagle runs at per-step p 0.9341 and draft 4.38. Rule 76 requires stratification and this pooled across the regime that decides the score.
+
+**RULE 122.** A scheduler change needs a live same-binary A/B **in the regime it will be scored in** before it enters a submission. A replay may screen it; a replay may not clear it.
+
+### 299.5 — ADVISOR ERROR 147: I composed `pb6` into a submission after the student who built it warned me it reorders
+
+Edward told me plainly that the marginal weights are exact only for an order-preserving move, that `pb6` reorders, and that the weighted model over-predicts it by +1.0316 pp on the crown. I recorded that sentence and then priced the composition with the weighted model anyway. The realised over-prediction was **4.9 pp**, nearly five times the warning.
+
+Three separate guards existed and I used none of them. Rule 116 already said the median is an identity in two named prompts, which is a sorted quantity. Rule 117 already said a fitted constant must name what it was fitted to. Rule 79 already said no local timing leg can validate a draft-depth change. The failure was not a missing rule; it was not applying the rules I had to the one mechanism whose per-prompt spread was known to be large.
+
+Standing correction: **when a student names a specific failure mode of my pricing model, that mode becomes a pre-registered check on the next submission that contains their mechanism.**
+
+### 299.6 — FINDING 208: askeladd E142 terminal, the certified verify readout is refuted at the arithmetic floor, merged at `892dc5e1`
+
+`status: failed`, primary `e142_certified_survival_fraction_median` 1.0 to 1.0, delta 0.0. Commit `2b9932ff`, W&B `6dm53tak`. Research-only: tree hashes identical to base for `Sources`, `Tests`, `Package.swift`, `benchmark.json` and `mtp-head.manifest.json`; `check-editable-budget.sh` growth 0 of 262144.
+
+The stop rule fired at rung 0 on 734 rounds and 3,664 verify rows across six 512-token seeds at widths 2 to 8.
+
+```
+screen                                     row survival med   round bytes / dense
+S-A block max-norm                              1.0000              1.0000
+S-B derived affine-2 group-64 copy              1.0000              1.5556
+S-C sampled 7-NN leaf radius (ceiling)          0.9978              not built
+S-D rank-2048 right singular basis              0.9977              1.7098
+```
+
+**The one number that closes the family.** A screen prunes only when `epsilon = slack / (||h|| * ||w_v||)` falls below `budget / Cauchy-Schwarz = 18.31 / 129.24 = 0.1417`. Measured epsilon: S-A 1.192, S-B 0.564, S-C 0.479, S-D at rank 2048 **0.478**. The floor across four independent mechanisms is 0.478, **3.4 times too loose**, and `e142_screen_families_that_prune = 0`.
+
+Two independent causes. First, the logit is a small residue of a large norm product: median logit 22.6 against a norm product of 129.2, with `||h||_1 / ||h||_2 = 51.9` against `sqrt(5120) = 71.6`. Second, `lm_head` is near-isotropic and `h` does not live in its dominant subspace: rank 2048 of 5120 holds 58.2 % of weight energy while `h` keeps 76.1 % of its norm outside, giving `(1 - E_w)(1 - E_h) = 0.242` against the 0.0201 required.
+
+**`sb_required_bits_for_certificate = 3.694` against an exact head of 4 bits.** S-B's actual median error is 0.635 logits, 0.035 of budget; its provable error is 72.87 logits, 3.98 times budget. No cheaper certifying representation of this head exists. The failure is in the proof, not the arithmetic. My independent derivation agreed by a different route: budget is about 5 sigma with sigma about 5.4, `sum|h_i|` about 7,900, group range about 0.108, giving `b >= 4`.
+
+Thresholds cannot rescue it. An oracle threshold at the device `s2` prunes nothing. The draft token is the argmax 85.9 % of the time.
+
+**Reusable capture, cached at `~/.cache/mlxfast/qwen3.8-27b-mtp-v1/e142/verifyrows/`**: 3,664 real post-norm hidden rows with device top-2 over six seeds.
+
+```
+seed              rounds rows accept  mean draft
+beagle_a            118   608  0.804    4.153
+beagle_f            114   577  0.860    4.061
+essays_montaigne    151   669  0.697    3.430
+medicine_hippoc      81   542  0.935    5.691
+republic_jowett     105   583  0.851    4.552
+travel_eothen       165   685  0.667    3.152
+```
+
+Offline to device agreement: argmax 99.26 %, `|delta s1| <= 0.105` median 0.030, `|delta s2| <= 0.107` median 0.021; all 27 mismatches are exact ties. Reproduce with `research/e142_rung0.sh`, 745 s. Full write-up `research/e142-result.md`.
+
+**The certified-screen family is closed.**
+
+### 299.7 — ADVISOR ERROR 146: I priced the verify readout at 6.6 percent of the round; the in-situ share is 3.56 percent
+
+E137's dispatch-weighted isolated table at M=5 sums to about 90,632 us against an in-situ round of about 44,956 us, so **isolated is about 2.0 times in-situ at the LEVEL**. `lm_head` is 3,642 of 90,632, which is 4.02 % of the QMV subtotal, and `4.02 % * 88.643 % = 3.56 %` of the round. That agrees with F22's independent `4.132 % * 88.643 % = 3.66 %`.
+
+I reached 6.6 % by multiplying an isolated call time by E137's transfer factor 0.7858, **which prices a STEP and not a LEVEL**. The 196 GB/s figure is likewise an isolated single-dispatch rate; in situ the pass runs at or slightly better than the round average.
+
+**The verify-readout axis is closed completely.** Fusing the readout with the norm saves under 0.05 % of the round.
+
+### 299.8 — the probe-path source audit downgrades FINDING 206 to a probable run-state artefact
+
+A delegated source audit of the probe path found that **exactly one of about thirteen dispatches per draft step has a probes-shaped launch**, and dispatch count is identical at every probe fraction.
+
+```
+kernel                                       grid                    TGs @3073/1844/1476/1230
+qwen_mtp_cluster_centroid_qmv_a2g64_v1  (32, tiles*2, 1) tiles=1537   1537/1537/1537/1537
+argsort block sort (MLX.argPartition)   (7,1,1)                       7/7/7/7
+qwen_mtp_probe_sort                     (256,1,1)                     1/1/1/1
+qwen_mtp_cluster_row_qmv_a2g64_v1       (32, probes*2, 1)   <-- ONLY  3073/1844/1476/1230
+qwen_mtp_row_top32_partial              (8192,1,1)                    32/32/32/32
+qwen_mtp_row_top32_finalize             (256,1,1)                     1/1/1/1
+qwen_mtp_draft_selected_affine4_rerank  (256,1,1)                     1/1/1/1
+```
+
+No branch, guard or clamp flips between probes 1844 and 1476. `sort.cpp:342-353` discards `kth_`, so `argPartition` is a full argsort of all 12,292 scores regardless. The allocator page-rounds both `rowScore` sizes to the same 32,768 B. Nothing in the chain grows when probes falls. **The reachable envelope for 0.15 to 0.12 is about −0.4 % to +0.15 %; the observed −1.032 % is roughly five times outside it.**
+
+Leading alternative: the wired-residency state lottery of F152 and F172. The signature matches on every axis — 8 of 8 same sign, draft length digit-identical, serial leg null, per-prompt sd several times normal — and the observed effect is 0.64 of one 930.9 us state step.
+
+**Shipping decision unchanged: ship `ProbeArm.p15`,** which is confirmed by two independent rival receipts. The reopening condition for 0.10 is unchanged and requires a same-binary ABBA absolute-time ladder.
+
+**Two hard constraints the audit established.** `Qwen35Top32Plan` gives `perThread = ceil(rows / 8192)` with `precondition(plan.perThread <= 32)` at `:4455` and `static_assert(PER_THREAD <= 32)` at `:4247`; boundaries fall at `probes = 1024k`, so p 0.25 sits eight rows past the 3x8192 boundary and pays `perThread = 4` where 0.2499 would pay 3. And below `probes = 1024`, meaning `p < 0.0833`, some simdgroups run out of real values in stage 1 and stage 2 emits duplicate `(ord=0, idx=0)` entries; the shortlist silently shrinks. **Do not go below p = 0.0833.**
+
+`custom_kernel.cpp:56-68` keys `CustomKernelCache` by kernel NAME and calls `d.clear_library(name_)` when the source string changes, so **alternating the probe fraction in one process recompiles three kernels. ABBA must run across processes on one binary.**
+
+### 299.9 — the launch axis closes after width 2, and the column ladder is cancelled
+
+Under reading 2 of F200, `a * ln(1 + noop_columns)`, nothing remains once width 2 ships. Under reading 1, `a * ln(columns)`, the only surviving move is width 8 to one column via IPG 8, whose launch benefit of `899 / 70,315 = +1.28 %` loses to a g17s occupancy penalty of about 4.5 % at 126 registers with 48 B of spill and 41 to 31 simdgroups. **Both readings lead to the same action, so the column ladder has decision value zero and is cancelled.**
+
+The one-entry mixed table `6 -> (6,6,4)` is cancelled at −0.064 %: launch +0.198 %, body −0.262 %.
+
+**Named reopening condition:** if a future mechanism makes reading 1 testable for free, or flattens the width-6 step by more than 17 %, both become live again. Keep the `tight2/tight4/tight8` instrument.
+
+### 299.10 — E141 rung 3 byte algebra: the arm as specified is net negative, and arm A holds the probe count
+
+Bytes per draft step are `centroid = leaves * 1600 B` and `row = probes * rowsPerLeaf * 1600 B`.
+
+```
+                        leaves  probes   rows    centroid    row     total    delta
+today (p=0.15)          12,292   1,844  14,752   19.67 MB  23.60 MB  43.36 MB    -
+widened, p held 0.15    31,040   4,656  37,248   49.66 MB  59.60 MB 109.35 MB +65.99 MB
+ARM A: probes held      31,040   1,844  14,752   49.66 MB  23.60 MB  73.35 MB +29.99 MB
+```
+
+As specified the arm costs +1.53 % to +1.84 % of the round against a prize of at most +0.95 %, so it is **net −0.6 % to −1.5 %**. **Arm A holds the absolute probe count at 1,844**, that is `p = 1844/31040 = 0.05941`, costing +0.70 % to +0.83 % for a net band of −0.4 % to +0.25 %. It also holds `plan.perThread` at 2, where the naive widening would reach 5.
+
+The scientific cost is recall: 1,844 probes now cover 5.94 % of leaves instead of 15.0 %. **Recall at fixed probed rows is the headline quantity of rung 3, beside the accept delta.**
+
+Optional arm B raises `derivedClusterRowsPerLeaf` from 8 so the centroid pass does not grow; at 20 rows per leaf the total is +0.22 MB, effectively free, but the row-QMV path guards `rowsPerCluster == 8`.
+
+Rung 4 is deleted. The rung-0 recovery curve shows the recoverable mass spread across the top 90 % of the id space rather than concentrated just above the bound, so no cheap intermediate prefix exists.
+
+Rung 1 passed with `e141_coarse_table_bit_reproduction = 1.0`: `quantize(dequantize(compact lm_head, 64, 4), 64, 2)` reproduces the declared `draft_lm_head` triple bit for bit, with a Rule 101 control differing on 320/79/79 tensor elements. **The widened table ships zero new bytes.**
+
+### 299.11 — E135 F22: the width-6 register occupancy tax
+
+E138's crown contrast measured our `(6,6,4)` beating `(6,3,4)` by 8,405.2 us per round tight on g16s, sign stable in every replicate, while ranked receipt F194 measured the same family **+0.2646 % slower** on the candidate medpair with 8 of 8 same sign. The two-host census names the cause: na6 allocates 96 registers with no spill on g16s but **105 on g17s, dropping 42 simdgroups to 37**. g16s clamps at 96 and therefore shows nothing.
+
+Removing the tax recovers the 0.60 pp sign disagreement and unlocks the 0.334 % body win: **point +0.6 %, band [0, +0.93 %], minimum useful +0.25 %**, upper bound receipt-derived. Width 7 is not a candidate: shipped `(7,4,4)` already beats `(7,7,4)` by 6,223.0 us per round on g16s and na7 allocates 118 on g17s.
+
+The gate is free: an offline g17s register census, minutes, no GPU and no lock. **Kill rule: if no arm reaches 96 registers or fewer on g17s without spilling more than it saves, close the arm.** Rule 83 applies, so a g16s closure is void as g17s evidence.
+
+Arm A is a five-minute check of `[[max_total_threads_per_threadgroup(64)]]`, which in most toolchains permits more registers rather than fewer. Arm B is the real arm: roll the six columns into a loop over three column-pairs with per-pair re-dequantization. **Its bit-exactness invariant is that re-dequantizing the same nibble, scale and bias gives the same value while each column's own reduction order is unchanged**, which is a different object from Rule 92's accumulation-order wall.
+
+Note under Rule 121: essays carries width-6 mass 0.1558 against beagle's 0.0739, so a width-6 improvement lands about twice as hard on essays as on beagle and will consume essays headroom first.
+
+### 299.12 — HARNESS DEFECTS 41, 42 and 43
+
+**41** (thorfinn, fixed): `research/e135_probe_check.py` accepted `--arm` but asserted the compiled default against a hard-coded string; now split into `--arm` and `--default-arm`.
+
+**42** (alphonse, fixed): a `swift-testing` bundle's working directory is not the checkout, so a relative `weights/...` path resolves to nothing and the test returns early **reporting pass**. Resolve against `#filePath`.
+
+**43** (alphonse, fixed): `FileManager.homeDirectoryForCurrentUser` reads the passwd database and misses the role-scoped `HOME`. Read `HOME` from the environment. The signature of both is a 0.001 s pass sitting next to a 0.226 s real gate.
+
+### 299.13 — E143 assigned to askeladd: the beagle acceptance decomposition
+
+Under Rule 121 this is now the highest-value open experiment in the campaign: beagle is worth up to **+4.76 %** of published median and no other prompt-specific axis is worth more than +0.65 %.
+
+The gap is acceptance and not round time. Beagle's rounds are cheaper than essays' and it loses by running 18 more of them.
+
+```
+prompt  rounds  round us  mtp us/token  serial us/token  eff draft len  per-step p
+beagle    110    49,948      10,730         37,878          4.3818        0.9341
+essays     92    55,007       9,884         38,067          5.0870        0.9647
+```
+
+At `MISS_TO_SCORE_PCT = 203` the 3.06 pp per-step gap is about 6.2 % of the beagle leg. Alphonse's E141 prices one sub-channel at +0.95 %, so roughly +2 % is unattributed.
+
+Four channels at the first divergent position: **C-a** the target token outside the compact vocabulary, an id test only; **C-b** in vocabulary but outside the head's top-32 rerank window; **C-c** in window but mis-ranked; **C-d** the head's hidden state prefers another continuation. C-b and C-c are actionable and C-d is not. R0 is a census on the cached E142 capture at zero GPU cost. The pre-registered fork at R2 is `C-b + C-c >= +0.30 %`.
+
+**Kill rule: if C-d exceeds 80 %, the acceptance axis is unreachable, I close it and redirect four students.**
+
+The fallback arm C2 converts `_exactKVDenseW` at `Qwen35.swift:3054-3071` from 20.97 MB of dense BF16 per draft step to 5.90 MB of affine-4 group-64, removing 15.07 MB of 323.59 MB for a predicted **+0.35 %, band [+0.30 %, +0.42 %]**, shipping zero bytes and leaving `head_provenance_sha256` unchanged. Rule 107 applies: price it on measured live realised acceptance delta, because E136 measured the offline-screen error at 18.4 times for this class.
+
+### 299.14 — assignments in flight after this entry
+
+```
+PR #135  thorfinn  E135  WIP  F1-F23  width-2 archive, pb6 revert, then the width-6 register census
+PR #140  edward    E140  WIP  F1-F7   Item B replaced: decompose pb6 into arms S and P, make every
+                                      replayed median reorder-aware, then submit terminal
+PR #141  alphonse  E141  WIP  F1-F2   rung 3 arm A at fixed probe count, report beagle and essays halves
+                                      separately under Rule 121
+PR #143  askeladd  E143  r1          the beagle acceptance decomposition, R0 census first
+```
+
+Thorfinn holds the submission until `depthPriceArm` defaults to `.ship`. I authorised him by name to make that one-line edit in edward's file and told edward in the same cycle. Predicted landing zone for the clean archive, being tight grid plus width-2 plus probe 0.15 plus `Table.shipped` with no `pb6`, is **3.69 to 3.71** against a crown of `3.70355222`. That is a coin flip and worth taking: under F195 a rejected row still publishes full eight-prompt evidence, and this one isolates width-2 on our own tree while confirming the revert.
+
+**Queued and unowned after this entry:** the 2-D `(h, tier)` depth-price search with a live same-binary A/B in beagle's regime, which is the direct successor to F210; the round-boundary bubble census at about 8.7 % of unattributed round time; per-position head-side confidence; the P4 GDN S=2 mid-state write; F190's apparent one-width cliff move, where the E92 axis label must be checked first.

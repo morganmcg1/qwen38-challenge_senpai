@@ -1,38 +1,45 @@
 # SENPAI Research State
 
-- 2026-08-23 00:15 UTC
-- Most recent human research direction: none received this generation. The standing direction is `senpai/program.md`: maximise the official decode score on the `qwen3.8-27b-mtp-v1` track, submit autonomously, and never stop at synthesis.
-
-## Where the campaign stands
-
-Board crown `1760479a` (scarletbright) at `3.70355222`. Our best measured receipt is `572b2cc4` at `3.66218564`, rejected only because the crown moved while it validated. `e003a86d` has been validating since 22:50:23Z and carries the tight launch grid, the `pb6` boundary tier, probe fraction 0.15 and the shipped QMV plan table; the forecast is `3.7747`.
-
-The next archive, already in preparation, adds the width-2 launch shrink and forecasts `3.78295`, about `+2.14 %` over the live crown.
-
-`pb6`, our boundary depth-price tier worth `+2.4683 %` held out, exists nowhere else on the board. It is the campaign's only unique mechanism and it is the reason our forecast clears the crown.
+- 2026-08-23 ~01:10Z. Advisor base `892dc5e1` (Merge PR #142). Campaign base `origin/main` `770a3ff2`. Board crown `1760479a` (scarletbright) `3.70355222`, source `e8f14c44`. Our best receipt `572b2cc4` at `3.66218563656629`.
+- Most recent human research direction: none new this cycle. The standing direction is to keep the frontier moving, submit strong candidates autonomously, and never hold a credible candidate for approval.
 
 ## Current research focus
 
-**1. Launch geometry.** Finding 200 established that the cost of a launched threadgroup column on the ranked M5 is logarithmic and one-parameter: `1296.8 * ln(columns)` microseconds per round, replicated to 2.4 percent across two independent solvers' receipts. No such coefficient has ever been published for any Apple GPU. The width-2 shrink is the last no-op column available; the open question is whether the law prices launched columns or only no-op columns, which a column-count ladder settles.
+**The published median is a sorted order statistic, and we just paid 2.38 percent of median to learn it.**
 
-**2. The verify readout.** Every decode round streams a 715 MB `lm_head` and reduces it to two token ids and two values per row. This is 4.5 to 7.5 percent of the round and it has exactly one scored consumer. A screened readout with an on-device certificate and a dense fallback is bit-identical by construction. This is the largest single lever now in flight.
+Our composition `e003a86d` carried the tight launch grid, `depthPriceArm = .pb6` at tier 1.45, probe fraction 0.15 and `Table.compiledDefault = .shipped`. Forecast `3.7747`. Measured `3.57502547`. Holding the median pair fixed at beagle and essays, the composition is a **−0.07 % null**. The entire loss is a reorder: essays improved +3.24 % and left the median pair, republic took the upper slot 4.30 % below where essays landed, and plutarch gained 88.78 % for exactly nothing.
 
-**3. The beagle prize.** The published median is an exact identity in two prompts, beagle and essays. Beagle is the laggard, with the worst per-step acceptance of the deep prompts at 0.9341 against 0.96 elsewhere. Raising beagle to equal essays moves the median `+4.35 %`; raising it without limit gives a hard ceiling of `+5.07 %`. This is the largest identified prize in the campaign and only one experiment currently attacks it.
+The cause is in source. `makeBoundaryDepthPrice` holds the price TOTAL, so raising `marginal[4]` by the tier forces every other marginal from 0.18 down to 0.1704142. **`pb6` is a boundary price plus a hidden 3.5 to 6.7 percent global depth subsidy at the seven depths it was never meant to touch.** That subsidy, not the boundary, unlocked plutarch's 449 non-drafting rounds and deepened essays. Beagle pays the boundary at full strength and is the one prompt whose value cannot be replaced.
 
-**4. Acceptance, not speed.** 60.4 percent of the vocabulary, 149,990 token ids, can never be proposed by the draft head at any depth for any prompt, because the compact draft vocabulary is a contiguous prefix of 98,304 ids plus 26 control tokens. Prior art in the opposite direction implies a large exchange coefficient.
+**The value model, now exact** (`research/f209_reorder_value.py`, anchored on `572b2cc4`):
 
-**5. Measurement discipline.** Finding 207 remeasured the run-level noise floor at large N on the serial leg, which runs identical code on every board row. The diff-of-two floor is `0.15 %` on the eight-prompt mean and `0.30 %` on the medpair, not the `0.067 %` that Rule 112 claimed. Rule 120 now requires an eight-prompt sign test alongside any sub-0.3 percent medpair claim.
+```
+  prompt     dM/dx at 0    CEILING x    CEILING value
+  beagle       0.4795        9.940 %      +4.7639 %
+  essays       0.5205        1.260 %      +0.6548 %
+  all others   0.0000        0.000 %      +0.0000 %
+  uniform gain across all eight            converts exactly 1:1, no ceiling
+```
 
-## Open threads and next directions
+Three consequences drive everything below. Broad mechanisms are the safest class because they preserve order and never saturate. Beagle is the only prompt-specific axis with real headroom. Essays gains stop paying after 1.258 percent and **do not stack**, so the first mechanism to claim that headroom gets it.
 
-- **The probe fraction turns over.** Finding 206: a rival's clean one-line receipt shows probe 0.12 is `+1.05 %` SLOWER on the medpair at pinned round count and pinned draft length, while 0.15 is confirmed faster by two receipts. Fewer streamed bytes cannot make a round slower, so there is an unidentified mechanism in the probe path. The optimum may lie above 0.15, not below it. A same-binary absolute-time ladder at `{0.25, 0.20, 0.17, 0.15, 0.12, 0.10}` settles it and may expose a fixable cliff.
-- **Re-fit every scheduler constant to the shipped launch table.** Rule 117. The `pb6` tier 1.45 was fitted to a pre-tight cost curve where the width-6 step was 16,241 microseconds; under the table that ships it is 16,903, which is 4.1 percent steeper. A one-constant, zero-byte, zero-risk gain.
-- **Precision islands to affine-4 group-64.** About 31 MB of dense bf16 in the proposal head, reopened, unowned, priced `+0.38 %` to `+0.45 %`.
-- **Gated DeltaNet mid-state write on rejection.** Gate 151 MB per round, unowned, `0.2 %` to `0.6 %`.
-- **Per-position head-side confidence.** The sole named reopening signal from E99, unowned, speculative at `+0.3 %` to `+0.8 %`.
-- **The head-history fold warm gap.** Widths 1 to 9 are flushed but only 2 are warmed; must clear Rule 110 before it is worth anything.
-- **Composition risk.** Our tiered one-pass QMV entry points reverse sign under a tight launch grid, confirmed by two rival receipts. Any mechanism whose value was measured under the wide grid must be re-measured.
+## Live work
 
-## What would change the plan
+- **thorfinn PR #135.** Held from submitting until `depthPriceArm` defaults to `.ship`. Then the clean archive ships tight grid plus the width-2 launch shrink plus probe 0.15 plus `Table.shipped`, predicted 3.69 to 3.71 against a crown of 3.70355. A coin flip worth taking. Next lever is the width-6 register occupancy tax, gated by a free offline g17s register census, point +0.6 % and band [0, +0.93 %].
+- **edward PR #140.** Cell D refuted and the depth-cap axis closed with `wants_past_cap = 0.0000`. Item B replaced: decompose `pb6` into arm S, the pure subsidy, and arm P, the pure boundary, then make every replayed median reorder-aware and re-flag past conclusions. Then terminal.
+- **alphonse PR #141.** Rung 3 arm A widens the compact draft vocabulary from 98,304 to 248,320 while holding the absolute probe count at 1,844. Prize +0.95 %, cost +0.70 to +0.83 %, net −0.4 % to +0.25 %. Recall at fixed probed rows is the headline scientific quantity.
+- **askeladd PR #143.** The beagle acceptance decomposition, now the highest-value open experiment in the campaign. R0 is a zero-GPU census on the cached E142 capture. Kill rule: if channel C-d exceeds 80 percent the acceptance axis is unreachable and I redirect four students.
 
-A promoted receipt for `e003a86d` that confirms `pb6` on the ranked host would make the boundary-tier family the campaign's main line and justify a full re-fit of the depth-price curve. A refuted `pb6` would make the launch-geometry and readout families the whole campaign. Either way the next assignments are already runnable and no student is idle.
+## Potential next research directions
+
+1. **The 2-D `(h, tier)` depth-price search with a live same-binary A/B in beagle's regime.** The direct successor to Finding 210. `tier` and `within` are the same constant, so the E134 grid swept a diagonal and the plane has never been searched. Under Rule 122 this needs a live A/B on beagle and essays fixtures, not `benchfixture`.
+2. **Broad round-cost mechanisms, preferred over prompt-specific ones.** They convert 1:1 with no ceiling. The width-6 register occupancy tax and the width-2 launch shrink are both in this class.
+3. **The round-boundary bubble census.** About 8.7 percent of the medpair round is unattributed by the F22 part table. Unowned. Point +1.0 %, band [+0.2 %, +2.5 %], a guess.
+4. **Beagle-specific acceptance.** Beagle sits at per-step acceptance 0.9341 against essays at 0.9647, has the highest unproposable-token rate at 0.4832 percent, and its top misses are South American proper nouns. Any mechanism that improves low-confidence positions lands disproportionately on the one prompt with headroom.
+5. **Per-position head-side confidence**, the sole named reopening signal from E99.
+6. **The P4 GDN S=2 mid-state write**, gating 151 MB per round on rejection.
+7. **F190, the apparent one-width cliff move.** Check the E92 axis label before assigning any bisect.
+
+## Closed this cycle
+
+The certified verify-readout screen family, refuted at the arithmetic floor: the epsilon floor is 0.478 against the 0.1417 required, and a certificate needs 3.694 bits against an exact head of 4. The entire verify-readout axis, at 3.56 percent of the round with no recoverable inefficiency. The column-count ladder, decision value zero under both readings of Finding 200. The one-entry mixed table at −0.064 percent. Finding 206's probe turnover, downgraded to a probable run-state artefact by a source audit that found only one probes-shaped dispatch of about thirteen per draft step.
