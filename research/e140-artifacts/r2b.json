@@ -1,0 +1,1348 @@
+{
+  "binding_gap_pct": 0.016433124230097462,
+  "form": "per_drafting_round",
+  "gpu_used": false,
+  "harness": "local",
+  "oracle": {
+    "A_ship": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "B_rankedprice": {
+      "artifact_in_sample": -3.123394074355753,
+      "beagle_cost_pct": 4.263712450077017,
+      "curve_lopo": -3.1350139732191877,
+      "in_sample": -3.123394074355753,
+      "median_pair": [
+        "beagle",
+        "republic"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 1.0426371245007702,
+        "botany": 0.9959174406853495,
+        "drama": 0.7898798742953711,
+        "essays": 0.9452351509823854,
+        "medicine": 0.999265680220203,
+        "plutarch": 0.9584777105729451,
+        "republic": 1.027992800663556,
+        "travel": 0.9524464536718643
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "republic",
+        "medicine",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 1.0383421230943075
+    },
+    "Boracle_rankedprice": {
+      "artifact_in_sample": -4.5148987193991665,
+      "beagle_cost_pct": 6.461536075105601,
+      "curve_lopo": -4.529642090803134,
+      "in_sample": -4.5148987193991665,
+      "median_pair": [
+        "beagle",
+        "republic"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 1.064615360751056,
+        "botany": 0.9959143183916623,
+        "drama": 0.806697512688999,
+        "essays": 0.9445466848998326,
+        "medicine": 0.997823447771983,
+        "plutarch": 0.8366586109691365,
+        "republic": 1.0370701318738764,
+        "travel": 0.9660960236542954
+      },
+      "plutarch_unlock": true,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "republic",
+        "medicine",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 1.114011586761179
+    },
+    "D_curvelook": {
+      "artifact_in_sample": -3.123394074355753,
+      "beagle_cost_pct": 4.263712450077017,
+      "curve_lopo": -3.1350139732191877,
+      "in_sample": -3.123394074355753,
+      "median_pair": [
+        "beagle",
+        "republic"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 1.0426371245007702,
+        "botany": 0.9959174406853495,
+        "drama": 0.7898798742953711,
+        "essays": 0.9452351509823854,
+        "medicine": 0.999265680220203,
+        "plutarch": 0.9584777105729451,
+        "republic": 1.027992800663556,
+        "travel": 0.9524464536718643
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "republic",
+        "medicine",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 1.0383421230943075
+    },
+    "Doracle_curvelook": {
+      "artifact_in_sample": -4.5148987193991665,
+      "beagle_cost_pct": 6.461536075105601,
+      "curve_lopo": -4.529642090803134,
+      "in_sample": -4.5148987193991665,
+      "median_pair": [
+        "beagle",
+        "republic"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 1.064615360751056,
+        "botany": 0.9879335591619886,
+        "drama": 0.806697512688999,
+        "essays": 0.9445466848998326,
+        "medicine": 0.997823447771983,
+        "plutarch": 0.8366586109691365,
+        "republic": 1.0370701318738764,
+        "travel": 0.9660960236542954
+      },
+      "plutarch_unlock": true,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "republic",
+        "medicine",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 1.0892160399210347
+    },
+    "E_pb6": {
+      "artifact_in_sample": 2.488041016941537,
+      "beagle_cost_pct": -2.3178361927070235,
+      "curve_lopo": 2.488844408608152,
+      "in_sample": 2.488041016941537,
+      "median_pair": [
+        "beagle",
+        "botany"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 0.9768216380729298,
+        "botany": 0.9905614047632562,
+        "drama": 0.8750342566956212,
+        "essays": 0.955213978400696,
+        "medicine": 0.9717764141663325,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.9649154955229178,
+        "travel": 0.9649460321495069
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.8333333333333334,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "botany",
+        "medicine",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5306498147546652
+    },
+    "Foracle_pb6look": {
+      "artifact_in_sample": -0.8344954228589977,
+      "beagle_cost_pct": 4.49027278502101,
+      "curve_lopo": -0.8704715910845243,
+      "in_sample": -0.8344954228589977,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.04490272785021,
+        "botany": 0.9799692870542843,
+        "drama": 0.7864522542750199,
+        "essays": 0.9521946016318052,
+        "medicine": 0.977355941458525,
+        "plutarch": 0.8405351818307379,
+        "republic": 0.9723353340761113,
+        "travel": 1.0008129722066517
+      },
+      "plutarch_unlock": true,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "medicine",
+        "republic",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.8355741997390547
+    }
+  },
+  "posttight": {
+    "base|A_ship": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "base|C_flatlook": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "base|D_curvelook": {
+      "artifact_in_sample": -3.123394074355753,
+      "beagle_cost_pct": 4.263712450077017,
+      "curve_lopo": -3.1350139732191877,
+      "in_sample": -3.123394074355753,
+      "median_pair": [
+        "beagle",
+        "republic"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 1.0426371245007702,
+        "botany": 0.9959174406853495,
+        "drama": 0.7898798742953711,
+        "essays": 0.9452351509823854,
+        "medicine": 0.999265680220203,
+        "plutarch": 0.9584777105729451,
+        "republic": 1.027992800663556,
+        "travel": 0.9524464536718643
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "republic",
+        "medicine",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 1.0383421230943075
+    },
+    "base|E_pb6": {
+      "artifact_in_sample": 2.488041016941537,
+      "beagle_cost_pct": -2.3178361927070235,
+      "curve_lopo": 2.488844408608152,
+      "in_sample": 2.488041016941537,
+      "median_pair": [
+        "beagle",
+        "botany"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 0.9768216380729298,
+        "botany": 0.9905614047632562,
+        "drama": 0.8750342566956212,
+        "essays": 0.955213978400696,
+        "medicine": 0.9717764141663325,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.9649154955229178,
+        "travel": 0.9649460321495069
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.8333333333333334,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "botany",
+        "medicine",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5306498147546652
+    },
+    "base|F_pb6look": {
+      "artifact_in_sample": 1.9714573195900051,
+      "beagle_cost_pct": -1.9792777438416564,
+      "curve_lopo": 1.9415593285327715,
+      "in_sample": 1.9714573195900051,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9802072225615834,
+        "botany": 0.9878511200833313,
+        "drama": 0.8754178141656065,
+        "essays": 0.9605331314919603,
+        "medicine": 0.9810860523295514,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.975959040691983,
+        "travel": 0.9671550432459225
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.5,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5777758839195891
+    },
+    "base|G_pb68": {
+      "artifact_in_sample": 2.488041016941537,
+      "beagle_cost_pct": -2.3178361927070235,
+      "curve_lopo": 2.488844408608152,
+      "in_sample": 2.488041016941537,
+      "median_pair": [
+        "beagle",
+        "botany"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 0.9768216380729298,
+        "botany": 0.9905614047632562,
+        "drama": 0.8750342566956212,
+        "essays": 0.955213978400696,
+        "medicine": 0.9717764141663325,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.9649154955229178,
+        "travel": 0.9649460321495069
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.8333333333333334,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "botany",
+        "medicine",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5306498147546652
+    },
+    "base|H_pb68look": {
+      "artifact_in_sample": 1.9714573195900051,
+      "beagle_cost_pct": -1.9792777438416564,
+      "curve_lopo": 1.9415593285327715,
+      "in_sample": 1.9714573195900051,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9802072225615834,
+        "botany": 0.9878511200833313,
+        "drama": 0.8754178141656065,
+        "essays": 0.9605331314919603,
+        "medicine": 0.9810860523295514,
+        "plutarch": 1.0009310283647526,
+        "republic": 0.975959040691983,
+        "travel": 0.9671550432459225
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.5,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5777758839195891
+    },
+    "log_onePass67|A_ship": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "log_onePass67|C_flatlook": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "log_onePass67|D_curvelook": {
+      "artifact_in_sample": -1.886087927630107,
+      "beagle_cost_pct": 3.210767030677375,
+      "curve_lopo": -1.9013809761095308,
+      "in_sample": -1.886087927630107,
+      "median_pair": [
+        "beagle",
+        "republic"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 1.0321076703067738,
+        "botany": 0.978915389140556,
+        "drama": 0.7769021249394545,
+        "essays": 0.9343809018413846,
+        "medicine": 0.9843168404044764,
+        "plutarch": 0.9167484849165247,
+        "republic": 1.0127322507270173,
+        "travel": 0.9479318795767046
+      },
+      "plutarch_unlock": true,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "republic",
+        "medicine",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.8616541715219329
+    },
+    "log_onePass67|E_pb6": {
+      "artifact_in_sample": 2.8631669838338794,
+      "beagle_cost_pct": -2.4902644100052385,
+      "curve_lopo": 2.830423695553101,
+      "in_sample": 2.8631669838338794,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9750973558999476,
+        "botany": 0.983434012877356,
+        "drama": 0.8676928876763759,
+        "essays": 0.9490178311689791,
+        "medicine": 0.9694712509924953,
+        "plutarch": 1.0007769118095236,
+        "republic": 0.9632309953224016,
+        "travel": 0.9628613518900294
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.8333333333333334,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5135807280933824
+    },
+    "log_onePass67|F_pb6look": {
+      "artifact_in_sample": 2.0839333134200353,
+      "beagle_cost_pct": -2.080217946105767,
+      "curve_lopo": 2.0529072285988548,
+      "in_sample": 2.0839333134200353,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9791978205389423,
+        "botany": 0.9840588830875235,
+        "drama": 0.8688690300384322,
+        "essays": 0.9572923176917616,
+        "medicine": 0.9799408389070536,
+        "plutarch": 1.0007769118095236,
+        "republic": 0.97527892267626,
+        "travel": 0.9651201908107185
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.6666666666666666,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "republic",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5708248635966255
+    },
+    "log_onePass67|G_pb68": {
+      "artifact_in_sample": 2.8676193803164107,
+      "beagle_cost_pct": -2.4545139845681185,
+      "curve_lopo": 2.8369077680644117,
+      "in_sample": 2.8676193803164107,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9754548601543188,
+        "botany": 0.9831454157224284,
+        "drama": 0.862667317479464,
+        "essays": 0.9482264375083725,
+        "medicine": 0.9691115763643802,
+        "plutarch": 0.9998644358889629,
+        "republic": 0.9634282909008071,
+        "travel": 0.9626765321038424
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.6666666666666666,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5211050004130156
+    },
+    "log_onePass67|H_pb68look": {
+      "artifact_in_sample": 2.1574698578283535,
+      "beagle_cost_pct": -2.080018752750379,
+      "curve_lopo": 2.132431352817965,
+      "in_sample": 2.1574698578283535,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9791998124724962,
+        "botany": 0.983997911693212,
+        "drama": 0.8610291033050985,
+        "essays": 0.9555322163846651,
+        "medicine": 0.9785919351082316,
+        "plutarch": 0.9998644358889629,
+        "republic": 0.9724224922539979,
+        "travel": 0.9648504185598795
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.5,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5722474930640578
+    },
+    "log_shipped|A_ship": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "log_shipped|C_flatlook": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "log_shipped|D_curvelook": {
+      "artifact_in_sample": -1.6713689047907045,
+      "beagle_cost_pct": 2.970573518788777,
+      "curve_lopo": -1.6865642812656993,
+      "in_sample": -1.6713689047907045,
+      "median_pair": [
+        "beagle",
+        "republic"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 1.0297057351878878,
+        "botany": 0.9763872737213127,
+        "drama": 0.7735685066363103,
+        "essays": 0.9298399619761688,
+        "medicine": 0.9824337429725855,
+        "plutarch": 0.9167468596449031,
+        "republic": 1.0106501693838834,
+        "travel": 0.9457152851784477
+      },
+      "plutarch_unlock": true,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "republic",
+        "medicine",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.8368025878196891
+    },
+    "log_shipped|E_pb6": {
+      "artifact_in_sample": 3.0381331186940046,
+      "beagle_cost_pct": -2.67214101369051,
+      "curve_lopo": 3.002962460030941,
+      "in_sample": 3.0381331186940046,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9732785898630949,
+        "botany": 0.9813248444575677,
+        "drama": 0.8647654447128903,
+        "essays": 0.9448964764459303,
+        "medicine": 0.9680130061112223,
+        "plutarch": 1.0007749700276494,
+        "republic": 0.9616495785005109,
+        "travel": 0.9610414847988032
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.8333333333333334,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5037480810782531
+    },
+    "log_shipped|F_pb6look": {
+      "artifact_in_sample": 2.2458244232587616,
+      "beagle_cost_pct": -2.249135942491687,
+      "curve_lopo": 2.214688706819079,
+      "in_sample": 2.2458244232587616,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9775086405750831,
+        "botany": 0.982086794880424,
+        "drama": 0.8663035767346571,
+        "essays": 0.9534081497559616,
+        "medicine": 0.9785157439968803,
+        "plutarch": 1.0007749700276494,
+        "republic": 0.9737832497714892,
+        "travel": 0.9634740409967905
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.6666666666666666,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "republic",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5571273739030008
+    },
+    "log_shipped|G_pb68": {
+      "artifact_in_sample": 3.0381331186940046,
+      "beagle_cost_pct": -2.67214101369051,
+      "curve_lopo": 3.002962460030941,
+      "in_sample": 3.0381331186940046,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9732785898630949,
+        "botany": 0.9813248444575677,
+        "drama": 0.8647654447128903,
+        "essays": 0.9448964764459303,
+        "medicine": 0.9680130061112223,
+        "plutarch": 1.0007749700276494,
+        "republic": 0.9616495785005109,
+        "travel": 0.9610414847988032
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.8333333333333334,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5037480810782531
+    },
+    "log_shipped|H_pb68look": {
+      "artifact_in_sample": 2.2458244232587616,
+      "beagle_cost_pct": -2.249135942491687,
+      "curve_lopo": 2.214688706819079,
+      "in_sample": 2.2458244232587616,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9775086405750831,
+        "botany": 0.982086794880424,
+        "drama": 0.8663035767346571,
+        "essays": 0.9534081497559616,
+        "medicine": 0.9785157439968803,
+        "plutarch": 1.0007749700276494,
+        "republic": 0.9737832497714892,
+        "travel": 0.9634740409967905
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.6666666666666666,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "republic",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5571273739030008
+    },
+    "uniform|A_ship": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "uniform|C_flatlook": {
+      "artifact_in_sample": 0.0,
+      "beagle_cost_pct": 0.0,
+      "curve_lopo": 0.0,
+      "in_sample": 0.0,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 1.0,
+        "botany": 1.0,
+        "drama": 1.0,
+        "essays": 1.0,
+        "medicine": 1.0,
+        "plutarch": 1.0,
+        "republic": 1.0,
+        "travel": 1.0
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "essays",
+        "republic",
+        "botany"
+      ],
+      "reordered": false,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.0
+    },
+    "uniform|D_curvelook": {
+      "artifact_in_sample": -1.8813170766638982,
+      "beagle_cost_pct": 2.9978423621460637,
+      "curve_lopo": -1.895602353419488,
+      "in_sample": -1.8813170766638982,
+      "median_pair": [
+        "beagle",
+        "republic"
+      ],
+      "pair_changed": true,
+      "per_prompt_ratio": {
+        "beagle": 1.0299784236214606,
+        "botany": 0.9804007682458359,
+        "drama": 0.7913705863573307,
+        "essays": 0.9353362394489602,
+        "medicine": 0.9879199917388509,
+        "plutarch": 0.9687019554181354,
+        "republic": 1.0145047821545397,
+        "travel": 0.9520056173173178
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 1.0,
+      "rank_stable": true,
+      "rank_vector": [
+        "plutarch",
+        "travel",
+        "drama",
+        "beagle",
+        "republic",
+        "medicine",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.8473731675230622
+    },
+    "uniform|E_pb6": {
+      "artifact_in_sample": 2.9017430604067216,
+      "beagle_cost_pct": -2.547986132891289,
+      "curve_lopo": 2.87083318790314,
+      "in_sample": 2.9017430604067216,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9745201386710871,
+        "botany": 0.9834355099441269,
+        "drama": 0.873459628750424,
+        "essays": 0.9479443426912559,
+        "medicine": 0.9692600992950554,
+        "plutarch": 1.0009978213360862,
+        "republic": 0.9624171947742903,
+        "travel": 0.9637046819382231
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.8333333333333334,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.49909818417608887
+    },
+    "uniform|F_pb6look": {
+      "artifact_in_sample": 2.1241882128387144,
+      "beagle_cost_pct": -2.1295700869455203,
+      "curve_lopo": 2.092893714185555,
+      "in_sample": 2.1241882128387144,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9787042991305448,
+        "botany": 0.9837388862442978,
+        "drama": 0.8756216230708339,
+        "essays": 0.9560561230965002,
+        "medicine": 0.9796525973324578,
+        "plutarch": 1.0009978213360862,
+        "republic": 0.9744756327177383,
+        "travel": 0.9661171468841566
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.6666666666666666,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "republic",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5525073442268259
+    },
+    "uniform|G_pb68": {
+      "artifact_in_sample": 2.9017430604067216,
+      "beagle_cost_pct": -2.547986132891289,
+      "curve_lopo": 2.87083318790314,
+      "in_sample": 2.9017430604067216,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9745201386710871,
+        "botany": 0.9834355099441269,
+        "drama": 0.873459628750424,
+        "essays": 0.9479443426912559,
+        "medicine": 0.9692600992950554,
+        "plutarch": 1.0009978213360862,
+        "republic": 0.9624171947742903,
+        "travel": 0.9637046819382231
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.8333333333333334,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "botany",
+        "republic",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.49909818417608887
+    },
+    "uniform|H_pb68look": {
+      "artifact_in_sample": 2.1241882128387144,
+      "beagle_cost_pct": -2.1295700869455203,
+      "curve_lopo": 2.092893714185555,
+      "in_sample": 2.1241882128387144,
+      "median_pair": [
+        "beagle",
+        "medicine"
+      ],
+      "pair_changed": false,
+      "per_prompt_ratio": {
+        "beagle": 0.9787042991305448,
+        "botany": 0.9837388862442978,
+        "drama": 0.8756216230708339,
+        "essays": 0.9560561230965002,
+        "medicine": 0.9796525973324578,
+        "plutarch": 1.0009978213360862,
+        "republic": 0.9744756327177383,
+        "travel": 0.9661171468841566
+      },
+      "plutarch_unlock": false,
+      "rank_agreement": 0.6666666666666666,
+      "rank_stable": false,
+      "rank_vector": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "medicine",
+        "republic",
+        "botany",
+        "essays"
+      ],
+      "reordered": true,
+      "reproduces_artifact": true,
+      "zero_weight_gain_share": 0.5525073442268259
+    }
+  },
+  "receipt": "d3c491b5",
+  "seeds": [
+    128,
+    129,
+    130,
+    131,
+    132,
+    133
+  ],
+  "ship_rank_vector": [
+    "plutarch",
+    "drama",
+    "travel",
+    "beagle",
+    "medicine",
+    "essays",
+    "republic",
+    "botany"
+  ],
+  "summary": {
+    "cells": 35,
+    "lower_slot": {
+      "beagle": 35
+    },
+    "notes": [],
+    "pair_changed": 11,
+    "plutarch_unlock_cells": [
+      "Boracle_rankedprice",
+      "Doracle_curvelook",
+      "Foracle_pb6look",
+      "log_onePass67|D_curvelook",
+      "log_shipped|D_curvelook"
+    ],
+    "rank_unstable": 17,
+    "reordered": 26,
+    "reproduces_artifact": 35,
+    "upper_slot": {
+      "botany": 3,
+      "medicine": 24,
+      "republic": 8
+    }
+  },
+  "windows": 200
+}
