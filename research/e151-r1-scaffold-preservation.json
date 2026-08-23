@@ -1,0 +1,80 @@
+{
+ "base_sha": "14247cce11216639a04ecfc2798cf0798091ff92",
+ "e151_r1_delta_base_to_head_arm_alone": {
+  "bytes": 8606,
+  "files": 2,
+  "hunks": 4
+ },
+ "e151_r1_delta_frontier_to_base_scaffold_armoff": {
+  "bytes": 23298,
+  "files": 2,
+  "hunks": 14
+ },
+ "e151_r1_delta_frontier_to_head_scaffold_plus_arm": {
+  "bytes": 27728,
+  "files": 2,
+  "hunks": 14
+ },
+ "e151_r1_last_ranked_receipt_for_base": {
+  "published_median": 3.68278758,
+  "source": "F8 section 4 and FINDING 255, advisor reported",
+  "submission": "0cf1637e",
+  "tree": "e09d6aa7"
+ },
+ "e151_r1_receipt_tree_digests_advisor_reported": {
+  "quantized_nax.cpp": "39fa08bd",
+  "quantized_nax.h": "387d1095"
+ },
+ "e151_r1_receipt_tree_digests_locally_verified": false,
+ "e151_r1_receipt_tree_reported_by_advisor": "e09d6aa7",
+ "e151_r1_receipted_surface_equals_frontier_surface": true,
+ "e151_r1_rule145_static_assert_kept_verbatim": true,
+ "e151_r1_scaffold_armoff_patch_applies_clean": true,
+ "e151_r1_scaffold_armoff_patch_bytes": 23294,
+ "e151_r1_scaffold_armoff_patch_reproduces_base_surface": true,
+ "e151_r1_scaffold_is_priced_by_this_candidate": true,
+ "e151_r1_scaffold_preserved_without_base_commit": true,
+ "e151_r1_scaffold_pricing_note": "After the import the R1 diff against the new base is the whole frontier-to-head delta, so one receipt prices the scaffold and the arm together. It cannot separate them. Reading the arm alone needs a second receipt on the arm-off patch, which I did not run and do not propose inside R1.",
+ "e151_r1_un_receipted_delta_on_scored_surface": "Both. The E147 retile scaffold on these two files is on no receipt: the base carries kRetiled, kHostBM, kHostBN, the compute_tile lambda and the RULE 145 static asserts, while the receipted tree and the frontier both carry the stock content. The R1 arm is also on no receipt of ours. So the whole frontier-to-head delta on the scored surface is un-receipted.",
+ "experiment": "E151",
+ "frontier_sha": "0863b06ac16e26e48fc06e97444095b00feb66d4",
+ "harness": "offline",
+ "head_sha": "bd110bc1f2876aeab29d3e76704ed7a15208ef2b",
+ "paths": [
+  "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+  "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp"
+ ],
+ "rung": "R1 scaffold preservation, F8 section 4 and Rule 159",
+ "surface_digests": {
+  "base_14247cce": {
+   "quantized_nax.cpp": {
+    "git_blob_8": "4101da5e",
+    "sha256_8": "5340c1f2"
+   },
+   "quantized_nax.h": {
+    "git_blob_8": "64ed360d",
+    "sha256_8": "cd9f9b1b"
+   }
+  },
+  "frontier_0863b06a": {
+   "quantized_nax.cpp": {
+    "git_blob_8": "d2d80a72",
+    "sha256_8": "39fa08bd"
+   },
+   "quantized_nax.h": {
+    "git_blob_8": "11f7b087",
+    "sha256_8": "387d1095"
+   }
+  },
+  "head": {
+   "quantized_nax.cpp": {
+    "git_blob_8": "2ecdc4da",
+    "sha256_8": "e7c55209"
+   },
+   "quantized_nax.h": {
+    "git_blob_8": "f7a7a325",
+    "sha256_8": "50cf7876"
+   }
+  }
+ }
+}

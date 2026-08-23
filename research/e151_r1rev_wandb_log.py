@@ -93,6 +93,14 @@ def main() -> int:
         flatten("e151_r1_frontier_reapply",
                 json.loads(reapply.read_text()), summary)
 
+    scaffold = ROOT / "research/e151-r1-scaffold-preservation.json"
+    if scaffold.is_file():
+        doc = json.loads(scaffold.read_text())
+        # These keys are already namespaced by the generator, so prefixing
+        # again would bury the Rule 159 fields the advisor reads directly.
+        flatten("", {k: v for k, v in doc.items() if k.startswith("e151_")},
+                summary)
+
     if args.gates:
         gates = json.loads(pathlib.Path(args.gates).read_text())
         flatten("gate_chain", gates, summary)
