@@ -1569,8 +1569,16 @@ python3 research/e145_r5.py --seeds 6 --windows 200 --draws 400
 python3 research/e145_r6.py
 python3 research/e145_r7.py --seeds 6 --windows 200 --draws 2000
 python3 research/e145_r7_state.py --seeds 6 --windows 200
+python3 research/e145_e128_adapter_probe.py
 python3 research/e145_wandb_log.py
 ```
+
+The published run is
+`https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/xml6y0ya`
+(`e145-live-width-cost-curve-final`), which carries every `e145_*` key in this
+document, the 53 timed legs and the R2 through R7-5 tables. Run `m9omjs7k` is
+the same logger one commit earlier, before R7-5 existed; where the two differ,
+`xml6y0ya` is the one to read.
 
 Timed sessions hold the GPU and take the real cool gate; the analysis steps
 use no GPU. `e145_r4_both.sh` runs the measured and replayed cost models and
