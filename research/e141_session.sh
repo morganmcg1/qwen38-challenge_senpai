@@ -45,29 +45,38 @@ stage="${1:-}"; shift || true
 steps=512
 depth=8
 arms="shipped,full"
+no_sandbox=0
 while (($#)); do
   case "$1" in
     --steps) steps="$2"; shift 2 ;;
     --depth) depth="$2"; shift 2 ;;
     --arms)  arms="$2"; shift 2 ;;
     --seeds) seeds="${2//,/ }"; shift 2 ;;
+    # Lets the worker write the arm witness file. It also unblocks the golden
+    # path from the worker, so keep it on debug legs and off the legs whose
+    # acceptance is reported.
+    --no-sandbox) no_sandbox=1; shift ;;
     *) echo "e141-session: unknown flag '$1'" >&2; exit 2 ;;
   esac
 done
 ref_dir="${out}/reference"
 verify_dir="${out}/verify"
 
-# An arm is `<prefix>` or `<prefix>@<probes>`. `shipped` exports nothing at
-# all, so its leg is the compiled default. `full` widens the table and keeps
-# the declared probe fraction, which is what rung 2 timed. `armA*` widens the
-# table and pins the absolute probe count, so the row pass keeps the shipped
-# byte cost and only the centroid pass grows.
+# An arm is `<prefix>`, `<prefix>@<probes>` or `<prefix>@<probes>:<rowsPerLeaf>`.
+# `shipped` exports nothing at all, so its leg is the compiled default. `full`
+# widens the table and keeps the declared probe fraction, which is what rung 2
+# timed. `armA*` widens the table and pins the absolute probe count, so the row
+# pass keeps the shipped byte cost and only the centroid pass grows. `armB*`
+# widens the leaf as well, which holds the centroid pass too.
 arm_spec() {
   case "$1" in
     shipped)    echo "" ;;
     full)       echo "248320" ;;
-    armA)       echo "248320@3073" ;;   # p25 shipped probe count, this base
-    armA1844)   echo "248320@1844" ;;   # p15 shipped probe count, thorfinn
+    armA)       echo "248320@3073" ;;      # p25 shipped probe count, this base
+    armA1844)   echo "248320@1844" ;;      # p15 shipped probe count, thorfinn
+    armB20)     echo "248320@1229:20" ;;   # 12,416 leaves, +0.19 MB
+    armB16)     echo "248320@1536:16" ;;   # 15,520 leaves, +5.15 MB
+    leaf16)     echo "98304@1536:16" ;;    # coarser leaf, shipped vocabulary
     *)          echo "$1" ;;
   esac
 }
@@ -76,13 +85,19 @@ arm_prefix() { local s; s="$(arm_spec "$1")"; echo "${s%%@*}"; }
 arm_probes() {
   local s
   s="$(arm_spec "$1")"
-  [[ "${s}" == *@* ]] && echo "${s##*@}" || echo ""
+  s="${s#*@}"
+  [[ "$(arm_spec "$1")" == *@* ]] && echo "${s%%:*}" || echo ""
+}
+arm_leaf() {
+  local s
+  s="$(arm_spec "$1")"
+  [[ "${s}" == *:* ]] && echo "${s##*:}" || echo ""
 }
 
 echo "e141-session: cli    $(shasum -a 256 ${cli} | cut -d' ' -f1)"
 echo "e141-session: worker $(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | cut -d' ' -f1)"
 echo "e141-session: head   $(git rev-parse HEAD)"
-echo "e141-session: steps ${steps} depth ${depth} arms ${arms}"
+echo "e141-session: steps ${steps} depth ${depth} arms ${arms} no_sandbox ${no_sandbox}"
 
 case "${stage}" in
 plans)
@@ -146,22 +161,26 @@ verify|repeat)
   for arm in ${arms//,/ }; do
     prefix="$(arm_prefix "${arm}")"
     nprobes="$(arm_probes "${arm}")"
-    tag="${arm//@/p}"
+    nleaf="$(arm_leaf "${arm}")"
+    tag="${arm//@/p}"; tag="${tag//:/L}"
     for name in ${seeds}; do
       golden="${ref_dir}/${name}_${steps}.json"
       [[ -s "${golden}" ]] || { echo "e141-session: missing golden ${name}"; continue; }
       dest="${verify_dir}/${name}_${tag}_${steps}${suffix}.json"
       if [[ -s "${dest}" ]]; then echo "=== skip verify ${name} ${arm} ==="; continue; fi
       echo "=== verify ${name} arm=${arm} prefix=${prefix:-unset}" \
-           "probes=${nprobes:-declared} depth=${depth} ==="
+           "probes=${nprobes:-declared} leaf=${nleaf:-8} depth=${depth} ==="
       start=$(date +%s)
       log="${verify_dir}/${name}_${tag}${suffix}.leg.log"
-      # The model runs in a sandboxed worker whose stderr is drained and shown
-      # only on failure, so the arm witness needs its own file.
+      # The runtime worker sandbox denies every write except /dev/null and the
+      # parent discards worker stderr on success, so the witness file only
+      # appears under --no-sandbox.
       witness="${verify_dir}/${name}_${tag}_${steps}${suffix}.arm.txt"
       rm -f "${witness}"
       if env ${prefix:+MLX_E141_DRAFT_PREFIX=${prefix}} \
         ${nprobes:+MLX_E141_PROBES=${nprobes}} \
+        ${nleaf:+MLX_E141_ROWS_PER_LEAF=${nleaf}} \
+        $( ((no_sandbox)) && echo MLXFAST_NO_SANDBOX=1 ) \
         MLX_E141_WITNESS_FILE="${witness}" ${cli} mtp-verify \
         --golden "${golden}" \
         --mtp-head "${head_dir}" \
@@ -172,7 +191,7 @@ verify|repeat)
         mv "${log}" "${verify_dir}/${name}_${tag}${suffix}.ok.log"
         if [[ -s "${witness}" ]]; then
           sort -u "${witness}"
-        else
+        elif ((no_sandbox)); then
           echo "e141-session: NO ARM WITNESS for ${name} ${arm}" >&2
         fi
         jq -r '"e141-session: parity=\(.parity_all_ok) matched=\(.all_tokens_matched)"
@@ -182,16 +201,17 @@ verify|repeat)
                + " head=\(.head_provenance.sha256[0:12])"' "${dest}"
         echo "e141-session: ${name} ${arm} in $(( $(date +%s) - start ))s"
       else
-        mv "${log}" "${verify_dir}/${name}_${arm}${suffix}.failed.log"
+        mv "${log}" "${verify_dir}/${name}_${tag}${suffix}.failed.log"
         rm -f "${dest}"
         echo "e141-session: ${name} ${arm} FAILED" >&2
-        tail -20 "${verify_dir}/${name}_${arm}${suffix}.failed.log" >&2
+        tail -20 "${verify_dir}/${name}_${tag}${suffix}.failed.log" >&2
       fi
     done
   done
   ;;
 all)
   flags=(--steps "${steps}" --depth "${depth}" --arms "${arms}" --seeds "${seeds// /,}")
+  ((no_sandbox)) && flags+=(--no-sandbox)
   "$0" plans --seeds "${seeds// /,}" || exit $?
   "$0" reference "${flags[@]}" || exit $?
   "$0" verify "${flags[@]}" || exit $?

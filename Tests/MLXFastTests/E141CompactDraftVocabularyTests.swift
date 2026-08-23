@@ -111,6 +111,92 @@ struct E141CompactDraftVocabularyTests {
         #expect(perThread(3_073 * rowsPerLeaf) <= 32)
     }
 
+    /// Arm B widens the leaf instead of the probe list, so the leaf count and
+    /// the centroid-pass bytes stay near today's. The width must divide the
+    /// padded row count exactly, which is why it has to stay arm-scoped: the
+    /// shipped 98,336 rows do not divide by 20.
+    @Test
+    func theWidenedLeafOnlyDividesTheArmsThatUseIt() {
+        #expect(qwen35E141RowsPerLeafOverride == nil,
+                "a test process must not carry MLX_E141_ROWS_PER_LEAF")
+
+        let shipped = qwen35CompactDraftCounts(prefix: Self.shippedPrefix).padded
+        let full = qwen35CompactDraftCounts(prefix: Self.vocabulary).padded
+        #expect(shipped % 20 != 0, "the shipped table must not take a 20-row leaf")
+        #expect(full % 16 == 0)
+        #expect(full % 20 == 0)
+
+        // The reported arm B byte table: leaves x 1600 B centroid pass plus
+        // probes x rowsPerLeaf x 1600 B row pass, against a shipped
+        // 12,292-leaf / 24,584-row readout.
+        let shippedLeaves = shipped / 8
+        let shippedRows = 3_073 * 8
+        #expect(shippedLeaves == 12_292)
+        #expect(shippedRows == 24_584)
+        for (rowsPerLeaf, probes) in [(8, 3_073), (16, 1_536), (20, 1_229)] {
+            let leaves = full / rowsPerLeaf
+            let deltaMB =
+                Double((leaves - shippedLeaves) + (probes * rowsPerLeaf - shippedRows))
+                * 1600 / 1_000_000
+            switch rowsPerLeaf {
+            case 8: #expect(leaves == 31_040 && abs(deltaMB - 30.00) < 0.01)
+            case 16: #expect(leaves == 15_520 && abs(deltaMB - 5.15) < 0.01)
+            default: #expect(leaves == 12_416 && abs(deltaMB - 0.19) < 0.01)
+            }
+            #expect(probes >= 1 && probes <= leaves)
+            #expect(probes * rowsPerLeaf > 32, "the shortlist must exceed the rerank width")
+        }
+    }
+
+    /// The generalised leaf QMV must agree with the `gatherQuantizedMM` it
+    /// replaces at every leaf width an arm can ask for, and no worse than the
+    /// shipped eight-row width already does.
+    @Test
+    func theGeneralisedLeafQMVMatchesTheGatherItReplaces() {
+        guard Self.runtimeEnabled else { return }
+        let clusters = 512, probes = 64
+        for rowsPerCluster in [8, 16, 20] {
+            let got = qwen35VerifyClusterRowQMV(
+                clusters: clusters, rowsPerCluster: rowsPerCluster, probes: probes)
+            #expect(got.routed, "leaf width \(rowsPerCluster) did not reach the kernel")
+            #expect(got.maxAbsDiff == 0,
+                    "leaf width \(rowsPerCluster) drifts \(got.maxAbsDiff) from the gather")
+
+            // Rule 101: the same comparison over damaged weights must move the
+            // fused scores. That both proves the inputs reach the kernel and
+            // demonstrates the difference is not structurally pinned at zero.
+            let damaged = qwen35VerifyClusterRowQMV(
+                clusters: clusters, rowsPerCluster: rowsPerCluster, probes: probes,
+                damageRow: true)
+            #expect(damaged.checksum != got.checksum,
+                    "the damaged control did not move the fused scores")
+            #expect(damaged.maxAbsDiff <= 1e-3,
+                    "damaged leaf width \(rowsPerCluster) disagrees by \(damaged.maxAbsDiff)")
+        }
+
+        // A width the dispatch must refuse rather than mis-address.
+        #expect(!qwen35VerifyClusterRowQMV(
+            clusters: clusters, rowsPerCluster: 6, probes: probes).routed)
+    }
+
+    /// The fused row top-32 address arithmetic already threads the leaf width,
+    /// so arm B must not need a second selection path.
+    @Test
+    func theRowTop32SelectionFollowsTheWidenedLeaf() {
+        guard Self.runtimeEnabled else { return }
+        for (rowsPerCluster, clusters, probes) in
+            [(8, 12_292, 3_073), (20, 12_416, 1_229)]
+        {
+            let (checked, bad, firstBad) = qwen35VerifyRowTop32(
+                clusters: clusters, rowsPerCluster: rowsPerCluster, probes: probes,
+                trials: 8)
+            #expect(checked == 8)
+            #expect(bad == 0, "row top-32 mismatch at leaf width \(rowsPerCluster), first bad trial \(firstBad)")
+        }
+        #expect(qwen35RowTop32PositiveControl(
+            clusters: 12_416, rowsPerCluster: 20, probes: 1_229))
+    }
+
     @Test
     func everyBoundKeepsTheLeafGroupingAndTheRowAccounting() {
         for prefix in Self.bounds {

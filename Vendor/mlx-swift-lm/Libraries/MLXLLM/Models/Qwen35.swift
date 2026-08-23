@@ -4226,6 +4226,22 @@ public let qwen35E141ProbeCountOverride: Int? = {
     return value
 }()
 
+/// `MLX_E141_ROWS_PER_LEAF` widens the derived index's leaf instead of its
+/// probe list, so a widened vocabulary keeps today's leaf COUNT and therefore
+/// today's centroid-pass bytes. Four rows are one `qwen_e121_a2_qmv4` call, so
+/// the width must stay a multiple of four, and 32 rows already fill eight
+/// simdgroups. Unset takes the shipped eight-row leaf bit for bit.
+public let qwen35E141RowsPerLeafOverride: Int? = {
+    guard let raw = ProcessInfo.processInfo.environment["MLX_E141_ROWS_PER_LEAF"],
+          !raw.isEmpty
+    else { return nil }
+    guard let value = Int(raw), value >= 4, value <= 32, value % 4 == 0 else {
+        fatalError(
+            "MLX_E141_ROWS_PER_LEAF must be a multiple of 4 in [4, 32]; got \(raw)")
+    }
+    return value
+}()
+
 /// Derived row counts of the compact draft vocabulary at one prefix bound.
 ///
 /// Qwen's official text/control tokens 248,044 ... 248,069 are appended after
@@ -4922,7 +4938,13 @@ private func qwen35ClusterRowQMV(
     guard qwen35ClusterQMVRoutable(
         x: x, weight: weight, scales: scales, biases: biases, hidden: hidden)
     else { return nil }
-    guard rowsPerCluster == 8, probes >= 1, probes <= clusters else { return nil }
+    // One simdgroup emits the four rows of `qwen_e121_a2_qmv4`, and the kernel
+    // reads the leaf width from `w_shape[1]`, so the width only has to be a
+    // whole number of simdgroups. Eight rows stay two simdgroups and dispatch
+    // exactly as before.
+    guard rowsPerCluster % 4 == 0, rowsPerCluster >= 4, rowsPerCluster <= 32,
+          probes >= 1, probes <= clusters
+    else { return nil }
     guard weight.ndim == 3,
           weight.shape == [clusters, rowsPerCluster, hidden / 16],
           scales.ndim == 3,
@@ -4930,10 +4952,11 @@ private func qwen35ClusterRowQMV(
           biases.shape == scales.shape,
           probed.dtype == .uint32, probed.dim(0) == probes
     else { return nil }
+    let simdgroups = rowsPerCluster / 4
     return qwen35ClusterRowQMVKernel(
         [x.reshaped([hidden]), weight, scales, biases, probed],
-        grid: (32, probes * 2, 1),
-        threadGroup: (32, 2, 1),
+        grid: (32, probes * simdgroups, 1),
+        threadGroup: (32, simdgroups, 1),
         outputShapes: [[probes * rowsPerCluster]],
         outputDTypes: [.bfloat16]
     )[0]
@@ -5311,6 +5334,51 @@ public func qwen35VerifyRowTop32(
     return (trials, bad, firstBad)
 }
 
+/// Offline equivalence gate for the gathered leaf QMV at a chosen leaf width.
+/// Compares the fused kernel against the `gatherQuantizedMM` expression it
+/// replaces, on the same quantized tensors, and reports the worst absolute
+/// difference beside a checksum of the fused scores.
+///
+/// `damageRow` raises one row of every leaf before quantization. Both sides
+/// then read the damaged rows, so the checksum must move while the agreement
+/// holds: that pair shows the kernel reads its inputs and that the reported
+/// difference is not structurally pinned at zero.
+///
+/// Needs no checkpoint and no MTP head, and runs on no scored path.
+public func qwen35VerifyClusterRowQMV(
+    clusters: Int, rowsPerCluster: Int, probes: Int, hidden: Int = 5_120,
+    seed: UInt64 = 3, damageRow: Bool = false
+) -> (routed: Bool, maxAbsDiff: Double, checksum: Double) {
+    MLXRandom.seed(seed)
+    let x = MLXRandom.normal([hidden]).asType(.bfloat16)
+    var rows = MLXRandom.normal([clusters, rowsPerCluster, hidden])
+    if damageRow {
+        rows[0..., 0] = rows[0..., 0] + MLXArray(Float(8))
+    }
+    let q = quantized(rows.asType(.bfloat16), groupSize: 64, bits: 2, mode: .affine)
+    guard let qBiases = q.biases else { return (false, .nan, .nan) }
+    let centroid = MLXRandom.normal([clusters]).asType(.bfloat16)
+    let probed = MLX.sorted(
+        MLX.argPartition(centroid, kth: clusters - probes)[(clusters - probes)...]
+    ).asType(.uint32)
+    eval(x, q.wq, q.scales, qBiases, probed)
+    guard let mine = qwen35ClusterRowQMV(
+        x, weight: q.wq, scales: q.scales, biases: qBiases, probed: probed,
+        clusters: clusters, rowsPerCluster: rowsPerCluster, probes: probes,
+        hidden: hidden)
+    else { return (false, .nan, .nan) }
+    let theirs = gatherQuantizedMM(
+        x.reshaped([1, 1, hidden]), q.wq, scales: q.scales, biases: qBiases,
+        lhsIndices: MLX.zeros([probes], dtype: .uint32), rhsIndices: probed,
+        transpose: true, groupSize: 64, bits: 2, mode: .affine,
+        sortedIndices: true
+    ).reshaped([probes * rowsPerCluster])
+    let diff = MLX.abs(mine.asType(.float32) - theirs.asType(.float32)).max()
+    let checksum = MLX.abs(mine.asType(.float32)).sum()
+    eval(diff, checksum)
+    return (true, Double(diff.item(Float.self)), Double(checksum.item(Float.self)))
+}
+
 /// Positive control for `qwen35VerifyRowTop32`. Raises the single lowest row
 /// score above every other row, which must displace exactly one selected id,
 /// and requires the comparison to report the difference. A gate that cannot
@@ -5518,6 +5586,23 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     private static let derivedClusterRowsPerLeaf = 8
     private static let derivedClusterIterations = 8
     private static let derivedClusterCentroidBits = 2
+
+    /// Leaf width of the derived index for THIS arm. A wider leaf holds the
+    /// leaf count, and therefore the centroid-pass bytes, while the table it
+    /// covers grows. The width must divide the padded row count exactly:
+    /// `qwen35BisectingPartition` splits a node into whole leaves and leaves
+    /// no room for a partial one.
+    private static var activeClusterRowsPerLeaf: Int {
+        guard let width = qwen35E141RowsPerLeafOverride else {
+            return derivedClusterRowsPerLeaf
+        }
+        guard compactDraftPaddedCount % width == 0 else {
+            fatalError(
+                "MLX_E141_ROWS_PER_LEAF=\(width) does not divide the padded draft "
+                + "row count \(compactDraftPaddedCount)")
+        }
+        return width
+    }
 
     /// MTP head. Non-nil only when `_qwen35MTPEnabled == true` at init time
     /// AND `args.mtpNumHiddenLayers > 0`.
@@ -6041,7 +6126,7 @@ extension Qwen35TextModel: MTPCapable {
               let exactBiases = exact.biases
         else { return }
 
-        let rowsPerLeaf = Self.derivedClusterRowsPerLeaf
+        let rowsPerLeaf = Self.activeClusterRowsPerLeaf
         let leaves = Self.compactDraftPaddedCount / rowsPerLeaf
         let hidden = configuration.hiddenSize
         let rows = dequantized(
@@ -6073,8 +6158,9 @@ extension Qwen35TextModel: MTPCapable {
             ?? declaredProbes
         // Rule 114: the arm must be readable from the run's own output, and
         // only the effective count after the leaf clamp proves it. `mtp-verify`
-        // runs the model in a sandboxed worker whose stderr is drained into a
-        // pipe and surfaced only on failure, so a successful leg needs a file.
+        // runs the model in a worker whose sandbox profile denies every write
+        // except `/dev/null` and whose stderr the parent discards on success,
+        // so this file needs `MLXFAST_NO_SANDBOX=1` on the wrapper.
         if let witnessPath = ProcessInfo.processInfo
             .environment["MLX_E141_WITNESS_FILE"], !witnessPath.isEmpty
         {
@@ -6082,7 +6168,8 @@ extension Qwen35TextModel: MTPCapable {
                 + "real=\(Self.compactDraftRealCount) leaves=\(leaves) "
                 + "rowsPerLeaf=\(rowsPerLeaf) declaredProbes=\(declaredProbes) "
                 + "effectiveProbes=\(probes) probedRows=\(probes * rowsPerLeaf) "
-                + "override=\(qwen35E141ProbeCountOverride.map(String.init) ?? "none")\n"
+                + "probeOverride=\(qwen35E141ProbeCountOverride.map(String.init) ?? "none") "
+                + "leafOverride=\(qwen35E141RowsPerLeafOverride.map(String.init) ?? "none")\n"
             let data = Data(witness.utf8)
             if let handle = FileHandle(forWritingAtPath: witnessPath) {
                 handle.seekToEndOfFile()
