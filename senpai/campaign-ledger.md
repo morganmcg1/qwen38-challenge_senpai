@@ -51804,3 +51804,329 @@ PR #143  askeladd  E143  r1          the beagle acceptance decomposition, R0 cen
 Thorfinn holds the submission until `depthPriceArm` defaults to `.ship`. I authorised him by name to make that one-line edit in edward's file and told edward in the same cycle. Predicted landing zone for the clean archive, being tight grid plus width-2 plus probe 0.15 plus `Table.shipped` with no `pb6`, is **3.69 to 3.71** against a crown of `3.70355222`. That is a coin flip and worth taking: under F195 a rejected row still publishes full eight-prompt evidence, and this one isolates width-2 on our own tree while confirming the revert.
 
 **Queued and unowned after this entry:** the 2-D `(h, tier)` depth-price search with a live same-binary A/B in beagle's regime, which is the direct successor to F210; the round-boundary bubble census at about 8.7 % of unattributed round time; per-position head-side confidence; the P4 GDN S=2 mid-state write; F190's apparent one-width cliff move, where the E92 axis label must be checked first.
+
+## 300 — FINDING 211, FINDING 212, CAMPAIGN RULE 123: the noise floor is the serial leg, and the upper median slot is a minimum over four prompts
+
+Advisor round following the `e003a86d` rejection. Board refreshed at 01:20Z, 1,172 rows.
+Instruments added this round: `research/f209_compose.py`, `research/f211_null_floor.py`,
+`research/f211_merit_vs_luck.py`.
+
+### 300.1 Board state
+
+The crown `1760479a` (scarletbright, 3.70355222, source `e8f14c44`) has now held for
+four hours. Five separate attempts landed at 3.686 to 3.699 and every one was rejected.
+
+```
+PROMOTED top 3
+  1760479a scarletbright  3.70355222  22:58:31Z  src=e8f14c44   width-2 launch shrink
+  08b67f12 jungjipdo      3.69071883  21:02:29Z  src=1d66bb36   tight grid + probe 0.15
+  ed608e64 jungjipdo      3.68172016  19:47:14Z  src=8849fad7   tight grid alone
+
+REJECTED near the crown
+  749b4c7e scarletbright  3.69882651   crown + 23 warm-only insertions
+  a323a8ed nagaral        3.69133669
+  c466d4d7 fkiene         3.68622479
+  890594e9 newjordan      3.68609574
+  09b452f3 igneous-prose  3.66055344   fastest candidate leg on the whole board
+```
+
+Our two rejected receipts remain `572b2cc4` at 3.66218564 and `e003a86d` at 3.57502547.
+
+### 300.2 FINDING 211 — the published-median noise floor is the serial leg, and the candidate leg is five times quieter
+
+Campaign Rule 120 set the diff-of-two floor at 0.15 % on the eight-prompt candidate mean.
+That number was fitted to pairs of genuinely different trees, so it absorbed real mechanism
+differences and was too pessimistic.
+
+A true null pair cannot be found from the draft schedule. The schedule is deterministic
+given the prompt and the head, so any tree that changes only time produces a digit-identical
+draft-length vector. A detector built on that key pools 58,402 unrelated pairs and is useless.
+The correct detector is **tightness**: if the eight per-prompt candidate times agree with a
+residual scatter far below any known mechanism, the two candidate binaries are doing the
+same work.
+
+Applying a 0.15 % scatter cut to the 33 rows with real drafting since 15:00Z yields **20 true
+null pairs drawn from nine solvers**: vibecodooor, jonathan308, ofou, Amal-David, Carme99,
+newjordan, jungjipdo, nagaral, scarletbright.
+
+```
+                                          diff-of-two sd
+candidate 8-prompt mean                       0.0731 %
+serial    8-prompt mean                       0.1695 %
+published median delta                        0.2253 %
+
+model  published delta = serial medpair delta - candidate medpair delta
+residual of that model across all twenty pairs   0.0093 %
+```
+
+The model reproduces every one of the twenty pairs to 0.0093 %, which is 24 times below the
+scatter it explains.
+
+The cleanest single pair is decisive on its own. `749b4c7e` is scarletbright's own crown tip
+plus 23 warm-only insertions in `Qwen36MTPBlockSession.swift`, confirmed from the public note:
+
+```
+1760479a -> 749b4c7e
+candidate 8-prompt mean  -0.0086 %   sd 0.0327 %
+serial    8-prompt mean  +0.0182 %   sd 0.1902 %
+published median delta   -0.1276 %
+draft lengths and non-drafting counts digit-identical on all eight prompts
+```
+
+Identical candidate work, and the board moved 0.128 %.
+
+Serial-leg scatter measured directly over the same window, where the serial leg is identical
+code in every row:
+
+```
+serial 8-prompt mean, per-row sd     0.1017 %
+serial 8-prompt mean, diff of two    0.1438 %
+```
+
+Consequences.
+
+1. **The candidate leg is a 3.08 times more precise instrument than the published median.**
+   Campaign Rule 118 was directionally right and is now quantitatively justified.
+2. **A single ranked receipt resolves a candidate-leg mechanism to about 0.15 % at 2 sigma**,
+   not the 0.30 % Rule 120 implied, provided absolute candidate time is read and no ratio
+   against the serial leg is taken.
+3. **Two rows carrying identical candidate code can differ by plus or minus 0.45 % of
+   published median at 2 sigma.** The observed range among the twenty pairs is −0.5160 % to
+   +0.3609 %, a spread of 0.877 pp.
+4. **Campaign Rule 72 is reaffirmed and is now load-bearing.** The serial lottery is exactly
+   the re-roll lever that rule forbids. We do not resubmit an unchanged candidate. The only
+   legitimate way to move the score is to move the candidate leg.
+
+Rule 120 is superseded on the candidate axis and retained on the published-median axis.
+
+### 300.3 The board ordering is partly a lottery result
+
+`research/f211_merit_vs_luck.py` scores every recent row on two independent axes: medpair
+candidate seconds per token relative to the window mean, where lower is genuinely better
+work, and medpair serial seconds per token, where higher is pure luck because a slower
+baseline inflates every raw ratio.
+
+```
+id        solver           score      cand%  serial%  rank c  rank s
+1760479a  scarletbright  3.703552   -2.3707  -0.0149      2      10
+749b4c7e  scarletbright  3.698827   -2.3676  -0.1441      3      22
+a323a8ed  nagaral        3.691337   -1.9235  +0.1271      5       6
+08b67f12  jungjipdo      3.690719   -1.9100  +0.1022      6       7
+c466d4d7  fkiene         3.686225   -1.6757  +0.2326      7       1
+890594e9  newjordan      3.686096   -1.9530  -0.0589      4      16
+09b452f3  igneous-prose  3.660553   -3.4914  +0.0208      1       9
+572b2cc4  morganmcg1     3.662186   -1.3929  -0.1417     10      21
+```
+
+The leader is candidate rank 2 of 24, so the crown is genuine work and not a fluke. But the
+row with the **fastest candidate leg on the entire board scored eleventh**. That is Finding 212.
+
+### 300.4 FINDING 212 — a rival reproduced our pb6 failure exactly, and it exposes the real objective
+
+`09b452f3` (igneous-prose, 23:01Z, rejected at 3.66055344) has medpair candidate seconds per
+token 3.4914 % below the window mean, against the crown's 2.3707 %. Its candidate is
+**1.15 % faster than the crown's** and it scored **1.16 % lower**.
+
+```
+1760479a -> 09b452f3
+prompt      cand d%    raw d%       draftlen A/B     nondraft A/B
+beagle      +0.2391   -0.2414    4.3818/4.4771          0/0
+essays      -2.6555   +2.8044    5.0870/5.3563          0/0
+republic    +3.4118   -3.1254    4.9892/4.7172          0/0
+botany      +2.3075   -2.0184    6.1481/5.9059          0/0
+medicine    +0.8428   -0.4979    5.2556/5.1087          0/0
+travel      +1.1272   -0.7739    2.6479/2.5694          0/0
+drama       -1.7659   +2.1786    2.2976/2.2389          0/0
+plutarch   -50.8794 +103.9277    0.1557/2.7778        449/0
+published median delta  -1.1610 %
+```
+
+The plutarch row carries the same signature Finding 210 derived for a global depth-price
+subsidy and the same signature our own `e003a86d` produced: draft length 0.1557 to 2.7778,
+non-drafting rounds 449 to 0, raw ratio up 103.93 %. Two independent solvers, different code,
+same mechanism class, same outcome, one hour apart.
+
+```
+09b452f3 sorted
+  0 drama     2.17182
+  1 travel    2.40381
+  2 plutarch  2.56531   rose three ranks
+  3 beagle    3.54173   <== median pair
+  4 republic  3.77937   <== median pair
+  5 botany    3.85106
+  6 medicine  3.87413
+  7 essays    3.96496   left the pair; best essays figure any solver has posted
+```
+
+Had essays stayed in the median pair their score would have been **3.7533**, which is 1.35 %
+**above** the crown. Instead essays climbed out, republic fell 3.13 %, and republic took the
+upper slot.
+
+### 300.5 CAMPAIGN RULE 123 — the upper median slot is a minimum over four prompts
+
+Rule 121 said to sort and read positions 3 and 4. Finding 212 sharpens what that means. On
+every recent tree plutarch, drama and travel sit far below and beagle sits reliably at rank 3.
+Therefore:
+
+```
+published median = ( beagle + min(essays, republic, medicine, botany) ) / 2
+```
+
+**The upper slot is a minimum over four prompts. It is a worst case, not an average.**
+
+- A mechanism that helps essays a great deal and hurts republic loses, even when the
+  eight-prompt candidate mean improves.
+- The protective buffers at the crown are thin: medicine **0.94 %**, republic **1.15 %**,
+  botany **1.91 %**. A mechanism that costs any one of those more than its buffer starts
+  destroying the median at 0.52 % per percent while still looking like a win everywhere else.
+- **The safest class is not the largest gain, it is the uniform gain.** A uniform gain
+  converts exactly one to one, has no ceiling, and cannot manufacture a new minimum.
+- A depth-price cell that unlocks plutarch is a warning sign, not a win. Plutarch carries
+  exactly zero weight at any magnitude.
+
+### 300.6 The ceiling table, and why beagle is now the whole benchmark
+
+`research/f209_reorder_value.py --anchor 1760479a`:
+
+```
+sorted raw ratios
+  0 plutarch    1.25795  gap to next +68.967 %
+  1 drama       2.12552  gap to next +13.975 %
+  2 travel      2.42256  gap to next +46.551 %
+  3 beagle      3.55030  gap to next  +8.633 %  <== median pair
+  4 essays      3.85680  gap to next  +0.952 %  <== median pair
+  5 medicine    3.89352  gap to next  +0.200 %
+  6 republic    3.90130  gap to next  +0.746 %
+  7 botany      3.93039
+
+SINGLE-PROMPT SATURATION
+  prompt     dM/dx at 0   CEILING x   CEILING value
+  beagle        0.4793      9.670 %      +4.6336 %
+  essays        0.5207      0.955 %      +0.4957 %
+  all others    0.0000      0.000 %      +0.0000 %
+```
+
+**Beagle can carry the published median +4.6336 %. Everything else combined can carry it
++0.4957 %. The ratio is 9.35 to 1.**
+
+Beagle's deficit is acceptance, not round time: its rounds are cheaper than essays' and it
+loses by running 18 more of them. At the geometric sensitivity `dT/dp = 16.82` for
+`p = 0.9341`, each +0.001 of beagle per-step acceptance is about +0.29 % of beagle raw.
+Closing the full 0.0306 gap to essays' `p = 0.9647` is about +8.9 % of beagle raw, which is
+about **+4.3 % of published median and 92 % of the entire remaining ceiling**.
+
+Askeladd's E143 owns that axis. Its C-d fork is now a campaign-level decision.
+
+### 300.7 Re-pricing the two live mechanisms under Rules 121 and 123
+
+**Thorfinn F22, width-6 register occupancy.** Gain shape from Edward's E134 replayed width-6
+mass (W&B run `0ei0glho`) divided by ranked per-prompt round time, normalised to beagle:
+
+```
+essays 1.918  drama 2.008  travel 1.553  botany 0.952
+medicine 0.783  republic 0.544  plutarch 0.002
+
+at the point estimate -> median 3.72575889  (+0.5996 %)
+sorted: beagle 3.56471 < essays 3.88681 < medicine 3.90589 < republic 3.90991
+```
+
+F22 is **not capped**: essays keeps the upper slot with 0.49 % of buffer left. Crown plus F22
+is 3.72576, a 2.7 sigma move against the 0.2253 % lottery, so roughly 97 % at the point
+estimate and about 78 % at the bottom half of the band.
+
+**Alphonse E141 arm A.** Prize confirmed anchor-invariant at **+0.9495 %** on both `1760479a`
+and `572b2cc4`. But essays finishes at 3.89231 against medicine at 3.89352, a margin of
+**0.031 %**, so 96.7 % of the essays cap is consumed and **0.0163 pp of the essays axis
+remains for the rest of the campaign**.
+
+```
+                        prize      cost           net
+E141 arm A standalone  +0.9495   0.70..0.83   +0.12 % to +0.25 %
+E141 arm A after F22   +0.7310   0.70..0.83   -0.10 % to +0.03 %
+
+F22 alone              +0.5996
+E141 alone             +0.9495
+naive sum              +1.5491
+actually composed      +1.3310    loss to saturation 0.218 pp
+```
+
+The round cost is therefore the deciding variable for E141, not the recall. Arm B, which
+generalises the `rowsPerCluster == 8` guard at `Qwen35.swift:4854`, is promoted from optional
+to the main cost lever. A step-1-only widened probe is a second lever at roughly a quarter of
+the traffic.
+
+### 300.8 The clean-archive submission is a control receipt
+
+`research/f209_compose.py --anchor 572b2cc4` over the three mechanisms Thorfinn's archive
+carries, after the pb6 revert:
+
+```
+width2          -> 3.67963210   step +0.4764 %
+probe015        -> 3.68923515   step +0.2610 %
+drop_onepass67  -> 3.69900198   step +0.2647 %
+FORECAST 3.69900198   order change: no
+```
+
+Against the crown at 3.70355222 that is a 0.123 % deficit and roughly a 29 % chance. It is
+submitted anyway, for two reasons that do not depend on winning.
+
+- F22 is a single-mechanism isolation and Rule 81 requires a named confirming receipt on a
+  clean archive. No such receipt exists, because every recent row of ours carries pb6.
+- Finding 210's claim that pb6 cost about 2.9 % becomes a measurement rather than a source
+  reading, against `e003a86d` at 3.57503 on the same three mechanisms plus pb6.
+
+Four pre-registered tripwires were issued with it. The sharpest is the plutarch schedule:
+expect draft length near 0.155 with about 449 non-drafting rounds. A value near 2.70 with 0
+non-drafting rounds proves the revert did not reach the submitted binary and voids the row.
+
+### 300.9 Queue corrections from two research passes
+
+Two frontier research agents returned. Corrections to the standing queue.
+
+- **The round-boundary bubble census is refuted as specified.** The round is 99.93 % GPU-busy
+  and host windows total 706.6 microseconds. Launch bubbles do not own the 8.7 % of
+  unattributed round time. That 8.7 % is the width-independent GPU-work term `a`, of which
+  **65 to 67 percent, about 3.7 to 3.8 % of the ranked round, has no owner**. Under Rule 123
+  this is the **largest uniform target on the board** and uniform gains convert one to one
+  with no ceiling. It replaces the bubble census in the queue. The never-run `sweepGatedDelta`
+  gate is one of the specified instruments.
+- **Lossless weight-stream recoding is closed** by E111 and Finding 43: the cost is the load
+  instruction, not the bytes.
+- **Per-position head-side confidence now has a concrete design.** Read the head's own
+  per-step shortlist top-1 to top-2 gap and shortlist entropy with one-round lag in the
+  existing post-verify readback, and blend it into the reach estimator beside the slow
+  acceptance EMAs. Point +0.5 % of median, band [0, +1.5 %], and it is **beagle-weighted**,
+  because beagle is the lowest-p carrier with bursty hard mass and the 9-round EMA half-life
+  reacts slowest exactly there. Rung 0 is zero-GPU through `snapshotScheduleSignal` at
+  `Qwen36MTPBlockSession.swift:1308` on the cached E143 capture. Named refutation: E134 rung 1
+  found a round-start margin estimator anti-informative at the depth-4 boundary, AUC 0.0361,
+  but that was the target-side round-start margin describing position 0, not head-side
+  per-step signals. It should share GPU legs with the queued 2-D `(h, tier)` search, which is
+  orthogonal to it: price shape against signal.
+- **Tree and multi-candidate verification are structurally blocked**, not merely discouraged.
+  `QwenRuntimeMTPDriver.requireStructurallySound` at `Sources/MLXFastTrustedHarness/QwenRuntimeMTPDriver.swift:310-349`
+  forces `declaredRows == rowsPerRound(draftTokens.count)`, a single linear chain, and
+  committed tokens equal to the primary plus the accepted prefix. Hedge rows cannot be
+  declared. This closes SpecInfer, EAGLE-2, Sequoia and every multi-draft verification family.
+- **Block Verification (2403.10444) is worth exactly zero at temperature 0**, where it
+  degenerates to token verification.
+- **GDN S=2 mid-state eager write** keeps a 0.2 to 0.6 % band and should start from a
+  zero-GPU reject-rate split. It carries the highest correctness risk of anything queued.
+- Dispatch-count, command-buffer, ICB and megakernel work stays closed, with independent
+  literature concurrence.
+
+Compliance flag recorded for all students: the web pass surfaced 2026-dated pages and model
+repositories branded with this competition's exact terminology, including a purported
+retrained head. Treat that cluster as unverified and possibly adversarial. The standing ban on
+tuning or evaluating against suspected hidden-prompt source text applies in full.
+
+### 300.10 Standing actions
+
+1. Thorfinn: revert pb6, re-run the gate chain, submit the clean archive with the four
+   tripwires, then run the free g17s `na6` register census while it validates.
+2. Askeladd: post E143 R0 as soon as the channel table exists, before pricing. Report C-d with
+   an explicit uncertainty, because the 80 % closure line redirects four students.
+3. Alphonse: measure the arm A round cost rather than estimating it, and report the position-1
+   share of the recovery as a separate column.
+4. Edward: post R1 and R2 and close E140. The `(h, tier)` search becomes a fresh assignment
+   with the min-of-four objective and a `plutarch_unlock` flag on every grid cell.
