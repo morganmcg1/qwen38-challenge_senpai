@@ -29,10 +29,15 @@ struct E135ProbeSelectTests {
         env["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
     }
 
-    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 8 over 98,336
-    /// compact rows at `qwen35DerivedClusterProbeFraction` 0.25.
+    /// `derivedClusterRowsPerLeaf` 8 over 98,336 compact rows.
     private static let liveClusters = 12_292
-    private static let liveProbes = 3_073
+
+    /// Derived from the shipped rung, never transcribed. The carried constant
+    /// 3,073 is the p25 geometry, and `ProbeArm.compiledDefault` is now p15,
+    /// so a literal here would gate a probe count the scored path never uses.
+    private static var liveProbes: Int {
+        Qwen35CustomQMV.probeArm.probes(leaves: liveClusters)
+    }
 
     private static func emit(_ name: String, _ payload: [String: Any]) throws {
         print("E135_PROBE_SELECT \(name) \(payload)")
@@ -55,6 +60,7 @@ struct E135ProbeSelectTests {
                 "schema": "e135.probe_select_verify.v1",
                 "entry_point": "qwen35VerifyProbeSelect",
                 "kernel": "qwen_mtp_e87_probe_select",
+                "probe_arm": Qwen35CustomQMV.probeArm.rawValue,
                 "clusters": Self.liveClusters,
                 "probes": Self.liveProbes,
                 "trials": trials,
@@ -92,6 +98,7 @@ struct E135ProbeSelectTests {
                 "schema": "e135.probe_select_positive_control.v1",
                 "entry_point": "qwen35ProbeSelectPositiveControl",
                 "kernel": "qwen_mtp_e87_probe_select",
+                "probe_arm": Qwen35CustomQMV.probeArm.rawValue,
                 "clusters": Self.liveClusters,
                 "probes": Self.liveProbes,
                 "seed": Int(seed),
@@ -106,5 +113,40 @@ struct E135ProbeSelectTests {
             nothing. Fix the comparison before trusting the verify test.
             """
         )
+    }
+
+    /// The rung is one environment variable away from changing, and the probe
+    /// count sets the kernel's per-thread work split. Gate every rung so a
+    /// later arm switch cannot ship an unverified selection.
+    @Test(.enabled(if: E135ProbeSelectTests.enabled))
+    func theSelectKernelIsExactAtEveryProbeRung() throws {
+        var results: [String: Int] = [:]
+        for arm in Qwen35CustomQMV.ProbeArm.allCases {
+            let probes = arm.probes(leaves: Self.liveClusters)
+            let (_, bad, firstBad) = qwen35VerifyProbeSelect(
+                clusters: Self.liveClusters, probes: probes, trials: 16, seed: 3)
+            results[arm.rawValue] = bad
+            #expect(
+                bad == 0 && firstBad == -1,
+                """
+                E135: qwen_mtp_e87_probe_select disagreed with \
+                sorted(argPartition(score)) at rung \(arm.rawValue), \
+                \(probes) probes, on \(bad) of 16 rows.
+                """
+            )
+        }
+        try Self.emit(
+            "rung_sweep",
+            [
+                "schema": "e135.probe_select_rung_sweep.v1",
+                "kernel": "qwen_mtp_e87_probe_select",
+                "clusters": Self.liveClusters,
+                "shipped_arm": Qwen35CustomQMV.ProbeArm.compiledDefault.rawValue,
+                "probes_by_arm": Dictionary(
+                    uniqueKeysWithValues: Qwen35CustomQMV.ProbeArm.allCases.map {
+                        ($0.rawValue, $0.probes(leaves: Self.liveClusters))
+                    }),
+                "mismatches_by_arm": results,
+            ])
     }
 }

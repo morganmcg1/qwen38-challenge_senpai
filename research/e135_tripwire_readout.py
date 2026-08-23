@@ -104,6 +104,24 @@ def de_lucked(prompts, serial_median):
     return (ratios[3] + ratios[4]) / 2
 
 
+def contrast_factors(rows, spec):
+    """Per-prompt candidate raw gain factor of the board pair `A:B`.
+
+    Mirrors `research/f209_compose.py`. `~A:B` inverts, which prices removing
+    what `A:B` added. A factor above 1.0 is faster.
+    """
+    reverse = spec.startswith("~")
+    left, right = spec.lstrip("~").split(":")
+    a = per_prompt(pick(rows, left))
+    b = per_prompt(pick(rows, right))
+    out = {}
+    for name in NAMES.values():
+        f = (a[name]["mtp_seconds_per_token_mean"]
+             / b[name]["mtp_seconds_per_token_mean"])
+        out[name] = (1.0 / f) if reverse else f
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("receipt", help="receipt id prefix to read out")
@@ -112,7 +130,15 @@ def main():
     ap.add_argument("--edl-ref", default="572b2cc4",
                     help="our own last receipt on this arm, the schedule control")
     ap.add_argument("--pool-since", default="2026-08-22T18:00:00Z")
+    ap.add_argument("--compose-anchor", default="572b2cc4",
+                    help="row the composed submission was forecast from")
+    ap.add_argument("--contrast", action="append")
+    ap.add_argument("--contrast-label", action="append")
     args = ap.parse_args()
+    if not args.contrast:
+        args.contrast = ["08b67f12:1760479a", "ed608e64:08b67f12",
+                         "~ed608e64:0b2f0014"]
+        args.contrast_label = ["width2", "probe015", "drop_onepass67"]
 
     rows = fetch()
     row = pick(rows, args.receipt)
@@ -242,6 +268,109 @@ def main():
     print(f"  VERDICT                    {'INSIDE' if inside else 'OUTSIDE'}")
     print(f"  live bar {args.bar}      {bar['officialScore']}")
     print(f"  gap to bar                 {(median/float(bar['officialScore'])-1)*100:+.3f} %")
+
+    print("\n-- ADDITIVITY RESIDUAL, F28 section 3 --")
+    print(f"  compose anchor {args.compose_anchor}. The forecast added three "
+          "isolated candidate contrast vectors. Rule 128 says a composition "
+          "must be measured, so this is the measurement.")
+    print("  TWO CONVENTIONS, kept apart. The 8 prompt mean averages the eight "
+          "candidate gains. The median ladder re-sorts the raw vector after "
+          "each contrast and reads positions 3 and 4, which is what the "
+          "workflow publishes. They are different numbers and only like may "
+          "be subtracted from like.")
+    compose_p = per_prompt(pick(rows, args.compose_anchor))
+    labels = list(args.contrast_label or [])
+    labels += [f"c{i}" for i in range(len(labels), len(args.contrast))]
+    predicted = {name: 1.0 for name in NAMES.values()}
+    ladder = {n: compose_p[n]["raw_ratio_of_means"] for n in NAMES.values()}
+    ladder_start = statistics.mean(sorted(ladder.values())[3:5])
+    running = ladder_start
+    median_step_sum = 0.0
+    header = f"  {'contrast':<16}" + "".join(f"{n:>10}" for n in NAMES.values())
+    print("\n  per contrast, per prompt candidate gain percent, "
+          "positive is faster")
+    print(header)
+    for spec, label in zip(args.contrast, labels):
+        factors = contrast_factors(rows, spec)
+        step = statistics.mean(factors[n] - 1 for n in NAMES.values()) * 100
+        for name in NAMES.values():
+            predicted[name] *= factors[name]
+            ladder[name] *= factors[name]
+        moved = statistics.mean(sorted(ladder.values())[3:5])
+        median_step = (moved / running - 1) * 100
+        median_step_sum += median_step
+        running = moved
+        print(f"  {label:<16}"
+              + "".join(f"{(factors[n]-1)*100:+10.4f}" for n in NAMES.values())
+              + f"   mean {step:+.4f} %   median step {median_step:+.4f} %")
+    predicted_mean = statistics.mean(
+        predicted[n] - 1 for n in NAMES.values()) * 100
+    measured = {
+        name: compose_p[name]["mtp_seconds_per_token_mean"]
+        / prompts[name]["mtp_seconds_per_token_mean"]
+        for name in NAMES.values()}
+    measured_mean = statistics.mean(
+        measured[n] - 1 for n in NAMES.values()) * 100
+
+    print("\n  predicted against measured, per prompt")
+    print(f"  {'prompt':<9} {'predicted':>11} {'measured':>11} {'residual':>11}")
+    for name in NAMES.values():
+        p_pct = (predicted[name] - 1) * 100
+        m_pct = (measured[name] - 1) * 100
+        print(f"  {name:<9} {p_pct:+11.4f} {m_pct:+11.4f} {m_pct-p_pct:+11.4f}")
+
+    pair_predicted_mtp = statistics.mean(
+        compose_p[n]["mtp_seconds_per_token_mean"] / predicted[n]
+        for n in EXPECTED_PAIR)
+    pair_anchor_mtp = statistics.mean(
+        compose_p[n]["mtp_seconds_per_token_mean"] for n in EXPECTED_PAIR)
+    pair_ours_mtp = statistics.mean(
+        prompts[n]["mtp_seconds_per_token_mean"] for n in EXPECTED_PAIR)
+    pair_predicted = (pair_anchor_mtp / pair_predicted_mtp - 1) * 100
+    pair_measured = (pair_anchor_mtp / pair_ours_mtp - 1) * 100
+
+    residual_mean = measured_mean - predicted_mean
+    residual_pair = pair_measured - pair_predicted
+    predicted_median = (running / ladder_start - 1) * 100
+    measured_median = (median / ladder_start - 1) * 100
+    residual_median = measured_median - predicted_median
+    print(f"\n  8 PROMPT MEAN convention")
+    print(f"  predicted                      {predicted_mean:+.4f} %")
+    print(f"  measured                       {measured_mean:+.4f} %")
+    print(f"  e135_additivity_residual_pct   {residual_mean:+.4f} %")
+    print(f"\n  MEDPAIR convention"
+          f"   on {EXPECTED_PAIR[0]} and {EXPECTED_PAIR[1]}")
+    print(f"  predicted                      {pair_predicted:+.4f} %")
+    print(f"  measured                       {pair_measured:+.4f} %")
+    print(f"  medpair additivity residual    {residual_pair:+.4f} %")
+    print(f"\n  PUBLISHED MEDIAN convention")
+    print(f"  predicted by the ladder        {predicted_median:+.4f} %"
+          f"   -> {running:.8f}")
+    print(f"  measured                       {measured_median:+.4f} %"
+          f"   -> {median:.8f}")
+    print(f"  median additivity residual     {residual_median:+.4f} %")
+    print("  the median residual is NOT an additivity statistic. Predicted raw "
+          "is serial_anchor/mtp_new, measured raw is serial_new/mtp_new, so "
+          "their ratio is the serial draw per prompt, which the candidate "
+          "cannot influence. Rule 118. It stays nonzero under perfect "
+          "additivity. Read additivity from the 8 prompt mean and the medpair.")
+    print(f"\n  naive sum of median steps      {median_step_sum:+.4f} %"
+          "   NOT a valid subtrahend for the 8 prompt mean; median steps "
+          "compound and re-sort")
+    print(f"  measured mean minus that sum   {measured_mean-median_step_sum:+.4f} %"
+          "   mixed convention, reported only because F28 named it")
+    if abs(residual_mean) <= NULL_BAND_PCT:
+        verdict = ("INSIDE the F216 null band, additivity holds for disjoint "
+                   "mechanisms on our stack")
+    elif residual_mean <= -0.3:
+        verdict = ("ANTI COMPLEMENTARY beyond -0.3 %, isolate pairs before "
+                   "composing again")
+    elif residual_mean >= 0.3:
+        verdict = "SUPER ADDITIVE beyond +0.3 %, composition is itself a lever"
+    else:
+        verdict = ("between the F216 null band and the +-0.3 % decision "
+                   "thresholds, no reading is licensed")
+    print(f"  VERDICT                        {verdict}")
 
     print("\n-- de-lucked comparison, F26 amendment --")
     pool = [r for r in rows
