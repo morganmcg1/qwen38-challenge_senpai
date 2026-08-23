@@ -1,0 +1,269 @@
+{
+  "e150_r3_harness": "local",
+  "e150_r3_gpu_used": true,
+  "e150_r3_cool_gate_passed_real_gate": false,
+  "e150_r3_gate_qualified_for_timing": false,
+  "e150_r3_break_even_us_per_round": 774.9514428643628,
+  "e150_r3_stop_rule_us_per_round": 100.0,
+  "e150_r3_witness_ok": true,
+  "e150_r3_schedule_identical": true,
+  "blocks": [
+    {
+      "replicate": 1,
+      "candidate": "firstOnly",
+      "prompt": "beagle_a",
+      "round_count": [
+        119
+      ],
+      "control_us_per_round": 139145.15090589764,
+      "arm_us_per_round": 140310.49584140297,
+      "delta_us_per_round": 1165.3449355053308,
+      "delta_us_per_token": 270.8516549319029,
+      "within_arm_spread_us": 176.06711187283508,
+      "within_control_spread_us": 223.1597900390625,
+      "legs": [
+        {
+          "slot": "s1k1firstOnlyp1off",
+          "arm": "off",
+          "us_per_round": 139256.73080091717,
+          "round_count": 119,
+          "edl": 4.277310924369748,
+          "gpu_temp_entry_c": "56.075138092041016",
+          "gpu_temp_exit_c": "59.61211013793945"
+        },
+        {
+          "slot": "s1k1firstOnlyp2firstOnly",
+          "arm": "firstOnly",
+          "us_per_round": 140222.46228546655,
+          "round_count": 119,
+          "edl": 4.277310924369748,
+          "gpu_temp_entry_c": "56.22074890136719",
+          "gpu_temp_exit_c": "59.0201416015625"
+        },
+        {
+          "slot": "s1k1firstOnlyp3firstOnly",
+          "arm": "firstOnly",
+          "us_per_round": 140398.5293973394,
+          "round_count": 119,
+          "edl": 4.277310924369748,
+          "gpu_temp_entry_c": "55.69462585449219",
+          "gpu_temp_exit_c": "59.929954528808594"
+        },
+        {
+          "slot": "s1k1firstOnlyp4off",
+          "arm": "off",
+          "us_per_round": 139033.5710108781,
+          "round_count": 119,
+          "edl": 4.277310924369748,
+          "gpu_temp_entry_c": "56.523555755615234",
+          "gpu_temp_exit_c": "59.98025894165039"
+        }
+      ]
+    },
+    {
+      "replicate": 1,
+      "candidate": "firstOnly",
+      "prompt": "essays_montaigne",
+      "round_count": [
+        141
+      ],
+      "control_us_per_round": 121396.64939109315,
+      "arm_us_per_round": 122756.5995344879,
+      "delta_us_per_round": 1359.950143394759,
+      "delta_us_per_token": 374.5175199583173,
+      "within_arm_spread_us": 123.14235064999957,
+      "within_control_spread_us": 131.6383375343721,
+      "legs": [
+        {
+          "slot": "s1k1firstOnlyp1off",
+          "arm": "off",
+          "us_per_round": 121462.46855986034,
+          "round_count": 141,
+          "edl": 3.624113475177305,
+          "gpu_temp_entry_c": "56.446022033691406",
+          "gpu_temp_exit_c": "60.351322174072266"
+        },
+        {
+          "slot": "s1k1firstOnlyp2firstOnly",
+          "arm": "firstOnly",
+          "us_per_round": 122695.0283591629,
+          "round_count": 141,
+          "edl": 3.624113475177305,
+          "gpu_temp_entry_c": "56.64840316772461",
+          "gpu_temp_exit_c": "60.14775466918945"
+        },
+        {
+          "slot": "s1k1firstOnlyp3firstOnly",
+          "arm": "firstOnly",
+          "us_per_round": 122818.1707098129,
+          "round_count": 141,
+          "edl": 3.624113475177305,
+          "gpu_temp_entry_c": "56.82597351074219",
+          "gpu_temp_exit_c": "59.95616149902344"
+        },
+        {
+          "slot": "s1k1firstOnlyp4off",
+          "arm": "off",
+          "us_per_round": 121330.83022232597,
+          "round_count": 141,
+          "edl": 3.624113475177305,
+          "gpu_temp_entry_c": "56.60927963256836",
+          "gpu_temp_exit_c": "59.670448303222656"
+        }
+      ]
+    },
+    {
+      "replicate": 1,
+      "candidate": "perStep",
+      "prompt": "beagle_a",
+      "round_count": [
+        119
+      ],
+      "control_us_per_round": 139289.3906400985,
+      "arm_us_per_round": 142422.8363678235,
+      "delta_us_per_round": 3133.4457277249894,
+      "delta_us_per_token": 728.2813312485814,
+      "within_arm_spread_us": 479.7222233620123,
+      "within_control_spread_us": 253.7905669012107,
+      "legs": [
+        {
+          "slot": "s1k1perStepp1off",
+          "arm": "off",
+          "us_per_round": 139416.28592354912,
+          "round_count": 119,
+          "edl": 4.277310924369748,
+          "gpu_temp_entry_c": "56.529273986816406",
+          "gpu_temp_exit_c": "59.85069274902344"
+        },
+        {
+          "slot": "s1k1perStepp2perStep",
+          "arm": "perStep",
+          "us_per_round": 142182.9752561425,
+          "round_count": 119,
+          "edl": 4.277310924369748,
+          "gpu_temp_entry_c": "56.59028625488281",
+          "gpu_temp_exit_c": "60.807273864746094"
+        },
+        {
+          "slot": "s1k1perStepp3perStep",
+          "arm": "perStep",
+          "us_per_round": 142662.6974795045,
+          "round_count": 119,
+          "edl": 4.277310924369748,
+          "gpu_temp_entry_c": "57.373512268066406",
+          "gpu_temp_exit_c": "60.767086029052734"
+        },
+        {
+          "slot": "s1k1perStepp4off",
+          "arm": "off",
+          "us_per_round": 139162.4953566479,
+          "round_count": 119,
+          "edl": 4.277310924369748,
+          "gpu_temp_entry_c": "57.721187591552734",
+          "gpu_temp_exit_c": "60.06378173828125"
+        }
+      ]
+    },
+    {
+      "replicate": 1,
+      "candidate": "perStep",
+      "prompt": "essays_montaigne",
+      "round_count": [
+        141
+      ],
+      "control_us_per_round": 121441.35498831459,
+      "arm_us_per_round": 124900.71261182745,
+      "delta_us_per_round": 3459.3576235128567,
+      "delta_us_per_token": 952.6746580377221,
+      "within_arm_spread_us": 306.4904652588739,
+      "within_control_spread_us": 45.33334826746432,
+      "legs": [
+        {
+          "slot": "s1k1perStepp1off",
+          "arm": "off",
+          "us_per_round": 121418.68831418085,
+          "round_count": 141,
+          "edl": 3.624113475177305,
+          "gpu_temp_entry_c": "56.84330749511719",
+          "gpu_temp_exit_c": "60.11996078491211"
+        },
+        {
+          "slot": "s1k1perStepp2perStep",
+          "arm": "perStep",
+          "us_per_round": 124747.467379198,
+          "round_count": 141,
+          "edl": 3.624113475177305,
+          "gpu_temp_entry_c": "56.87348556518555",
+          "gpu_temp_exit_c": "60.5928955078125"
+        },
+        {
+          "slot": "s1k1perStepp3perStep",
+          "arm": "perStep",
+          "us_per_round": 125053.95784445688,
+          "round_count": 141,
+          "edl": 3.624113475177305,
+          "gpu_temp_entry_c": "57.12059020996094",
+          "gpu_temp_exit_c": "60.79660415649414"
+        },
+        {
+          "slot": "s1k1perStepp4off",
+          "arm": "off",
+          "us_per_round": 121464.02166244831,
+          "round_count": 141,
+          "edl": 3.624113475177305,
+          "gpu_temp_entry_c": "57.21467590332031",
+          "gpu_temp_exit_c": "59.69590759277344"
+        }
+      ]
+    }
+  ],
+  "problems": [],
+  "e150_r3_mean_drafts_per_round": 4.277310924369748,
+  "e150_r3_summary": {
+    "firstOnly": {
+      "blocks": 2,
+      "delta_us_per_round_mean": 1262.6475394500449,
+      "delta_us_per_round_sd": 137.60666215283246,
+      "delta_us_per_round_se": 97.30260394471406,
+      "delta_us_per_round_values": [
+        1165.3449355053308,
+        1359.950143394759
+      ],
+      "delta_us_per_token_mean": 322.6845874451101
+    },
+    "perStep": {
+      "blocks": 2,
+      "delta_us_per_round_mean": 3296.401675618923,
+      "delta_us_per_round_sd": 230.45451158096432,
+      "delta_us_per_round_se": 162.9559478939336,
+      "delta_us_per_round_values": [
+        3133.4457277249894,
+        3459.3576235128567
+      ],
+      "delta_us_per_token_mean": 840.4779946431518
+    }
+  },
+  "e150_r3_cost_per_readback_from_firstonly_us": 1262.6475394500449,
+  "e150_r3_cost_per_readback_from_perstep_us": 770.671511588707,
+  "e150_r3_estimate_ratio": 0.610361551826552,
+  "e150_r3_estimates_agree": true,
+  "e150_r3_decision_cost_us_per_round": 1262.6475394500449,
+  "e150_r3_decision_arm": "firstOnly",
+  "e150_r3_sequential_premium_pp": 1.504175937236729,
+  "e150_r3_below_stop_rule": false,
+  "e150_r3_below_break_even": false,
+  "e150_r3_headroom_multiple": 0.6137512002770769,
+  "e150_r3_readback_pct_of_median_decode_frame": -2.450791031541236,
+  "e150_r3_premium_after_toll_pp_decode_frame": -0.9466150943045071,
+  "e150_r3_perstep_pct_of_median_decode_frame": -6.39829517783176,
+  "e150_r3_perstep_premium_after_toll_pp_decode_frame": -4.894119240595031,
+  "e150_r3_readback_pct_of_median_total_leg_frame": -2.4073356328885507,
+  "e150_r3_premium_after_toll_pp_total_leg_frame": -0.9031596956518217,
+  "e150_r3_perstep_pct_of_median_total_leg_frame": -6.2848459020379845,
+  "e150_r3_perstep_premium_after_toll_pp_total_leg_frame": -4.780669964801255,
+  "e150_r3_premium_survives": false,
+  "e150_r3_verdict": "the round trip costs more than the sequential rule can earn; the L5/L6 axis is closed on this host",
+  "e150_r3_entry_temp_c_min": 55.69462585449219,
+  "e150_r3_entry_temp_c_max": 57.721187591552734,
+  "e150_r3_entry_temp_c_spread": 2.026561737060547
+}

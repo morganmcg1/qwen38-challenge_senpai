@@ -1101,16 +1101,27 @@ public final class Qwen36MTPBlockSession {
         case ship, pb5, pb6, pb7, pbfit
     }
 
-    /// E150 R4: the ranked per-width round cost curve, in microseconds, at
+    /// E150 R4: the measured per-width round cost curve, in microseconds, at
     /// verify widths 1 through 9.
     ///
-    /// This is the curve E145 R2 read off LIVE PINNED DECODES on the ranked
-    /// runner, not a curve rebuilt from isolated kernel timings. The pin at
-    /// `MLX_E145_PIN_DEPTH` is what made it measurable: the shipped schedule
-    /// chooses depth from the round's own state, so an unpinned leg only ever
-    /// samples the widths the estimator already believed were hot. E145 R3
-    /// installs it at every width with the two-segment fit held at zero, so
-    /// no fitted line can smooth away the step at width 6.
+    /// This is the curve E145 R2 read off LIVE PINNED DECODES on the LOCAL
+    /// M4 Pro host, not a curve rebuilt from isolated kernel timings and not a
+    /// measurement taken on the ranked M5 runner. `research/e145_curve.py` and
+    /// `research/e145-artifacts/curve.json` both record `harness=local`.
+    /// Transfer to the ranked frame is the separate scalar `level_transfer.k`
+    /// and is not applied here. The pin at `MLX_E145_PIN_DEPTH` is what made
+    /// it measurable: the shipped schedule chooses depth from the round's own
+    /// state, so an unpinned leg only ever samples the widths the estimator
+    /// already believed were hot. E145 R3 installs it at every width with the
+    /// two-segment fit held at zero, so no fitted line can smooth away the
+    /// step at width 6.
+    ///
+    /// These values are the `us_mean_from_blocks` basis of that artifact. The
+    /// artifact also carries a `us` basis that differs by up to 0.54 % per
+    /// width and that the transfer constant was fitted on. Reading a width
+    /// cost from the other basis while pricing against this table mixes the
+    /// two and has already produced one false admissibility result, so keep
+    /// every comparison inside one basis.
     ///
     /// Width 9 is EXTRAPOLATED from the last measured step. It is reachable
     /// only at depth 8, which `segmentedVerifyDepthCap` already closes, so it
