@@ -7,8 +7,14 @@ submitted, plus the ranked evidence that retired the `pb6` depth-price arm.
 Logging it through the contrast estimator would invent an effect that was
 never measured, so it gets its own run.
 
+Once the ranked receipt returns, `--resume` folds it into the same run rather
+than opening a second one. The local leg and the receipt it produced are one
+record: the leg certifies what was archived, the receipt says what it scored.
+
   research/e135_wandb_submission.py --leg research/out/e135shipexact \
       --submission 0cf1637e-b722-4544-9806-94927d28e558 [--dry]
+  research/e135_wandb_submission.py --leg research/out/e135shipexact \
+      --submission 0cf1637e-... --resume 9ptcijih --board /tmp/yukon-board/read.json
 """
 
 from __future__ import annotations
@@ -16,8 +22,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import statistics
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import e135_receipt_read as rr  # noqa: E402
 
 PROJECT = "wandb-applied-ai-team/qwen38-mlx-challenge-senpai"
+
+# The crown tree, three draws of one bit-identical solver (Finding 251).
+CROWN_DRAWS = ("f7d59543", "684821ed", "165d4ba7")
+CROWN_TREE_FAIR_MEDIAN = 3.70486350
+OUR_PREVIOUS_BEST = ("572b2cc4", 3.66218564)
 
 # Rule 114 arm signatures, from the schedule the run itself produces.
 SHIP_EDL = 6.358974358974359
@@ -38,11 +54,94 @@ def read_meta(path: str) -> dict[str, str]:
     return out
 
 
+def receipt_record(board_path: str, submission: str) -> tuple[dict, dict]:
+    """Ranked metrics and config for the receipt this submission produced."""
+    board = rr.load_board(board_path)
+    ours = rr.find(board, submission[:8])
+    mine = rr.per_prompt(ours)
+    lo, hi = rr.median_pair(ours)
+    published = ours["officialScore"]
+    us_round = rr.candidate_us_per_round(ours)
+
+    metrics: dict[str, float | bool | int] = {
+        "e135_ranked_published_median": published,
+        "e135_ranked_median_slot_lower_raw": mine[lo]["raw_ratio_of_means"],
+        "e135_ranked_median_slot_upper_raw": mine[hi]["raw_ratio_of_means"],
+        # Rule 114 read from the receipt's own published schedule.
+        "e135_ranked_plutarch_edl":
+            mine["plutarch"]["effective_mean_draft_len"],
+        "e135_ranked_plutarch_non_drafting_rounds":
+            mine["plutarch"]["non_drafting_round_count"],
+        "e135_ranked_arm_is_ship":
+            mine["plutarch"]["effective_mean_draft_len"] < 1.0,
+        # Headroom, both against the published crown and against the tree
+        # Finding 251 showed it to be, stripped of its serial draw.
+        "e135_ranked_short_of_published_bar_pct":
+            (3.71959722580154 / published - 1.0) * 100.0,
+        "e135_ranked_short_of_fair_tree_pct":
+            (CROWN_TREE_FAIR_MEDIAN / published - 1.0) * 100.0,
+        "e135_ranked_gain_on_our_previous_best_pct":
+            (published / OUR_PREVIOUS_BEST[1] - 1.0) * 100.0,
+    }
+    for name, entry in mine.items():
+        metrics[f"e135_ranked_raw_{name}"] = entry["raw_ratio_of_means"]
+        metrics[f"e135_ranked_cand_spt_{name}"] = \
+            entry["mtp_seconds_per_token_mean"]
+        metrics[f"e135_ranked_serial_spt_{name}"] = \
+            entry["serial_seconds_per_token_mean"]
+        metrics[f"e135_ranked_prefill_spt_{name}"] = \
+            entry["prefill_seconds_per_token"]
+        metrics[f"e135_ranked_edl_{name}"] = \
+            entry["effective_mean_draft_len"]
+        metrics[f"e135_ranked_cand_us_per_round_{name}"] = us_round[name]
+
+    for ref_id in CROWN_DRAWS + (OUR_PREVIOUS_BEST[0],):
+        ref = rr.find(board, ref_id)
+        deltas = rr.compare(ours, ref, "mtp_seconds_per_token_mean")
+        mean, sd, se = rr.summarise(deltas)
+        pair = statistics.fmean(deltas[n] for n in (lo, hi))
+        metrics[f"e135_ranked_cand_pair_pct_vs_{ref_id}"] = pair
+        metrics[f"e135_ranked_cand_r148_pct_vs_{ref_id}"] = \
+            rr.weighted(deltas, rr.RULE148_WEIGHTS)
+        metrics[f"e135_ranked_cand_f83_pct_vs_{ref_id}"] = \
+            rr.weighted(deltas, rr.F83_WEIGHTS)
+        metrics[f"e135_ranked_cand_mean8_pct_vs_{ref_id}"] = mean
+        metrics[f"e135_ranked_cand_mean8_sd_vs_{ref_id}"] = sd
+        metrics[f"e135_ranked_cand_mean8_se_vs_{ref_id}"] = se
+        detected = sum(
+            1 for n in deltas
+            if abs(deltas[n]) / 100.0 * us_round[n]
+            >= rr.RULE147_DETECT_US_PER_ROUND[n])
+        metrics[f"e135_ranked_r147_detected_of_8_vs_{ref_id}"] = detected
+
+    prefill = rr.compare(ours, rr.find(board, "684821ed"),
+                         "prefill_seconds_per_token")
+    pmean, psd, pse = rr.summarise(prefill)
+    metrics["e135_ranked_prefill_mean8_pct_vs_684821ed"] = pmean
+    metrics["e135_ranked_prefill_sd_vs_684821ed"] = psd
+    metrics["e135_ranked_prefill_inside_null_band"] = \
+        abs(pmean) < rr.PREFILL_NULL_BAND_PCT
+
+    config = {
+        "ranked_status": ours.get("status"),
+        "ranked_promotion_status": str(ours.get("promotionStatus")),
+        "ranked_receipt_commit": ours.get("submissionCommitSha"),
+        "ranked_created_at": ours.get("createdAt"),
+        "ranked_median_pair": f"{lo},{hi}",
+        "ranked_us_per_round_convention":
+            "decode_tokens / (1 + effective_mean_draft_len); every draft "
+            "counted accepted, matching the Rule 147 table",
+    }
+    return metrics, config
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--leg", default="research/out/e135shipexact")
     ap.add_argument("--submission", required=True)
     ap.add_argument("--label", default="e135-ship-submission")
+    ap.add_argument("--resume", help="fold the receipt into this run id")
+    ap.add_argument("--board", default="/tmp/yukon-board/read.json")
     ap.add_argument("--dry", action="store_true")
     args = ap.parse_args()
 
@@ -116,6 +215,12 @@ def main() -> None:
         "finished": meta["finished"],
     }
 
+    if args.resume:
+        ranked_metrics, ranked_config = receipt_record(
+            args.board, args.submission)
+        metrics.update(ranked_metrics)
+        config.update(ranked_config)
+
     if args.dry:
         print(json.dumps({"config": config, "metrics": metrics},
                          indent=2, sort_keys=True))
@@ -124,8 +229,13 @@ def main() -> None:
     import wandb
 
     entity, project = PROJECT.split("/")
-    run = wandb.init(entity=entity, project=project, name=args.label,
-                     job_type="local-exactness-leg", config=config)
+    if args.resume:
+        run = wandb.init(entity=entity, project=project, id=args.resume,
+                         resume="must")
+        run.config.update(config, allow_val_change=True)
+    else:
+        run = wandb.init(entity=entity, project=project, name=args.label,
+                         job_type="local-exactness-leg", config=config)
     run.log(metrics)
     print(f"run {run.id} {run.url}")
     run.finish()

@@ -77,6 +77,14 @@ RULE147_DETECT_US_PER_ROUND = {
     "plutarch": 211.9,
 }
 
+# Measured on the local 512-token shipping-arm leg: 512 tokens over 78 traced
+# rounds against an effective mean draft length of 6.358974. The receipt
+# publishes no per-prompt acceptance rate, so this local rate stands in for it.
+ACCEPTED_DRAFT_RATE = 0.877
+
+# Rule 134, for the cross-check in `candidate_us_per_round`.
+RULE134_US_PER_ROUND_PER_PCT = 515.2
+
 # F216 noise floors, in percentage points.
 PER_PROMPT_LEG_NOISE_PP = 0.0737
 AT_ZERO_MDE_PP = 0.1154
@@ -152,23 +160,29 @@ def compare(ours: dict, ref: dict, field: str) -> dict[str, float]:
     return out
 
 
-def candidate_us_per_round(row: dict) -> dict[str, float]:
+def candidate_us_per_round(row: dict,
+                           acceptance: float = ACCEPTED_DRAFT_RATE
+                           ) -> dict[str, float]:
     """Microseconds of candidate MTP time per decode round, by prompt.
 
-    The receipt publishes no round count, so rounds are taken as
-    `decode_tokens / (1 + effective_mean_draft_len)`. That is the campaign
-    convention behind Rule 134 and Rule 147: for the beagle leg it reproduces
-    `BEAGLE_TOKENS_PER_ROUND = 5.3818` exactly. It treats every draft as
-    accepted, so it understates the round count and overstates microseconds per
-    round. It is used here only to compare against the Rule 147 table, which
-    was built on the same convention, so the bias cancels in that comparison.
+    The receipt publishes no round count. A round emits one primary token plus
+    the drafts it accepted, so tokens per round is `1 + acceptance * edl`, and
+    the round time is `mtp_seconds_per_token_mean` times that.
+
+    Setting `acceptance = 1` gives the convention that reads
+    `BEAGLE_TOKENS_PER_ROUND = 5.3818` straight off `1 + edl`. That convention
+    is an upper bound: it counts every proposed draft as accepted, so it
+    undercounts rounds and overstates microseconds per round by about 11 % on
+    this receipt. The acceptance-corrected value is the one that reproduces
+    Rule 134: it puts the median pair at 529.6 us/round per 1 % of published
+    median against Rule 134's 515.2, a 2.8 % agreement, while the uncorrected
+    value reads 589.4 and misses by 14 %.
     """
-    tokens = (row.get("officialMetrics") or {}).get("decode_tokens") or 512
     return {
         name: e["mtp_seconds_per_token_mean"] * 1e6
-        * (1.0 + e["effective_mean_draft_len"])
+        * (1.0 + acceptance * e["effective_mean_draft_len"])
         for name, e in per_prompt(row).items()
-    } if tokens else {}
+    }
 
 
 def weighted(deltas: dict[str, float], weights: dict[str, float]) -> float:
@@ -195,6 +209,10 @@ def report_reference(ours: dict, ref: dict, label: str) -> None:
     print(f"  F83 weighted five      {weighted(deltas, F83_WEIGHTS):+.4f} %")
     same = sum(1 for v in deltas.values() if v > 0)
     print(f"  sign test: {same}/{len(deltas)} prompts faster")
+    pair_round = statistics.fmean(us_round[n] for n in (lo, hi)) / 100.0
+    print(f"  Rule 134 cross-check: this receipt puts the median pair at "
+          f"{pair_round:.1f} us/round per 1 %, the rule says "
+          f"{RULE134_US_PER_ROUND_PER_PCT:.1f}")
     print("  per prompt, against the Rule 147 candidate-channel floor:")
     print("    prompt        delta      us/round   R147 2sd   detected  r148")
     for name in sorted(deltas, key=lambda n: -deltas[n]):
