@@ -335,11 +335,110 @@ def rung_d_metrics(receipt: dict) -> tuple[dict, dict]:
     return metrics, config
 
 
+# One entry per later artifact: the file, the config key that carries it whole,
+# and the scalars promoted into the metric series. A key that is absent from a
+# present file is an error, because a renamed field must not silently drop a
+# reported metric.
+ARTIFACTS = [
+    ("research/e147-dispatch.json", "dispatch", {
+        "e147_dispatch_ranked_all_nax": "ranked_all_nax",
+        "e147_dispatch_local_all_qmm_t_impl": "local_all_qmm_t_impl",
+        "e147_dispatch_any_scored_uses_splitk": "any_scored_uses_splitk",
+        "e147_dispatch_f6_section5_confirmed": "f6_section5_confirmed",
+    }),
+    ("research/e147-f8-followup.json", "f8_followup", {
+        "e147_max_threadgroup_bytes": "e147_max_threadgroup_bytes",
+        "e147_every_instantiated_shape_fits": "every_instantiated_shape_fits",
+        "e147_our_rows_share_one_source_ref": "our_rows_share_one_source_ref",
+    }),
+    ("research/e147-base-diff.json", "base_diff", {
+        "e147_base_arm_gap_explains_four_percent":
+            "e147_base_arm_gap_explains_four_percent",
+        "e147_base_diff_predicted_pct_additive":
+            "predicted_our_leg_slower_pct_additive",
+        "e147_base_diff_predicted_pct_multiplicative":
+            "predicted_our_leg_slower_pct_multiplicative",
+        "e147_base_diff_observed_weighted_five_pct": "observed_weighted_five_pct",
+        "e147_base_diff_observed_unweighted_mean_pct": "observed_unweighted_mean_pct",
+        "e147_base_diff_max_abs_residual_sigma": "max_abs_residual_sigma",
+    }),
+    ("research/e147-qmv-jit-census.json", "qmv_jit_census", {
+        "e147_decode_entry_points_moved": "decode_entry_points_moved",
+        "e147_rule_101_census_control_moved": "rule_101_positive_control_moved",
+    }),
+    ("research/e147-retile-arm.json", "rungE1a_retile_arm", {
+        "e147_rungE_grid_stride_max_iters": "e147_rungE_grid_stride_max_iters",
+        "e147_rungE_grid_stride_max_iters_probe":
+            "e147_rungE_grid_stride_max_iters_probe",
+        "e147_rungE1a_scored_rows_ok": "scored_rows_ok",
+        "e147_rungE1a_probe_rows_ok": "probe_rows_ok",
+        "e147_rungE1a_all_controls_passed": "all_controls_passed",
+        "e147_rungE1a_all_source_assertions_passed": "all_source_assertions_passed",
+    }),
+    ("research/e147-rungE2.json", "rungE2_nax_compile", {
+        "e147_rungE2_retile_compiles": "e147_rungE2_retile_compiles",
+        "e147_rungE2_matmad_branch_switches": "e147_rungE2_matmad_branch_switches",
+        "e147_rungE2_failopen_shape_exists": "e147_rungE2_failopen_shape_exists",
+        "e147_rungE2_failopen_control_observed":
+            "e147_rungE2_failopen_control_observed",
+    }),
+]
+
+# harness=local. Rung E-1b is an exactness result, never a timing result.
+RUNG_E1B_FLAGS = [
+    ("e147_rungE1b_retile_exact_local", "e147_rungE_reindex_exact_local"),
+    ("e147_rungE1b_positive_control_caught",
+     "e147_rungE1b_positive_control_caught"),
+    ("e147_rungE1b_arm_contrast", "e147_rungE1b_arm_contrast_nonempty"),
+    ("e147_rungE1b_tree_restored", "e147_rungE4_submitted_default_is_off"),
+]
+
+TRUTHY = {"true": 1.0, "false": 0.0, "ok": 1.0, "1": 1.0, "0": 0.0,
+          "PASS": 1.0, "FAIL": 0.0, "EMPTY": 0.0}
+
+
+def artifact_metrics() -> tuple[dict, dict]:
+    metrics: dict = {}
+    config: dict = {}
+    for path, config_key, promoted in ARTIFACTS:
+        payload = load_json(path)
+        if payload is None:
+            continue
+        config[config_key] = payload
+        for metric_name, source_key in promoted.items():
+            if source_key not in payload:
+                raise SystemExit(f"{path} has no field {source_key!r}")
+            metrics[metric_name] = float(payload[source_key])
+    return metrics, config
+
+
+def rung_e1b_metrics(path: str) -> tuple[dict, dict]:
+    kv = load_kv(path)
+    if not kv:
+        return {}, {}
+    metrics = {}
+    for source_key, metric_name in RUNG_E1B_FLAGS:
+        raw = kv.get(source_key)
+        if raw is None:
+            raise SystemExit(f"{path} has no field {source_key!r}")
+        if raw not in TRUTHY:
+            raise SystemExit(f"{path}: {source_key}={raw!r} is not a verdict")
+        metrics[metric_name] = TRUTHY[raw]
+    for prompt in ("beagle_a", "essays_montaigne"):
+        matched = kv.get(f"e147_rungE1b_{prompt}_all_tokens_matched")
+        if matched is not None:
+            metrics[f"e147_rungE1b_all_tokens_matched_{prompt}"] = TRUTHY[matched]
+            metrics[f"e147_rungE1b_residual_divergence_count_{prompt}"] = float(
+                kv[f"e147_rungE1b_residual_divergence_count_{prompt}"])
+    return metrics, {"rungE1b_detail": kv}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rung-a", default="research/e147-rungA.json")
     ap.add_argument("--control", default="research/e147-rungA-control.txt")
     ap.add_argument("--receipt", default="research/e147-rungD.json")
+    ap.add_argument("--rung-e1b", default="research/e147-rungE1b.txt")
     ap.add_argument("--name", default="e147-nax-seed-prefill-double-buffer")
     ap.add_argument("--offline", action="store_true")
     args = ap.parse_args()
@@ -412,6 +511,14 @@ def main() -> None:
         rung_d_m, rung_d_c = rung_d_metrics(receipt)
         metrics.update(rung_d_m)
         config.update(rung_d_c)
+
+    art_m, art_c = artifact_metrics()
+    metrics.update(art_m)
+    config.update(art_c)
+
+    e1b_m, e1b_c = rung_e1b_metrics(args.rung_e1b)
+    metrics.update(e1b_m)
+    config.update(e1b_c)
 
     revert = subprocess.run(
         ["git", "diff", "--stat", "bdba19f66e84e7e2aa1f8162eeaa0a82579edc94",
