@@ -137,11 +137,11 @@ def onepass67_contrast(data: dict, flat: list[str]) -> dict:
     print("  loss understates onePass67. See the isolation below for the"
           " confounder-corrected price.")
     return {
-        "e135_onepass67_ranked_matched_schedule_pct":
+        "e135_minus_onepass67_p15_width2_matched_schedule_pct":
             statistics.fmean(vals),
-        "e135_onepass67_ranked_eight_prompt_pct": statistics.fmean(every),
-        "e135_onepass67_ranked_weighted_five_pct": weighted,
-        "e135_onepass67_ranked_matched_prompts": names,
+        "e135_minus_onepass67_p15_width2_eight_prompt_pct": statistics.fmean(every),
+        "e135_minus_onepass67_p15_width2_weighted_five_pct": weighted,
+        "e135_minus_onepass67_p15_width2_matched_prompts": names,
     }
 
 
@@ -324,10 +324,16 @@ def main() -> int:
     out = {
         "flat_receipt": flat[0], "pb6_receipt": pb6[0],
         **onepass, **isolated,
-        "e135_pb6_ranked_published_median_pct": 100 * (med_b / med_a - 1),
-        "e135_pb6_ranked_held_pair_pct": 100 * (held / med_a - 1),
-        "e135_pb6_ranked_rule129_pct": 100 * (rule129 / med_a - 1),
-        "e135_pb6_ranked_beagle_pct": beagle_pct,
+        # These four describe the three-mechanism pair, not pb6. They keep the
+        # confounding in the key so no reader can quote them as a pb6 price;
+        # the isolated pb6 numbers are the `e135_pb6_ranked_isolated_*` keys.
+        "e135_pb6_p15_minus_onepass67_published_median_pct":
+            100 * (med_b / med_a - 1),
+        "e135_pb6_p15_minus_onepass67_held_pair_pct":
+            100 * (held / med_a - 1),
+        "e135_pb6_p15_minus_onepass67_rule129_pct":
+            100 * (rule129 / med_a - 1),
+        "e135_pb6_p15_minus_onepass67_beagle_pct": beagle_pct,
         "e135_pb6_ranked_worst_upper_slot": worst_upper,
         "median_pair_flat": pair_a, "median_pair_pb6": pair_b,
     }
