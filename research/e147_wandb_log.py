@@ -32,6 +32,7 @@ import wandb
 
 PROJECT = "qwen38-mlx-challenge-senpai"
 ENTITY = "wandb-applied-ai-team"
+TRACK_ID = "qwen3.8-27b-mtp-v1"
 
 # harness=ranked. The published seed prefill at the current bar, and the modern
 # band every recent row except two sits inside.
@@ -141,6 +142,78 @@ def rung_a_metrics(rung_a: dict) -> tuple[dict, dict]:
     return metrics, config
 
 
+BUILD_AFFECTING_PREFIXES = (
+    "Package.swift",
+    "Sources/",
+    "Vendor/",
+    "mtp-head.manifest.json",
+    "mtp-head/",
+)
+
+
+def submitted_surface_check() -> tuple[dict, dict]:
+    """Prove the ranked host builds the same worker this host measured.
+
+    Yukon packages only `editablePaths`, so the ranked build is the
+    organizer's tree at `upstream/main` with our copies of those paths
+    substituted. A file that changes the built worker but is NOT submitted
+    therefore exists only here, and any local measurement that depends on it
+    does not transfer.
+
+    The test is one set difference: take every build-affecting path where
+    HEAD diverges from `upstream/main`, and require the unsubmitted part to
+    be empty. This subsumes the specific worry for this experiment, which is
+    that `Package.swift`, `jit_kernels.cpp` and `nojit_kernels.cpp` decide
+    whether the live Metal source form is the JIT string or `mlx.metallib`.
+
+    Research scripts, tests and campaign notes are excluded on purpose. They
+    are not submitted and they cannot change the worker binary.
+    """
+    track = json.loads(pathlib.Path("benchmark.json").read_text())
+    if track["trackId"] != TRACK_ID:
+        raise SystemExit(f"benchmark.json is track {track['trackId']}, not {TRACK_ID}")
+    editable = track["editablePaths"] + track.get("optionalEditablePaths", [])
+
+    diverged = subprocess.run(
+        ["git", "diff", "--name-only", "upstream/main", "HEAD"],
+        capture_output=True, text=True, check=True).stdout.split()
+    submitted, local_only = [], []
+    for path in diverged:
+        if not path.startswith(BUILD_AFFECTING_PREFIXES):
+            continue
+        covered = any(path == e or path.startswith(e.rstrip("/") + "/")
+                      for e in editable)
+        (submitted if covered else local_only).append(path)
+
+    source_form_files = [
+        "Vendor/mlx-swift/Package.swift",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/jit_kernels.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/nojit_kernels.cpp",
+    ]
+    drifted = sorted(set(source_form_files) & set(local_only))
+
+    metrics = {
+        "e147_submitted_surface_self_contained": float(not local_only),
+        "e147_build_decision_files_match_upstream": float(not drifted),
+        "e147_submitted_changed_file_count": float(len(submitted)),
+    }
+    config = {
+        "submitted_changed_files": sorted(submitted),
+        "local_only_build_affecting_files": sorted(local_only),
+        "source_form_files_checked": source_form_files,
+        "source_form_files_drifted": drifted,
+        "live_source_form_note": (
+            "Package.swift excludes nojit_kernels.cpp and "
+            "jit_kernels.cpp get_qmm_nax_kernel concatenates "
+            "metal::quantized_nax(), which is mlx-generated/quantized_nax.cpp. "
+            "That twin is a submitted path and the three deciding files are "
+            "organizer-owned and unmodified, so the JIT string proven live "
+            "locally is the one the ranked host compiles."
+        ),
+    }
+    return metrics, config
+
+
 def rung_d_metrics(receipt: dict) -> tuple[dict, dict]:
     """harness=ranked. Read one official receipt through research/e147_rungD.py.
 
@@ -189,8 +262,34 @@ def rung_d_metrics(receipt: dict) -> tuple[dict, dict]:
         "e147_rounds_closed_form_max_error": receipt["rounds_closed_form_max_error"],
         "e147_rounds_closed_form_reproduces_receipt": receipt[
             "rounds_closed_form_reproduces_receipt"],
+        # Feedback 5. Both halves of the bit-identical zero-delta anchor pair,
+        # and the measured noise the effect is judged against.
+        "e147_prefill_pct_vs_684821ed": receipt["e147_prefill_pct_vs_684821ed"],
+        "e147_prefill_pct_vs_f7d59543": receipt["e147_prefill_pct_vs_f7d59543"],
+        "e147_prefill_anchor_spread_pp": receipt["e147_prefill_anchor_spread_pp"],
+        "e147_prefill_anchor_agreement_ok": receipt[
+            "e147_prefill_anchor_agreement_ok"],
+        "e147_prefill_effect_z_vs_pair_se": receipt[
+            "e147_prefill_effect_z_vs_pair_se"],
+        "e147_prefill_effect_sd_pct": receipt["e147_prefill_effect_sd_pct"],
+        "e147_prefill_effect_dispersion_ratio": receipt[
+            "e147_prefill_effect_dispersion_ratio"],
+        "e147_prefill_worst_residual_pct": receipt["e147_prefill_worst_residual_pct"],
+        "e147_prefill_medicine_is_worst_residual": receipt[
+            "e147_prefill_medicine_is_worst_residual"],
+        "e147_prefill_medicine_residual_pct": receipt[
+            "e147_prefill_medicine_residual_pct"],
+        "e147_prefill_prompts_below_band": receipt["e147_prefill_prompts_below_band"],
     }
     for prompt in receipt["prompt_order"]:
+        metrics[f"e147_ranked_mtp_spt_{prompt}"] = receipt[
+            "mtp_seconds_per_token_mean_by_prompt"][prompt]
+        metrics[f"e147_ranked_serial_spt_{prompt}"] = receipt[
+            "serial_seconds_per_token_mean_by_prompt"][prompt]
+        metrics[f"e147_prefill_pct_{prompt}"] = receipt[
+            "prefill_pct_by_prompt_vs_684821ed"][prompt]
+        metrics[f"e147_prefill_residual_{prompt}"] = receipt[
+            "prefill_residual_by_prompt"][prompt]
         metrics[f"e147_ranked_prefill_spt_{prompt}"] = receipt[
             "prefill_seconds_per_token_by_prompt"][prompt]
         metrics[f"e147_ranked_dlen_{prompt}"] = receipt["dlen_by_prompt"][prompt]
@@ -223,6 +322,15 @@ def rung_d_metrics(receipt: dict) -> tuple[dict, dict]:
             "ranked serial numerator comes from a runner-owned prebuilt "
             "baseline workspace"
         ),
+        "prefill_noise_se_pct": receipt["prefill_noise_se_pct"],
+        "prefill_noise_sd_pct": receipt["prefill_noise_sd_pct"],
+        "prefill_noise_source": (
+            "feedback 5, finding 237: bit-identical ranked pair "
+            "684821ed / f7d59543, ground truth exactly zero"
+        ),
+        "prefill_band_cluster_by_prompt": receipt["prefill_band_cluster_by_prompt"],
+        "zero_delta_pair_pct_by_prompt": receipt["zero_delta_pair_pct_by_prompt"],
+        "prefill_worst_residual_prompt": receipt["e147_prefill_worst_residual_prompt"],
     }
     return metrics, config
 
@@ -275,6 +383,10 @@ def main() -> None:
     metrics: dict = {
         "e147_max_threadgroup_bytes": float(config["e147_max_threadgroup_bytes"]),
     }
+
+    surface_m, surface_c = submitted_surface_check()
+    metrics.update(surface_m)
+    config.update(surface_c)
 
     rung_a = load_json(args.rung_a)
     if rung_a:

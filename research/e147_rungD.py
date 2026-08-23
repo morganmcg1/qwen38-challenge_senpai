@@ -93,6 +93,84 @@ STATE_STEP_SD_US = 54.3
 ANCHOR_ID8 = "e003a86d"
 DECODE_TOKENS = 512
 
+# Feedback 5, Finding 237. `f7d59543` is a zero-delta resample of `eb5eadc`,
+# and `eb5eadc7` is the promotedSourceRef of the bar `684821ed`. Same tree,
+# zero editable bytes changed, two independent ranked sessions, so the
+# per-prompt difference below has a ground truth of exactly zero. That makes
+# it a direct measurement of the noise on the statistic this rung reports,
+# and it replaces the modelled 0.0634 pp floor from feedback 4.
+ZERO_DELTA_PAIR = {
+    #            684821ed       f7d59543
+    "beagle":   (0.001027957, 0.001027147),
+    "botany":   (0.001029482, 0.001030359),
+    "drama":    (0.001029822, 0.001028453),
+    "essays":   (0.001028957, 0.001029586),
+    "medicine": (0.001026861, 0.001030240),
+    "plutarch": (0.001028652, 0.001028498),
+    "republic": (0.001026973, 0.001027098),
+    "travel":   (0.001027623, 0.001028244),
+}
+RESAMPLE_ID8 = "f7d59543"
+RESAMPLE_MEDIAN = 3.69864607884415
+PREFILL_NOISE_SE_PCT = 0.0490
+PREFILL_NOISE_SD_PCT = 0.1385
+
+
+def zero_delta_anchors(prefill: dict) -> dict:
+    """Feedback 5. Price the measured prefill against both halves of the pair.
+
+    The two anchors differ by a known-zero effect, so the gap between the two
+    reported percentages is not an independent replication: for a fixed
+    candidate mean C it is exactly 100*C*(B-A)/(A*B), around 0.038 pp. What it
+    does buy is an anchor-choice sensitivity bound. The genuinely new test is
+    per-prompt: the pair gives a measured per-prompt sd, so a candidate whose
+    per-prompt effects scatter far wider than that sd is not explained by
+    session noise alone.
+    """
+    a = {p: v[0] for p, v in ZERO_DELTA_PAIR.items()}
+    b = {p: v[1] for p, v in ZERO_DELTA_PAIR.items()}
+    mean_a = statistics.fmean(a[p] for p in PROMPTS)
+    mean_b = statistics.fmean(b[p] for p in PROMPTS)
+    if abs(mean_a - RANKED_PREFILL_SPT_BAR) > 5e-10:
+        raise SystemExit(
+            "pair column A mean %.12f does not reproduce the bar %.9f"
+            % (mean_a, RANKED_PREFILL_SPT_BAR))
+
+    mean = statistics.fmean(prefill[p] for p in PROMPTS)
+    pct_a = 100.0 * (mean / mean_a - 1.0)
+    pct_b = 100.0 * (mean / mean_b - 1.0)
+
+    per_prompt_a = {p: 100.0 * (prefill[p] / a[p] - 1.0) for p in PROMPTS}
+    per_prompt_b = {p: 100.0 * (prefill[p] / b[p] - 1.0) for p in PROMPTS}
+    residual = {p: per_prompt_a[p] - pct_a for p in PROMPTS}
+    effect_sd = statistics.stdev(per_prompt_a[p] for p in PROMPTS)
+    worst = max(PROMPTS, key=lambda p: abs(residual[p]))
+
+    pair_pct = {p: 100.0 * (b[p] / a[p] - 1.0) for p in PROMPTS}
+    return {
+        "e147_prefill_pct_vs_684821ed": pct_a,
+        "e147_prefill_pct_vs_f7d59543": pct_b,
+        "e147_prefill_anchor_spread_pp": abs(pct_a - pct_b),
+        "e147_prefill_anchor_agreement_ok": float(
+            abs(pct_a - pct_b) <= PREFILL_NOISE_SD_PCT),
+        "e147_prefill_effect_z_vs_pair_se": pct_a / PREFILL_NOISE_SE_PCT,
+        "e147_prefill_effect_sd_pct": effect_sd,
+        "e147_prefill_effect_dispersion_ratio": effect_sd / PREFILL_NOISE_SD_PCT,
+        "e147_prefill_worst_residual_prompt": worst,
+        "e147_prefill_worst_residual_pct": residual[worst],
+        "e147_prefill_medicine_is_worst_residual": float(worst == "medicine"),
+        "e147_prefill_medicine_residual_pct": residual["medicine"],
+        "prefill_pct_by_prompt_vs_684821ed": per_prompt_a,
+        "prefill_pct_by_prompt_vs_f7d59543": per_prompt_b,
+        "prefill_residual_by_prompt": residual,
+        "zero_delta_pair_pct_by_prompt": pair_pct,
+        "zero_delta_pair_mean_pct": 100.0 * (mean_b / mean_a - 1.0),
+        "prefill_noise_se_pct": PREFILL_NOISE_SE_PCT,
+        "prefill_noise_sd_pct": PREFILL_NOISE_SD_PCT,
+        "resample_id8": RESAMPLE_ID8,
+        "resample_published_median": RESAMPLE_MEDIAN,
+    }
+
 
 def fetch() -> list:
     token = os.environ["YUKON_API_TOKEN"]
@@ -179,6 +257,16 @@ def main() -> None:
     mean = statistics.fmean(values)
     sd = statistics.stdev(values)
     ranked_prefill_pct = 100.0 * (mean / RANKED_PREFILL_SPT_BAR - 1.0)
+
+    anchors = zero_delta_anchors(prefill)
+
+    # Feedback 4, D. Where does each prompt sit against the modern census band?
+    mtp = {p: ours[p]["mtp_seconds_per_token_mean"] for p in PROMPTS}
+    serial = {p: ours[p]["serial_seconds_per_token_mean"] for p in PROMPTS}
+    cluster = {p: ("below" if prefill[p] < RANKED_BAND_LOW
+                   else "above" if prefill[p] > RANKED_BAND_HIGH
+                   else "in_band") for p in PROMPTS}
+    n_below = sum(1 for p in PROMPTS if cluster[p] == "below")
 
     raws = {p: ours[p]["raw_ratio_of_means"] for p in PROMPTS}
     median = published_median(raws.values())
@@ -295,7 +383,15 @@ def main() -> None:
         "state_step_constant_sd_us": STATE_STEP_SD_US,
         "prefill_mean": mean,
         "prefill_sd": sd,
+        "mtp_seconds_per_token_mean_by_prompt": mtp,
+        "serial_seconds_per_token_mean_by_prompt": serial,
+        "prefill_band_low": RANKED_BAND_LOW,
+        "prefill_band_high": RANKED_BAND_HIGH,
+        "prefill_band_cluster_by_prompt": cluster,
+        "e147_prefill_prompts_below_band": float(n_below),
+        "e147_ranked_prefill_pct": ranked_prefill_pct,
     }
+    out.update(anchors)
     pathlib.Path(args.out).write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
 
     print("submission %s  status=%s  score=%s" % (out["submission_id8"],
@@ -305,6 +401,24 @@ def main() -> None:
           % (ranked_prefill_pct, RANKED_PREFILL_SPT_BAR))
     print("vs band low %+.4f%%  vs band high %+.4f%%"
           % (100 * (mean / RANKED_BAND_LOW - 1), 100 * (mean / RANKED_BAND_HIGH - 1)))
+    print("vs %s %+.4f%%   vs %s %+.4f%%   spread %.4f pp   z %.1f"
+          % (BAR_ID8, anchors["e147_prefill_pct_vs_684821ed"],
+             RESAMPLE_ID8, anchors["e147_prefill_pct_vs_f7d59543"],
+             anchors["e147_prefill_anchor_spread_pp"],
+             anchors["e147_prefill_effect_z_vs_pair_se"]))
+    print("per-prompt effect sd %.4f%%  pair sd %.4f%%  ratio %.2f"
+          % (anchors["e147_prefill_effect_sd_pct"], PREFILL_NOISE_SD_PCT,
+             anchors["e147_prefill_effect_dispersion_ratio"]))
+    print("worst residual %s %+.4f%%   medicine %+.4f%%"
+          % (anchors["e147_prefill_worst_residual_prompt"],
+             anchors["e147_prefill_worst_residual_pct"],
+             anchors["e147_prefill_medicine_residual_pct"]))
+    print("%-9s %-14s %-9s %-9s %-14s" %
+          ("prompt", "prefill", "d%_vs_bar", "band", "mtp_spt"))
+    for p in PROMPTS:
+        print("%-9s %.9f  %+8.4f  %-9s %.9f"
+              % (p, prefill[p], anchors["prefill_pct_by_prompt_vs_684821ed"][p],
+                 cluster[p], mtp[p]))
     print("forecast %+.4f pp  realised model_b %+.4f pp  model_a %+.4f pp"
           % (forecast, realised["model_b"], realised["model_a"]))
     print("forecast error %+.4f pp" % (realised["model_b"] - forecast))
