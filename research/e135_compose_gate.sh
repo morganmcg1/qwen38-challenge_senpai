@@ -255,11 +255,11 @@ python3 research/e135_probe_check.py "${out}/pipelines.json"
 [[ "${PIPESTATUS[0]}" -eq 0 ]] || rc=6
 
 echo
-echo "--- witness: ship round schedule ---"
-python3 research/e135_arm_check.py "${out}/score.json" --want ship
-[[ "${PIPESTATUS[0]}" -eq 0 ]] || rc=7
-echo "--- Rule 101 control: the same check must FAIL against pb6 ---"
+echo "--- witness: pb6 round schedule ---"
 python3 research/e135_arm_check.py "${out}/score.json" --want pb6
+[[ "${PIPESTATUS[0]}" -eq 0 ]] || rc=7
+echo "--- Rule 101 control: the same check must FAIL against ship ---"
+python3 research/e135_arm_check.py "${out}/score.json" --want ship
 [[ "${PIPESTATUS[0]}" -ne 0 ]] || rc=10
 
 echo

@@ -7,10 +7,12 @@ the run's own `score.json`, never from the variable the leg was asked with,
 because an unrecognised `MLX_E134_DEPTH_PRICE_ARM` falls back to the compiled
 default and is indistinguishable from a selector that never arrived.
 
-E135 F23 reverted the compiled default to `.ship` after ranked receipt
-`e003a86d` lost 2.380 % of published median against `572b2cc4`. The wanted arm
-is therefore `ship`, whose signature on this fixture is 6.358974358974359.
-The refuted `pb6` arm sits at about 5.854.
+E135 F33 restored the compiled default to `.pb6`. F23 had reverted it to
+`.ship` on ranked receipt `e003a86d`, and the anchor-inversion panel then
+showed that receipt drew the slow decode state (AUC 0.1964, p 0.993), so the
+receipt priced a state draw and not the mechanism. The wanted arm is therefore
+`pb6`, which sits at about 5.854 on this fixture. The `ship` arm signature is
+6.358974358974359.
 
 RULE 101. The two signatures differ by 0.505, so the band is set to 0.20 to
 keep them disjoint. The check requires the observed schedule to match the
@@ -30,7 +32,7 @@ TOLERANCE = 0.20
 
 parser = argparse.ArgumentParser()
 parser.add_argument("score_json")
-parser.add_argument("--want", choices=sorted(SIGNATURES), default="ship")
+parser.add_argument("--want", choices=sorted(SIGNATURES), default="pb6")
 args = parser.parse_args()
 
 with open(args.score_json) as handle:

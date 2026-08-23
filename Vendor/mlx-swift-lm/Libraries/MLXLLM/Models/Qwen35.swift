@@ -4778,203 +4778,6 @@ private let qwen35Top32Enabled: Bool =
 // ceil(CLUSTERS/32) words, scans the per-word popcounts, and emits set bits in
 // ascending order. Thread `t` owns the ascending word range [t*WPT, t*WPT+WPT)
 // and the scan is exclusive over `t`, so the emitted ids ascend globally.
-// ---------------------------------------------------------------------------
-// E87 probe select (proposal-side only).
-//
-// Restored from the promoted frontier snapshot `eb5eadc7`, which carries it
-// with the note that it measured +0.72 % when first promoted and was then lost
-// to a whole-file overlay whose branch predated it. Our lineage descends from
-// `60d5b34a`, which never received it, so we still run the chain it replaces.
-//
-// The incumbent selection is `MLX.argPartition` followed by the probe-sort
-// compaction below, about ten dispatches. This is one.
-//
-// Our `centroidScore` reaches this kernel as bfloat16 from either branch: the
-// E121 cluster centroid QMV declares `outputDTypes: [.bfloat16]`, and the
-// `quantizedMM` fallback returns bfloat16 for bfloat16 inputs. That is what
-// makes the 16-bit key exact rather than lossy, so the branch must not start
-// producing float32 without revisiting the key width.
-// ---------------------------------------------------------------------------
-
-/// `MLX_E87_SELECT=0` restores the incumbent `argPartition` chain bit-for-bit.
-/// Proposal-side only: this kernel chooses the SAME candidate set the incumbent
-/// chooses, under the same tie rule, so the exact rerank that follows sees
-/// identical inputs and the emitted proposal cannot change.
-private let qwen35E87SelectEnabled: Bool =
-    ProcessInfo.processInfo.environment["MLX_E87_SELECT"] != "0"
-
-/// 16-bit order-preserving key of a bf16-sourced float under the merge sort's
-/// (value asc, index asc) order, i.e. `qwen_top32_ordinal >> 16`. Exact for
-/// every bf16 value: bf16 -> f32 leaves the low 16 mantissa bits zero, so the
-/// positive branch truncates nothing and the negative branch (`~u`) drops a
-/// constant 0xFFFF. NaN ranks above every number; -0 folds into +0 so the pair
-/// ties and breaks by index, exactly as the incumbent.
-private let qwen35E87KeyHeader = """
-    inline ushort qwen_e87_key16(float v) {
-        if (isnan(v))  { return 0xFFFFu; }
-        if (v == 0.0f) { return 0x8000u; }
-        uint u = as_type<uint>(v);
-        uint o = (u & 0x80000000u) ? (~u) : (u | 0x80000000u);
-        return ushort(o >> 16);
-    }
-    """
-
-private let qwen35E87SelectTG = 1024
-
-/// Replaces `MLX.sorted(MLX.argPartition(score, kth: C - P)[(C - P)...])`
-/// (one 9-dispatch merge sort plus the probe compaction) with ONE dispatch.
-///
-/// The selected set is the P elements maximal under (key asc, index asc):
-/// every key above a threshold T, plus -- among the keys equal to T -- the
-/// highest indices until P is reached (the merge sort's stable tail breaks
-/// ties toward the higher index). T is found by two 8-bit histogram passes,
-/// the index cut by a popcount walk over a bitmap of the T-keyed indices.
-/// Thread `t` owns the contiguous index range [t*PT, t*PT+PT) and the final
-/// prefix scan is exclusive over `t`, so the emitted ids ascend globally.
-private func makeQwen35E87ProbeSelectKernel(clusters: Int, probes: Int)
-    -> MLXFast.MLXFastKernel
-{
-    MLXFast.metalKernel(
-        name: "qwen_mtp_e87_probe_select",
-        inputNames: ["score"],
-        outputNames: ["probed"],
-        source: """
-            constexpr uint CLUSTERS = \(clusters);
-            constexpr uint PROBES   = \(probes);
-            constexpr uint TG       = \(qwen35E87SelectTG);
-            constexpr uint PT       = (CLUSTERS + TG - 1u) / TG;
-            constexpr uint WORDS    = (CLUSTERS + 31u) / 32u;
-            constexpr uint NSIMD    = TG / 32u;
-            static_assert(PROBES >= 1u && PROBES <= CLUSTERS, "probe count");
-            static_assert(NSIMD == 32u, "scan assumes 32 simdgroups");
-
-            const uint tid  = thread_position_in_threadgroup.x;
-            const uint lane = thread_index_in_simdgroup;
-            const uint sg   = simdgroup_index_in_threadgroup;
-            const uint base = tid * PT;
-
-            threadgroup atomic_uint hist[256];
-            threadgroup atomic_uint bits[WORDS];
-            threadgroup uint sel[8];
-            threadgroup uint sgsum[NSIMD];
-
-            ushort key[PT];
-            for (uint j = 0; j < PT; ++j) {
-                const uint i = base + j;
-                key[j] = (i < CLUSTERS) ? qwen_e87_key16(float(score[i])) : ushort(0);
-            }
-
-            // Pass 1: high byte.
-            for (uint x = tid; x < 256u; x += TG) {
-                atomic_store_explicit(&hist[x], 0u, memory_order_relaxed);
-            }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            for (uint j = 0; j < PT; ++j) {
-                if (base + j < CLUSTERS) {
-                    atomic_fetch_add_explicit(&hist[uint(key[j]) >> 8], 1u, memory_order_relaxed);
-                }
-            }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            if (tid == 0) {
-                uint acc = 0u, b = 0u;
-                for (int x = 255; x >= 0; --x) {
-                    const uint c = atomic_load_explicit(&hist[x], memory_order_relaxed);
-                    if (acc + c >= PROBES) { b = uint(x); break; }
-                    acc += c;
-                }
-                sel[0] = b; sel[1] = acc;
-            }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            const uint hi = sel[0];
-            const uint k1 = PROBES - sel[1];
-
-            // Pass 2: low byte among keys whose high byte is `hi`.
-            for (uint x = tid; x < 256u; x += TG) {
-                atomic_store_explicit(&hist[x], 0u, memory_order_relaxed);
-            }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            for (uint j = 0; j < PT; ++j) {
-                if (base + j < CLUSTERS && (uint(key[j]) >> 8) == hi) {
-                    atomic_fetch_add_explicit(&hist[uint(key[j]) & 0xFFu], 1u, memory_order_relaxed);
-                }
-            }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            if (tid == 0) {
-                uint acc = 0u, c = 0u;
-                for (int x = 255; x >= 0; --x) {
-                    const uint n = atomic_load_explicit(&hist[x], memory_order_relaxed);
-                    if (acc + n >= k1) { c = uint(x); break; }
-                    acc += n;
-                }
-                sel[2] = c; sel[3] = acc;
-                sel[4] = atomic_load_explicit(&hist[c], memory_order_relaxed);
-            }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            const ushort T  = ushort((hi << 8) | sel[2]);
-            const uint   k2 = k1 - sel[3];
-            const uint   eq = sel[4];
-
-            // Index cut among the T-keyed elements: keep the k2 highest.
-            uint idxThr = 0u;
-            if (k2 < eq) {
-                for (uint w = tid; w < WORDS; w += TG) {
-                    atomic_store_explicit(&bits[w], 0u, memory_order_relaxed);
-                }
-                threadgroup_barrier(mem_flags::mem_threadgroup);
-                for (uint j = 0; j < PT; ++j) {
-                    const uint i = base + j;
-                    if (i < CLUSTERS && key[j] == T) {
-                        atomic_fetch_or_explicit(&bits[i >> 5], 1u << (i & 31u), memory_order_relaxed);
-                    }
-                }
-                threadgroup_barrier(mem_flags::mem_threadgroup);
-                if (tid == 0) {
-                    uint need = k2, thr = 0u;
-                    for (int w = int(WORDS) - 1; w >= 0; --w) {
-                        uint v = atomic_load_explicit(&bits[w], memory_order_relaxed);
-                        const uint pc = popcount(v);
-                        if (pc >= need) {
-                            for (uint k = 0; k + 1u < need; ++k) {
-                                v &= ~(1u << (31u - clz(v)));
-                            }
-                            thr = uint(w) * 32u + (31u - clz(v));
-                            break;
-                        }
-                        need -= pc;
-                    }
-                    sel[5] = thr;
-                }
-                threadgroup_barrier(mem_flags::mem_threadgroup);
-                idxThr = sel[5];
-            }
-
-            // Compaction in ascending index order.
-            uint cnt = 0u;
-            for (uint j = 0; j < PT; ++j) {
-                const uint i = base + j;
-                if (i < CLUSTERS && (key[j] > T || (key[j] == T && i >= idxThr))) { ++cnt; }
-            }
-            const uint incl = simd_prefix_inclusive_sum(cnt);
-            if (lane == 31u) { sgsum[sg] = incl; }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            if (sg == 0u) {
-                const uint v = sgsum[lane];
-                sgsum[lane] = simd_prefix_exclusive_sum(v);
-            }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-            uint out = sgsum[sg] + incl - cnt;
-            for (uint j = 0; j < PT; ++j) {
-                const uint i = base + j;
-                if (i < CLUSTERS && (key[j] > T || (key[j] == T && i >= idxThr))) {
-                    probed[out++] = i;
-                }
-            }
-            """,
-        header: qwen35E87KeyHeader,
-        ensureRowContiguous: true
-    )
-}
-
 private let qwen35ProbeSortTG = 256
 
 private func makeQwen35ProbeSortKernel(clusters: Int, probes: Int)
@@ -5567,83 +5370,6 @@ public func qwen35ProbeSortPositiveControl(
     return !MLX.all(MLX.equal(mine, theirs)).item(Bool.self)
 }
 
-/// Checks `qwen_mtp_e87_probe_select` against the incumbent
-/// `MLX.sorted(MLX.argPartition(score, kth)[kth...])` on synthetic bf16 rows.
-///
-/// The frontier snapshot ships this kernel with no verification at all, and it
-/// needs one more than the compaction kernel does. The compaction consumes an
-/// index permutation, so its inputs cannot tie. This kernel consumes float
-/// scores, so its whole tie rule is load bearing: it must keep the highest
-/// indices among the elements equal to the threshold key. The trial mix is
-/// therefore weighted toward ties, with an all-zero row where every element
-/// ties and the answer is decided by the index rule alone.
-///
-/// Returns (checked, mismatches, firstBadTrial). Never called on a scored path.
-public func qwen35VerifyProbeSelect(
-    clusters: Int = 12_292, probes: Int = 3_073,
-    trials: Int = 64, seed: UInt64 = 1
-) -> (Int, Int, Int) {
-    MLXRandom.seed(seed)
-    let select = makeQwen35E87ProbeSelectKernel(clusters: clusters, probes: probes)
-    let kth = clusters - probes
-    var bad = 0
-    var firstBad = -1
-    for trial in 0 ..< trials {
-        var score = MLXRandom.normal([clusters]).asType(.bfloat16)
-        switch trial % 4 {
-        case 1: score = (MLXRandom.normal([clusters]) * 4).round().asType(.bfloat16)
-        case 2: score = MLX.zeros([clusters], dtype: .bfloat16)
-        case 3: score = (MLXRandom.normal([clusters]) * 0.25).round().asType(.bfloat16)
-        default: break
-        }
-        let mine = select(
-            [score],
-            grid: (qwen35E87SelectTG, 1, 1),
-            threadGroup: (qwen35E87SelectTG, 1, 1),
-            outputShapes: [[probes]],
-            outputDTypes: [.uint32]
-        )[0]
-        let theirs = MLX.sorted(
-            MLX.argPartition(score, kth: kth, axis: -1)[(kth)...]).asType(.uint32)
-        eval(mine, theirs)
-        if !MLX.all(MLX.equal(mine, theirs)).item(Bool.self) {
-            bad += 1
-            if firstBad < 0 { firstBad = trial }
-        }
-    }
-    return (trials, bad, firstBad)
-}
-
-/// Positive control for `qwen35VerifyProbeSelect`. A gate that cannot fail is
-/// not a gate. Perturbing one selected score to the maximum moves exactly one
-/// index into the selected set, so a comparison that still reports a match is
-/// not comparing anything. Returns true when the check correctly fails.
-public func qwen35ProbeSelectPositiveControl(
-    clusters: Int = 12_292, probes: Int = 3_073, seed: UInt64 = 7
-) -> Bool {
-    MLXRandom.seed(seed)
-    let select = makeQwen35E87ProbeSelectKernel(clusters: clusters, probes: probes)
-    let kth = clusters - probes
-    let score = MLXRandom.normal([clusters]).asType(.bfloat16)
-    let theirs = MLX.sorted(
-        MLX.argPartition(score, kth: kth, axis: -1)[(kth)...]).asType(.uint32)
-    // Promote one index that the incumbent did not select.
-    var values = score.asArray(Float.self)
-    let selected = Set(theirs.asArray(UInt32.self))
-    guard let outsider = (0 ..< clusters).first(where: { !selected.contains(UInt32($0)) })
-    else { return false }
-    values[outsider] = 1_000.0
-    let mine = select(
-        [MLXArray(values).asType(.bfloat16)],
-        grid: (qwen35E87SelectTG, 1, 1),
-        threadGroup: (qwen35E87SelectTG, 1, 1),
-        outputShapes: [[probes]],
-        outputDTypes: [.uint32]
-    )[0]
-    eval(mine, theirs)
-    return !MLX.all(MLX.equal(mine, theirs)).item(Bool.self)
-}
-
 /// Isolated micro-benchmark of the compaction step alone, with `argPartition`
 /// held outside the timed region on both arms. Returns (sortedUs, kernelUs).
 /// Never called on a scored path.
@@ -5917,7 +5643,6 @@ public class Qwen35TextModel: Module, LLMModel, KVCacheDimensionProvider {
     private var _draftClusterShape: [Int]?
     private var _draftClusterLHS: MLXArray?
     private var _draftProbeSort: MLXFast.MLXFastKernel?
-    private var _draftProbeSelect: MLXFast.MLXFastKernel?
     private var _draftRowTop32: Qwen35RowTop32?
     // One attempt only: a head that cannot support a derived index must keep
     // the dense readout instead of re-deriving on every draft step.
@@ -6490,15 +6215,8 @@ extension Qwen35TextModel: MTPCapable {
         if _draftClusterLHS == nil {
             _draftClusterLHS = MLX.zeros([probes], dtype: .uint32)
         }
-        // Live E87 select never consumes `_draftProbeSort`. Constructing it
-        // still JITs qwen_mtp_probe_sort on the first draft, so skip that
-        // factory while E87 is the first arm.
-        if !qwen35E87SelectEnabled, qwen35ProbeSortEnabled, _draftProbeSort == nil {
+        if qwen35ProbeSortEnabled, _draftProbeSort == nil {
             _draftProbeSort = makeQwen35ProbeSortKernel(
-                clusters: clusters, probes: probes)
-        }
-        if qwen35E87SelectEnabled, _draftProbeSelect == nil {
-            _draftProbeSelect = makeQwen35E87ProbeSelectKernel(
                 clusters: clusters, probes: probes)
         }
         if qwen35RowTop32Enabled, _draftRowTop32 == nil {
@@ -6519,40 +6237,20 @@ extension Qwen35TextModel: MTPCapable {
             ).reshaped([clusters])
         }
         // `gatherQuantizedMM` is handed the probes in ascending index order,
-        // while the top-C arrive in partition order. `argPartition` stays
-        // inside the fallback arms: the point of E87 select is that the merge
-        // sort never runs at all.
-        //
-        // Each arm records itself at the dispatch rather than from the parsed
-        // environment, so a selector that never reached the worker reads
-        // differently from one that arrived and was ignored. Exactly one of the
-        // three keys may appear in a leg.
+        // while the top-C arrive in partition order.
+        let order = MLX.argPartition(centroidScore, kth: clusters - probes)
         let probed: MLXArray
-        if let selectK = _draftProbeSelect {
-            Qwen35CustomQMV.notePipeline("e87_probe_select", width: nil)
-            probed = selectK(
-                [centroidScore],
-                grid: (qwen35E87SelectTG, 1, 1),
-                threadGroup: (qwen35E87SelectTG, 1, 1),
+        if let sorter = _draftProbeSort {
+            probed = sorter(
+                [order],
+                grid: (qwen35ProbeSortTG, 1, 1),
+                threadGroup: (qwen35ProbeSortTG, 1, 1),
                 outputShapes: [[probes]],
                 outputDTypes: [.uint32]
             )[0]
         } else {
-            let order = MLX.argPartition(centroidScore, kth: clusters - probes)
-            if let sorter = _draftProbeSort {
-                Qwen35CustomQMV.notePipeline("e87_probe_sort_compaction", width: nil)
-                probed = sorter(
-                    [order],
-                    grid: (qwen35ProbeSortTG, 1, 1),
-                    threadGroup: (qwen35ProbeSortTG, 1, 1),
-                    outputShapes: [[probes]],
-                    outputDTypes: [.uint32]
-                )[0]
-            } else {
-                Qwen35CustomQMV.notePipeline("e87_probe_merge_sort", width: nil)
-                probed = MLX.sorted(order[.ellipsis, (clusters - probes)...])
-                    .asType(.uint32)
-            }
+            probed = MLX.sorted(order[.ellipsis, (clusters - probes)...])
+                .asType(.uint32)
         }
 
         let rowScore: MLXArray

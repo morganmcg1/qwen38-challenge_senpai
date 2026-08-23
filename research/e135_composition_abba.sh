@@ -48,7 +48,6 @@ session_worker="$(
 # One place that defines an arm, so the witness leg and the timed leg cannot
 # drift apart. bash 3.2 has no associative arrays.
 apply_arm() {
-  export MLX_E87_SELECT=0
   case "$1" in
     base)
       export MLX_E120_QMV_GRID=wide
@@ -77,7 +76,7 @@ apply_arm() {
 
 clear_arm() {
   unset MLX_E120_QMV_GRID MLX_E120_QMV_TABLE MLX_E135_PROBE_ARM \
-        MLX_E120_QMV_WIDTH2 MLX_E87_SELECT
+        MLX_E120_QMV_WIDTH2
 }
 
 # The arm each witness leg is checked AGAINST, which it must fail. Rule 101.

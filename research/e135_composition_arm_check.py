@@ -40,6 +40,7 @@ ARMS = {
     "base": ("onepass67", "wide", "p25", 3),
     "composed": ("shipped", "tight", "p15", 2),
     "composed67": ("onepass67", "tight", "p15", 2),
+    "composed678": ("onepass678", "tight", "p15", 2),
 }
 
 FRACTIONS = {"p25": 0.25, "p15": 0.15, "p10": 0.10}
