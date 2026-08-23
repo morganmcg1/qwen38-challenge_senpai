@@ -52,6 +52,13 @@ F217_DRAFTLEN_A = 4.3818
 F217_DRAFTLEN_B = 4.4771
 F217_CAND_PCT = 0.2391
 
+# FINDING 219 pinned ranked beagle round cost, and the FINDING 218 bound on the
+# per-round shift the width move must explain. The measured curve is local, so
+# it is converted to ranked microseconds by its own percentage rise applied to
+# the ranked round cost. That route needs no local-to-ranked level factor.
+F219_BEAGLE_ROUND_US = 49738.5
+F218_BOUND_US = (119.0, 970.0)
+
 R3_TRIGGER_PCT = 5.0
 
 
@@ -360,18 +367,28 @@ def shift_hist(hist: dict[int, float], delta: float,
     moves a fraction `theta` of the mass at every width up to the next width,
     with the same `theta` everywhere, which is the shift an across-the-board
     acceptance improvement produces under a threshold walk: every round becomes
-    `theta` more likely to clear its next threshold. `theta` equals `delta`
-    exactly, because moving `theta` of every unit of mass up by one width
-    raises the mean by `theta`. Mass already at `max_width` cannot move, so the
-    realised shift is reported and checked, not assumed.
+    `theta` more likely to clear its next threshold.
+
+    `theta` is SOLVED, not set equal to `delta`. Mass already at `max_width`
+    cannot move, so the mean rises by `theta * mobile_mass` and setting
+    `theta = delta` under-delivers the requested shift by the mobile fraction.
+    On the local `beagle_a` histogram 28.6 % of the mass sits at width 8, so
+    that error would price a 0.068 shift while claiming to price 0.0953 and
+    would understate the cost by about a third. `research/e145_r0.py` solves it
+    the same way, so the measured and replayed curves price the same object.
     """
+    total = sum(hist.values())
+    mobile = 1.0 - sum(m for w, m in hist.items() if w >= max_width) / total
+    if mobile <= 0.0:
+        return dict(hist)
+    theta = delta / mobile
     out: dict[int, float] = {w: 0.0 for w in hist}
     for w, mass in hist.items():
         if w >= max_width:
             out[w] = out.get(w, 0.0) + mass
             continue
-        out[w] = out.get(w, 0.0) + mass * (1.0 - delta)
-        out[w + 1] = out.get(w + 1, 0.0) + mass * delta
+        out[w] = out.get(w, 0.0) + mass * (1.0 - theta)
+        out[w + 1] = out.get(w + 1, 0.0) + mass * theta
     return out
 
 
@@ -453,8 +470,11 @@ def f217_validation(measured: dict[int, dict], legs: list[dict],
         "accepted_per_round_before": acc_a,
         "accepted_per_round_after": acc_b,
         "ranked_measured_cand_pct": F217_CAND_PCT,
+        "f219_beagle_round_us": F219_BEAGLE_ROUND_US,
+        "f218_bound_us": list(F218_BOUND_US),
     }
 
+    lo_us, hi_us = F218_BOUND_US
     for name, curve in (("measured", curve_measured),
                         ("replayed_rescaled", curve_replayed_local)):
         cost_a = cost_of(priced, curve)
@@ -462,6 +482,8 @@ def f217_validation(measured: dict[int, dict], legs: list[dict],
         cost_only = pct(cost_b, cost_a)
         same_p = pct(cost_b / (1.0 + acc_b), cost_a / (1.0 + acc_a))
         low, high = sorted((cost_only, same_p))
+        shift_cost_only = F219_BEAGLE_ROUND_US * cost_only / 100.0
+        shift_same_p = F219_BEAGLE_ROUND_US * same_p / 100.0
         out[name] = {
             "round_cost_before_us": cost_a,
             "round_cost_after_us": cost_b,
@@ -471,7 +493,18 @@ def f217_validation(measured: dict[int, dict], legs: list[dict],
             "bracket_high_pct": high,
             "brackets_ranked_measurement": low <= F217_CAND_PCT <= high,
             "sign_matches_ranked": (cost_only > 0) == (F217_CAND_PCT > 0),
+            "predicted_beagle_shift_us_cost_only": shift_cost_only,
+            "predicted_beagle_shift_us_same_p": shift_same_p,
+            "f218_bound_consistent_cost_only":
+                lo_us <= shift_cost_only <= hi_us,
+            "f218_bound_consistent_same_p": lo_us <= shift_same_p <= hi_us,
         }
+
+    m = out["measured"]
+    out["e145_predicted_beagle_shift_us_measured"] = \
+        m["predicted_beagle_shift_us_cost_only"]
+    out["e145_f218_bound_consistent_measured"] = \
+        m["f218_bound_consistent_cost_only"] and m["f218_bound_consistent_same_p"]
     return out
 
 
@@ -612,6 +645,20 @@ def main() -> int:
                   f"   brackets ranked: {r['brackets_ranked_measurement']}")
         print(f"  unpriced width mass {f217['unpriced_width_mass']:.4f}"
               f"   realised shift {f217['realised_shift']:.4f}")
+        lo, hi = f217["f218_bound_us"]
+        print(f"  FINDING 218 bound {lo:.0f} to {hi:.0f} us per ranked round"
+              f"   (ranked beagle round {f217['f219_beagle_round_us']:.1f} us)")
+        for name in ("measured", "replayed_rescaled"):
+            r = f217[name]
+            print(f"  {name:>18}:"
+                  f" cost-only {r['predicted_beagle_shift_us_cost_only']:>+8.1f} us"
+                  f" {str(r['f218_bound_consistent_cost_only']):>5}"
+                  f"   same-p {r['predicted_beagle_shift_us_same_p']:>+8.1f} us"
+                  f" {str(r['f218_bound_consistent_same_p']):>5}")
+        print(f"  e145_predicted_beagle_shift_us_measured"
+              f" {f217['e145_predicted_beagle_shift_us_measured']:.1f}"
+              f"   e145_f218_bound_consistent_measured"
+              f" {f217['e145_f218_bound_consistent_measured']}")
     else:
         print(f"\nFINDING 217 validation unavailable: {f217.get('reason')}")
     return 0
