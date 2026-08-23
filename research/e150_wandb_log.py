@@ -263,9 +263,16 @@ def log_curve_bracket(run, summary: dict, cb: dict) -> None:
                 "e150_policy_gain_min_over_curves_pp",
                 "e150_policy_gain_min_over_all_cells_pp",
                 "e150_curve_bracket_control_pp",
-                "e150_curve_bracket_control_ok"):
+                "e150_curve_bracket_control_ok",
+                "e150_pessimistic_cell",
+                "e150_policy_gain_rule148_weighted_pp",
+                "e150_f4_abort_rule_threshold_pp",
+                "e150_f4_submit_allowed",
+                "e150_rule114_falsifier"):
         if key in cb:
             summary[key] = cb[key]
+    summary["e150_rule114_predicted_unchanged_count"] = len(
+        cb.get("e150_rule114_predicted_unchanged", []))
     for curve, value in cb.get("e150_mu_star_by_curve", {}).items():
         summary["e150_mu_star_%s" % curve] = value
     for curve, value in cb.get("e150_shipped_by_curve", {}).items():
@@ -280,6 +287,96 @@ def log_curve_bracket(run, summary: dict, cb: dict) -> None:
           row.get("frac_rounds_inadmissible"),
           row.get("weighted_accept_rate")]
          for name, row in sorted(cells.items())])})
+
+    rollups = cb.get("e150_rule148_rollup_by_cell", {})
+    run.log({"rule148_rollup_by_cell": table(
+        ["cell", "weighted_pp", "unweighted_mean_pp", "worst_prompt",
+         "worst_prompt_pp", "carrying_families_negative"],
+        [[name, row.get("e150_policy_gain_rule148_weighted_pp"),
+          row.get("e150_policy_gain_unweighted_mean_pp"),
+          row.get("e150_policy_gain_worst_prompt"),
+          row.get("e150_policy_gain_worst_prompt_pp"),
+          ",".join(row.get("e150_policy_gain_carrying_families_negative", []))]
+         for name, row in sorted(rollups.items())])})
+
+    weights = rollups.get(cb.get("e150_pessimistic_cell"), {}).get(
+        "weights", {})
+    by_prompt = cb.get("e150_policy_gain_by_prompt_pp", {})
+    pess = by_prompt.get(cb.get("e150_pessimistic_cell"), {})
+    run.log({"rule148_gain_by_prompt_pessimistic": table(
+        ["prompt", "rule148_weight", "gain_pp"],
+        [[name, weights.get(name), gain]
+         for name, gain in sorted(pess.items(),
+                                  key=lambda kv: -weights.get(kv[0], 0.0))])})
+
+    witness = cb.get("e150_rule114_preregistration", {})
+    run.log({"rule114_preregistration": table(
+        ["prompt", "ranked_edl_0cf1637e", "replay_shipped_mean_depth",
+         "replay_policy_mean_depth", "replay_delta_depth",
+         "predicted_direction"],
+        [[name, w.get("ranked_edl_0cf1637e"),
+          w.get("replay_shipped_mean_depth"),
+          w.get("replay_policy_mean_depth"), w.get("replay_delta_depth"),
+          w.get("predicted_direction")]
+         for name, w in sorted(
+             witness.items(),
+             key=lambda kv: kv[1].get("ranked_edl_0cf1637e", 0.0))])})
+
+
+def log_realised_price(run, summary: dict, rp: dict) -> None:
+    """The price of the schedules the submitted build really chose.
+
+    No fitted acceptance model sits between the rule and this number. Only the
+    chosen width per round is read out of each trace, never a round time, so
+    this stays an offline price and CAMPAIGN RULE 79 is not engaged.
+    """
+    for key, value in rp.items():
+        if isinstance(value, (int, float, bool, str)) \
+                and key.startswith("e150_"):
+            summary[key] = value
+    by_curve = rp.get("by_curve", {})
+    measured = by_curve.get("measured", {}).get("rows", {})
+    replayed = by_curve.get("replayed", {}).get("rows", {})
+    run.log({"realised_price_by_fixture": table(
+        ["fixture", "measured_curve_pct", "replayed_curve_pct",
+         "shipped_rounds", "linearised_rounds", "shipped_edl",
+         "linearised_edl", "edl_delta"],
+        [[name, row.get("gain_pct"), replayed.get(name, {}).get("gain_pct"),
+          row.get("shipped_rounds"), row.get("linearised_rounds"),
+          row.get("shipped_edl"), row.get("linearised_edl"),
+          row.get("edl_delta")]
+         for name, row in sorted(measured.items())])})
+    for curve, block in by_curve.items():
+        for field in ("median_gain_pct", "pooled_gain_pct", "mean_gain_pct",
+                      "min_gain_pct", "max_gain_pct", "prompts_improved",
+                      "pooled_shipped_units_per_token",
+                      "pooled_linearised_units_per_token"):
+            summary["e150_realised_%s_%s" % (curve, field)] = block.get(field)
+        summary["e150_realised_rule148_weighted_pp_%s" % curve] = (
+            block.get("rule_148", {})
+            .get("e150_policy_gain_rule148_weighted_pp"))
+
+
+def log_receipt_transfer(run, summary: dict, rt: dict) -> None:
+    """R0.5c: what the mechanism is worth on each live ranked receipt.
+
+    The median pair moves between receipts, so the same replay prices
+    differently against different rows. This rung records that sensitivity
+    instead of quoting one receipt as though it were stable.
+    """
+    for key, value in rt.items():
+        if isinstance(value, (int, float, bool, str)) \
+                and key.startswith("e150_"):
+            summary[key] = value
+    receipts = rt.get("receipts", {})
+    run.log({"receipt_transfer": table(
+        ["receipt", "status", "score", "gain_min_over_curves_pp",
+         "projected_ranked_score_min_over_curves", "central_pair"],
+        [[name, r.get("status"), r.get("score"),
+          r.get("gain_min_over_curves_pp"),
+          r.get("projected_ranked_score_min_over_curves"),
+          ",".join(r.get("leverage", {}).get("central_pair", []))]
+         for name, r in sorted(receipts.items())])})
 
 
 def log_r4_presubmit(run, summary: dict, r4: dict) -> None:
@@ -451,7 +548,9 @@ def main() -> int:
     r2seq = load("r2seq.json")
     cb = load("curve_bracket.json")
     r4 = load("r4_presubmit.json")
-    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb, r4)):
+    rp = load("r4_realised_price.json")
+    rt = load("receipt_transfer.json")
+    if all(v is None for v in (r0, r05, r1, w8, r2seq, cb, r4, rp, rt)):
         print("no E150 artifacts found under %s" % ARTIFACTS)
         return 1
 
@@ -462,7 +561,9 @@ def main() -> int:
                                          ("R0.5b", cb),
                                          ("R1/R2", r1), ("width8", w8),
                                          ("R2-L5L6", r2seq),
-                                         ("R4-presubmit", r4))
+                                         ("R0.5c", rt),
+                                         ("R4-presubmit", r4),
+                                         ("R4-realised-price", rp))
                           if v is not None],
         "harness": "local",
         # R4 is the only rung that holds the GPU, and it publishes exactness
@@ -510,6 +611,10 @@ def main() -> int:
         log_r2_sequential(run, summary, r2seq)
     if r4 is not None:
         log_r4_presubmit(run, summary, r4)
+    if rp is not None:
+        log_realised_price(run, summary, rp)
+    if rt is not None:
+        log_receipt_transfer(run, summary, rt)
 
     run.summary.update(summary)
     print("run id   %s" % run.id)
