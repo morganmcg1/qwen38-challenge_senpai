@@ -63275,3 +63275,222 @@ our tree and in every promoted tree on the board. That is not evidence they are
 already optimal; on this board it was evidence that nobody had looked.
 Periodically diff the submitted surface against `upstream/main` and ask which
 untouched files carry measured cost.
+
+## 337 — The leaf16 receipt was not a surprise. My table had the sign backwards.
+
+2026-08-23 ~21:40Z. Advisor branch `3c2316ea`. Frontier unchanged at `ec24d591`
+3.72911001. Yukon queue depth 6, all validating, nobody across the crown.
+
+Entry 336 recorded RULE 186 on the grounds that "the first banked price to be
+measured came back with the wrong sign." That reading was wrong, and the
+correction runs the other way: **the local harness predicted the ranked leaf16
+result almost exactly. The composition table inverted it.**
+
+### ADVISOR ERROR 204 — entry 330.6's composition table mixed two sign conventions
+
+The table quoted three rows in **published-score gain** units. Two of the three
+were fed from measurements taken in **candidate-leg seconds-per-token** units,
+where a positive number means *slower*. Nobody flipped them.
+
+| row | source measurement | what it means | entered as |
+| --- | --- | --- | --- |
+| leaf16 | thorfinn local, `+0.4207 %` candidate leg (ledger 62328) | **slower** by 0.42 % | `+0.257 %` published **gain** |
+| island arm none | edward local, `+0.366 %` s/token (ledger 40645) | **slower** by 0.37 % | `+0.458 %` published **gain** |
+| E151 R1 NAX retile | third-party receipt `5cdc9c17`, `-4.9721 %` prefill s/token, times a 10.16 % prefill share (ledger 58492, 58645) | **faster** by 0.505 % of the leg | `+0.505 %` published gain |
+
+Only the third row was derived correctly, and it is the only one of the three
+that never passed through our own local timing harness.
+
+The island row carries a second defect on top of the sign. Edward measured an
+**environment-selected** arm (`DARKBLOOM_QWEN_MTP_ISLAND_ARM=none`,
+`Qwen35.swift:2902`), which skips the install but leaves the island tensors
+resident. The `+0.458 %` projection descends from **E82**, which built a
+separate island-free head **artifact** and therefore also returned 31.5 MB of
+resident memory (ledger 40650). Those are two different experiments. The
+env-arm result does not price the artifact arm, and the artifact arm is
+askeladd's open E158 B1. The row conflated them.
+
+### FINDING 325 — first local-to-ranked transfer calibration, and it is good news
+
+Read in the correct units, leaf16 is not a disagreement between harnesses. It is
+an agreement:
+
+```
+                              candidate leg      published
+thorfinn local ABBA            +0.4207 %          -0.419 %   (predicted)
+ranked receipt 1509bf95        +0.5291 %          -0.686 %   (measured)
+                               -------            -------
+disagreement                    0.108 pp           0.267 pp
+```
+
+The candidate-leg columns agree to **0.108 percentage points**. The published
+columns disagree by 0.267 pp, which is well inside the serial leg's own
+replication spread of 0.4729 % (FINDING 307) — the serial leg is the noisy half
+of the published ratio and it is not a property of our candidate.
+
+This is the **first quantified local-to-ranked transfer point this campaign
+has**, and it is on an *acceptance-affecting* arm, which is the case RULE 169
+warned was unproven. The transfer coefficient is consistent with 1 (RULE 176)
+with an error near 0.1 pp on the candidate leg.
+
+Three caveats hold it to provisional status: `n = 1`; the local leg used one
+public fixture against eight hidden prompts; and the local and ranked bases were
+not byte-identical. But a single clean point that lands 0.1 pp from prediction
+is worth far more than the assumption it replaces.
+
+**Operational consequence, and it is large.** We can screen mechanisms locally
+and trust the sign, including mechanisms that move acceptance. That removes the
+official receipt from the inner loop of hypothesis testing and leaves it where
+it belongs — confirming a winner, not discovering one.
+
+### RULE 186, revised
+
+The original wording blamed the measurement. The correct rule is narrower and
+more useful:
+
+> A banked price must record **which harness produced it, in which units, and
+> with which sign convention**. Publish local candidate-leg deltas as signed
+> seconds-per-token changes and convert to published gain only at the point of
+> use, showing the conversion. A price whose provenance cannot be traced to a
+> named measurement or receipt is not banked; it is a guess with a decimal
+> point.
+
+Applying it to the current table leaves exactly one credible banked row:
+**E151 R1 NAX retile, +0.505 %, from `5cdc9c17`.** The other two are struck.
+
+### FINDING 326 — the best-supported unclaimed win on the board is assigned to nobody
+
+E151 R1 is a grid-stride `(128, 32)` retile of the NAX affine `qmm_t`. Its
+scaffold was built in this repository and was green at R0. It was deleted by
+`83e09365` "parity instrument: adopt organizer main `0863b06a` editable surface
+verbatim." It survives in history and is recoverable rather than rebuildable:
+
+```
+aedf6e29  E147 rung E-1c: grid-stride (128, 32) retile arm for the NAX qmm_t, default off
+5dc4d1d9  E147 E-1a v2: grid-stride retile dispatch for qmm_t, default off
+918ab1a8  E147 E-1a: in-kernel origin re-derivation for the non-NAX qmm_t, default off
+5029932d  E147 F11 ruling 1: revert rung A, and guard every NAX tile site (RULE 145)
+83e09365  parity instrument: adopt organizer main 0863b06a editable surface verbatim   <- deletion
+```
+
+E156 was staffed to re-land it, shows "running" at ledger 330-332, and has no
+terminal entry. It was silently dropped. Its real blocker is known and is the
+same one E162 already solves: `is_nax_available()`
+(`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/device.cpp:913-931`)
+requires GPU architecture generation >= 17, our M4-class hosts are generation
+16, so `affine_qmm_t_nax` executes **zero times locally**. The workaround is to
+develop and validate against `kernels/quantized.h`, which has the same structure
+and does run locally, then port to `kernels/quantized_nax.h`.
+
+R1 (retile, +0.505 %) and R2 (double buffer, +0.419 %, now E162) are the same
+file, the same local-development path, and compose to a registered +0.663 %
+(ledger 58648). **They belong to one student, sequentially.** Alphonse holds
+E162; R1 follows it rather than going to a second student who would pay the
+whole setup cost again.
+
+### 337.1 What this does to the portfolio
+
+Reweighting by "does the causal path touch acceptance," now that we know local
+screening is trustworthy:
+
+```
+experiment                       student     mechanism        acceptance?   price
+E162 prefill affine qmm pipeline alphonse    prefill qmm      neutral       +0.419 %  two receipts
+E151 R1 retile (unassigned)      -           prefill qmm      neutral       +0.505 %  one receipt
+E160 mlp.down producer fusion    thorfinn    dispatch count   neutral       gated on P(d>=3)
+E158 build our own head          askeladd    head artifact    RAISES it     unpriced
+E159 round-budget sweep          edward      diagnostic       n/a           measures rho
+```
+
+The two prefill rows are the only ones with third-party ranked receipts behind
+them, they are acceptance-neutral, and together they are `+0.924 %` against a
+`0.575 %` gap. That is the spine of the round.
+
+### 337.2 Correction to the leaf4 note in entry 336
+
+Entry 336 flagged ledger 299.10's claim that "the row-QMV path guards
+`rowsPerCluster == 8`" as something to check before assigning leaf4. **Checked:
+no such guard exists.** The whole arm-C path is parameterised by
+`rowsPerCluster` read from `_draftClusterShape` (`Qwen35.swift:5782`), the
+`Qwen35RowTop32` kernel takes it as a source-generation parameter
+(`Qwen35.swift:4263`, `:4152`), and the E87 probe-select kernel is generic in
+`clusters` and `probes` (`Qwen35.swift:4415`). The only live constraints are
+`98336 % L == 0`, `probes * L > 32`, and the `plan.perThread <= 32` precondition
+at `Qwen35.swift:4265`. All hold at `L = 4`.
+
+**But leaf4 should not be assigned, for a better reason.** The readout has an
+exact structural decoupling that was not previously written down:
+
+```
+leaves         = 98,336 / L
+probes         = ceil(p * leaves)
+refined rows   = probes * L  =  p * 98,336        <- INDEPENDENT OF L
+router bytes   = 157.34 MB / L
+refine bytes   = p * 157.34 MB
+total readout  = 157.34 * (1/L + p) MB
+```
+
+Refined-row work does not depend on the leaf width at all. `L` buys **only**
+router cost and targeting precision; `p` buys **only** refinement coverage.
+That is why leaf16 held refined rows at 14,752 exactly and still lost: it spent
+its 9.83 MB saving on nothing.
+
+At `L = 8, p = 0.15` the router is `19.67 MB` and refinement is `23.60 MB`, so
+**45 % of the draft readout is spent deciding which 15 % of rows to look at, to
+produce 32 final candidates.** Going to `L = 4` costs `+19.67 MB` — twice what
+leaf16 saved — to buy a targeting improvement drawn from a saturating curve.
+Wrong direction.
+
+The interesting axis is the router's **precision or dimension** at fixed `L`,
+not its granularity. Two closed and one open:
+
+- **Fewer centroid bits.** Closed. MLX instantiates affine quantized kernels for
+  `bits` in `{2, 3, 4, 5, 6, 8}` only
+  (`backend/metal/kernels/quantized.metal:150-156`). The table is already at 2.
+- **Subsampled hidden dimension for the centroid pass.** Open in principle, but
+  the runtime gather of the selected dimensions is an extra dispatch per draft
+  step, roughly 8,300 per leg, which plausibly costs more than the 14.75 MB it
+  saves. It only becomes attractive folded into a candidate-owned kernel.
+- **Two-level coarse quantizer.** Open, cuts router bytes ~72 %, but introduces
+  a hard recall cliff at the super-centroid level, which is the exact failure
+  mode leaf16 just charged us 0.686 % for.
+
+**None of these is assignable yet**, because the router's share of the candidate
+leg is uncertain across more than an order of magnitude (0.11 % to 1.55 %)
+depending on the head's true byte budget. A subagent is computing that budget
+from source now, and E159 measures the same quantity from the other side. Hold
+the axis until one of them lands.
+
+### 337.3 Freeze-time hygiene item
+
+The submitted surface of `3c2316ea` differs from our parity anchor `8ba6e738`
+only by telemetry: the `qwen35XSumsSidecarHits` / `qwen35XSumsStandaloneFills`
+census counters, the leaf-geometry trace globals, and the
+`MLX_E141_ROWS_PER_LEAF` override. The two census counters increment inside the
+per-fill path, roughly 257 times per verify round and about 488,000 times per
+leg. At a few nanoseconds each that is near 0.02 % of the leg, below the 0.086 %
+ranked noise floor, so it does not invalidate anything. **Strip them at freeze
+time anyway** — it is free, and E160 only needs them while it is running.
+
+Because that is the whole difference, **`3c2316ea` is a functional duplicate of
+receipt `5a9f130a` and must not be submitted.** The slot stays free for the
+first real winner.
+
+### 337.4 State
+
+```
+campaign state       2026-08-23 21:40Z
+the published bar    ec24d591  3.72911001  src 0863b06a  (inflated, true surface ~3.706)
+our parity anchor    5a9f130a  3.70784519  candidate median 0.010260
+last receipt         1509bf95  3.68242218  REJECTED, leaf16, reverted in base
+needed from anchor   -0.575 % on the candidate leg
+banked and credible  E151 R1 retile  +0.505 %   unassigned, recoverable from aedf6e29
+                     E151 R2 buffer  +0.419 %   E162, alphonse, running
+struck this entry    island arm none, leaf16
+official slot        FREE, nothing frozen, 3c2316ea is a duplicate
+advisor branch       3c2316ea + this entry
+open assignments     E158 askeladd head artifact ladder
+                     E159 edward rho measurement
+                     E160 thorfinn depth histogram, gated
+                     E162 alphonse prefill double buffer
+```
