@@ -206,6 +206,14 @@ def ranked_conversion(
         "kappa": kappa,
         "ranked_round_us": RANKED_ROUND_US,
         "harness": "ranked",
+        "seed_prefill_dilution": (
+            "NOT modelled. The ranked leg times seed processing and decoding in "
+            "one window, and the arm cannot touch prefill, so the true ranked "
+            "effect is this value scaled by the decode share of the leg. That "
+            "shrinks the magnitude of either sign. Ignoring it therefore "
+            "OVERSTATES a positive result, so it is anti-conservative for the "
+            "promotion decision and conservative for a refutation."
+        ),
         "per_prompt": per_prompt,
         "net_ranked_pct": sum(
             MEDPAIR[p] * per_prompt[p]["net_ranked_pct"] for p in MEDPAIR
