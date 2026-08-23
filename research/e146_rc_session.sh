@@ -214,7 +214,7 @@ for kind in "${kinds[@]}"; do
   worker_after="$(shasum -a 256 "${worker_bin}" | cut -d' ' -f1)"
   leg_end="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-  jq -n --arg kind "${kind}" --arg label "${label}" --arg report "${report}" \
+  jq -c -n --arg kind "${kind}" --arg label "${label}" --arg report "${report}" \
         --arg entry "${entry_c}" --arg exitc "${exit_c}" \
         --arg started "${leg_start}" --arg finished "${leg_end}" \
         --arg wbefore "${worker_before}" --arg wafter "${worker_after}" \
