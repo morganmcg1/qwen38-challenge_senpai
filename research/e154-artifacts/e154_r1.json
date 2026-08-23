@@ -1,0 +1,575 @@
+{
+  "harness": "ranked",
+  "gpu_used": false,
+  "bar": 3.7291100105909,
+  "our_best_receipt": 3.68278758168578,
+  "gap_pp": 1.257808871070332,
+  "diff_column_denominator": 0.9927,
+  "own_last_six": {
+    "n": 6,
+    "mean": 3.5691699602571165,
+    "sd_abs": 0.10763809684793055,
+    "sd_pp": 3.0157739207290786,
+    "submissions": [
+      "572b2cc",
+      "e003a86",
+      "1db9d63",
+      "7226dc9",
+      "0cf1637",
+      "749da2c"
+    ],
+    "scores": [
+      3.66218563656629,
+      3.57502547497774,
+      3.61655493390361,
+      3.4265424329715,
+      3.68278758168578,
+      3.45192370143778
+    ]
+  },
+  "own_last_eight": {
+    "n": 8,
+    "mean": 3.55607223683098,
+    "sd_abs": 0.09417323706350185,
+    "sd_pp": 2.6482374595243043,
+    "submissions": [
+      "0c6191b",
+      "623e77a",
+      "572b2cc",
+      "e003a86",
+      "1db9d63",
+      "7226dc9",
+      "0cf1637",
+      "749da2c"
+    ],
+    "scores": [
+      3.51270586307339,
+      3.52085227003175,
+      3.66218563656629,
+      3.57502547497774,
+      3.61655493390361,
+      3.4265424329715,
+      3.68278758168578,
+      3.45192370143778
+    ]
+  },
+  "replication_pairs": [],
+  "replication_pooled": {
+    "pooled_sd_pp": NaN,
+    "df": 0
+  },
+  "board_pair_count": 575,
+  "deconvolution_bound": {
+    "n_pairs": 575,
+    "bandwidths": [
+      {
+        "bandwidth_pp": 0.05,
+        "count": 26,
+        "p_hat": 0.04521739130434783,
+        "p_lower_90": 0.03534840958966818,
+        "density_at_zero_lower": 0.3534840958966818,
+        "sigma_upper_pp": 0.7980409728428923
+      },
+      {
+        "bandwidth_pp": 0.1,
+        "count": 56,
+        "p_hat": 0.09739130434782609,
+        "p_lower_90": 0.08267336615975127,
+        "density_at_zero_lower": 0.4133668307987563,
+        "sigma_upper_pp": 0.6824320936171421
+      },
+      {
+        "bandwidth_pp": 0.25,
+        "count": 129,
+        "p_hat": 0.22434782608695653,
+        "p_lower_90": 0.20285642061514256,
+        "density_at_zero_lower": 0.4057128412302851,
+        "sigma_upper_pp": 0.6953065397645608
+      },
+      {
+        "bandwidth_pp": 0.5,
+        "count": 199,
+        "p_hat": 0.34608695652173915,
+        "p_lower_90": 0.32113313705783625,
+        "density_at_zero_lower": 0.32113313705783625,
+        "sigma_upper_pp": 0.8784356368775258
+      }
+    ],
+    "sigma_upper_pp": 0.6824320936171421
+  },
+  "e154_ranked_nuisance_sd_pp": {
+    "identified": false,
+    "tight_upper_bound_pp": 0.6824320936171421,
+    "loose_upper_bound_pp": 3.0157739207290786,
+    "lower_bound_pp": null,
+    "tight_source": "board-wide deconvolution bound from within-solver consecutive receipt pairs",
+    "loose_source": "our last six receipts, confounded with real tree differences",
+    "why_not_identified": "no snapshot in the 1236-row public history was ever measured twice, so no replicate exists to separate runner noise from tree effects"
+  },
+  "e154_min_composite_pp_table": [
+    {
+      "deficit_pp": 0.0,
+      "min_pp_p50": 0.0,
+      "min_pp_p80_lower_sd": 0.5743493398822663,
+      "min_pp_p80_upper_sd": 2.538139364788795
+    },
+    {
+      "deficit_pp": 0.25,
+      "min_pp_p50": 0.25,
+      "min_pp_p80_lower_sd": 0.8243493398822663,
+      "min_pp_p80_upper_sd": 2.788139364788795
+    },
+    {
+      "deficit_pp": 0.5,
+      "min_pp_p50": 0.5,
+      "min_pp_p80_lower_sd": 1.0743493398822663,
+      "min_pp_p80_upper_sd": 3.038139364788795
+    },
+    {
+      "deficit_pp": 0.75,
+      "min_pp_p50": 0.75,
+      "min_pp_p80_lower_sd": 1.3243493398822663,
+      "min_pp_p80_upper_sd": 3.288139364788795
+    },
+    {
+      "deficit_pp": 1.0,
+      "min_pp_p50": 1.0,
+      "min_pp_p80_lower_sd": 1.5743493398822663,
+      "min_pp_p80_upper_sd": 3.538139364788795
+    },
+    {
+      "deficit_pp": 1.26,
+      "min_pp_p50": 1.26,
+      "min_pp_p80_lower_sd": 1.8343493398822663,
+      "min_pp_p80_upper_sd": 3.7981393647887947
+    },
+    {
+      "deficit_pp": 1.5,
+      "min_pp_p50": 1.5,
+      "min_pp_p80_lower_sd": 2.074349339882266,
+      "min_pp_p80_upper_sd": 4.038139364788795
+    },
+    {
+      "deficit_pp": 2.0,
+      "min_pp_p50": 2.0,
+      "min_pp_p80_lower_sd": 2.574349339882266,
+      "min_pp_p80_upper_sd": 4.538139364788795
+    },
+    {
+      "deficit_pp": 2.5,
+      "min_pp_p50": 2.5,
+      "min_pp_p80_lower_sd": 3.074349339882266,
+      "min_pp_p80_upper_sd": 5.038139364788795
+    },
+    {
+      "deficit_pp": 3.0,
+      "min_pp_p50": 3.0,
+      "min_pp_p80_lower_sd": 3.574349339882266,
+      "min_pp_p80_upper_sd": 5.538139364788795
+    }
+  ],
+  "e154_slots_per_promotion_at_current_portfolio": [
+    {
+      "composite": "import_alone",
+      "effect_pp": 0.5385,
+      "p_clear_lower_sd": 0.1459329235984146,
+      "slots_per_promotion_lower_sd": 6.852463277936165,
+      "p_clear_upper_sd": 0.40574064149661987,
+      "slots_per_promotion_upper_sd": 2.4646286265812263
+    },
+    {
+      "composite": "import_e151r1",
+      "effect_pp": 1.0472,
+      "p_clear_lower_sd": 0.3788071541336536,
+      "slots_per_promotion_lower_sd": 2.6398656653859613,
+      "p_clear_upper_sd": 0.47216219117491826,
+      "slots_per_promotion_upper_sd": 2.117916298023824
+    },
+    {
+      "composite": "import_r1_leaf16",
+      "effect_pp": 1.2377,
+      "p_clear_lower_sd": 0.4882462765373773,
+      "slots_per_promotion_lower_sd": 2.048146699841644,
+      "p_clear_upper_sd": 0.49733991351933865,
+      "slots_per_promotion_upper_sd": 2.0106972571810604
+    },
+    {
+      "composite": "import_r1_leaf16_e151r2",
+      "effect_pp": 1.6627,
+      "p_clear_lower_sd": 0.7235118438448933,
+      "slots_per_promotion_lower_sd": 1.3821473808718745,
+      "p_clear_upper_sd": 0.5534006334774192,
+      "slots_per_promotion_upper_sd": 1.8070091349846706
+    },
+    {
+      "composite": "all_five",
+      "effect_pp": 1.9581,
+      "p_clear_lower_sd": 0.847594196823287,
+      "slots_per_promotion_lower_sd": 1.1798098709829743,
+      "p_clear_upper_sd": 0.5918123212501873,
+      "slots_per_promotion_upper_sd": 1.6897248740741446
+    }
+  ],
+  "single_mechanism_slots": [
+    {
+      "effect_pp": 0.19,
+      "p_clear_lower_sd": 0.058825366822768954,
+      "slots_per_promotion_lower_sd": 16.99946900480593,
+      "p_clear_upper_sd": 0.3616414975883516,
+      "slots_per_promotion_upper_sd": 2.7651693919769063
+    },
+    {
+      "effect_pp": 0.35,
+      "p_clear_lower_sd": 0.09171709399651778,
+      "slots_per_promotion_lower_sd": 10.903092939664736,
+      "p_clear_upper_sd": 0.3816995452753601,
+      "slots_per_promotion_upper_sd": 2.6198616487179587
+    },
+    {
+      "effect_pp": 0.5,
+      "p_clear_lower_sd": 0.13340190196784102,
+      "slots_per_promotion_lower_sd": 7.496144996801233,
+      "p_clear_upper_sd": 0.40079815190418616,
+      "slots_per_promotion_upper_sd": 2.4950214846276477
+    },
+    {
+      "effect_pp": 0.7275,
+      "p_clear_lower_sd": 0.21855382417972252,
+      "slots_per_promotion_lower_sd": 4.575531925616977,
+      "p_clear_upper_sd": 0.4302078439642098,
+      "slots_per_promotion_upper_sd": 2.324457849920544
+    }
+  ],
+  "policy_over_sigma": [
+    {
+      "sigma_pp": 0.25,
+      "min_pp_p80_at_current_gap": 1.4682141792519865,
+      "p_clear_one_mechanism_0p5pp": 0.0012177760859808373,
+      "slots_one_mechanism": 821.1690240201808,
+      "p_clear_stack_all_five": 0.9974540723238361,
+      "slots_stack": 1.0025524259680774,
+      "stack_advantage_slots": 0.0012208843692859985
+    },
+    {
+      "sigma_pp": 0.5,
+      "min_pp_p80_at_current_gap": 1.6786194874336413,
+      "p_clear_one_mechanism_0p5pp": 0.06480801906680111,
+      "slots_one_mechanism": 15.430189263604033,
+      "p_clear_stack_all_five": 0.9193304852317183,
+      "slots_stack": 1.087748112418951,
+      "stack_advantage_slots": 0.0704948004095243
+    },
+    {
+      "sigma_pp": 0.75,
+      "min_pp_p80_at_current_gap": 1.889024795615296,
+      "p_clear_one_mechanism_0p5pp": 0.15614901166661888,
+      "slots_one_mechanism": 6.404139157377564,
+      "p_clear_stack_all_five": 0.8247762155620469,
+      "slots_stack": 1.212450093894313,
+      "stack_advantage_slots": 0.18932288385669624
+    },
+    {
+      "sigma_pp": 1.0,
+      "min_pp_p80_at_current_gap": 2.0994301037969505,
+      "p_clear_one_mechanism_0p5pp": 0.22428270545236734,
+      "slots_one_mechanism": 4.458658539823873,
+      "p_clear_stack_all_five": 0.758127244666784,
+      "slots_stack": 1.3190397878914444,
+      "stack_advantage_slots": 0.2958378122276099
+    },
+    {
+      "sigma_pp": 1.5,
+      "min_pp_p80_at_current_gap": 2.5202407201602597,
+      "p_clear_one_mechanism_0p5pp": 0.30670710846839455,
+      "slots_one_mechanism": 3.2604395933100703,
+      "p_clear_stack_all_five": 0.679700246691503,
+      "slots_stack": 1.4712367766049557,
+      "stack_advantage_slots": 0.4512387776248673
+    },
+    {
+      "sigma_pp": 2.0,
+      "min_pp_p80_at_current_gap": 2.941051336523569,
+      "p_clear_one_mechanism_0p5pp": 0.35237941514895316,
+      "slots_one_mechanism": 2.8378502177185725,
+      "p_clear_stack_all_five": 0.6368852714443126,
+      "slots_stack": 1.5701415071700824,
+      "stack_advantage_slots": 0.5532855459976895
+    },
+    {
+      "sigma_pp": 3.0,
+      "min_pp_p80_at_current_gap": 3.782672569250188,
+      "p_clear_one_mechanism_0p5pp": 0.40028752236985554,
+      "slots_one_mechanism": 2.498204275965478,
+      "p_clear_stack_all_five": 0.5922863861422973,
+      "slots_stack": 1.6883724215125706,
+      "stack_advantage_slots": 0.6758344134448603
+    }
+  ],
+  "f2_frame_reconciliation": {
+    "harness": "ranked",
+    "question": "advisor F2: the crown note implies a ~68 ms decode round while Rule 134 quotes 524.5 us/round; are they the same quantity?",
+    "verdict": "no. They are different quantities in different units. 524.5 us/round is a SENSITIVITY (microseconds of per-round leg time per one percent of published median), not a wall time. The measured ranked round wall time is 3.2e4 to 6.1e4 us. No portfolio number needs repricing.",
+    "e154_round_wall_time_us": {
+      "measured": true,
+      "definition": "trusted-parent leg wall clock divided by the parent-counted round total",
+      "ranked_per_prompt": {
+        "beagle": {
+          "leg_s": 5.47533,
+          "prefill_s": 0.52634,
+          "decode_s": 4.94899,
+          "rounds": 110.0,
+          "round_wall_time_us_total_leg_frame": 49775.72727272727,
+          "round_wall_time_us_decode_frame": 44990.818181818184,
+          "dilution_decode_over_leg": 0.9038706342814041,
+          "prefill_share": 0.09612936571859597,
+          "raw_sensitivity_per_us": 2.0090113289975216e-05,
+          "median_weight": 0.5,
+          "one_round_deleted_pct_of_median": 0.45454545454545453
+        },
+        "essays": {
+          "leg_s": 5.0345,
+          "prefill_s": 0.52685,
+          "decode_s": 4.50765,
+          "rounds": 92.04,
+          "round_wall_time_us_total_leg_frame": 54699.04389395915,
+          "round_wall_time_us_decode_frame": 48974.90221642764,
+          "dilution_decode_over_leg": 0.8953520707120866,
+          "prefill_share": 0.1046479292879134,
+          "raw_sensitivity_per_us": 1.828185519912603e-05,
+          "median_weight": 0.5,
+          "one_round_deleted_pct_of_median": 0.5432420686657975
+        },
+        "medicine": {
+          "leg_s": 4.97664,
+          "prefill_s": 0.52582,
+          "decode_s": 4.45082,
+          "rounds": 90.01,
+          "round_wall_time_us_total_leg_frame": 55289.85668259082,
+          "round_wall_time_us_decode_frame": 49448.06132651927,
+          "dilution_decode_over_leg": 0.8943423675411524,
+          "prefill_share": 0.10565763245884774,
+          "raw_sensitivity_per_us": 1.8086500128600825e-05,
+          "median_weight": 0.0,
+          "one_round_deleted_pct_of_median": 0.0
+        },
+        "republic": {
+          "leg_s": 4.97203,
+          "prefill_s": 0.52582,
+          "decode_s": 4.44621,
+          "rounds": 93.0,
+          "round_wall_time_us_total_leg_frame": 53462.68817204301,
+          "round_wall_time_us_decode_frame": 47808.709677419356,
+          "dilution_decode_over_leg": 0.8942444031914529,
+          "prefill_share": 0.105755596808547,
+          "raw_sensitivity_per_us": 1.8704633721035472e-05,
+          "median_weight": 0.0,
+          "one_round_deleted_pct_of_median": 0.0
+        },
+        "botany": {
+          "leg_s": 4.94848,
+          "prefill_s": 0.52685,
+          "decode_s": 4.42163,
+          "rounds": 81.04,
+          "round_wall_time_us_total_leg_frame": 61062.19151036525,
+          "round_wall_time_us_decode_frame": 54561.08094768015,
+          "dilution_decode_over_leg": 0.8935329636575272,
+          "prefill_share": 0.10646703634247284,
+          "raw_sensitivity_per_us": 1.637674599068805e-05,
+          "median_weight": 0.0,
+          "one_round_deleted_pct_of_median": 0.0
+        },
+        "drama": {
+          "leg_s": 9.13101,
+          "prefill_s": 0.52736,
+          "decode_s": 8.60365,
+          "rounds": 252.01,
+          "round_wall_time_us_total_leg_frame": 36232.72885996588,
+          "round_wall_time_us_decode_frame": 34140.11348756002,
+          "dilution_decode_over_leg": 0.9422451623642949,
+          "prefill_share": 0.057754837635705145,
+          "raw_sensitivity_per_us": 2.7599356478637083e-05,
+          "median_weight": 0.0,
+          "one_round_deleted_pct_of_median": 0.0
+        },
+        "travel": {
+          "leg_s": 7.99539,
+          "prefill_s": 0.52634,
+          "decode_s": 7.46906,
+          "rounds": 212.33,
+          "round_wall_time_us_total_leg_frame": 37655.489097160076,
+          "round_wall_time_us_decode_frame": 35176.65897423821,
+          "dilution_decode_over_leg": 0.9341708159326811,
+          "prefill_share": 0.06583043478804661,
+          "raw_sensitivity_per_us": 2.6556553213789446e-05,
+          "median_weight": 0.0,
+          "one_round_deleted_pct_of_median": 0.0
+        },
+        "plutarch": {
+          "leg_s": 15.4921,
+          "prefill_s": 0.52685,
+          "decode_s": 14.96525,
+          "rounds": 486.76,
+          "round_wall_time_us_total_leg_frame": 31826.97838770647,
+          "round_wall_time_us_decode_frame": 30744.617470622074,
+          "dilution_decode_over_leg": 0.9659923444852537,
+          "prefill_share": 0.03400765551474623,
+          "raw_sensitivity_per_us": 3.141988497363172e-05,
+          "median_weight": 0.0,
+          "one_round_deleted_pct_of_median": 0.0
+        }
+      },
+      "ranked_median_pair_total_leg_frame": 52237.38558334321,
+      "ranked_median_pair_decode_frame": 46982.86019912291,
+      "ranked_min_us": 31826.97838770647,
+      "ranked_max_us": 61062.19151036525,
+      "local_e154_r0": {
+        "decode_tokens": 512,
+        "serial_seconds_per_token": 0.0737907167058438,
+        "serial_rounds": 512,
+        "mtp_seconds_per_token": 0.03182467585429549,
+        "mtp_rounds": 77,
+        "effective_mean_draft_len": 6.376623376623376,
+        "serial_leg_seconds": 37.78084695339203,
+        "mtp_leg_seconds": 16.294234037399292,
+        "serial_round_wall_time_us": 73790.7167058438,
+        "mtp_round_wall_time_us": 211613.42905713368,
+        "local_over_ranked_per_token": 2.975936434406564
+      },
+      "crown_note_implied_us": 68410.0,
+      "crown_note_consistent_with_table": true,
+      "crown_note_position_in_ranked_range": "between botany 61062 us/round (81 rounds) and a ~80-round leg; inside the measured 31827-61062 us/round envelope once the crown's lower edl 4.28 is applied to a median-pair leg"
+    },
+    "e154_frame_constant_provenance": {
+      "equation": "C = 0.01 / sum_p w_p * R_p / leg_us_p   [us/round per 1 % of published median]",
+      "terms": {
+        "C": "the Rule 134 constant; 515.2 at bar 684821ed, 524.5 on 0cf1637e, 525.2 on the crown",
+        "p": "one of the eight hidden prompts",
+        "w_p": "median weight; the published median is the mean of the two middle raw values, so w_p = 1/2 for each median-pair prompt and 0 otherwise",
+        "R_p": "parent-counted decode rounds in prompt p's candidate leg",
+        "leg_us_p": "TOTAL TIMED LEG in microseconds = candidate_mtp_seconds_per_token_p * 512 * 1e6; it INCLUDES the 512-token seed prefill (about 0.527 s, 9.6-10.5 % of a median-pair leg)",
+        "delta_us": "a uniform saving applied to EVERY round of EVERY prompt",
+        "value": "delta_median / median = delta_us * sum_p w_p * R_p / leg_us_p"
+      },
+      "frame": "total timed leg, NOT the decode leg",
+      "do_not": "do not divide by the decode leg to 'correct' C; that inflates it by 1/dilution, about 11 % on the median pair",
+      "reconstructed_C_us_per_round": 521.2138127779549,
+      "ledger_C_us_per_round": 515.2,
+      "reconstruction_error_pct": 1.1672773249135973,
+      "reconstruction_note": "this closed form omits median-pair reordering after the saving is applied; F235's exact reconstruction, which tracks reordering, publishes 515.2",
+      "control_one_round_off_each_median_pair_pct": 0.9977875232112521,
+      "control_ledger_value_pct": 1.012,
+      "units_of_C": "microseconds of per-round leg time per one percent of published median",
+      "C_is_a_wall_time": false,
+      "ratio_round_wall_time_over_C": 99.59463409598324
+    },
+    "e154_portfolio_reprice_factor": {
+      "value": 1.0,
+      "reason": "every portfolio entry in this experiment is denominated in published-score percentage points, which the frame constant does not touch. Only work quoted in us/round is affected.",
+      "us_per_round_reprice_factor_old_to_corrected": 0.9822688274547189,
+      "us_per_round_reprice_note": "anything priced with the old 515.2 constant is 1.8 % optimistic; the ledger has already applied this correction at line 58417",
+      "no_130x_error_exists": true
+    },
+    "e154_round_count_reconciliation": {
+      "question": "our '488 rounds/leg' against the crown's ~120 and our local 77",
+      "resolution": "all three are correct and none of them is 'the' round count. Rounds per leg vary 81.0 to 486.8 across the eight hidden prompts, a factor of 6.0.",
+      "ranked_rounds_per_prompt": {
+        "beagle": 110.0,
+        "essays": 92.04,
+        "medicine": 90.01,
+        "republic": 93.0,
+        "botany": 81.04,
+        "drama": 252.01,
+        "travel": 212.33,
+        "plutarch": 486.76
+      },
+      "the_488_figure_is": "plutarch, 486.76 rounds",
+      "plutarch_median_weight": 0.0,
+      "median_pair_rounds": {
+        "beagle": 110.0,
+        "essays": 92.04
+      },
+      "overcount_factor_if_plutarch_used_for_value": 1.6376478044151364,
+      "local_77_rounds_is": "our own public-fixture leg at effective mean draft length 6.377, which packs more tokens per round than any ranked prompt",
+      "crown_120_rounds_is": "a median-pair-class ranked leg at the crown's lower edl 4.28",
+      "warning": "pricing a per-round saving against plutarch's round population overstates median-pair value by the factor above, because plutarch carries zero median weight"
+    },
+    "e154_self_estimate_bias": {
+      "separate_from_nuisance": true,
+      "crown_predicted_pct_lo": 0.74,
+      "crown_predicted_pct_hi": 1.11,
+      "crown_predicted_pct_mid": 0.925,
+      "crown_realised_pct": 0.2557,
+      "k_crown": 0.2764324324324324,
+      "k_crown_reciprocal": 3.6175205318732897,
+      "n_observations": 1,
+      "ledger_mechanism_realisation_factors": {
+        "L14198_e70_leg": 0.42,
+        "L14389_pure_stream": 0.276,
+        "L14208_band": 0.946,
+        "L15852_rung3": 0.672,
+        "L30646_board": 0.48,
+        "L31539_alphonse": 0.72,
+        "L32485_launch_overhead": 0.94,
+        "L39424_ledger26168": 0.112,
+        "L39531_by_bytes": 0.675,
+        "L39856_crown_delta": 0.49
+      },
+      "ledger_k_geometric_mean": 0.49520363563874076,
+      "ledger_k_min": 0.112,
+      "ledger_k_max": 0.946,
+      "frame_caveat": "the ledger factors price local-to-ranked MECHANISM transfer; the crown factor prices a whole-receipt self-estimate. They are not the same estimand, so the ledger set bounds the crown observation rather than pooling with it.",
+      "coincidence_flagged": "k_crown = 0.2764 agrees to three digits with the campaign's independently measured pure-stream realisation factor 0.276 (ledger line 14389). Two observations of different estimands are not evidence of a shared constant; treat the agreement as a coincidence until a third case tests it.",
+      "bias_adjusted_requirement": [
+        {
+          "realisation_factor_k": 1.0,
+          "predicted_pp_needed_p50": 1.257808871070332,
+          "predicted_pp_needed_p80_lower_sd": 1.8321582109525982,
+          "predicted_pp_needed_p80_upper_sd": 3.795948235859127,
+          "portfolio_all_five_realised_pp": 1.9581,
+          "portfolio_all_five_clears_p50": true
+        },
+        {
+          "realisation_factor_k": 0.675,
+          "predicted_pp_needed_p50": 1.863420549733825,
+          "predicted_pp_needed_p80_lower_sd": 2.714308460670516,
+          "predicted_pp_needed_p80_upper_sd": 5.623627016087595,
+          "portfolio_all_five_realised_pp": 1.3217175,
+          "portfolio_all_five_clears_p50": true
+        },
+        {
+          "realisation_factor_k": 0.495204,
+          "predicted_pp_needed_p50": 2.5399812422159997,
+          "predicted_pp_needed_p80_lower_sd": 3.699804950995142,
+          "predicted_pp_needed_p80_upper_sd": 7.665423211159698,
+          "portfolio_all_five_realised_pp": 0.9696589523999999,
+          "portfolio_all_five_clears_p50": false
+        },
+        {
+          "realisation_factor_k": 0.42,
+          "predicted_pp_needed_p50": 2.994783026357933,
+          "predicted_pp_needed_p80_lower_sd": 4.362281454649043,
+          "predicted_pp_needed_p80_upper_sd": 9.037971990140779,
+          "portfolio_all_five_realised_pp": 0.822402,
+          "portfolio_all_five_clears_p50": false
+        },
+        {
+          "realisation_factor_k": 0.276432,
+          "predicted_pp_needed_p50": 4.550156534230234,
+          "predicted_pp_needed_p80_lower_sd": 6.627880313974497,
+          "predicted_pp_needed_p80_upper_sd": 13.731942162481648,
+          "portfolio_all_five_realised_pp": 0.5412814992,
+          "portfolio_all_five_clears_p50": false
+        },
+        {
+          "realisation_factor_k": 0.112,
+          "predicted_pp_needed_p50": 11.230436348842249,
+          "predicted_pp_needed_p80_lower_sd": 16.358555454933914,
+          "predicted_pp_needed_p80_upper_sd": 33.89239496302792,
+          "portfolio_all_five_realised_pp": 0.2193072,
+          "portfolio_all_five_clears_p50": false
+        }
+      ],
+      "headline": "at the crown's own realisation factor the full five-part portfolio realises 0.541 pp against a 1.258 pp gap, so its median outcome is no promotion"
+    }
+  }
+}
