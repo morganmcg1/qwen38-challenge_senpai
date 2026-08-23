@@ -149,11 +149,18 @@ def main() -> int:
     print(f"e135_onepass678_ranked_transfer    {transfer:.4f}"
           "   (upper bound on ranked / local)")
     print()
+    deeper = [p["prompt"] for p in prompts
+              if p["mean_verify_width"] > local_mean and p["f83_weight"]]
     print("Read this as: a local onePass678 gain of x % is worth at most "
           f"{transfer:.3f} x % on ranked, because onePass678 pays only at "
-          "width 8 and ranked never drafts as deep as the local fixture. "
-          "The bound is loose by construction, so the true ranked value is "
-          "lower again.")
+          "width 8 and the median-pair prompts draft shallower than the local "
+          "fixture. The bound is loose by construction, so the true ranked "
+          "value is lower again.")
+    if deeper:
+        print("Median-pair prompts that DO draft deeper than the local "
+              f"fixture: {', '.join(deeper)}. They carry F83 weight "
+              f"{sum(p['f83_weight'] for p in prompts if p['prompt'] in deeper):.4f}"
+              ", so they cannot lift the weighted bound above the local mass.")
 
     if args.write:
         ARTIFACTS.mkdir(parents=True, exist_ok=True)
