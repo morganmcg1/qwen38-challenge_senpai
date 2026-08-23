@@ -1,0 +1,6146 @@
+{
+  "harness": "ranked",
+  "frame": "cohort-local, total-leg, weighted-five, state-corrected",
+  "resolver_failure_modes": {
+    "rows": 880,
+    "names_no_hex_token_at_all": 39,
+    "names_hex_but_none_resolves": 47,
+    "names_exactly_one_resolvable_tree": 266,
+    "names_more_than_one_resolvable_tree": 528,
+    "resolved_same_cohort": 613,
+    "resolved_cross_schedule": 181,
+    "unresolved": 86,
+    "ambiguity_broken_by_score": 362,
+    "multi_citation_examples": [
+      {
+        "row": "129885a9",
+        "candidates": [
+          "088f763b",
+          "0f835e36"
+        ],
+        "chosen": "088f763b"
+      },
+      {
+        "row": "e969e7aa",
+        "candidates": [
+          "088f763b",
+          "0f835e36"
+        ],
+        "chosen": "088f763b"
+      },
+      {
+        "row": "75c8d33b",
+        "candidates": [
+          "088f763b",
+          "e969e7aa",
+          "129885a9",
+          "b5130678",
+          "0f835e36",
+          "a4a95963"
+        ],
+        "chosen": "088f763b"
+      },
+      {
+        "row": "e5051ba4",
+        "candidates": [
+          "75c8d33b",
+          "088f763b"
+        ],
+        "chosen": "75c8d33b"
+      },
+      {
+        "row": "227e9413",
+        "candidates": [
+          "75c8d33b",
+          "bed27c3a"
+        ],
+        "chosen": "75c8d33b"
+      },
+      {
+        "row": "3e8b6f1a",
+        "candidates": [
+          "b71bb354",
+          "e5051ba4",
+          "227e9413",
+          "75c8d33b",
+          "bed27c3a",
+          "088f763b"
+        ],
+        "chosen": "b71bb354"
+      },
+      {
+        "row": "45c257f1",
+        "candidates": [
+          "088f763b",
+          "b5130678",
+          "a4a95963"
+        ],
+        "chosen": "088f763b"
+      },
+      {
+        "row": "277977ce",
+        "candidates": [
+          "45c257f1",
+          "3e8b6f1a",
+          "b71bb354"
+        ],
+        "chosen": "3e8b6f1a"
+      }
+    ],
+    "note": "A note that names more than one resolvable tree is the resolver's main exposure. The tie is broken by preferring a same-cohort citation and then the highest published score, which is the tree a solver is most likely to have forked. That heuristic is unverifiable per row. It was checked on the two hardest control cases in R-B, a4ac742e -> 48423d09 and e987b29b -> 51b9bf85, and it got both right, but 362 rows depend on it and no per-row proof exists."
+  },
+  "threshold_pct": -0.1,
+  "rows_considered": 88,
+  "e148_unclaimed_candidates": 2,
+  "e148_best_unclaimed_corrected_pct": -0.1561,
+  "hand_adjudicated_rows": 16,
+  "unclaimed_priced": [
+    {
+      "row": "214d92aa",
+      "solver": "vibecodooor",
+      "score": 3.32529025140785,
+      "promotion": "promoted",
+      "parent": "0dd455f0",
+      "parent_score": 3.31965392065513,
+      "corrected_total_pct": -0.1561,
+      "median_pair_pct": -0.1983,
+      "raw_total_pct": -0.1561,
+      "price_sd_pp": 0.0544,
+      "title": "Controlled resample #1: officially faster candidate leg on every prompt",
+      "note_paths": [
+        "qwen38-noeos-mtp-golden513.json",
+        "tmp/gpt56-crown-stack-final512.json"
+      ],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "qwen38-noeos-mtp-golden513.json",
+          "tmp/gpt56-crown-stack-final512.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 0,
+        "landed_fraction": 0.0,
+        "found_sample": [],
+        "missing_sample": [
+          "mtp_seconds_per_token_mean"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "mtp_seconds_per_token_mean"
+        ]
+      },
+      "blockers": [],
+      "unclaimed": true,
+      "hand_adjudication": {
+        "verdict": "open",
+        "mechanism": "combine the coarse top-32 finalization and the selected affine-4 rerank into one dispatch",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:4508",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:6374"
+        ],
+        "evidence": "The rival note lists TWO exact proposal-dispatch reductions. Reduction 1, the affine-4 embedding dequant fold, is ours at Qwen35.swift:2893. Reduction 2 is not: draftTokenIDWithDeclaredRerank still runs a finalize dispatch and then a separate qwen35DraftSelectedAffine4RerankKernel at :6374. Ledger 236.3 (line 25720) priced this row as reduction 1 alone and concluded 'We already ship this', so reduction 2 was never adjudicated and ADVISOR ERROR 30's 1.9x repricing of E85 may be a two-mechanism total.",
+        "caveat": "On our declared cluster head the live arm is clusterCandidateIDs -> Qwen35RowTop32 -> rerank, so the rival's exact dense-coarse finalize is dead here. The fusion CLASS applies to the clustered finalize; the exact kernel does not port unchanged."
+      }
+    }
+  ],
+  "unclaimed_out_of_band": [
+    {
+      "row": "d5e94249",
+      "priced_channel": "prefill only (decode refused)",
+      "score": 3.18180253484559,
+      "parent": "0cd0a6b4",
+      "steps_exact": 1.0263,
+      "corrected_total_pct": null,
+      "prefill_pct": -0.4422,
+      "hand_adjudication": {
+        "verdict": "open",
+        "mechanism": "fold the GDN q/k scale constant into the RMSNorm weight tensor, collapsing two launches into one",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:910",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1009",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:1208"
+        ],
+        "evidence": "All three eager sites read qScaleConst * MLXFast.rmsNorm(q, weight: .mlxNone, eps: 1e-6), so each pays a scalar-multiply launch after the norm launch. Ledger item 9 (line 9476) closed the SIBLING form, 3ac231d5's baked bf16 compile-time immediates, as a measured M5 null at -0.0003 for two reasons: only two encoder binds were left as prize, and a compile-time constant licenses reassociation and 2^-7 strength reduction. Neither reason survives the weight-fold form, which keeps the scale in a buffer and removes a whole launch. Reopening condition CHANGED.",
+        "caveat": "The packed GDN prework mixer already fuses q/k rmsNorm-and-scale for S in 3...9, so only S=1, S=2 and prefill reach these sites. The carrier row is decode-REFUSED at steps_exact 1.026; its only priceable channel is prefill at -0.4422 %, which is roughly -0.02 to -0.04 % of the total leg and sits under the 0.1154 pp MDE."
+      }
+    }
+  ],
+  "blocker_census": {
+    "out-of-scope-path": 24,
+    "already-in-our-tree": 64,
+    "owned": 72,
+    "hand": 14,
+    "claimed": 2,
+    "undetermined-landing": 5
+  },
+  "records": [
+    {
+      "row": "bbdd6d4a",
+      "solver": "mega-dmitriy",
+      "score": 3.03711360722344,
+      "promotion": "failed",
+      "parent": "febb7e27",
+      "parent_score": 3.00412770189188,
+      "corrected_total_pct": -1.9208,
+      "median_pair_pct": -1.1682,
+      "raw_total_pct": -1.9208,
+      "price_sd_pp": 0.8192,
+      "title": "Re-landing the promoted BF16 precision islands (febb7e27, +5.11) on top of the direct-nibble QMV tip (14b53255) \u2014 the overlay reverted them",
+      "note_paths": [
+        "Qwen35.swift",
+        "mtp-head.manifest.json",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "quantized.h",
+        "benchmark.qwen-mtp.json"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "quantized.h"
+        ],
+        "paths_outside_editable_surface": [
+          "benchmark.qwen-mtp.json"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "replaceExactRows",
+          "putAlong",
+          "installExactQKVRows",
+          "source_url"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "replaceExactRows",
+          "putAlong",
+          "installExactQKVRows",
+          "source_url"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "f5830389",
+      "solver": "andreolf",
+      "score": 3.21089212297469,
+      "promotion": "superseded",
+      "parent": "824dc272",
+      "parent_score": 3.19351254799833,
+      "corrected_total_pct": -0.9111,
+      "median_pair_pct": -0.6633,
+      "raw_total_pct": -0.9111,
+      "price_sd_pp": 0.6998,
+      "title": "M=8 affine-4 g64 crossrow: IPG 3 \u2192 4, on C3+C4 frontier",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "Qwen35.swift",
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "Qwen35.swift",
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 1,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qmv_fast_singlerow_affine2_g64"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "qmv_fast_singlerow_affine2_g64"
+        ]
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "M=8 affine-4 g64 crossrow QMV at IPG 4",
+        "source": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1968"
+        ],
+        "evidence": "case 8 dispatches qmv_fast_crossrow_affine4_g64_m<T, 8, 4, true>; the IPG 3 -> 4 change is already the live template argument. The comment above it still says '3+3+2, not 4+4' and is stale against its own code."
+      }
+    },
+    {
+      "row": "3a995c2b",
+      "solver": "SSHdotCodes",
+      "score": 3.23222998733732,
+      "promotion": "promoted",
+      "parent": "12864bc1",
+      "parent_score": 3.21000579584503,
+      "corrected_total_pct": -0.907,
+      "median_pair_pct": -0.8756,
+      "raw_total_pct": -0.907,
+      "price_sd_pp": 0.5212,
+      "title": "Recompose the two 3.21 crowns, then remove full-memory residency and command-buffer stalls",
+      "note_paths": [
+        "Qwen35.swift",
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+      ],
+      "owners_by_file": [
+        "edward",
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 11,
+        "identifiers_in_our_tree": 10,
+        "landed_fraction": 0.9091,
+        "found_sample": [
+          "qwen35FusedResidualRMSNorm",
+          "qwen_mtp_draft_top32_partial",
+          "qwen_mtp_draft_top32_finalize",
+          "argPartition",
+          "Qwen36MTPBlockSession",
+          "warmAllDepths",
+          "clearCache",
+          "simd_sum"
+        ],
+        "missing_sample": [
+          "QwenMTPVerbTests"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 10,
+        "ledger_fraction": 0.9091,
+        "ledger_sample": [
+          "qwen35FusedResidualRMSNorm",
+          "qwen_mtp_draft_top32_partial",
+          "argPartition",
+          "Qwen36MTPBlockSession",
+          "warmAllDepths",
+          "clearCache",
+          "simd_sum",
+          "editablePaths"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "088f763b",
+      "solver": "mega-dmitriy",
+      "score": 1.25131747135566,
+      "promotion": "promoted",
+      "parent": "0f835e36",
+      "parent_score": 1.23202128947726,
+      "corrected_total_pct": -0.8193,
+      "median_pair_pct": -0.8315,
+      "raw_total_pct": -0.8193,
+      "price_sd_pp": 0.1486,
+      "title": "Fused Q/K/V affine-4 GEMM on the promoted 1.232 K=1 keep-prefix tree",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "GatedDelta.swift",
+        "Qwen35.swift",
+        "Qwen3Next.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "GatedDelta.swift",
+          "Qwen3Next.swift"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 13,
+        "identifiers_in_our_tree": 12,
+        "landed_fraction": 0.9231,
+        "found_sample": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "qmv_fast",
+          "attentionWithCacheUpdate",
+          "o_proj",
+          "nConfirmed",
+          "groupSize"
+        ],
+        "missing_sample": [
+          "asContiguous"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 11,
+        "ledger_fraction": 0.8462,
+        "ledger_sample": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "qmv_fast",
+          "attentionWithCacheUpdate",
+          "o_proj",
+          "nConfirmed",
+          "groupSize"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "444f9767",
+      "solver": "welttowelt",
+      "score": 3.22414789578436,
+      "promotion": null,
+      "parent": "12864bc1",
+      "parent_score": 3.21000579584503,
+      "corrected_total_pct": -0.7966,
+      "median_pair_pct": -0.8286,
+      "raw_total_pct": -0.7966,
+      "price_sd_pp": 0.5491,
+      "title": "Recombination: the crown's top-32 shortlist kernels PLUS the boundary-fusion its graft silently reverted",
+      "note_paths": [
+        "Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 1,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "argPartition"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "argPartition"
+        ]
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "top-32 shortlist kernels plus the boundary residual/RMSNorm fusion",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:4408",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2529"
+        ],
+        "evidence": "qwen35DraftTop32PartialKernel and qwen35FusedResidualRMSNormKernel both exist and are live at Qwen35.swift:3715, :3746 and :3762."
+      }
+    },
+    {
+      "row": "06e8c9d4",
+      "solver": "mega-dmitriy",
+      "score": 2.34637102514751,
+      "promotion": "promoted",
+      "parent": "aec00005",
+      "parent_score": 2.32713386296722,
+      "corrected_total_pct": -0.7783,
+      "median_pair_pct": -0.9659,
+      "raw_total_pct": -0.7783,
+      "price_sd_pp": 0.3866,
+      "title": "Lazy exact prefix replay for multi-draft GDN rollback",
+      "note_paths": [],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 2,
+        "identifiers_in_our_tree": 2,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "gatedDeltaUpdate",
+          "committedRows"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 0,
+        "ledger_fraction": 0.0,
+        "ledger_sample": []
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "lazy exact prefix replay for multi-draft GDN rollback",
+        "source": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1927",
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1994",
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift:2020"
+        ],
+        "evidence": "prefixReplayTape is a live field on the round arrays and is released at all three rollback exits."
+      }
+    },
+    {
+      "row": "b35b120d",
+      "solver": "welttowelt",
+      "score": 3.16765684866706,
+      "promotion": null,
+      "parent": "caec88d4",
+      "parent_score": 3.14642585386152,
+      "corrected_total_pct": -0.5904,
+      "median_pair_pct": -0.5492,
+      "raw_total_pct": -0.5904,
+      "price_sd_pp": 0.3184,
+      "title": "M=8 verify on TWO weight streams: 4+4 under DIRECT_NIBBLES, retiring a pre-nibble register-cliff decision",
+      "note_paths": [
+        "quantized.h",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "quantized.h",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qmv_fast_crossrow_affine4_g64_m",
+          "load_vector",
+          "DIRECT_NIBBLES",
+          "simd_sum"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "qmv_fast_crossrow_affine4_g64_m",
+          "load_vector",
+          "DIRECT_NIBBLES",
+          "simd_sum"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "5c523482",
+      "solver": "vibecodooor",
+      "score": 2.93428682708139,
+      "promotion": "promoted",
+      "parent": "d3caa5fe",
+      "parent_score": 2.93361458783958,
+      "corrected_total_pct": -0.5863,
+      "median_pair_pct": -0.4725,
+      "raw_total_pct": -0.5863,
+      "price_sd_pp": 0.2252,
+      "title": "One-file all-width compiled GDN plus exact packed beta on the 2.93361 head frontier",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 3,
+        "identifiers_in_our_tree": 3,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "beta_out",
+          "mixerHit",
+          "asyncEval"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 0.3333,
+        "ledger_sample": [
+          "asyncEval"
+        ]
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "emit exact float32 recurrence beta from the packed GDN prework kernel, removing the separate [1,S,48] graph sigmoid launch at verify widths 3...9",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:424",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:280"
+        ],
+        "evidence": "Our kernel declares six outputs including beta_out, and the header at :265 states it removes the final [1,S,48] elementwise launch. We are ahead of the rival here: 22ce3162 kept beta OUT of its kernel because the in-kernel sigmoid diverges from MLX by 1 ulp on the single bf16 input 0xC0DB. qwen35_prework_beta at :280 maps that input to MLX's output word 0x3A8B and keeps the inherited expression everywhere else, so the rival's stated blocker is resolved in our source. The eager sigmoid sites left at :183 and :746 are the S=1 and S=2 fallbacks the S>=3 gate at :948 excludes.",
+        "caveat": "Its -2.69 % prefill reading is the prefill channel's own dispersion on a 2.93 cohort, not a mechanism (advisor F3.4). Dropped from the prefill list. Banked negative from the same row: reducing eval(cache state + bundle) to eval(bundle) passed parity and was officially negative."
+      }
+    },
+    {
+      "row": "9b241879",
+      "solver": "morganmcg1",
+      "score": 3.23588900989648,
+      "promotion": null,
+      "parent": "ca9251b8",
+      "parent_score": 3.23250848263467,
+      "corrected_total_pct": -0.5482,
+      "median_pair_pct": -0.4093,
+      "raw_total_pct": -0.5482,
+      "price_sd_pp": 0.195,
+      "title": "What this submission is",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 5,
+        "identifiers_in_our_tree": 3,
+        "landed_fraction": 0.6,
+        "found_sample": [
+          "effective_mean_draft_len",
+          "non_drafting_round_count",
+          "parity_all_ok"
+        ],
+        "missing_sample": [
+          "applegpu_g16s",
+          "applegpu_g17s"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "applegpu_g16s",
+          "applegpu_g17s",
+          "effective_mean_draft_len",
+          "non_drafting_round_count",
+          "parity_all_ok"
+        ]
+      },
+      "blockers": [
+        "claimed",
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "578535f7",
+      "solver": "SSHdotCodes",
+      "score": 3.19580475139646,
+      "promotion": "promoted",
+      "parent": "b1e2591b",
+      "parent_score": 3.19088426880882,
+      "corrected_total_pct": -0.5007,
+      "median_pair_pct": -0.3252,
+      "raw_total_pct": -0.5007,
+      "price_sd_pp": 0.6053,
+      "title": "M=8 4+4 QMV combine on the affine-2 shortlist frontier",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "quantized.h"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 0,
+        "identifiers_in_our_tree": 0,
+        "landed_fraction": null,
+        "found_sample": [],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 0,
+        "ledger_fraction": null,
+        "ledger_sample": []
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "M=8 4+4 QMV combine",
+        "source": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:1968"
+        ],
+        "evidence": "Same landed cell as f5830389: the even 4+4 split is what IPG 4 selects inside qmv_fast_crossrow_affine4_g64_wide."
+      }
+    },
+    {
+      "row": "72ce82dc",
+      "solver": "scarletbright",
+      "score": 3.22826053954006,
+      "promotion": "promoted",
+      "parent": "12864bc1",
+      "parent_score": 3.21000579584503,
+      "corrected_total_pct": -0.4824,
+      "median_pair_pct": -0.3808,
+      "raw_total_pct": -0.4824,
+      "price_sd_pp": 0.5107,
+      "title": "Affine-2/g64 singlerow coarse-readout QMV at one u64 (32 values) per lane",
+      "note_paths": [
+        "mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Qwen35.swift",
+        "mlx/backend/metal/quantized.cpp"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "mlx/backend/metal/quantized.cpp"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 9,
+        "identifiers_in_our_tree": 9,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qmv_fast_impl",
+          "load_vector",
+          "qmv_fast_singlerow_affine2_g64",
+          "draftTokenIDWithDeclaredRerank",
+          "quantizedMM",
+          "affine_qmv_fast",
+          "simd_lid",
+          "bytes_per_pack"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 7,
+        "ledger_fraction": 0.7778,
+        "ledger_sample": [
+          "qmv_fast_impl",
+          "load_vector",
+          "qmv_fast_singlerow_affine2_g64",
+          "draftTokenIDWithDeclaredRerank",
+          "quantizedMM",
+          "affine_qmv_fast",
+          "simd_lid"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "43925f29",
+      "solver": "Amal-David",
+      "score": 3.71654402427203,
+      "promotion": null,
+      "parent": "3ba6ee9d",
+      "parent_score": 3.70576324123463,
+      "corrected_total_pct": -0.4205,
+      "median_pair_pct": -0.3642,
+      "raw_total_pct": -0.4205,
+      "price_sd_pp": 0.1647,
+      "title": "Double-buffer the affine NAX transposed GEMM",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 0,
+        "identifiers_in_our_tree": 0,
+        "landed_fraction": null,
+        "found_sample": [],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 0,
+        "ledger_fraction": null,
+        "ledger_sample": []
+      },
+      "blockers": [
+        "claimed",
+        "undetermined-landing",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "e969e7aa",
+      "solver": "GumbiiDigital",
+      "score": 1.24994163964052,
+      "promotion": null,
+      "parent": "088f763b",
+      "parent_score": 1.25131747135566,
+      "corrected_total_pct": -0.3967,
+      "median_pair_pct": -0.3891,
+      "raw_total_pct": -0.3967,
+      "price_sd_pp": 0.0851,
+      "title": "Fusing the MTP head's own BF16 projections \u2014 the branch `088f763` left open",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "fixtures/qwen3_8_27b_mtp_track.json",
+        "fixtures/qwen3_6_27b_config.json",
+        "metal/matmul.cpp",
+        "mlx/backend/metal/matmul.cpp",
+        "kernels/gemv.h",
+        "gemv.h",
+        "Sources/MLXFastModel/Qwen35FastEngine.swift",
+        "Qwen35Block.swift",
+        "Qwen35GatedDelta.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "kernels/gemv.h",
+          "gemv.h",
+          "Sources/MLXFastModel/Qwen35FastEngine.swift",
+          "Qwen35Block.swift",
+          "Qwen35GatedDelta.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "fixtures/qwen3_8_27b_mtp_track.json",
+          "fixtures/qwen3_6_27b_config.json",
+          "metal/matmul.cpp",
+          "mlx/backend/metal/matmul.cpp",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/GatedDelta.swift"
+        ],
+        "paths_not_in_this_tree": [
+          "Vendor/.../Models/GatedDelta.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 36,
+        "identifiers_in_our_tree": 32,
+        "landed_fraction": 0.8889,
+        "found_sample": [
+          "editablePaths",
+          "gate_proj",
+          "up_proj",
+          "Qwen35MTPDecoderLayer",
+          "Qwen35DecoderLayer",
+          "in_proj_qkvz",
+          "in_proj_ba",
+          "o_proj"
+        ],
+        "missing_sample": [
+          "restoreAfterSingleDraftReject",
+          "MLXFAST_QWEN_MTP_FUSED_HEAD_PROJECTIONS",
+          "MLXFAST_QWEN_MTP_SEED_TAIL_PROJECTION",
+          "Qwen35MTPFusedGateUp"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 19,
+        "ledger_fraction": 0.5278,
+        "ledger_sample": [
+          "editablePaths",
+          "o_proj",
+          "down_proj",
+          "num_experts",
+          "nextTokenIds",
+          "generateRound",
+          "Qwen36MTPHeadAttachment",
+          "q_proj"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "12864bc1",
+      "solver": "WillGasser",
+      "score": 3.21000579584503,
+      "promotion": "promoted",
+      "parent": "b1e2591b",
+      "parent_score": 3.19088426880882,
+      "corrected_total_pct": -0.3754,
+      "median_pair_pct": -0.273,
+      "raw_total_pct": -0.3754,
+      "price_sd_pp": 0.0983,
+      "title": "Two-dispatch exact top-32 proposal shortlist, replacing a full argsort",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 29,
+        "identifiers_in_our_tree": 28,
+        "landed_fraction": 0.9655,
+        "found_sample": [
+          "argPartition",
+          "ArgPartition",
+          "eval_gpu",
+          "gpu_merge_sort",
+          "multi_block_sort",
+          "size_sorted_axis",
+          "merge_mbsort",
+          "copy_gpu_inplace"
+        ],
+        "missing_sample": [
+          "qwen35DraftRerankKernel"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 21,
+        "ledger_fraction": 0.7241,
+        "ledger_sample": [
+          "argPartition",
+          "ArgPartition",
+          "eval_gpu",
+          "gpu_merge_sort",
+          "merge_mbsort",
+          "copy_gpu_inplace",
+          "draftTokenID",
+          "qwen_mtp_draft_top32_partial"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "11863aa9",
+      "solver": "companygardener",
+      "score": 3.24326223889754,
+      "promotion": "promoted",
+      "parent": "942e5ab2",
+      "parent_score": 3.2341518328631,
+      "corrected_total_pct": -0.2798,
+      "median_pair_pct": -0.1682,
+      "raw_total_pct": -0.2798,
+      "price_sd_pp": 0.1104,
+      "title": "Restore overlay-dropped wired residency + 512 MiB / 50-op command buffers onto the 3.234 tip",
+      "note_paths": [
+        "Qwen35.swift",
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+        "quantized.cpp",
+        "quantized.h"
+      ],
+      "owners_by_file": [
+        "edward",
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+          "quantized.cpp",
+          "quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 9,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 0.8889,
+        "found_sample": [
+          "qmv_fast_singlerow_affine2_g64",
+          "warmAllDepths",
+          "wireResidentWeightsIfEnabled",
+          "activeMemory",
+          "WiredMemoryTicket",
+          "maxRecommendedWorkingSetBytes",
+          "draftPolicy",
+          "qmv_fast_crossrow_affine4_g64_m"
+        ],
+        "missing_sample": [
+          "HALF_K_FOOTPRINT"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 8,
+        "ledger_fraction": 0.8889,
+        "ledger_sample": [
+          "qmv_fast_singlerow_affine2_g64",
+          "warmAllDepths",
+          "wireResidentWeightsIfEnabled",
+          "activeMemory",
+          "WiredMemoryTicket",
+          "maxRecommendedWorkingSetBytes",
+          "draftPolicy",
+          "qmv_fast_crossrow_affine4_g64_m"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "1760479a",
+      "solver": "scarletbright",
+      "score": 3.70355221733209,
+      "promotion": "promoted",
+      "parent": "08b67f12",
+      "parent_score": 3.69071882618532,
+      "corrected_total_pct": -0.2726,
+      "median_pair_pct": -0.4719,
+      "raw_total_pct": -0.2726,
+      "price_sd_pp": 0.2023,
+      "title": "Apply the live QMV launch shrink to width 2",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "mtp-head.manifest.json",
+        "Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "mtp-head.manifest.json",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "Hidden prompts run narrower than the local\nwidth-7 mix, so M=2 is the width the ranked box actually hits between\nserial M=1 and the already-hoisted M>=3 band.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 6,
+        "identifiers_in_our_tree": 5,
+        "landed_fraction": 0.8333,
+        "found_sample": [
+          "editablePaths",
+          "Qwen35CustomQMV",
+          "tablePays",
+          "Qwen36MTPBlockSession",
+          "quantizedMM"
+        ],
+        "missing_sample": [
+          "activeInputGroups"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "editablePaths",
+          "Qwen35CustomQMV",
+          "activeInputGroups",
+          "tablePays",
+          "Qwen36MTPBlockSession",
+          "quantizedMM"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "4f76de6e",
+      "solver": "alfranli123",
+      "score": 3.24300059379657,
+      "promotion": "promoted",
+      "parent": "942e5ab2",
+      "parent_score": 3.2341518328631,
+      "corrected_total_pct": -0.2667,
+      "median_pair_pct": -0.1892,
+      "raw_total_pct": -0.2667,
+      "price_sd_pp": 0.1117,
+      "title": "Restore the crown-evicted wired-residency and command-buffer mechanisms onto the live 3.23415 tip",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+        "Qwen35.swift",
+        "Qwen36MTPBlockSession.swift",
+        "RuntimeStartupMemoryPolicy.swift",
+        "quantized.cpp",
+        "quantized.h"
+      ],
+      "owners_by_file": [
+        "edward",
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift",
+          "Qwen35.swift",
+          "Qwen36MTPBlockSession.swift",
+          "RuntimeStartupMemoryPolicy.swift",
+          "quantized.cpp",
+          "quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 3,
+        "identifiers_in_our_tree": 3,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "warmAllDepths",
+          "WiredMemoryTicket",
+          "clearCache"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "warmAllDepths",
+          "WiredMemoryTicket",
+          "clearCache"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "3ec77796",
+      "solver": "xadenryan",
+      "score": 3.23460813855394,
+      "promotion": null,
+      "parent": "942e5ab2",
+      "parent_score": 3.2341518328631,
+      "corrected_total_pct": -0.266,
+      "median_pair_pct": -0.2265,
+      "raw_total_pct": -0.266,
+      "price_sd_pp": 0.0539,
+      "title": "Third graft-loss recovery: residency wiring + command-buffer geometry onto the u64-fusion crown",
+      "note_paths": [
+        "RuntimeStartupMemoryPolicy.swift",
+        "tmp/plan7.json",
+        "tmp/golden.json"
+      ],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "RuntimeStartupMemoryPolicy.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "tmp/plan7.json",
+          "tmp/golden.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 0,
+        "identifiers_in_our_tree": 0,
+        "landed_fraction": null,
+        "found_sample": [],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 0,
+        "ledger_fraction": null,
+        "ledger_sample": []
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "residency wiring plus command-buffer geometry",
+        "source": [
+          "Sources/MLXFastModel/RuntimeStartupMemoryPolicy.swift"
+        ],
+        "evidence": "residencySet appears in 18 files and MTLResidency in 6; ledger item 12 records our variant as the stronger one (setenv overwrite 1 against the rival's 0)."
+      }
+    },
+    {
+      "row": "69fff840",
+      "solver": "alfranli123",
+      "score": 3.19620874993012,
+      "promotion": "superseded",
+      "parent": "b1e2591b",
+      "parent_score": 3.19088426880882,
+      "corrected_total_pct": -0.2575,
+      "median_pair_pct": -0.192,
+      "raw_total_pct": -0.2575,
+      "price_sd_pp": 0.0977,
+      "title": "Two fused dispatch-reduction Metal kernels: residual-add+RMSNorm (63 interior layer boundaries) and GDN rmsNorm+SiLU-gate postwork",
+      "note_paths": [
+        "Qwen35.swift",
+        "rms_norm.metal",
+        "unary_ops.h",
+        "Tests/MLXFastTests/QwenMTPVerbTests.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "rms_norm.metal",
+          "unary_ops.h"
+        ],
+        "paths_outside_editable_surface": [
+          "Tests/MLXFastTests/QwenMTPVerbTests.swift"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 21,
+        "identifiers_in_our_tree": 18,
+        "landed_fraction": 0.8571,
+        "found_sample": [
+          "inputLayerNorm",
+          "postAttentionLayerNorm",
+          "rmsNorm",
+          "verify_build",
+          "draft_build",
+          "eval_wall",
+          "qwen35PackedGDNPreworkKernel",
+          "bfloat16_t"
+        ],
+        "missing_sample": [
+          "qwen35FusedAddRMSNormKernel",
+          "qwen35FusedGatedDeltaPostworkKernel",
+          "MLXFAST_QWEN_MTP_BASELINE_WS"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 11,
+        "ledger_fraction": 0.5238,
+        "ledger_sample": [
+          "rmsNorm",
+          "verify_build",
+          "draft_build",
+          "eval_wall",
+          "qwen35PackedGDNPreworkKernel",
+          "bfloat16_t",
+          "rms_looped",
+          "simd_sum"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "0f90ece2",
+      "solver": "claudiodekker",
+      "score": 3.10397652926876,
+      "promotion": null,
+      "parent": "1235f4ba",
+      "parent_score": 3.10092968921393,
+      "corrected_total_pct": -0.2534,
+      "median_pair_pct": -0.2334,
+      "raw_total_pct": -0.2534,
+      "price_sd_pp": 0.0924,
+      "title": "M=3 and M=5 crossrow QMV nibble routing on the warm-islands tip",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 6,
+        "identifiers_in_our_tree": 6,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "DIRECT_NIBBLES",
+          "qmv_fast_crossrow_affine4_g64_m",
+          "load_vector",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "simd_sum",
+          "asyncEval"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "DIRECT_NIBBLES",
+          "qmv_fast_crossrow_affine4_g64_m",
+          "load_vector",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "simd_sum",
+          "asyncEval"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "070f1189",
+      "solver": "scarletbright",
+      "score": 3.23167065917156,
+      "promotion": null,
+      "parent": "72ce82dc",
+      "parent_score": 3.22826053954006,
+      "corrected_total_pct": -0.2495,
+      "median_pair_pct": -0.393,
+      "raw_total_pct": -0.2495,
+      "price_sd_pp": 0.1769,
+      "title": "Restore the boundary-fused residual/RMSNorm chain orphaned by a stale-base REPLACE overlay",
+      "note_paths": [
+        "Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 1,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qwen35FusedResidualRMSNorm"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "qwen35FusedResidualRMSNorm"
+        ]
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "boundary-fused residual/RMSNorm chain",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2529"
+        ],
+        "evidence": "qwen35FusedResidualRMSNorm is live at :3715, :3746, :3762."
+      }
+    },
+    {
+      "row": "44559d02",
+      "solver": "morganmcg1",
+      "score": 3.34351272161741,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.2436,
+      "median_pair_pct": -0.218,
+      "raw_total_pct": -0.2436,
+      "price_sd_pp": 0.0274,
+      "title": "The same drafting tree, resubmitted, with one provenance declaration repaired",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 14,
+        "identifiers_in_our_tree": 14,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
+          "qwen_mtp_probe_sort",
+          "qwen_mtp_row_top32_partial",
+          "qwen_mtp_row_top32_finalize",
+          "qwen_mtp_draft_top32_partial",
+          "qwen_mtp_draft_top32_finalize",
+          "qmv_fast",
+          "source_url"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 12,
+        "ledger_fraction": 0.8571,
+        "ledger_sample": [
+          "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
+          "qwen_mtp_probe_sort",
+          "qwen_mtp_row_top32_partial",
+          "qwen_mtp_row_top32_finalize",
+          "qwen_mtp_draft_top32_partial",
+          "qmv_fast",
+          "source_url",
+          "max_bytes"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "b8b8b860",
+      "solver": "morganmcg1",
+      "score": 3.33412148245778,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.2392,
+      "median_pair_pct": -0.2388,
+      "raw_total_pct": -0.2392,
+      "price_sd_pp": 0.0175,
+      "title": "Draft-side selection, reranked in one dispatch, on a one-stream M=5 verify",
+      "note_paths": [
+        "Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 20,
+        "identifiers_in_our_tree": 20,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "lmHead",
+          "argPartition",
+          "eval_gpu",
+          "gpu_merge_sort",
+          "multi_block_sort",
+          "qwen_mtp_row_top32_partial",
+          "qwen_mtp_row_top32_finalize",
+          "qwen_mtp_probe_sort"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 15,
+        "ledger_fraction": 0.75,
+        "ledger_sample": [
+          "lmHead",
+          "argPartition",
+          "eval_gpu",
+          "gpu_merge_sort",
+          "qwen_mtp_row_top32_partial",
+          "qwen_mtp_row_top32_finalize",
+          "qwen_mtp_probe_sort",
+          "LessThan"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "90addddc",
+      "solver": "Floofy6",
+      "score": 3.19257012042451,
+      "promotion": null,
+      "parent": "824dc272",
+      "parent_score": 3.19351254799833,
+      "corrected_total_pct": -0.2354,
+      "median_pair_pct": 0.1083,
+      "raw_total_pct": -0.2354,
+      "price_sd_pp": 0.3857,
+      "title": "Cut the Q2/Q4 rerank bag from 32 to 16 on the 3.193 singlerow-Q2 tip",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "quantized.cpp",
+        "Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "quantized.cpp",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 6,
+        "landed_fraction": 0.75,
+        "found_sample": [
+          "qmv_fast_singlerow_affine2_g64",
+          "qmv_fast_impl",
+          "draftRerankCandidateCount",
+          "argPartition",
+          "quantizedMM",
+          "simd_shuffle_down"
+        ],
+        "missing_sample": [
+          "qwen_draft_rerank_better",
+          "CANDIDATE_COUNT"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.625,
+        "ledger_sample": [
+          "qmv_fast_singlerow_affine2_g64",
+          "qmv_fast_impl",
+          "draftRerankCandidateCount",
+          "argPartition",
+          "quantizedMM"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "ecae5f0e",
+      "solver": "EternaPeptix",
+      "score": 2.91016915098723,
+      "promotion": "failed",
+      "parent": "e6c5ef35",
+      "parent_score": 2.9042110287045,
+      "corrected_total_pct": -0.2326,
+      "median_pair_pct": -0.1679,
+      "raw_total_pct": -0.2326,
+      "price_sd_pp": 0.2458,
+      "title": "Extend the compiled GDN gate product to prefill and every width",
+      "note_paths": [
+        "Qwen35.swift",
+        "correctness_prompts/public_longcopy_gate_english_512_256.json"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "correctness_prompts/public_longcopy_gate_english_512_256.json"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "Qwen3NextRMSNormGated",
+          "qwen35CompiledGatedDeltaPostNorm",
+          "rms_single_row",
+          "rms_norm"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 0.25,
+        "ledger_sample": [
+          "rms_norm"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "561e815d",
+      "solver": "hadakang",
+      "score": 3.28098068357947,
+      "promotion": null,
+      "parent": "e38ea969",
+      "parent_score": 3.2943496372382,
+      "corrected_total_pct": -0.2326,
+      "median_pair_pct": -0.2346,
+      "raw_total_pct": -0.2326,
+      "price_sd_pp": 0.067,
+      "title": "REFIRE with 8-vector evidence: the streak-gated optimism transfer is a confirmed-real mechanism (7/8 sign test vs same-tree null) that lost only to an upper-tail record",
+      "note_paths": [
+        "Qwen36MTPBlockSession.swift"
+      ],
+      "owners_by_file": [
+        "edward"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen36MTPBlockSession.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "headStepCostRatio",
+          "segmentedStreakGate",
+          "fullAcceptStreak",
+          "MLXFAST_QWEN_MTP_HEAD_DIR"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "headStepCostRatio",
+          "segmentedStreakGate",
+          "fullAcceptStreak",
+          "MLXFAST_QWEN_MTP_HEAD_DIR"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "22ce3162",
+      "solver": "mega-dmitriy",
+      "score": 2.86792937494018,
+      "promotion": "promoted",
+      "parent": "9ef7b7f1",
+      "parent_score": 2.86531796926132,
+      "corrected_total_pct": -0.2298,
+      "median_pair_pct": -0.1777,
+      "raw_total_pct": -0.2298,
+      "price_sd_pp": 0.0684,
+      "title": "Packed GDN-prework mixer: five outputs, one launch, verify widths 3...9",
+      "note_paths": [
+        "benchmark.json",
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [
+          "benchmark.json"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 2,
+        "identifiers_in_our_tree": 2,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "metalKernel",
+          "editablePaths"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 2,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "metalKernel",
+          "editablePaths"
+        ]
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "packed GDN prework mixer, five outputs, one launch, verify widths 3...9",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:276",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:967"
+        ],
+        "evidence": "qwen35PackedGDNPreworkKernel is built at :276, named qwen35_packed_gdn_prework at :419, and dispatched at :967 behind the fail-closed gate at :948."
+      }
+    },
+    {
+      "row": "788ebdeb",
+      "solver": "claudiodekker",
+      "score": 3.1390636976761,
+      "promotion": null,
+      "parent": "bd007bc7",
+      "parent_score": 3.13098700135133,
+      "corrected_total_pct": -0.2249,
+      "median_pair_pct": -0.2311,
+      "raw_total_pct": -0.2249,
+      "price_sd_pp": 0.1025,
+      "title": "M=3 and M=5 crossrow QMV nibble routing on the warm-islands tip",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 6,
+        "identifiers_in_our_tree": 6,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "DIRECT_NIBBLES",
+          "qmv_fast_crossrow_affine4_g64_m",
+          "load_vector",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "simd_sum",
+          "asyncEval"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "DIRECT_NIBBLES",
+          "qmv_fast_crossrow_affine4_g64_m",
+          "load_vector",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "simd_sum",
+          "asyncEval"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "c8c3d28b",
+      "solver": "tjboudreaux",
+      "score": 3.20173642659219,
+      "promotion": null,
+      "parent": "824dc272",
+      "parent_score": 3.19351254799833,
+      "corrected_total_pct": -0.224,
+      "median_pair_pct": 0.0121,
+      "raw_total_pct": -0.224,
+      "price_sd_pp": 0.2839,
+      "title": "N1: warm every committed-history flush length outside the timed window",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "Package.swift",
+        "Tests/MLXFastTests/QwenMTPVerbTests.swift"
+      ],
+      "owners_by_file": [
+        "edward"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "Package.swift",
+          "Tests/MLXFastTests/QwenMTPVerbTests.swift"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "warmAllDepths",
+          "mtpHeadLastHiddenWithKVOnlyHistory",
+          "mtpHeadHiddenForward",
+          "draftTokenID"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 0.75,
+        "ledger_sample": [
+          "warmAllDepths",
+          "mtpHeadLastHiddenWithKVOnlyHistory",
+          "draftTokenID"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:edward"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "bc070b7b",
+      "solver": "francip",
+      "score": 3.35922017047244,
+      "promotion": "promoted",
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.2218,
+      "median_pair_pct": -0.2318,
+      "raw_total_pct": -0.2218,
+      "price_sd_pp": 0.0339,
+      "title": "E87 shortlist selection in two dispatches instead of ~23 \u2014 identical candidate sets, identical proposals",
+      "note_paths": [
+        "Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 14,
+        "identifiers_in_our_tree": 10,
+        "landed_fraction": 0.7143,
+        "found_sample": [
+          "argPartition",
+          "qwen_mtp_probe_sort",
+          "floorDivide",
+          "asType",
+          "eval_gpu",
+          "multi_block_sort",
+          "simd_max",
+          "MLX_E87_PROBE_SORT"
+        ],
+        "missing_sample": [
+          "qwen_mtp_e87_probe_select",
+          "qwen_mtp_e87_shortlist",
+          "qwen35VerifyE87Select",
+          "MLX_E87_SELECT"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 11,
+        "ledger_fraction": 0.7857,
+        "ledger_sample": [
+          "argPartition",
+          "qwen_mtp_probe_sort",
+          "eval_gpu",
+          "qwen_mtp_e87_probe_select",
+          "qwen_mtp_e87_shortlist",
+          "simd_max",
+          "MLX_E87_PROBE_SORT",
+          "LessThan"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "7358c89f",
+      "solver": "newjordan",
+      "score": 3.35206896702495,
+      "promotion": "promoted",
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.2148,
+      "median_pair_pct": -0.2181,
+      "raw_total_pct": -0.2148,
+      "price_sd_pp": 0.0298,
+      "title": "Exact centroid-selector stack redraw #1 on frontier 41bad1c",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [
+        "edward",
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 3,
+        "landed_fraction": 0.75,
+        "found_sample": [
+          "gatherQuantizedMM",
+          "argPartition",
+          "qwen_mtp_probe_sort"
+        ],
+        "missing_sample": [
+          "qwen_mtp_probe_select_radix_bf16_v2"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 0.75,
+        "ledger_sample": [
+          "gatherQuantizedMM",
+          "argPartition",
+          "qwen_mtp_probe_sort"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "ac67891e",
+      "solver": "audreyt",
+      "score": 3.3451325940445,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.2117,
+      "median_pair_pct": -0.2004,
+      "raw_total_pct": -0.2117,
+      "price_sd_pp": 0.0339,
+      "title": "Title: Bit-exact GDN prefill-scan clone on the 41bad1c frontier",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen35GatedDelta.swift",
+        "Qwen35.swift",
+        "Qwen35MTP.swift",
+        "Qwen36MTPBlockSession.swift",
+        "Qwen35GatedDelta.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen35GatedDelta.swift",
+          "Qwen35.swift",
+          "Qwen35MTP.swift",
+          "Qwen36MTPBlockSession.swift",
+          "Qwen35GatedDelta.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 14,
+        "identifiers_in_our_tree": 12,
+        "landed_fraction": 0.8571,
+        "found_sample": [
+          "gated_delta_step",
+          "simd_sum",
+          "makeMask",
+          "putAlong",
+          "replaceExactRows",
+          "installExactQKVRows",
+          "qwen35_gated_delta_replay_state",
+          "qwen35EmbedDualRMSNormConcat"
+        ],
+        "missing_sample": [
+          "qwen35_gated_delta_step_rows",
+          "reachedStopToken"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 12,
+        "ledger_fraction": 0.8571,
+        "ledger_sample": [
+          "gated_delta_step",
+          "simd_sum",
+          "makeMask",
+          "putAlong",
+          "replaceExactRows",
+          "installExactQKVRows",
+          "qwen35_gated_delta_replay_state",
+          "qwen35EmbedDualRMSNormConcat"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "4287f727",
+      "solver": "zeeshan8281",
+      "score": 2.93933129950612,
+      "promotion": null,
+      "parent": "ba493f74",
+      "parent_score": 2.95338624520432,
+      "corrected_total_pct": -0.2063,
+      "median_pair_pct": -0.1092,
+      "raw_total_pct": -0.2063,
+      "price_sd_pp": 0.1434,
+      "title": "Warm the long-context two-pass attention pipeline before timing",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "benchmark.json"
+      ],
+      "owners_by_file": [
+        "edward"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "benchmark.json"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "The published\nscore remains the mean of the fourth and fifth sorted per-prompt\nserial-relative ratios across all eight hidden prompts, with exact token\nfidelity, floor `0.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 3,
+        "identifiers_in_our_tree": 3,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "warmAllDepths",
+          "sdpa_vector_2pass",
+          "warmCache"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "warmAllDepths",
+          "sdpa_vector_2pass",
+          "warmCache"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:edward"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "edd3c106",
+      "solver": "Carme99",
+      "score": 3.3423876202992,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.2024,
+      "median_pair_pct": -0.1946,
+      "raw_total_pct": -0.2024,
+      "price_sd_pp": 0.08,
+      "title": "Ticket 2 \u2014 rebased E88b cluster-row top-32 select, declared redraw of receipted content",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 3,
+        "landed_fraction": 0.75,
+        "found_sample": [
+          "argPartition",
+          "qwen_mtp_probe_sort",
+          "gpu_merge_sort"
+        ],
+        "missing_sample": [
+          "qwen35ClusterRowTop32PartialKernel"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 0.75,
+        "ledger_sample": [
+          "argPartition",
+          "qwen_mtp_probe_sort",
+          "gpu_merge_sort"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "b28b0993",
+      "solver": "ivanfioravanti",
+      "score": 3.30679033039597,
+      "promotion": null,
+      "parent": "640f60b1",
+      "parent_score": 3.29402207054537,
+      "corrected_total_pct": -0.2002,
+      "median_pair_pct": -0.1568,
+      "raw_total_pct": -0.2002,
+      "price_sd_pp": 0.0579,
+      "title": "Ticket #9: the new island-fast-path crown + both verified fusions \u2014 the next draw at the new 1st place",
+      "note_paths": [
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 0,
+        "identifiers_in_our_tree": 0,
+        "landed_fraction": null,
+        "found_sample": [],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 0,
+        "ledger_fraction": null,
+        "ledger_sample": []
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "island fast path plus the affine-4 embedding dequant folded into the dual-RMSNorm-concat launch",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:3266",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2893"
+        ],
+        "evidence": "Its note names one fusion, the embedding fold, and we ship it as qwen35_embed_dual_rms_norm_concat_bf16_v1. The island fast path is live at :3266 and :3339 behind islandFastPathReady() at :3424."
+      }
+    },
+    {
+      "row": "59b321ee",
+      "solver": "fkiene",
+      "score": 3.24985583421771,
+      "promotion": "promoted",
+      "parent": "0cd0a6b4",
+      "parent_score": 3.24929398547457,
+      "corrected_total_pct": -0.1949,
+      "median_pair_pct": -0.1048,
+      "raw_total_pct": -0.1949,
+      "price_sd_pp": 0.1103,
+      "title": "Target-side later-window SDPA compile (HOST-extend 16 FA KV to kL>=1024)",
+      "note_paths": [
+        "yukon-runs/mlxfast/LATEST.json",
+        "LATEST.json",
+        "AttentionUtils.swift",
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "Qwen35.swift",
+        "KVCache.swift",
+        "RuntimeStartupMemoryPolicy.swift",
+        "Qwen36MTPBlockSession.swift",
+        "Qwen35Config.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "AttentionUtils.swift",
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "Qwen35.swift",
+          "KVCache.swift",
+          "RuntimeStartupMemoryPolicy.swift",
+          "Qwen36MTPBlockSession.swift",
+          "Qwen35Config.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "yukon-runs/mlxfast/LATEST.json",
+          "LATEST.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 15,
+        "identifiers_in_our_tree": 12,
+        "landed_fraction": 0.8,
+        "found_sample": [
+          "parity_all_ok",
+          "restoreAfterPrefixReject",
+          "KVCacheSimple",
+          "scaledDotProductAttention",
+          "attentionWithCacheUpdate",
+          "scaled_dot_product_attention",
+          "warmAllDepthShapes",
+          "callWithHidden"
+        ],
+        "missing_sample": [
+          "MLXFAST_QWEN_MTP_BASELINE_WS",
+          "nextAgentShould",
+          "sdpa_variant"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 13,
+        "ledger_fraction": 0.8667,
+        "ledger_sample": [
+          "parity_all_ok",
+          "restoreAfterPrefixReject",
+          "KVCacheSimple",
+          "scaledDotProductAttention",
+          "attentionWithCacheUpdate",
+          "scaled_dot_product_attention",
+          "warmAllDepthShapes",
+          "callWithHidden"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "903cf6b0",
+      "solver": "scarletbright",
+      "score": 1.95396671629986,
+      "promotion": null,
+      "parent": "45c257f1",
+      "parent_score": 1.95465061755406,
+      "corrected_total_pct": -0.19,
+      "median_pair_pct": -0.1397,
+      "raw_total_pct": -0.19,
+      "price_sd_pp": 0.0981,
+      "title": "Extend the proven target async-evaluation ladder to the promoted streak widths",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "tmp/qwen-linear-top2-argmax-full/baseline-golden-513.json",
+        "benchmark.json",
+        "benchmark.qwen-mtp.json"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "benchmark.json",
+          "benchmark.qwen-mtp.json"
+        ],
+        "paths_not_in_this_tree": [
+          "tmp/qwen-linear-top2-argmax-full/baseline-golden-513.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "callAsFunction",
+          "asyncEval",
+          "hiddenStates",
+          "nConfirmed"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "callAsFunction",
+          "asyncEval",
+          "hiddenStates",
+          "nConfirmed"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "e880b888",
+      "solver": "xadenryan",
+      "score": 3.13179216362968,
+      "promotion": null,
+      "parent": "caec88d4",
+      "parent_score": 3.14642585386152,
+      "corrected_total_pct": -0.1899,
+      "median_pair_pct": 0.4859,
+      "raw_total_pct": -0.1899,
+      "price_sd_pp": 0.685,
+      "title": "Prefill GEMM affine-dequant direct-nibble flip \u2014 the seam the \"untimed prefill\" belief left unmined",
+      "note_paths": [
+        "Sources/MLXFastHarness/QwenRuntimeMTPDriver.swift",
+        "quantized.h",
+        "mlx-generated/quantized.cpp",
+        "quantized_nax.h",
+        "mlx-generated/quantized_nax.cpp"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "quantized.h",
+          "mlx-generated/quantized.cpp",
+          "quantized_nax.h",
+          "mlx-generated/quantized_nax.cpp"
+        ],
+        "paths_outside_editable_surface": [
+          "Sources/MLXFastHarness/QwenRuntimeMTPDriver.swift"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 3,
+        "identifiers_in_our_tree": 3,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "quantized_nax",
+          "QuantizedBlockLoader",
+          "emitted_tokens"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 2,
+        "ledger_fraction": 0.6667,
+        "ledger_sample": [
+          "quantized_nax",
+          "emitted_tokens"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "942e5ab2",
+      "solver": "Kamciosz",
+      "score": 3.2341518328631,
+      "promotion": "promoted",
+      "parent": "72ce82dc",
+      "parent_score": 3.22826053954006,
+      "corrected_total_pct": -0.1876,
+      "median_pair_pct": -0.3841,
+      "raw_total_pct": -0.1876,
+      "price_sd_pp": 0.212,
+      "title": "Restore official +1.42% fused residual/RMSNorm onto the live C4 crown",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Qwen35.swift",
+        "quantized.h",
+        "quantized.cpp",
+        "mtp-head.manifest.json",
+        "AttentionUtils.swift",
+        "Qwen35MTP.swift"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Qwen35.swift",
+          "quantized.h",
+          "quantized.cpp",
+          "mtp-head.manifest.json",
+          "AttentionUtils.swift",
+          "Qwen35MTP.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 1,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qwen35FusedResidualRMSNorm"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "qwen35FusedResidualRMSNorm"
+        ]
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "fused residual/RMSNorm",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2529"
+        ],
+        "evidence": "Same landed kernel as 070f1189."
+      }
+    },
+    {
+      "row": "c37b4f67",
+      "solver": "kaarelkaarelson",
+      "score": 3.24598364859494,
+      "promotion": null,
+      "parent": "9d5569bb",
+      "parent_score": 3.25187972017987,
+      "corrected_total_pct": -0.1855,
+      "median_pair_pct": -0.2141,
+      "raw_total_pct": -0.1855,
+      "price_sd_pp": 0.0795,
+      "title": "Head attention: restructure island row handling in the proposal path",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "org.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "org.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "argSort",
+          "withHeadAttached",
+          "LLMModelFactory",
+          "Qwen36MTPBlockSession"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.625,
+        "ledger_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "Qwen36MTPBlockSession"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "675d1930",
+      "solver": "johntdavies",
+      "score": 3.0362497121673,
+      "promotion": "failed",
+      "parent": "14b53255",
+      "parent_score": 3.02460155382533,
+      "corrected_total_pct": -0.1826,
+      "median_pair_pct": -0.2041,
+      "raw_total_pct": -0.1826,
+      "price_sd_pp": 0.0929,
+      "title": "Fused residual-add + RMSNorm junctions: 128 fewer host dispatches per verify round",
+      "note_paths": [
+        "Qwen35.swift",
+        "binary_ops.h",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "binary_ops.h",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "5%; if the 8 hidden prompts share one\nprocess, it dilutes toward ~0.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 10,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 0.4,
+        "found_sample": [
+          "rms_looped",
+          "threads_per_threadgroup",
+          "simd_sum",
+          "callAsFunction"
+        ],
+        "missing_sample": [
+          "qwen35_fused_add_rmsnorm",
+          "callFused",
+          "MLX_QWEN_FUSED_ADDNORM",
+          "qwen35FusedAddRMSNormKernel",
+          "qwen35FusedAddRMSNorm",
+          "fusedAddNormEnabled"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 0.4,
+        "ledger_sample": [
+          "rms_looped",
+          "threads_per_threadgroup",
+          "simd_sum",
+          "callAsFunction"
+        ]
+      },
+      "blockers": [
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "a477aab2",
+      "solver": "zeeshan8281",
+      "score": 2.93946000239108,
+      "promotion": null,
+      "parent": "ba493f74",
+      "parent_score": 2.95338624520432,
+      "corrected_total_pct": -0.1825,
+      "median_pair_pct": -0.1132,
+      "raw_total_pct": -0.1825,
+      "price_sd_pp": 0.1437,
+      "title": "Parallel two-stage compact draft selection",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "The organizer measures a true serial leg and a speculative candidate leg for\neach of eight hidden prompts.",
+          "negated": false
+        },
+        {
+          "term": "hidden prompt",
+          "sentence": "The operation is proposal-only but it runs once for every drafted\ntoken, so the central hidden prompts execute it several hundred times per\n512-token scored window.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 7,
+        "identifiers_in_our_tree": 7,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "draft_lm_head",
+          "REAL_COUNT",
+          "warmAllDepths",
+          "draftTokenID",
+          "argMax",
+          "asyncEval",
+          "Qwen36MTPBlockSession"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 0.8571,
+        "ledger_sample": [
+          "draft_lm_head",
+          "warmAllDepths",
+          "draftTokenID",
+          "argMax",
+          "asyncEval",
+          "Qwen36MTPBlockSession"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "e46537e3",
+      "solver": "Lieisyourlie",
+      "score": 2.93338651768609,
+      "promotion": null,
+      "parent": "d3caa5fe",
+      "parent_score": 2.93361458783958,
+      "corrected_total_pct": -0.1775,
+      "median_pair_pct": -0.0719,
+      "raw_total_pct": -0.1775,
+      "price_sd_pp": 0.2383,
+      "title": "Serial-safe verify-norm reuse, rebased onto 6209702",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Sources/MLXFastModel/Qwen36MTPTarget.swift",
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Sources/MLXFastModel/Qwen36MTPTarget.swift",
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 10,
+        "identifiers_in_our_tree": 6,
+        "landed_fraction": 0.6,
+        "found_sample": [
+          "asyncEval",
+          "hiddenRow",
+          "applyFinalNorm",
+          "callWithHidden",
+          "editablePaths",
+          "pendingHidden"
+        ],
+        "missing_sample": [
+          "callWithHiddenAndPostNorm",
+          "runDraftingRound",
+          "verifyPost",
+          "rawRow"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 0.3,
+        "ledger_sample": [
+          "asyncEval",
+          "callWithHidden",
+          "editablePaths"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "414b54be",
+      "solver": "DawgZter",
+      "score": 3.05342379498001,
+      "promotion": null,
+      "parent": "39fdbf62",
+      "parent_score": 3.07714439121787,
+      "corrected_total_pct": -0.1757,
+      "median_pair_pct": -0.1375,
+      "raw_total_pct": -0.1757,
+      "price_sd_pp": 0.4344,
+      "title": "Fuse decoder residual-add and RMSNorm stream junctions",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 3,
+        "identifiers_in_our_tree": 2,
+        "landed_fraction": 0.6667,
+        "found_sample": [
+          "rms_looped",
+          "all_tokens_matched"
+        ],
+        "missing_sample": [
+          "parity_ok"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "rms_looped",
+          "all_tokens_matched",
+          "parity_ok"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "1422606f",
+      "solver": "Lieisyourlie",
+      "score": 3.34792207167414,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.1715,
+      "median_pair_pct": -0.1749,
+      "raw_total_pct": -0.1715,
+      "price_sd_pp": 0.0294,
+      "title": "E88b: keep E87 probe SET, replace only the 24,584-row `argPartition` on live `#968`",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "quantized.h"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 18,
+        "identifiers_in_our_tree": 15,
+        "landed_fraction": 0.8333,
+        "found_sample": [
+          "argPartition",
+          "gatherQuantizedMM",
+          "qwen_mtp_probe_sort",
+          "gpu_merge_sort",
+          "floorDivide",
+          "quantizedMM",
+          "qwen_top32_ordinal",
+          "clusterCandidateIDs"
+        ],
+        "missing_sample": [
+          "qwen_mtp_cluster_top_probes_v1",
+          "qwen_mtp_cluster_row_top32_partial_v1",
+          "qwen_mtp_cluster_row_top32_finalize_v1"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 12,
+        "ledger_fraction": 0.6667,
+        "ledger_sample": [
+          "argPartition",
+          "gatherQuantizedMM",
+          "qwen_mtp_probe_sort",
+          "gpu_merge_sort",
+          "quantizedMM",
+          "qwen_top32_ordinal",
+          "clusterCandidateIDs",
+          "metalKernel"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "9612d3ba",
+      "solver": "newjordan",
+      "score": 3.33872764713944,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.1688,
+      "median_pair_pct": -0.1671,
+      "raw_total_pct": -0.1688,
+      "price_sd_pp": 0.0172,
+      "title": "Exact top-32 over the IVF shortlist, in two dispatches instead of eighteen",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/sort.cpp",
+        "matmul.cpp",
+        "Qwen35.swift",
+        "Qwen36MTPBlockSession.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Qwen35.swift",
+          "Qwen36MTPBlockSession.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/sort.cpp",
+          "matmul.cpp"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 39,
+        "identifiers_in_our_tree": 35,
+        "landed_fraction": 0.8974,
+        "found_sample": [
+          "editablePaths",
+          "gatherQuantizedMM",
+          "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
+          "candidateIDs",
+          "clusterCandidateIDs",
+          "qwen35Top32RealCount",
+          "eval_gpu",
+          "argPartition"
+        ],
+        "missing_sample": [
+          "qwen_mtp_draft_rerank",
+          "qwen35GatherQMMRerankEnabled",
+          "schedule_identical_at_1e_12",
+          "applegpu_g16g"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 23,
+        "ledger_fraction": 0.5897,
+        "ledger_sample": [
+          "editablePaths",
+          "gatherQuantizedMM",
+          "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
+          "candidateIDs",
+          "clusterCandidateIDs",
+          "qwen35Top32RealCount",
+          "eval_gpu",
+          "argPartition"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "0d618f32",
+      "solver": "xadenryan",
+      "score": 3.21890727321751,
+      "promotion": null,
+      "parent": "12864bc1",
+      "parent_score": 3.21000579584503,
+      "corrected_total_pct": -0.1658,
+      "median_pair_pct": -0.2687,
+      "raw_total_pct": -0.1658,
+      "price_sd_pp": 0.131,
+      "title": "Recomposition: restoring the graft-lost fusion wave onto the two-kernel top-32 readout crown",
+      "note_paths": [
+        "Qwen35.swift",
+        "Qwen35MTP.swift",
+        "tmp/plan7.json",
+        "tmp/golden.json"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "Qwen35MTP.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "tmp/plan7.json",
+          "tmp/golden.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "ArgPartition",
+          "gpu_merge_sort",
+          "qwen35FusedResidualRMSNorm",
+          "boundaryFused"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 0.75,
+        "ledger_sample": [
+          "ArgPartition",
+          "gpu_merge_sort",
+          "qwen35FusedResidualRMSNorm"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "9383f9a4",
+      "solver": "kaarelkaarelson",
+      "score": 3.24213184800175,
+      "promotion": null,
+      "parent": "9d5569bb",
+      "parent_score": 3.25187972017987,
+      "corrected_total_pct": -0.1616,
+      "median_pair_pct": -0.1927,
+      "raw_total_pct": -0.1616,
+      "price_sd_pp": 0.0588,
+      "title": "Head attention: restructure island row handling in the proposal path",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "org.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "org.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "argSort",
+          "withHeadAttached",
+          "LLMModelFactory",
+          "Qwen36MTPBlockSession"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.625,
+        "ledger_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "Qwen36MTPBlockSession"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "1d3f0589",
+      "solver": "Lieisyourlie",
+      "score": 3.51209965563582,
+      "promotion": null,
+      "parent": "48423d09",
+      "parent_score": 3.51845338033139,
+      "corrected_total_pct": -0.1601,
+      "median_pair_pct": -0.1557,
+      "raw_total_pct": -0.1601,
+      "price_sd_pp": 0.06,
+      "title": "E122-only: hoist M=2 verification QMV onto live `#1071` `c0dbec0` (Qwen35.swift only)",
+      "note_paths": [
+        "Qwen35.swift",
+        "quantized.cpp",
+        "quantized.h",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "benchmark.json"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "quantized.cpp",
+          "quantized.h",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "benchmark.json"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 11,
+        "identifiers_in_our_tree": 11,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qmv_fast_crossrow_affine4_g64",
+          "Qwen35CustomQMV",
+          "qwen_e120_qmv_m",
+          "qwen_e120_qmv_wide",
+          "threadGroup",
+          "tablePays",
+          "MLX_E120_QMV_ARM",
+          "qwen35_custom_affine4_g64_xsums_v1"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 10,
+        "ledger_fraction": 0.9091,
+        "ledger_sample": [
+          "qmv_fast_crossrow_affine4_g64",
+          "Qwen35CustomQMV",
+          "qwen_e120_qmv_m",
+          "qwen_e120_qmv_wide",
+          "threadGroup",
+          "tablePays",
+          "MLX_E120_QMV_ARM",
+          "qwen35_custom_affine4_g64_xsums_v1"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "214d92aa",
+      "solver": "vibecodooor",
+      "score": 3.32529025140785,
+      "promotion": "promoted",
+      "parent": "0dd455f0",
+      "parent_score": 3.31965392065513,
+      "corrected_total_pct": -0.1561,
+      "median_pair_pct": -0.1983,
+      "raw_total_pct": -0.1561,
+      "price_sd_pp": 0.0544,
+      "title": "Controlled resample #1: officially faster candidate leg on every prompt",
+      "note_paths": [
+        "qwen38-noeos-mtp-golden513.json",
+        "tmp/gpt56-crown-stack-final512.json"
+      ],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "qwen38-noeos-mtp-golden513.json",
+          "tmp/gpt56-crown-stack-final512.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 0,
+        "landed_fraction": 0.0,
+        "found_sample": [],
+        "missing_sample": [
+          "mtp_seconds_per_token_mean"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "mtp_seconds_per_token_mean"
+        ]
+      },
+      "blockers": [],
+      "unclaimed": true,
+      "hand_adjudication": {
+        "verdict": "open",
+        "mechanism": "combine the coarse top-32 finalization and the selected affine-4 rerank into one dispatch",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:4508",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:6374"
+        ],
+        "evidence": "The rival note lists TWO exact proposal-dispatch reductions. Reduction 1, the affine-4 embedding dequant fold, is ours at Qwen35.swift:2893. Reduction 2 is not: draftTokenIDWithDeclaredRerank still runs a finalize dispatch and then a separate qwen35DraftSelectedAffine4RerankKernel at :6374. Ledger 236.3 (line 25720) priced this row as reduction 1 alone and concluded 'We already ship this', so reduction 2 was never adjudicated and ADVISOR ERROR 30's 1.9x repricing of E85 may be a two-mechanism total.",
+        "caveat": "On our declared cluster head the live arm is clusterCandidateIDs -> Qwen35RowTop32 -> rerank, so the rival's exact dense-coarse finalize is dead here. The fusion CLASS applies to the clustered finalize; the exact kernel does not port unchanged."
+      }
+    },
+    {
+      "row": "b5130678",
+      "solver": "GumbiiDigital",
+      "score": 1.23316142744311,
+      "promotion": null,
+      "parent": "0f835e36",
+      "parent_score": 1.23202128947726,
+      "corrected_total_pct": -0.1556,
+      "median_pair_pct": -0.117,
+      "raw_total_pct": -0.1556,
+      "price_sd_pp": 0.0981,
+      "title": "Seed-prefill vocabulary-projection trim, stacked on the K=1 keep-committed-prefix frontier",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Sources/MLXFastModel/Qwen36MTPTarget.swift",
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "mtp-head.manifest.json",
+        "Qwen35MTP.swift",
+        "Qwen36MTPHeadAttachment.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/GatedDelta.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Sources/MLXFastModel/Qwen36MTPTarget.swift",
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "mtp-head.manifest.json",
+          "Qwen35MTP.swift",
+          "Qwen36MTPHeadAttachment.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/GatedDelta.swift"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 32,
+        "identifiers_in_our_tree": 28,
+        "landed_fraction": 0.875,
+        "found_sample": [
+          "generateRound",
+          "callWithHidden",
+          "quantized_matmul",
+          "QwenRuntime",
+          "beginMTPDecode",
+          "decodeSeconds",
+          "decode_tokens",
+          "hidden_size"
+        ],
+        "missing_sample": [
+          "MLXFAST_QWEN_MTP_BASELINE_WS",
+          "callWithLastTokenHidden",
+          "MLXFAST_QWEN_MTP_SEED_TAIL_PROJECTION",
+          "restoreAfterSingleDraftReject"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 23,
+        "ledger_fraction": 0.7188,
+        "ledger_sample": [
+          "generateRound",
+          "callWithHidden",
+          "quantized_matmul",
+          "QwenRuntime",
+          "beginMTPDecode",
+          "decodeSeconds",
+          "decode_tokens",
+          "MLXFAST_QWEN_MTP_BASELINE_WS"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "e3618ddb",
+      "solver": "nijaru",
+      "score": 3.33581529386933,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.1545,
+      "median_pair_pct": -0.1542,
+      "raw_total_pct": -0.1545,
+      "price_sd_pp": 0.0465,
+      "title": "NVFP4 multi-row qmv_fast crossrow: bit-exact W-stream sharing",
+      "note_paths": [
+        "fp_quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/fp_quantized.cpp"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "fp_quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/fp_quantized.cpp"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 5,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 0.8,
+        "found_sample": [
+          "qmv_fast_crossrow_affine4_g64",
+          "qmv_fast",
+          "fp_qmv_fast",
+          "fp_qmv_fast_impl"
+        ],
+        "missing_sample": [
+          "fp_qmv_fast_crossrow_nvfp4_g16"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 2,
+        "ledger_fraction": 0.4,
+        "ledger_sample": [
+          "qmv_fast_crossrow_affine4_g64",
+          "qmv_fast"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "0e1264be",
+      "solver": "kaarelkaarelson",
+      "score": 3.25231649147675,
+      "promotion": null,
+      "parent": "9d5569bb",
+      "parent_score": 3.25187972017987,
+      "corrected_total_pct": -0.1494,
+      "median_pair_pct": -0.2008,
+      "raw_total_pct": -0.1494,
+      "price_sd_pp": 0.0583,
+      "title": "Head attention: restructure island row handling in the proposal path",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "org.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "org.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "argSort",
+          "withHeadAttached",
+          "LLMModelFactory",
+          "Qwen36MTPBlockSession"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.625,
+        "ledger_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "Qwen36MTPBlockSession"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "3f98b9aa",
+      "solver": "fkiene",
+      "score": 3.30895494854115,
+      "promotion": null,
+      "parent": "0dd455f0",
+      "parent_score": 3.31965392065513,
+      "corrected_total_pct": -0.149,
+      "median_pair_pct": -0.1464,
+      "raw_total_pct": -0.149,
+      "price_sd_pp": 0.0291,
+      "title": "Isolated exact-KV-full skip on the live jonathan308 frontier",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 10,
+        "identifiers_in_our_tree": 9,
+        "landed_fraction": 0.9,
+        "found_sample": [
+          "qwen35_dual_rms_norm_concat_bf16_v1",
+          "replaceExactRows",
+          "putAlong",
+          "installExactQKVRows",
+          "isCompletePermutation",
+          "asArray",
+          "qkvIndices",
+          "kIndices"
+        ],
+        "missing_sample": [
+          "_exactKVFull"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 8,
+        "ledger_fraction": 0.8,
+        "ledger_sample": [
+          "qwen35_dual_rms_norm_concat_bf16_v1",
+          "replaceExactRows",
+          "putAlong",
+          "installExactQKVRows",
+          "isCompletePermutation",
+          "_exactKVFull",
+          "asArray",
+          "kIndices"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "142c41bd",
+      "solver": "Lieisyourlie",
+      "score": 2.92793945204537,
+      "promotion": null,
+      "parent": "d3caa5fe",
+      "parent_score": 2.93361458783958,
+      "corrected_total_pct": -0.1462,
+      "median_pair_pct": -0.0532,
+      "raw_total_pct": -0.1462,
+      "price_sd_pp": 0.2211,
+      "title": "Isolated eval-root trim, rebased onto 6209702",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+      ],
+      "owners_by_file": [
+        "edward"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 2,
+        "identifiers_in_our_tree": 2,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "editablePaths",
+          "snapshotRecurrent"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 2,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "editablePaths",
+          "snapshotRecurrent"
+        ]
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "isolated eval-root trim",
+        "source": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1648"
+        ],
+        "evidence": "The round already carries a single blocking eval whose bundle is the minimal root set."
+      }
+    },
+    {
+      "row": "1a4218f5",
+      "solver": "vibecodooor",
+      "score": 3.31348359499124,
+      "promotion": null,
+      "parent": "0dd455f0",
+      "parent_score": 3.31965392065513,
+      "corrected_total_pct": -0.1455,
+      "median_pair_pct": -0.1782,
+      "raw_total_pct": -0.1455,
+      "price_sd_pp": 0.0514,
+      "title": "Current qL-warm crown + two exact proposal-dispatch reductions",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 7,
+        "identifiers_in_our_tree": 5,
+        "landed_fraction": 0.7143,
+        "found_sample": [
+          "embedTokens",
+          "QuantizedEmbedding",
+          "simd_sum",
+          "quantizedMM",
+          "all_tokens_matched"
+        ],
+        "missing_sample": [
+          "qwen35_q4_embedding_dual_rms_norm_concat_bf16_v1",
+          "qwen_mtp_draft_top32_fused_rerank_affine4_g64_v1"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.7143,
+        "ledger_sample": [
+          "embedTokens",
+          "QuantizedEmbedding",
+          "simd_sum",
+          "quantizedMM",
+          "all_tokens_matched"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "69910680",
+      "solver": "scarletbright",
+      "score": 3.15840201378452,
+      "promotion": null,
+      "parent": "caec88d4",
+      "parent_score": 3.14642585386152,
+      "corrected_total_pct": -0.1452,
+      "median_pair_pct": -0.0493,
+      "raw_total_pct": -0.1452,
+      "price_sd_pp": 0.3093,
+      "title": "Mid-width (1024 \u2264 N < 4096) M=3..9: reuse the already-compiled `_m` DIRECT_NIBBLES helpers",
+      "note_paths": [
+        "mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Qwen36MTPBlockSession.swift",
+        "Qwen35.swift",
+        "benchmark.json",
+        "Package.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Qwen36MTPBlockSession.swift",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "benchmark.json",
+          "Package.swift"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "The ranked M5 paired decode (all 8 hidden prompts, serial = 1.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 11,
+        "identifiers_in_our_tree": 11,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qmv_fast_crossrow_affine4_g64",
+          "affine_qmv_fast",
+          "qmv_fast_crossrow_affine4_g64_m",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "out_vec_size",
+          "qmv_fast_impl",
+          "simd_sum",
+          "callWithHiddenAndNormed"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 11,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "qmv_fast_crossrow_affine4_g64",
+          "affine_qmv_fast",
+          "qmv_fast_crossrow_affine4_g64_m",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "out_vec_size",
+          "qmv_fast_impl",
+          "simd_sum",
+          "callWithHiddenAndNormed"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:edward+alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "6705cf1f",
+      "solver": "yijunyu",
+      "score": 2.90665561958154,
+      "promotion": null,
+      "parent": "08bcbcc5",
+      "parent_score": 2.91280900061542,
+      "corrected_total_pct": -0.1449,
+      "median_pair_pct": -0.0399,
+      "raw_total_pct": -0.1449,
+      "price_sd_pp": 0.2003,
+      "title": "Five validated mechanisms that are still not in trunk, plus what the sealed per-prompt data says",
+      "note_paths": [
+        "config.json",
+        "Tests/MLXFastTests/QwenMTPVerbTests.swift"
+      ],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [],
+        "paths_outside_editable_surface": [
+          "Tests/MLXFastTests/QwenMTPVerbTests.swift"
+        ],
+        "paths_not_in_this_tree": [
+          "config.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 16,
+        "identifiers_in_our_tree": 13,
+        "landed_fraction": 0.8125,
+        "found_sample": [
+          "segmentedStreakGate",
+          "applyFinalNorm",
+          "draft_len",
+          "callWithHiddenAndNormed",
+          "pendingHidden",
+          "hiddenRow",
+          "fullAcceptStreak",
+          "simd_sum"
+        ],
+        "missing_sample": [
+          "per_prompt",
+          "MLXFAST_QWEN_MTP_BASELINE_WS",
+          "mtp_seconds_per_token"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 13,
+        "ledger_fraction": 0.8125,
+        "ledger_sample": [
+          "segmentedStreakGate",
+          "per_prompt",
+          "draft_len",
+          "callWithHiddenAndNormed",
+          "fullAcceptStreak",
+          "simd_sum",
+          "MLXFAST_QWEN_MTP_BASELINE_WS",
+          "effective_mean_draft_len"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "97e0e02f",
+      "solver": "nijaru",
+      "score": 3.09551187481522,
+      "promotion": null,
+      "parent": "1d7876fd",
+      "parent_score": 3.08168872136616,
+      "corrected_total_pct": -0.1432,
+      "median_pair_pct": -0.1505,
+      "raw_total_pct": -0.1432,
+      "price_sd_pp": 0.0609,
+      "title": "DIRECT_NIBBLES at the remaining hot widths M=5 and M=3",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "correctness_prompts/public_longcopy_gate_english_512_256.json"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+        ],
+        "paths_outside_editable_surface": [
+          "correctness_prompts/public_longcopy_gate_english_512_256.json"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "The ranked token-exact gate is the final authority on hidden prompts.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 4,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qmv_fast_crossrow_affine4_g64_m",
+          "qmv_fast_crossrow_affine4_g64",
+          "simd_sum",
+          "qmv_fast_crossrow_affine4_g64_wide"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "qmv_fast_crossrow_affine4_g64_m",
+          "qmv_fast_crossrow_affine4_g64",
+          "simd_sum",
+          "qmv_fast_crossrow_affine4_g64_wide"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "81d7c051",
+      "solver": "Lieisyourlie",
+      "score": 3.14933425030331,
+      "promotion": null,
+      "parent": "caec88d4",
+      "parent_score": 3.14642585386152,
+      "corrected_total_pct": -0.142,
+      "median_pair_pct": -0.0095,
+      "raw_total_pct": -0.142,
+      "price_sd_pp": 0.281,
+      "title": "Mid-width K/V direct-nibble on ivan 3.146",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 3,
+        "identifiers_in_our_tree": 3,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qmv_fast_crossrow_affine4_g64",
+          "load_vector",
+          "parity_all_ok"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 3,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "qmv_fast_crossrow_affine4_g64",
+          "load_vector",
+          "parity_all_ok"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "7782bb0f",
+      "solver": "companygardener",
+      "score": 3.22444222743606,
+      "promotion": null,
+      "parent": "72ce82dc",
+      "parent_score": 3.22826053954006,
+      "corrected_total_pct": -0.1415,
+      "median_pair_pct": -0.2689,
+      "raw_total_pct": -0.1415,
+      "price_sd_pp": 0.1772,
+      "title": "Two-row occupancy pass on the promoted affine-2/g64 coarse draft QMV",
+      "note_paths": [
+        "mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "Qwen35.swift",
+        "quantized.cpp",
+        "EngineLoopV2.swift"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "Qwen35.swift",
+          "quantized.cpp"
+        ],
+        "paths_outside_editable_surface": [
+          "EngineLoopV2.swift"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "The public fixture can pass (and did, including\na 256-token adaptive local run) while a hidden prompt flips a\nnear-tie argmax.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 9,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 0.8889,
+        "found_sample": [
+          "qmv_fast_singlerow_affine2_g64",
+          "simd_sum",
+          "draftTokenID",
+          "draftTokenIDWithDeclaredRerank",
+          "_draftHeadW",
+          "gatherQuantizedMM",
+          "draftPolicy",
+          "affine_qmv_fast"
+        ],
+        "missing_sample": [
+          "HALF_K_FOOTPRINT"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 8,
+        "ledger_fraction": 0.8889,
+        "ledger_sample": [
+          "qmv_fast_singlerow_affine2_g64",
+          "simd_sum",
+          "draftTokenID",
+          "draftTokenIDWithDeclaredRerank",
+          "_draftHeadW",
+          "gatherQuantizedMM",
+          "draftPolicy",
+          "affine_qmv_fast"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "4cb3c9b7",
+      "solver": "vibecodooor",
+      "score": 3.32552795566994,
+      "promotion": null,
+      "parent": "8819b108",
+      "parent_score": 3.32794960796967,
+      "corrected_total_pct": -0.1385,
+      "median_pair_pct": -0.1042,
+      "raw_total_pct": -0.1385,
+      "price_sd_pp": 0.0329,
+      "title": "Restore the two promoted proposal dispatch reductions on the island-dead-work crown",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift",
+        "qwen38-noeos-mtp-golden513.json",
+        "tmp/gpt56-island-stack-final512.json"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "qwen38-noeos-mtp-golden513.json",
+          "tmp/gpt56-island-stack-final512.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 9,
+        "identifiers_in_our_tree": 2,
+        "landed_fraction": 0.2222,
+        "found_sample": [
+          "qwen35_dual_rms_norm_concat_bf16_v1",
+          "simd_sum"
+        ],
+        "missing_sample": [
+          "islandFastPathPlan",
+          "islandQKVForward",
+          "islandKVForward",
+          "buildIslandLivePack",
+          "qwen35_q4_embedding_dual_rms_norm_concat_bf16_v1",
+          "qwen_mtp_draft_top32_fused_rerank_affine4_g64_v1",
+          "dualRMSNormConcat"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 0.6667,
+        "ledger_sample": [
+          "islandFastPathPlan",
+          "islandQKVForward",
+          "islandKVForward",
+          "buildIslandLivePack",
+          "qwen35_dual_rms_norm_concat_bf16_v1",
+          "simd_sum"
+        ]
+      },
+      "blockers": [
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "0b8602e1",
+      "solver": "nagaral",
+      "score": 3.51925373965701,
+      "promotion": "promoted",
+      "parent": "48423d09",
+      "parent_score": 3.51845338033139,
+      "corrected_total_pct": -0.137,
+      "median_pair_pct": -0.1363,
+      "raw_total_pct": -0.137,
+      "price_sd_pp": 0.0681,
+      "title": "Three eaten mechanisms restored on c0dbec0: francip's E87 probe-select (+0.72%), E020 replay-prefetch, 1d7876fd normed-verify warm",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Qwen36MTPBlockSession.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Qwen36MTPBlockSession.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 7,
+        "identifiers_in_our_tree": 6,
+        "landed_fraction": 0.8571,
+        "found_sample": [
+          "asyncEval",
+          "callWithHidden",
+          "argPartition",
+          "qwen_mtp_probe_sort",
+          "row_top32",
+          "callWithHiddenAndNormed"
+        ],
+        "missing_sample": [
+          "qwen_mtp_e87_probe_select"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 7,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "qwen_mtp_e87_probe_select",
+          "asyncEval",
+          "callWithHidden",
+          "argPartition",
+          "qwen_mtp_probe_sort",
+          "row_top32",
+          "callWithHiddenAndNormed"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "396a16f9",
+      "solver": "kaarelkaarelson",
+      "score": 3.3014636534348,
+      "promotion": null,
+      "parent": "ead84bba",
+      "parent_score": 3.30221310342945,
+      "corrected_total_pct": -0.1357,
+      "median_pair_pct": -0.1247,
+      "raw_total_pct": -0.1357,
+      "price_sd_pp": 0.0455,
+      "title": "Head attention: restructure island row handling in the proposal path",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "org.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "org.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "argSort",
+          "withHeadAttached",
+          "LLMModelFactory",
+          "Qwen36MTPBlockSession"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.625,
+        "ledger_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "Qwen36MTPBlockSession"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "3c0750f6",
+      "solver": "nijaru",
+      "score": 3.34196877763234,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.133,
+      "median_pair_pct": -0.1389,
+      "raw_total_pct": -0.133,
+      "price_sd_pp": 0.0258,
+      "title": "Salvage combo v2: five ranked-adjacent mechanisms, one archive",
+      "note_paths": [
+        "Qwen35.swift",
+        "Qwen35GatedDelta.swift",
+        "quantized.cpp/.h",
+        "Qwen35MTP.swift",
+        "quantized_nax.cpp/.h",
+        "qwen3_8_27b_mtp_track.json"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "Qwen35GatedDelta.swift",
+          "Qwen35MTP.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "qwen3_8_27b_mtp_track.json"
+        ],
+        "paths_not_in_this_tree": [
+          "quantized.cpp/.h",
+          "quantized_nax.cpp/.h"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 1,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "simd_sum"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "simd_sum"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "undetermined-landing",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "c6b9c06b",
+      "solver": "kaarelkaarelson",
+      "score": 3.31061030959055,
+      "promotion": null,
+      "parent": "ead84bba",
+      "parent_score": 3.30221310342945,
+      "corrected_total_pct": -0.1326,
+      "median_pair_pct": -0.1206,
+      "raw_total_pct": -0.1326,
+      "price_sd_pp": 0.0365,
+      "title": "Head attention: restructure island row handling in the proposal path",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "org.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "org.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "argSort",
+          "withHeadAttached",
+          "LLMModelFactory",
+          "Qwen36MTPBlockSession"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.625,
+        "ledger_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "Qwen36MTPBlockSession"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "4be07d0c",
+      "solver": "jonathan308",
+      "score": 3.51606748964853,
+      "promotion": null,
+      "parent": "48423d09",
+      "parent_score": 3.51845338033139,
+      "corrected_total_pct": -0.1321,
+      "median_pair_pct": -0.1143,
+      "raw_total_pct": -0.1321,
+      "price_sd_pp": 0.0442,
+      "title": "Crown `48423d0` + E87 single-dispatch select kernels (ticket #21)",
+      "note_paths": [
+        "public_longcopy_gate_english_512_256.json",
+        "Qwen35.swift",
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [
+          "public_longcopy_gate_english_512_256.json"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 7,
+        "identifiers_in_our_tree": 5,
+        "landed_fraction": 0.7143,
+        "found_sample": [
+          "argPartition",
+          "eval_gpu",
+          "multi_block_sort",
+          "qwen_mtp_probe_sort",
+          "floorDivide"
+        ],
+        "missing_sample": [
+          "qwen_mtp_e87_probe_select",
+          "qwen_mtp_e87_shortlist_select"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 0.5714,
+        "ledger_sample": [
+          "argPartition",
+          "eval_gpu",
+          "qwen_mtp_probe_sort",
+          "qwen_mtp_e87_probe_select"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "cefa0ac6",
+      "solver": "jonathan308",
+      "score": 3.51241519638165,
+      "promotion": null,
+      "parent": "48423d09",
+      "parent_score": 3.51845338033139,
+      "corrected_total_pct": -0.1318,
+      "median_pair_pct": -0.1391,
+      "raw_total_pct": -0.1318,
+      "price_sd_pp": 0.016,
+      "title": "E87-select crown tree, fresh-marker resample (ticket #22)",
+      "note_paths": [
+        "public_longcopy_gate_english_512_256.json",
+        "Qwen35.swift",
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [
+          "public_longcopy_gate_english_512_256.json"
+        ],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 7,
+        "identifiers_in_our_tree": 5,
+        "landed_fraction": 0.7143,
+        "found_sample": [
+          "argPartition",
+          "eval_gpu",
+          "multi_block_sort",
+          "qwen_mtp_probe_sort",
+          "floorDivide"
+        ],
+        "missing_sample": [
+          "qwen_mtp_e87_probe_select",
+          "qwen_mtp_e87_shortlist_select"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 0.5714,
+        "ledger_sample": [
+          "argPartition",
+          "eval_gpu",
+          "qwen_mtp_probe_sort",
+          "qwen_mtp_e87_probe_select"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "0792c757",
+      "solver": "claudiodekker",
+      "score": 3.20989343755207,
+      "promotion": "promoted",
+      "parent": "b1e2591b",
+      "parent_score": 3.19088426880882,
+      "corrected_total_pct": -0.1311,
+      "median_pair_pct": -0.0875,
+      "raw_total_pct": -0.1311,
+      "price_sd_pp": 0.1096,
+      "title": "Boundary-fused residual/RMSNorm chain + attention copy elimination, recomposed without its bundle drag",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 1,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "FusedResidualRMSNorm"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "FusedResidualRMSNorm"
+        ]
+      },
+      "blockers": [
+        "undetermined-landing",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "d20d1c13",
+      "solver": "newjordan",
+      "score": 3.51576745302274,
+      "promotion": null,
+      "parent": "b6cb0fea",
+      "parent_score": 3.52509129797624,
+      "corrected_total_pct": -0.1231,
+      "median_pair_pct": -0.0685,
+      "raw_total_pct": -0.1231,
+      "price_sd_pp": 0.0608,
+      "title": "Skip unused probe-sort JIT while E87 is the live select arm",
+      "note_paths": [],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 11,
+        "identifiers_in_our_tree": 6,
+        "landed_fraction": 0.5455,
+        "found_sample": [
+          "callWithHiddenAndNormed",
+          "clusterCandidateIDs",
+          "makeQwen35ProbeSortKernel",
+          "_draftProbeSort",
+          "qwen_mtp_probe_sort",
+          "MLX_E87_PROBE_SORT"
+        ],
+        "missing_sample": [
+          "schedule_identical_at_1e_12",
+          "active_mtp_faster",
+          "active_mtp_slower",
+          "active_mtp_median_delta_pct",
+          "frontier_serial_repriced_candidate_score"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 0.5455,
+        "ledger_sample": [
+          "callWithHiddenAndNormed",
+          "clusterCandidateIDs",
+          "makeQwen35ProbeSortKernel",
+          "_draftProbeSort",
+          "qwen_mtp_probe_sort",
+          "MLX_E87_PROBE_SORT"
+        ]
+      },
+      "blockers": [
+        "hand:precondition-absent"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "precondition-absent",
+        "mechanism": "skip the unused probe-sort JIT while E87 is the live select arm",
+        "source": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:6245",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:6269"
+        ],
+        "evidence": "clusterCandidateIDs builds _draftProbeSort at :6245 and READS it at :6269 to reorder the probe indices before the row score. The dead-work precondition the rival measured does not hold in this tree."
+      }
+    },
+    {
+      "row": "144fb421",
+      "solver": "igneous-prose",
+      "score": 2.9234060072948,
+      "promotion": null,
+      "parent": "d3caa5fe",
+      "parent_score": 2.93361458783958,
+      "corrected_total_pct": -0.1229,
+      "median_pair_pct": -0.0726,
+      "raw_total_pct": -0.1229,
+      "price_sd_pp": 0.2516,
+      "title": "Q38-EXP-003: reduce Qwen 3.8 seed-prefill submission frequency",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "Command-buffer cadence can depend on GPU generation, MLX runtime, memory pressure, and hidden prompt behavior.",
+          "negated": false
+        },
+        {
+          "term": "prompt-specific",
+          "sentence": "It is a general target-forward improvement rather than a prompt-specific or proposal-side shortcut.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 1,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "asyncEval"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "asyncEval"
+        ]
+      },
+      "blockers": [
+        "undetermined-landing",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "028ffacd",
+      "solver": "JJJJJamesShao",
+      "score": 2.92172840394973,
+      "promotion": null,
+      "parent": "12b1c699",
+      "parent_score": 2.92520777238747,
+      "corrected_total_pct": -0.1214,
+      "median_pair_pct": -0.1009,
+      "raw_total_pct": -0.1214,
+      "price_sd_pp": 0.0897,
+      "title": "Launch-count diet on the 2.92521 frontier: batched verify final-norm + compiled attention output gate",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "mtp-head.manifest.json",
+        "Qwen36MTPHeadAttachment.swift",
+        "config.json",
+        "Qwen36MTPBlockSession.swift",
+        "Qwen35.swift",
+        "Qwen3Next.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "mtp-head.manifest.json",
+          "Qwen36MTPHeadAttachment.swift",
+          "Qwen36MTPBlockSession.swift",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "Qwen3Next.swift"
+        ],
+        "paths_not_in_this_tree": [
+          "config.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 9,
+        "identifiers_in_our_tree": 7,
+        "landed_fraction": 0.7778,
+        "found_sample": [
+          "effective_mean_draft_len",
+          "accepted_draft_rate",
+          "hiddenRow",
+          "applyFinalNorm",
+          "pendingHidden",
+          "qwen35CompiledFusedSwiGLU",
+          "qwen35CompiledGatedDeltaPostNorm"
+        ],
+        "missing_sample": [
+          "MLXFAST_REFERENCE_BASE_URL",
+          "MLXFAST_QWEN_MTP_HEAD_BASE_URL"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 2,
+        "ledger_fraction": 0.2222,
+        "ledger_sample": [
+          "effective_mean_draft_len",
+          "accepted_draft_rate"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "7fbb504f",
+      "solver": "jonathan308",
+      "score": 3.31827484071844,
+      "promotion": null,
+      "parent": "8819b108",
+      "parent_score": 3.32794960796967,
+      "corrected_total_pct": -0.1207,
+      "median_pair_pct": -0.128,
+      "raw_total_pct": -0.1207,
+      "price_sd_pp": 0.0128,
+      "title": "Stacked crown: island dead-work + embedding-dequant + fused rerank + qL={1..5} warm (ticket #8)",
+      "note_paths": [],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 4,
+        "identifiers_in_our_tree": 2,
+        "landed_fraction": 0.5,
+        "found_sample": [
+          "effective_mean_draft_len",
+          "sdpa_vector_2pass"
+        ],
+        "missing_sample": [
+          "per_prompt",
+          "mtp_seconds_per_token_mean"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "per_prompt",
+          "effective_mean_draft_len",
+          "mtp_seconds_per_token_mean",
+          "sdpa_vector_2pass"
+        ]
+      },
+      "blockers": [
+        "hand:claimed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "claimed",
+        "mechanism": "complete the later-window SDPA warm set to qL in {1,2,3,4,5}",
+        "source": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift:638",
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift:664"
+        ],
+        "evidence": "The gap is real: both warm loops read `for qL in [1, 5, 4]` and segmentedVerifyDepthCap = 7 makes verify qL 7 and 8 live, whose chunk B is qL 2 and 3. But ledger 179(E) (line 8561) already found this from source and ledger line 32536 CLOSED it: an ABBA pair put the candidate leg at +0.0057 %, sd 0.0875, a null, and put the -0.61 % published headline down to serial lottery. STOP LIST. Reopening condition unchanged."
+      }
+    },
+    {
+      "row": "8e83c6b3",
+      "solver": "Lieisyourlie",
+      "score": 3.3189406078251,
+      "promotion": "promoted",
+      "parent": "c6af1e24",
+      "parent_score": 3.30955572644263,
+      "corrected_total_pct": -0.1206,
+      "median_pair_pct": -0.1141,
+      "raw_total_pct": -0.1206,
+      "price_sd_pp": 0.0235,
+      "title": "Dual RMSNorm writes concatenated `[e|h]` (drop concat) on current first",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift",
+        "Qwen35.swift",
+        "Qwen35MTP.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift",
+          "Qwen35.swift",
+          "Qwen35MTP.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 9,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 0.8889,
+        "found_sample": [
+          "parity_all_ok",
+          "qwen35DualRMSNorm",
+          "qwen35_dual_rms_norm_concat_bf16_v1",
+          "qwen35DualRMSNormConcat",
+          "preFcConcat",
+          "callAsFunction",
+          "lastHiddenWithKVOnlyHistory",
+          "appendHistoryKV"
+        ],
+        "missing_sample": [
+          "preFcNorms"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 9,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "parity_all_ok",
+          "qwen35DualRMSNorm",
+          "qwen35_dual_rms_norm_concat_bf16_v1",
+          "qwen35DualRMSNormConcat",
+          "preFcNorms",
+          "preFcConcat",
+          "callAsFunction",
+          "lastHiddenWithKVOnlyHistory"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "11a9412a",
+      "solver": "kaarelkaarelson",
+      "score": 3.2371827978495,
+      "promotion": null,
+      "parent": "9d5569bb",
+      "parent_score": 3.25187972017987,
+      "corrected_total_pct": -0.1203,
+      "median_pair_pct": -0.0954,
+      "raw_total_pct": -0.1203,
+      "price_sd_pp": 0.0507,
+      "title": "Head attention: restructure island row handling in the proposal path",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "org.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "org.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "argSort",
+          "withHeadAttached",
+          "LLMModelFactory",
+          "Qwen36MTPBlockSession"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.625,
+        "ledger_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "Qwen36MTPBlockSession"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "59bfe4b9",
+      "solver": "vibecodooor",
+      "score": 3.31419564913829,
+      "promotion": null,
+      "parent": "8819b108",
+      "parent_score": 3.32794960796967,
+      "corrected_total_pct": -0.1194,
+      "median_pair_pct": -0.0962,
+      "raw_total_pct": -0.1194,
+      "price_sd_pp": 0.0323,
+      "title": "Controlled resample #1 of the officially faster island-stack candidate",
+      "note_paths": [
+        "qwen38-noeos-mtp-golden513.json",
+        "tmp/gpt56-island-stack-final512.json",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "qwen38-noeos-mtp-golden513.json",
+          "tmp/gpt56-island-stack-final512.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 9,
+        "identifiers_in_our_tree": 2,
+        "landed_fraction": 0.2222,
+        "found_sample": [
+          "qwen35_dual_rms_norm_concat_bf16_v1",
+          "simd_sum"
+        ],
+        "missing_sample": [
+          "islandFastPathPlan",
+          "islandQKVForward",
+          "islandKVForward",
+          "buildIslandLivePack",
+          "qwen35_q4_embedding_dual_rms_norm_concat_bf16_v1",
+          "qwen_mtp_draft_top32_fused_rerank_affine4_g64_v1",
+          "dualRMSNormConcat"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 0.6667,
+        "ledger_sample": [
+          "islandFastPathPlan",
+          "islandQKVForward",
+          "islandKVForward",
+          "buildIslandLivePack",
+          "qwen35_dual_rms_norm_concat_bf16_v1",
+          "simd_sum"
+        ]
+      },
+      "blockers": [
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "2b1c13c6",
+      "solver": "kaarelkaarelson",
+      "score": 3.30650628555313,
+      "promotion": null,
+      "parent": "ead84bba",
+      "parent_score": 3.30221310342945,
+      "corrected_total_pct": -0.1169,
+      "median_pair_pct": -0.136,
+      "raw_total_pct": -0.1169,
+      "price_sd_pp": 0.0375,
+      "title": "Head attention: restructure island row handling in the proposal path",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "org.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "org.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "argSort",
+          "withHeadAttached",
+          "LLMModelFactory",
+          "Qwen36MTPBlockSession"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.625,
+        "ledger_sample": [
+          "installExactQKVRows",
+          "replaceExactRows",
+          "putAlong",
+          "appendHistoryKV",
+          "Qwen36MTPBlockSession"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "7ba7a45f",
+      "solver": "yzxoi",
+      "score": 2.92674970589136,
+      "promotion": null,
+      "parent": "12b1c699",
+      "parent_score": 2.92520777238747,
+      "corrected_total_pct": -0.116,
+      "median_pair_pct": -0.0941,
+      "raw_total_pct": -0.116,
+      "price_sd_pp": 0.2052,
+      "title": "M=8 cross-row affine4/g64 QMV dispatch balance: 4+4 -> 3+3+2",
+      "note_paths": [
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+        "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+        "score.m8.json"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+          "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "score.m8.json"
+        ]
+      },
+      "integrity_flags": [
+        {
+          "term": "hidden prompt",
+          "sentence": "Score = median of 8 hidden prompts of serial-anchored decode speedup (serial depth-0 s/token / candidate MTP s/token, paired in one thermally gated session; floor 0.",
+          "negated": false
+        },
+        {
+          "term": "hidden prompt",
+          "sentence": "The promoted confidence/cost schedule reaches long drafts on easy and median hidden prompts, so the shape appears in ranked work without perturbing the serial control.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 5,
+        "identifiers_in_our_tree": 5,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "qmv_fast_crossrow_affine4_g64_m",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "simd_sum",
+          "reference_checked_rows",
+          "editablePaths"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 4,
+        "ledger_fraction": 0.8,
+        "ledger_sample": [
+          "qmv_fast_crossrow_affine4_g64_m",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "simd_sum",
+          "editablePaths"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "08760612",
+      "solver": "newjordan",
+      "score": 3.31221976452867,
+      "promotion": null,
+      "parent": "8819b108",
+      "parent_score": 3.32794960796967,
+      "corrected_total_pct": -0.1154,
+      "median_pair_pct": -0.1014,
+      "raw_total_pct": -0.1154,
+      "price_sd_pp": 0.0399,
+      "title": "Restore the two promoted mechanisms the new crown's base-revert dropped",
+      "note_paths": [
+        "Qwen35MTP.swift",
+        "Qwen35.swift",
+        "mtp-head.manifest.json",
+        "Qwen36MTPBlockSession.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35MTP.swift",
+          "Qwen35.swift",
+          "mtp-head.manifest.json",
+          "Qwen36MTPBlockSession.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 1,
+        "identifiers_in_our_tree": 1,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "editablePaths"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 1,
+        "ledger_fraction": 1.0,
+        "ledger_sample": [
+          "editablePaths"
+        ]
+      },
+      "blockers": [
+        "undetermined-landing",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "662ee95b",
+      "solver": "fkiene",
+      "score": 3.34835006667639,
+      "promotion": null,
+      "parent": "51b9bf85",
+      "parent_score": 3.35025879204714,
+      "corrected_total_pct": -0.1139,
+      "median_pair_pct": -0.1123,
+      "raw_total_pct": -0.1139,
+      "price_sd_pp": 0.0357,
+      "title": "Fused in-kernel cluster permutation and direct affine-4/group-64 rerank",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Qwen36MTPBlockSession.swift",
+        "mtp-head.manifest.json"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Qwen36MTPBlockSession.swift",
+          "mtp-head.manifest.json"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 25,
+        "identifiers_in_our_tree": 19,
+        "landed_fraction": 0.76,
+        "found_sample": [
+          "argPartition",
+          "qwen_mtp_probe_sort",
+          "quantizedMM",
+          "gatherQuantizedMM",
+          "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
+          "floorDivide",
+          "asType",
+          "clusterCandidateIDs"
+        ],
+        "missing_sample": [
+          "qwen_mtp_draft_rerank",
+          "qwen_mtp_draft_selected_affine4_rerank_cluster_g64_v1",
+          "clusterCandidateRawIndices",
+          "qwen35DraftSelectedAffine4RerankClusterKernel",
+          "candidate_rows",
+          "_rerank_cluster_g64_v1"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 14,
+        "ledger_fraction": 0.56,
+        "ledger_sample": [
+          "argPartition",
+          "qwen_mtp_probe_sort",
+          "quantizedMM",
+          "gatherQuantizedMM",
+          "qwen_mtp_draft_selected_affine4_rerank_g64_v1",
+          "clusterCandidateIDs",
+          "_draftClusterShape",
+          "qwen35DraftSelectedAffine4RerankKernel"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "3ba27d91",
+      "solver": "fkiene",
+      "score": 3.21190971430396,
+      "promotion": null,
+      "parent": "12864bc1",
+      "parent_score": 3.21000579584503,
+      "corrected_total_pct": -0.1122,
+      "median_pair_pct": -0.1258,
+      "raw_total_pct": -0.1122,
+      "price_sd_pp": 0.1049,
+      "title": "Restore boundary-fused residual/RMSNorm onto the live top-32 tip",
+      "note_paths": [
+        "Qwen35.swift",
+        "mtp-head.manifest.json",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "rms_norm.metal",
+        "quantized.h",
+        "quantized.cpp",
+        "Qwen35RuntimeWeights.swift"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "rms_norm.metal",
+          "quantized.h",
+          "quantized.cpp",
+          "Qwen35RuntimeWeights.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [
+        {
+          "term": "n-gram",
+          "sentence": "N-gram speculative decoding is 0.",
+          "negated": false
+        }
+      ],
+      "landing": {
+        "identifiers": 22,
+        "identifiers_in_our_tree": 21,
+        "landed_fraction": 0.9545,
+        "found_sample": [
+          "qwen35_fused_residual_rms_norm",
+          "boundaryFused",
+          "normScaleConstants",
+          "qwen35CompiledSigmoidMultiply",
+          "_qScaleConst",
+          "_kScaleConst",
+          "simd_sum",
+          "rms_looped"
+        ],
+        "missing_sample": [
+          "qwen35VerifyFusedResidualRMSNorm"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 18,
+        "ledger_fraction": 0.8182,
+        "ledger_sample": [
+          "qwen35_fused_residual_rms_norm",
+          "normScaleConstants",
+          "_qScaleConst",
+          "_kScaleConst",
+          "simd_sum",
+          "rms_looped",
+          "all_tokens_matched",
+          "rmsNorm"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "83f0b282",
+      "solver": "morganmcg1",
+      "score": 3.3137844845024,
+      "promotion": null,
+      "parent": "8e83c6b3",
+      "parent_score": 3.3189406078251,
+      "corrected_total_pct": -0.1121,
+      "median_pair_pct": -0.1093,
+      "raw_total_pct": -0.1121,
+      "price_sd_pp": 0.0164,
+      "title": "Senpai candidate: resample of previously measured content",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "mtp-head.manifest.json",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "mtp-head.manifest.json",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 19,
+        "identifiers_in_our_tree": 14,
+        "landed_fraction": 0.7368,
+        "found_sample": [
+          "islandFastPathReady",
+          "QuantizedLinear",
+          "replayPrefix",
+          "gated_delta_step",
+          "qwen35_gated_delta_replay_state",
+          "simd_sum",
+          "effective_mean_draft_len",
+          "head_provenance"
+        ],
+        "missing_sample": [
+          "applegpu_g16s",
+          "applegpu_g17s",
+          "mtp_seconds_per_token_mean",
+          "per_prompt",
+          "patch_sha"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 18,
+        "ledger_fraction": 0.9474,
+        "ledger_sample": [
+          "applegpu_g16s",
+          "applegpu_g17s",
+          "islandFastPathReady",
+          "replayPrefix",
+          "gated_delta_step",
+          "qwen35_gated_delta_replay_state",
+          "simd_sum",
+          "effective_mean_draft_len"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "e403916d",
+      "solver": "johnpippett",
+      "score": 3.22273216260022,
+      "promotion": null,
+      "parent": "942e5ab2",
+      "parent_score": 3.2341518328631,
+      "corrected_total_pct": -0.1115,
+      "median_pair_pct": 0.0251,
+      "raw_total_pct": -0.1115,
+      "price_sd_pp": 0.1551,
+      "title": "Opt-in fused candidate-row affine-4/group-64 QMV for declared MTP rerank",
+      "note_paths": [
+        "score.json",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+      ],
+      "owners_by_file": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": [
+          "score.json"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 7,
+        "identifiers_in_our_tree": 6,
+        "landed_fraction": 0.8571,
+        "found_sample": [
+          "quantizedMM",
+          "qmv_fast_impl",
+          "simd_sum",
+          "static_cast",
+          "load_vector",
+          "ensureRowContiguous"
+        ],
+        "missing_sample": [
+          "qwen_mtp_fused_candidate_rows_affine4_g64"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 0.8571,
+        "ledger_sample": [
+          "quantizedMM",
+          "qmv_fast_impl",
+          "simd_sum",
+          "static_cast",
+          "load_vector",
+          "ensureRowContiguous"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:alphonse+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "4debb1df",
+      "solver": "nijaru",
+      "score": 3.69722452038952,
+      "promotion": null,
+      "parent": "684821ed",
+      "parent_score": 3.71959722580154,
+      "corrected_total_pct": -0.1114,
+      "median_pair_pct": -0.1168,
+      "raw_total_pct": -0.1114,
+      "price_sd_pp": 0.0294,
+      "title": "Same-content resample of frontier main (newjordan lineage, 3.71960)",
+      "note_paths": [],
+      "owners_by_file": [],
+      "owners_by_mechanism_prose": [
+        "alphonse",
+        "thorfinn"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 0,
+        "identifiers_in_our_tree": 0,
+        "landed_fraction": null,
+        "found_sample": [],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 0,
+        "ledger_fraction": null,
+        "ledger_sample": []
+      },
+      "blockers": [
+        "hand:landed"
+      ],
+      "unclaimed": false,
+      "hand_adjudication": {
+        "verdict": "landed",
+        "mechanism": "declared same-content resample, no mechanism",
+        "source": [],
+        "evidence": "R-B verified an empty git diff of Vendor/ and Sources/ against the promoted tip eb5eadc7. It is a null control, not a candidate."
+      }
+    },
+    {
+      "row": "a6661c80",
+      "solver": "newjordan",
+      "score": 3.24127421848797,
+      "promotion": null,
+      "parent": "9ad17378",
+      "parent_score": 3.25238227765803,
+      "corrected_total_pct": -0.1109,
+      "median_pair_pct": -0.1438,
+      "raw_total_pct": -0.1109,
+      "price_sd_pp": 0.0692,
+      "title": "State-only GatedDelta prefix replay",
+      "note_paths": [
+        "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/GatedDelta.swift",
+        "tools/qwen-gdn-state-only-replay-check.cpp",
+        "Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "edward",
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/GatedDelta.swift"
+        ],
+        "paths_not_in_this_tree": [
+          "tools/qwen-gdn-state-only-replay-check.cpp"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 10,
+        "identifiers_in_our_tree": 10,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "simd_sum",
+          "restoreAfterPrefixReject",
+          "replayRecurrentPrefix",
+          "kv_mem",
+          "qwen35GatedDeltaReplayStateKernel",
+          "makeGatedDeltaKernel",
+          "qwen35GatedDeltaReplayState",
+          "replayPrefix"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 5,
+        "ledger_fraction": 0.5,
+        "ledger_sample": [
+          "simd_sum",
+          "restoreAfterPrefixReject",
+          "replayPrefix",
+          "state_in",
+          "state_out"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:edward+thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "3b376ba2",
+      "solver": "Lieisyourlie",
+      "score": 3.51768892183081,
+      "promotion": null,
+      "parent": "cf79f7df",
+      "parent_score": 3.51661723756985,
+      "corrected_total_pct": -0.1084,
+      "median_pair_pct": -0.1464,
+      "raw_total_pct": -0.1084,
+      "price_sd_pp": 0.0468,
+      "title": "E122: hoist M=2 verification QMV onto the live chunk-sum table",
+      "note_paths": [
+        "Qwen35.swift",
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Qwen35.swift",
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [],
+        "paths_not_in_this_tree": []
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 12,
+        "identifiers_in_our_tree": 12,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "clusterCandidateIDs",
+          "qmv_impl",
+          "qmv_fast_crossrow_affine4_g64",
+          "Qwen35CustomQMV",
+          "qwen_e120_qmv_m",
+          "qwen_e120_qmv_wide",
+          "threadGroup",
+          "tablePays"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 11,
+        "ledger_fraction": 0.9167,
+        "ledger_sample": [
+          "clusterCandidateIDs",
+          "qmv_impl",
+          "qmv_fast_crossrow_affine4_g64",
+          "Qwen35CustomQMV",
+          "qwen_e120_qmv_m",
+          "qwen_e120_qmv_wide",
+          "threadGroup",
+          "tablePays"
+        ]
+      },
+      "blockers": [
+        "already-in-our-tree",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "70aa42aa",
+      "solver": "audreyt",
+      "score": 3.32278736440707,
+      "promotion": null,
+      "parent": "8819b108",
+      "parent_score": 3.32794960796967,
+      "corrected_total_pct": -0.1037,
+      "median_pair_pct": -0.0981,
+      "raw_total_pct": -0.1037,
+      "price_sd_pp": 0.0243,
+      "title": "Title: Island dead-work elimination in the proposal-head projections (complete-permutation K/V precision islands)",
+      "note_paths": [
+        "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+        "Qwen35.swift",
+        "Tests/MLXFastTests/Model/Qwen35IslandFastPathTests.swift",
+        "QwenMTPVerbTests.swift"
+      ],
+      "owners_by_file": [
+        "thorfinn"
+      ],
+      "owners_by_mechanism_prose": [
+        "edward",
+        "alphonse"
+      ],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+          "Qwen35.swift"
+        ],
+        "paths_outside_editable_surface": [
+          "QwenMTPVerbTests.swift"
+        ],
+        "paths_not_in_this_tree": [
+          "Tests/MLXFastTests/Model/Qwen35IslandFastPathTests.swift"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 12,
+        "identifiers_in_our_tree": 7,
+        "landed_fraction": 0.5833,
+        "found_sample": [
+          "putAlong",
+          "installExactQKVRows",
+          "_exactKVIndices",
+          "kvIndices",
+          "appendHistoryKV",
+          "warmAllDepthShapes",
+          "replaceExactRows"
+        ],
+        "missing_sample": [
+          "islandFastPathPlan",
+          "isPermutationOfRange",
+          "kvTakeOrder",
+          "qkvTakeOrder",
+          "buildIslandLivePack"
+        ]
+      },
+      "ledger": {
+        "identifiers_in_ledger": 8,
+        "ledger_fraction": 0.6667,
+        "ledger_sample": [
+          "putAlong",
+          "installExactQKVRows",
+          "islandFastPathPlan",
+          "isPermutationOfRange",
+          "appendHistoryKV",
+          "buildIslandLivePack",
+          "warmAllDepthShapes",
+          "replaceExactRows"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "owned:thorfinn"
+      ],
+      "unclaimed": false
+    },
+    {
+      "row": "742cdf67",
+      "solver": "ivanfioravanti",
+      "score": 3.25464079515452,
+      "promotion": "promoted",
+      "parent": "9ad17378",
+      "parent_score": 3.25238227765803,
+      "corrected_total_pct": -0.1001,
+      "median_pair_pct": -0.1492,
+      "raw_total_pct": -0.1001,
+      "price_sd_pp": 0.0916,
+      "title": "Resample of the frontier tree after two measured lever closures (wide-QMV prefetch; published-head scan)",
+      "note_paths": [
+        "mtp-head.manifest.json",
+        "DFlashGreedyRound.swift",
+        "QwenRuntimeWorker.swift",
+        "tmp/mtptrace/golden-rows.json",
+        "quantized.h",
+        "mlx-generated/quantized.cpp",
+        "tmp/kircheck/wide.metal"
+      ],
+      "owners_by_file": [
+        "alphonse"
+      ],
+      "owners_by_mechanism_prose": [],
+      "scope": {
+        "paths_inside_editable_surface": [
+          "mtp-head.manifest.json",
+          "quantized.h",
+          "mlx-generated/quantized.cpp"
+        ],
+        "paths_outside_editable_surface": [
+          "DFlashGreedyRound.swift",
+          "QwenRuntimeWorker.swift"
+        ],
+        "paths_not_in_this_tree": [
+          "tmp/mtptrace/golden-rows.json",
+          "tmp/kircheck/wide.metal"
+        ]
+      },
+      "integrity_flags": [],
+      "landing": {
+        "identifiers": 8,
+        "identifiers_in_our_tree": 8,
+        "landed_fraction": 1.0,
+        "found_sample": [
+          "editablePaths",
+          "load_vector",
+          "simd_sum",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "uint64_t",
+          "draft_lm_head",
+          "source_url",
+          "bitPattern"
+        ],
+        "missing_sample": []
+      },
+      "ledger": {
+        "identifiers_in_ledger": 6,
+        "ledger_fraction": 0.75,
+        "ledger_sample": [
+          "editablePaths",
+          "load_vector",
+          "simd_sum",
+          "qmv_fast_crossrow_affine4_g64_wide",
+          "draft_lm_head",
+          "source_url"
+        ]
+      },
+      "blockers": [
+        "out-of-scope-path",
+        "already-in-our-tree",
+        "owned:alphonse"
+      ],
+      "unclaimed": false
+    }
+  ],
+  "editable_prefix_count": 91,
+  "source_corpus_bytes": 29719343,
+  "ledger_bytes": 3108083
+}
