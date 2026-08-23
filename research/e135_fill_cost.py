@@ -91,6 +91,30 @@ def load_legs(label: str) -> list[dict]:
     )
 
 
+def require_balanced(legs: list[dict]) -> None:
+    """Refuse to fit anything that is not a complete balanced palindrome.
+
+    Every coefficient below is read off by projection, which is only the least
+    squares answer while the regressors are mutually orthogonal. A session that
+    is still running, or one that lost a leg to a crash, breaks that silently
+    and the arm coefficient absorbs the session offset instead. A half-finished
+    session produced a -33 % fill cost before this guard existed.
+    """
+    for rep in sorted({d["rep"] for d in legs}):
+        arms = [d["arm"] for d in legs if d["rep"] == rep]
+        if arms.count("repl") != arms.count("fill") or len(arms) % 2:
+            raise SystemExit(
+                f"session k{rep} is not balanced: {len(arms)} legs, "
+                f"{arms.count('repl')} repl and {arms.count('fill')} fill. "
+                "It is unfinished or it lost a leg; the palindrome fit is not "
+                "valid on it.")
+        positions = [d["position"] for d in legs if d["rep"] == rep]
+        if sorted(positions) != list(range(1, len(positions) + 1)):
+            raise SystemExit(
+                f"session k{rep} has positions {sorted(positions)}, not a "
+                "contiguous palindrome")
+
+
 def fit(legs: list[dict]) -> dict:
     """Least squares for mean + arm + within-session drift + session offset.
 
@@ -103,6 +127,7 @@ def fit(legs: list[dict]) -> dict:
     The reduced fit drops only the drift term. It keeps the session offsets,
     which are real, so with one session it is exactly the two-parameter fit.
     """
+    require_balanced(legs)
     y = [d["mtp"] for d in legs]
     a = [1.0 if d["arm"] == "fill" else -1.0 for d in legs]
     n = len(legs)
