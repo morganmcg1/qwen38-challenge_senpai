@@ -2,7 +2,8 @@
 # E158 R1.C -- price the precision islands on the candidate leg.
 #
 #   usage: research/e158_r1_abba.sh PHASE [PHASE ...]
-#          PHASE is one of: default-witness, perprompt, canary, gated
+#          PHASE is one of: default-witness, perprompt, canary, depthsweep,
+#          gated
 #
 # `perprompt` runs an ABBA palindrome (all, none, none, all) of TIMED
 # `mtp-timed` legs for each prompt, so the candidate-leg seconds per token and
@@ -41,7 +42,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 (($#)) || {
   echo "usage: research/e158_r1_abba.sh PHASE [PHASE ...]" >&2
-  echo "  PHASE: default-witness | perprompt | canary | gated" >&2
+  echo "  PHASE: default-witness | perprompt | canary | depthsweep | gated" >&2
   exit 2
 }
 
@@ -140,6 +141,42 @@ case "${phase}" in
         research/e128_session.sh "${canary_prompt}" || status=1
       assert_witness "${out}/witness.txt" "${arm}" \
         "canary ${canary_prompt} ${arm}" || status=1
+    done
+    ;;
+
+  depthsweep)
+    # Advisor F7 asks for `rho = 8h/s (if separable)` per arm. `s` and `h` are
+    # only separable if the offered depth is swept, because a single (q, R)
+    # point cannot distinguish a fixed round cost from a per-row cost. Sweeping
+    # the CAP inside one prompt is the clean lever: the head, the prompt, the
+    # golden and the host are all held fixed, and only the rows evaluated per
+    # round move. A cross-prompt fit cannot do this -- there q moves because the
+    # schedule reacted to different text, which is not a controlled variable.
+    #
+    # Arms alternate order by depth parity, so the pair-level order is
+    # all/none, none/all, all/none ... and a linear session drift cancels in the
+    # arm contrast at every depth.
+    idx=0
+    read -r -a sweep_depths <<<"${E158_SWEEP_DEPTHS:-1 2 3 4 6 8}"
+    for depth in "${sweep_depths[@]}"; do
+      if ((idx % 2 == 0)); then order=(all none); else order=(none all); fi
+      idx=$((idx + 1))
+      for arm in "${order[@]}"; do
+        out="${witness_root}/sweep-d${depth}-${arm}"
+        rm -rf "${out}"; mkdir -p "${out}"
+        : > "${out}/witness.txt"
+        echo "=== e158r1 depthsweep d=${depth} arm ${arm} ==="
+        env DARKBLOOM_QWEN_MTP_ISLAND_ARM="${arm}" \
+            E128_HEAD_DIR="${head_dir}" \
+            E128_RUNS_DIR="runs-e158r1-sweep-d${depth}-${arm}" \
+            E128_TOKENS="${tokens}" \
+            E128_DEPTH="${depth}" \
+            E128_NO_TRACE=1 \
+            MLX_QWEN_MTP_TRACE_PATH="${PWD}/${out}/witness.txt" \
+          research/e128_session.sh "${E158_SWEEP_PROMPT:-beagle_a}" || status=1
+        assert_witness "${out}/witness.txt" "${arm}" \
+          "sweep d=${depth} ${arm}" || status=1
+      done
     done
     ;;
 
