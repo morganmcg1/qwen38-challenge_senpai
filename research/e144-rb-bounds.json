@@ -2,76 +2,94 @@
   "experiment": "e144",
   "rung": "R-B ceiling",
   "harness": "local",
-  "sample_groups_per_tensor": 8000,
+  "sample_groups_per_tensor": 6000,
+  "reference": "the incumbent MLX affine_quantize error on the same sampled groups",
   "tensors": {
     "fc": {
-      "groups": 8000,
-      "minmax_sse": 1.6228326559066772,
-      "affine_optimum_sse": 0.6727446913719177,
-      "codebook_optimum_sse": 0.4356008879069639,
-      "affine_rel_l2_factor": 1.5531440220706954,
-      "codebook_rel_l2_factor": 1.9301563547373761
+      "groups": 6000,
+      "incumbent_sse": 0.5111835598945618,
+      "minmax_sse": 0.933091402053833,
+      "affine_optimum_sse": 0.43011289834976196,
+      "codebook_optimum_sse": 0.21621261775635503,
+      "minmax_rel_l2_factor": 0.7401612511619314,
+      "affine_rel_l2_factor": 1.0901774782767355,
+      "codebook_rel_l2_factor": 1.5376161135522481
     },
     "layers.0.mlp.down_proj": {
-      "groups": 8000,
-      "minmax_sse": 0.7408958673477173,
-      "affine_optimum_sse": 0.6087288856506348,
-      "codebook_optimum_sse": 0.4944062919065496,
-      "affine_rel_l2_factor": 1.1032314424751097,
-      "codebook_rel_l2_factor": 1.2241555098580348
+      "groups": 6000,
+      "incumbent_sse": 0.5612667798995972,
+      "minmax_sse": 0.5443263053894043,
+      "affine_optimum_sse": 0.4456227421760559,
+      "codebook_optimum_sse": 0.31404571306302387,
+      "minmax_rel_l2_factor": 1.0154417316666209,
+      "affine_rel_l2_factor": 1.1222794112533288,
+      "codebook_rel_l2_factor": 1.3368670963891949
     },
     "layers.0.mlp.gate_proj": {
-      "groups": 8000,
-      "minmax_sse": 0.6685307025909424,
-      "affine_optimum_sse": 0.5448240041732788,
-      "codebook_optimum_sse": 0.4489211820527255,
-      "affine_rel_l2_factor": 1.1077265416978592,
-      "codebook_rel_l2_factor": 1.2203253407162096
+      "groups": 6000,
+      "incumbent_sse": 0.5209236145019531,
+      "minmax_sse": 0.5070692300796509,
+      "affine_optimum_sse": 0.41356295347213745,
+      "codebook_optimum_sse": 0.299883168137967,
+      "minmax_rel_l2_factor": 1.0135691743410762,
+      "affine_rel_l2_factor": 1.1223187242787025,
+      "codebook_rel_l2_factor": 1.3179865474661414
     },
     "layers.0.mlp.up_proj": {
-      "groups": 8000,
-      "minmax_sse": 0.7938381433486938,
-      "affine_optimum_sse": 0.6465427875518799,
-      "codebook_optimum_sse": 0.5318802934953275,
-      "affine_rel_l2_factor": 1.1080703794773268,
-      "codebook_rel_l2_factor": 1.2216844088426784
+      "groups": 6000,
+      "incumbent_sse": 0.6169024705886841,
+      "minmax_sse": 0.602308452129364,
+      "affine_optimum_sse": 0.49146294593811035,
+      "codebook_optimum_sse": 0.35683378087378514,
+      "minmax_rel_l2_factor": 1.0120425586734114,
+      "affine_rel_l2_factor": 1.1203735954235627,
+      "codebook_rel_l2_factor": 1.3148471639547383
     },
     "layers.0.self_attn.k_proj": {
-      "groups": 8000,
-      "minmax_sse": 1.254927396774292,
-      "affine_optimum_sse": 1.023970365524292,
-      "codebook_optimum_sse": 0.8454487578780276,
-      "affine_rel_l2_factor": 1.1070458451406047,
-      "codebook_rel_l2_factor": 1.218332010742074
+      "groups": 6000,
+      "incumbent_sse": 0.9726834297180176,
+      "minmax_sse": 0.9416024684906006,
+      "affine_optimum_sse": 0.7704591751098633,
+      "codebook_optimum_sse": 0.5249986097834949,
+      "minmax_rel_l2_factor": 1.0163702971204847,
+      "affine_rel_l2_factor": 1.1235979626133912,
+      "codebook_rel_l2_factor": 1.3611521768050838
     },
     "layers.0.self_attn.o_proj": {
-      "groups": 8000,
-      "minmax_sse": 1.9105247259140015,
-      "affine_optimum_sse": 1.5602139234542847,
-      "codebook_optimum_sse": 1.2831727252045062,
-      "affine_rel_l2_factor": 1.1065836693020825,
-      "codebook_rel_l2_factor": 1.2202077286846955
+      "groups": 6000,
+      "incumbent_sse": 1.468630313873291,
+      "minmax_sse": 1.4213002920150757,
+      "affine_optimum_sse": 1.1671388149261475,
+      "codebook_optimum_sse": 0.8152339077141733,
+      "minmax_rel_l2_factor": 1.0165138995999525,
+      "affine_rel_l2_factor": 1.1217471838211808,
+      "codebook_rel_l2_factor": 1.3421934858278608
     },
     "layers.0.self_attn.q_proj": {
-      "groups": 8000,
-      "minmax_sse": 1.093621850013733,
-      "affine_optimum_sse": 0.8910921812057495,
-      "codebook_optimum_sse": 0.7339182615664215,
-      "affine_rel_l2_factor": 1.1078278347159982,
-      "codebook_rel_l2_factor": 1.2207022421646867
+      "groups": 6000,
+      "incumbent_sse": 0.835955023765564,
+      "minmax_sse": 0.8045539259910583,
+      "affine_optimum_sse": 0.6608049869537354,
+      "codebook_optimum_sse": 0.47556805025419635,
+      "minmax_rel_l2_factor": 1.0193278187589305,
+      "affine_rel_l2_factor": 1.1247468877167792,
+      "codebook_rel_l2_factor": 1.3258216941568375
     },
     "layers.0.self_attn.v_proj": {
-      "groups": 8000,
-      "minmax_sse": 3.902865409851074,
-      "affine_optimum_sse": 3.175436019897461,
-      "codebook_optimum_sse": 2.6112064709589564,
-      "affine_rel_l2_factor": 1.1086388769615363,
-      "codebook_rel_l2_factor": 1.2225628107060946
+      "groups": 6000,
+      "incumbent_sse": 3.008493423461914,
+      "minmax_sse": 2.9251067638397217,
+      "affine_optimum_sse": 2.3906173706054688,
+      "codebook_optimum_sse": 1.714754488944891,
+      "minmax_rel_l2_factor": 1.0141534495200113,
+      "affine_rel_l2_factor": 1.1218104927262806,
+      "codebook_rel_l2_factor": 1.3245658657075077
     }
   },
   "pooled": {
-    "affine_rel_l2_factor": 1.1462834881287363,
-    "codebook_rel_l2_factor": 1.2741245150245653,
-    "note": "relL2 improvement over min/max round-to-nearest. The affine figure bounds every shippable quantizer at 4 bits and group 64. The codebook figure drops the affine constraint and is UNSHIPPABLE at these bytes; it bounds every scheme that spends 4 bits per weight."
+    "minmax_rel_l2_factor": 0.9893829381647037,
+    "affine_rel_l2_factor": 1.1202653427005307,
+    "codebook_rel_l2_factor": 1.3419949699764864,
+    "note": "relL2 improvement over the INCUMBENT MLX quantizer, which is the denominator the assignment's stop rule uses. The affine figure bounds every shippable quantizer at 4 bits and group 64. The codebook figure drops the affine constraint and is UNSHIPPABLE at these bytes -- a 16-entry BF16 codebook costs 32 bytes per group against affine's 4 -- so it bounds every scheme that spends 4 bits per weight, whatever the reconstruction rule."
   }
 }
