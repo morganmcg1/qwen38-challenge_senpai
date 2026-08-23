@@ -389,7 +389,50 @@ ARTIFACTS = [
         "e147_rungE2_failopen_control_observed":
             "e147_rungE2_failopen_control_observed",
     }),
+    ("research/e147-rungE1c.json", "rungE1c_nax_arm", {
+        "e147_rungE1c_arm_on_compiles": "e147_rungE1c_arm_on_compiles",
+        "e147_rungE1c_arm_on_differs_from_arm_off":
+            "e147_rungE1c_arm_on_differs_from_arm_off",
+        "e147_rungE1c_illegal_shape_rejected":
+            "e147_rungE1c_illegal_shape_rejected",
+        "e147_rungE1c_digest_control_moves":
+            "e147_rungE1c_digest_control_moves",
+        "e147_rungE1c_nax_arm_off_air_delta_bytes":
+            "e147_rungE1c_nax_arm_off_air_delta_bytes",
+        "e147_rungE1c_transfer_air_delta_bytes":
+            "e147_rungE1c_transfer_air_delta_bytes",
+        "e147_rungE1c_transfer_isa_text_delta_applegpu_g17s":
+            "e147_rungE1c_transfer_isa_text_delta_applegpu_g17s",
+        "e147_rungE1c_transfer_register_delta_applegpu_g17s":
+            "e147_rungE1c_transfer_register_delta_applegpu_g17s",
+        "e147_rungE1c_transfer_spill_delta_applegpu_g17s":
+            "e147_rungE1c_transfer_spill_delta_applegpu_g17s",
+        "e147_rungE1c_failopen_compiles_unguarded":
+            "e147_rungE1c_failopen_compiles_unguarded",
+        "e147_rungE1c_failopen_shape_rejected":
+            "e147_rungE1c_failopen_shape_rejected",
+        "e147_rungE1c_rule145_named_in_refusal":
+            "e147_rungE1c_rule145_named_in_refusal",
+        "e147_rungE1c_rule145_control_observed":
+            "e147_rungE1c_rule145_control_observed",
+        "e147_rungE1c_guarded_tile_sites": "e147_rungE1c_guarded_tile_sites",
+        "e147_rungE1c_shipped_other_sites_compile":
+            "e147_rungE1c_shipped_other_sites_compile",
+    }),
+    ("research/e147-qmv-jit-census.json", "jit_census_validity", {
+        "e147_census_valid": "census_valid",
+        "e147_qmv_jit_census_covers_nax_gemm": "covers_nax_gemm",
+    }),
 ]
+
+# F11 dispositions that are decisions, not measurements. They are logged so the
+# result artifact and W&B agree on what this branch actually ships.
+DISPOSITIONS = {
+    # Rung E-1b proved the retile mechanism bit exact on hardware, but it proved
+    # it for the non-NAX twin. The index algebra transfers to NAX; the
+    # arithmetic, `tile_matmad_nax` operand packing, does not. It is a rehearsal.
+    "e147_rungE1b_ships": 0.0,
+}
 
 # harness=local. Rung E-1b is an exactness result, never a timing result.
 RUNG_E1B_FLAGS = [
@@ -439,7 +482,7 @@ def rung_e1b_metrics(path: str) -> tuple[dict, dict]:
         if matched is not None:
             metrics[f"e147_rungE1b_all_tokens_matched_{prompt}"] = TRUTHY[matched]
             metrics[f"e147_rungE1b_residual_divergence_count_{prompt}"] = float(
-                kv[f"e147_rungE1b_residual_divergence_count_{prompt}"])
+                kv[f"e147_rungE1b_{prompt}_residual_divergence_count"])
     return metrics, {"rungE1b_detail": kv}
 
 
@@ -462,11 +505,28 @@ def main() -> None:
         "pr": 147,
         "commit": commit,
         "base_sha": "bcc11dc6527ea4fa32be22c15b99a3a95695bfaf",
-        "assignment_scope_base": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
-        "mechanism": (
+        # Scope and byte budget are measured against the PR base, not against
+        # 770a3ff2. 770a3ff2 is byte-identical to the PR base on quantized_nax.h
+        # and its twin, which makes it a valid SOURCE base for the NAX compile
+        # rungs, but it is several hundred commits behind on quantized.h, so
+        # using it as the growth base charges this experiment for other
+        # students' promoted work.
+        "assignment_scope_base": "bcc11dc6527ea4fa32be22c15b99a3a95695bfaf",
+        "nax_compile_rung_base": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+        "e147_rungE_base_composition": (
+            "clean PR base bcc11dc6 on quantized.h and its twin (rung A and "
+            "rung B both reverted); quantized_nax.h carries only the (128, 32) "
+            "retile arm, shipped off, plus the RULE 145 tile guards"
+        ),
+        "mechanism_measured": (
             "software-pipeline the affine quantized transposed GEMM k-loop: "
             "double the threadgroup staging buffer, stage tile 0 in a "
-            "prologue, keep one barrier per iteration, alternate halves"
+            "prologue, keep one barrier per iteration, alternate halves. "
+            "REFUTED on the ranked host by receipt 7226dc9a and reverted"
+        ),
+        "mechanism_shipped": (
+            "grid-stride (128, 32) retile of the NAX transposed GEMM "
+            "threadgroup tile, shipped off behind kE147NaxRetileOn"
         ),
         "reference_implementation": "fp_quantized_nax.h shipped pipelined k-loop",
         "reassociation": "none; per-element mma sequence unchanged (Rule 92)",
@@ -491,6 +551,7 @@ def main() -> None:
 
     metrics: dict = {
         "e147_max_threadgroup_bytes": float(config["e147_max_threadgroup_bytes"]),
+        **DISPOSITIONS,
     }
 
     surface_m, surface_c = submitted_surface_check()

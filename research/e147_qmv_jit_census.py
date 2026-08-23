@@ -94,6 +94,9 @@ The JSON report carries:
     moved_kernels           sorted unique entry points that moved anywhere
     unchanged_kernels       sorted unique entry points that moved nowhere
     control                 per (entry point, arch): fired or not
+    covers_nax_gemm         bool, false unless a translatable NAX GEMM set was
+                            selected. It is false on this toolchain today. See
+                            "WHICH ENTRY POINTS THIS COVERS" below.
 
 A caller that wants "the candidate perturbed no decode kernel" reads
 `moved_kernels` and checks that no decode-role entry point is in it. Read the
@@ -112,10 +115,20 @@ COVERS
   * Registers, spill bytes, machine-text bytes and machine-text digest.
 
 DOES NOT COVER
-  * The NAX quantized family, `get_qmm_nax_kernel`. The `quantized-nax-affine`
-    set exists and compiles, but this toolchain's offline translator refuses
-    every real NAX GEMM shape on BOTH arches with a byte-identical diagnostic
-    (rung E-2), so the census reports it untranslatable instead of clean. Never
+  * The NAX GEMM family, `get_qmm_nax_kernel`. This is the one that matters, so
+    it is stated exactly. The `quantized-nax-affine` set exists and its Metal
+    source compiles, but `metal-tt` refuses `affine_qmm_t_nax` at BOTH the
+    shipped 64x64 tile and the 128x32 retile tile, on BOTH arches, with
+    byte-identical error bodies (`unsupported deferred-static-alloca-size
+    function body`; rung E-2). The refusal is a property of the NAX GEMM shape,
+    not of one tile choice, so there is no NAX GEMM tile this census can read.
+    Selecting that set therefore exits 1 rather than reporting clean rows.
+
+    In one line, for a caller: `e147_qmv_jit_census_covers_nax_gemm = false`.
+    The census covers the QMV decode entry points and the non-NAX GEMM entry
+    points. It does not cover the NAX GEMM family at all. On the ranked M5
+    every scored prefill GEMM dispatches to `affine_qmm_t_nax`, so silence from
+    this census says nothing whatsoever about the scored prefill kernel. Never
     read a NAX silence as a NAX result.
   * Anything loaded from `mlx.metallib` rather than JIT-compiled from a twin.
     Use `tools/build-mlx-metallib.sh` and inspect that library instead.
@@ -395,6 +408,11 @@ def main() -> int:
                                     - set(moved_kernels)),
         "census_valid": not invalid,
         "invalid_reasons": invalid,
+        # Stated in the report, not only in the docstring, so a caller cannot
+        # read an empty `moves` list as coverage of the scored prefill kernel.
+        "covers_nax_gemm": any(
+            "nax" in s and KERNEL_SETS[s]["translatable"]
+            for s in (args.kernel_set or ["quantized-affine"])),
     }
     # Compatibility fields for the E147 result artifact. They are only
     # meaningful when a revision carries the E147 `rungA` label.

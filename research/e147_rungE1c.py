@@ -291,14 +291,14 @@ def main() -> int:
     # RULE 145. The hazard has to be observed before the guard against it means
     # anything, so the unguarded probe must compile and the guarded one must not.
     result["e147_rungE1c_failopen_instantiation"] = FAILOPEN_INST
-    result["e147_rungE2_failopen_shape_exists"] = (
+    result["e147_rungE1c_failopen_compiles_unguarded"] = (
         p["failopen_unguarded"]["compiled"])
     result["e147_rungE1c_failopen_shape_rejected"] = (
         not p["failopen_guarded"]["compiled"])
     result["e147_rungE1c_rule145_named_in_refusal"] = (
         RULE_145_NEEDLE in p["failopen_guarded"].get("error", ""))
-    result["e147_rungE2_failopen_control_observed"] = (
-        result["e147_rungE2_failopen_shape_exists"]
+    result["e147_rungE1c_rule145_control_observed"] = (
+        result["e147_rungE1c_failopen_compiles_unguarded"]
         and result["e147_rungE1c_failopen_shape_rejected"]
         and result["e147_rungE1c_rule145_named_in_refusal"])
     result["e147_rungE1c_guarded_tile_sites"] = 3
@@ -336,7 +336,7 @@ def main() -> int:
             round(result["e147_rungE1c_transfer_air_delta_bytes"] / isa, 1)
             if isa else None)
 
-    reported = ("e147_rungE1c_", "e147_rungE2_failopen_")
+    reported = "e147_rungE1c_"
     checks = [k for k in result if k.startswith(reported)
               and isinstance(result[k], bool)
               and k != "e147_rungE1c_nax_translatable"]
