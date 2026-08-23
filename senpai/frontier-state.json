@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-23T18:35:00Z",
+  "observedAt": "2026-08-23T19:55:00Z",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -26,5 +26,49 @@
     "gapToPromotedAbsolute": 0.02126482,
     "gapToPromotedPercent": 0.5702,
     "candidateLegDeltaNeededPercent": -0.575
+  },
+  "inFlightSubmission": {
+    "id": "1509bf95-cee0-423f-92ea-0f58edbf5d80",
+    "createdAt": "2026-08-23T18:20:45Z",
+    "content": "tree-identical parity control plus leaf16",
+    "status": "validating",
+    "queueDepthAtCreation": 8,
+    "expectationNote": "RULE 184: board median validation is 83.9 min, p90 160.6 min, p99 204.5 min, measured over 1246 terminal submissions. Eight submissions were already validating ahead of this one. Do not treat it as stuck before about 3.5 hours and never resubmit to test liveness.",
+    "onTerminal": "run research/receipt_candidate_leg.py compare 5a9f130a 1509bf95, and confirm plutarch is essentially unchanged because leaf16 is drafting-side only"
+  },
+  "roundBudget": {
+    "note": "FINDING 319, ledger 335. Derived only from constraints true by definition: token arithmetic, h>=0, 0<=a<=q, and the depth-8 ceiling. effective_mean_draft_len is PROPOSED depth, never accepted depth (ADVISOR ERROR 202, ledger 334).",
+    "receipt": "5a9f130a",
+    "fixedPerRoundSecondsRange": [0.02925, 0.03365],
+    "marginalSecondsPerProposedRowRange": [0.0, 0.0057778],
+    "normalisedDepthPriceRange_8h_over_s": [0.0, 1.58],
+    "beagleAcceptedPerRoundRange": [1.8188, 4.1422],
+    "beagleRoundsRange": [99.6, 181.6],
+    "totalRoundsOver8PromptsRange": [1263, 1917],
+    "missingCoordinate": "rho = 8h/s. E159 measures it. RULE 182: the board cannot supply it, because no receipt publishes an accepted count and no solver has ever submitted a zero-draft and a drafting receipt on the same commit.",
+    "preRegisteredPrediction": "rho between 1.2 and 1.6, because FINDING 303 records the cost model constructors holding 8h=1.44 in units where the fixed cost is 1, and 1.44 is 91 percent of the way to a feasibility ceiling of 1.58 that was derived from disjoint board data.",
+    "decisionRule": "rho<0.32 widen producer fusion; 0.32-0.95 run both; rho>0.95 pivot to head cost"
+  },
+  "onlyExactRoundCostOnBoard": {
+    "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
+    "optimised": {
+      "id": "da950333",
+      "user": "fabinulleins",
+      "commit": "d25821d7",
+      "meanSecondsPerRound": 0.0313628,
+      "fasterThanPinnedSerialPercent": 17.4,
+      "gateNote": "passed every correctness gate; rejectionReason is only 'score did not improve current best'"
+    },
+    "unoptimisedControls": [
+      {"id": "95611e60", "user": "davidtai", "meanSecondsPerRound": 0.0380252},
+      {"id": "3147d255", "user": "0xkydo", "meanSecondsPerRound": 0.0380728},
+      {"id": "4d1123ce", "user": "newjordan", "meanSecondsPerRound": 0.0378805},
+      {"id": "1f60b3fe", "user": "newjordan", "meanSecondsPerRound": 0.0378079}
+    ],
+    "pinnedSerialBaseline": 0.0379709
+  },
+  "statusVocabulary": {
+    "note": "RULE 185. accepted means the run improved a best score, not that it passed the gates. Read rejectionReason, never status alone. failed is the gate-failure label.",
+    "counts": {"rejected": 827, "failed": 283, "accepted": 99, "cancelled": 37, "validating": 9}
   }
 }
