@@ -113,7 +113,7 @@ def per_prompt_pct(cell: dict) -> dict:
     policy-to-shipped raw ratio for one prompt is exactly `1 / ratio_p` and
     the per-prompt percent is independent of the receipt.
     """
-    return {PROMPT_NAMES[p]: (1.0 / r - 1.0) * 100.0
+    return {PROMPT_NAMES.get(p, p): (1.0 / r - 1.0) * 100.0
             for p, r in cell["per_prompt_ratio"].items()}
 
 
@@ -377,10 +377,10 @@ def main() -> int:
     # ---------------------------------- F4 4.2: the Rule 114 landing witness
     # The replay cannot predict the ranked host's absolute draft length, only
     # the sign of the change the schedule forces. That sign is the witness.
-    ship_depth = {PROMPT_NAMES[p]: d for p, d
+    ship_depth = {PROMPT_NAMES.get(p, p): d for p, d
                   in shipped[PESSIMISTIC_CELL[1]]["per_prompt_mean_depth"]
                   .items()}
-    policy_depth = {PROMPT_NAMES[p]: d for p, d
+    policy_depth = {PROMPT_NAMES.get(p, p): d for p, d
                     in cells[pess_key]["per_prompt_mean_depth"].items()}
     witness = {}
     for name, ranked_edl in RANKED_EDL_0CF1637E.items():
