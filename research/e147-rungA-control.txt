@@ -1,0 +1,15 @@
+e147_control_session_commit=16f2eaec2dddd647ca0ab89700c1e21aa10d6ba3
+e147_control_prompt=beagle_a
+e147_control_barrier0_leg_exit=0
+e147_control_barrier0_all_tokens_matched=true
+e147_control_barrier0_residual_divergence_count=0
+e147_control_barrier0_caught=0
+e147_control_nobarrier_leg_exit=1
+e147_control_nobarrier_all_tokens_matched=none
+e147_control_nobarrier_residual_divergence_count=none
+e147_control_nobarrier_caught=1
+e147_control_nobarrier_diagnostic=contract violation [seed_token_mismatch] at step 0: seed prefill token 99323 disagreed with the reference 9572
+e147_control_wronghalf_leg_exit=none
+e147_control_wronghalf_caught=none
+e147_control_wronghalf_skip_reason=twin porter aborted because the wronghalf break makes two of the four pipelined k-loops textually identical in the twin, so the once-only hunk rule refused to patch. Tooling limit, not a kernel result. The mode did not run and is reported as none.
+e147_rungA_positive_control_failed=1.0

@@ -1,0 +1,278 @@
+{
+  "activation_reread_factor": 2,
+  "divisibility": {
+    "attn k": {
+      "M mod 128": 0,
+      "N mod 128": 0,
+      "N mod 32": 0
+    },
+    "attn o": {
+      "M mod 128": 0,
+      "N mod 128": 0,
+      "N mod 32": 0
+    },
+    "attn q(+gate)": {
+      "M mod 128": 0,
+      "N mod 128": 0,
+      "N mod 32": 0
+    },
+    "attn v": {
+      "M mod 128": 0,
+      "N mod 128": 0,
+      "N mod 32": 0
+    },
+    "mlp down": {
+      "M mod 128": 0,
+      "N mod 128": 0,
+      "N mod 32": 0
+    },
+    "mlp gate": {
+      "M mod 128": 0,
+      "N mod 128": 0,
+      "N mod 32": 0
+    },
+    "mlp up": {
+      "M mod 128": 0,
+      "N mod 128": 0,
+      "N mod 32": 0
+    }
+  },
+  "host_grid": {
+    "constants": {
+      "bk": 64,
+      "bm": 64,
+      "bn": 64,
+      "wm": 2,
+      "wn": 2
+    },
+    "grid_dims": "(N + bn - 1) / bn, (M + bm - 1) / bm, B",
+    "group_dims": "32, wn, wm",
+    "launcher": "qmm_nax"
+  },
+  "instantiation": {
+    "instantiated": [
+      [
+        "affine_gather_qmm_t_nax",
+        64,
+        64,
+        64,
+        2,
+        2
+      ],
+      [
+        "affine_qmm_t_nax",
+        64,
+        64,
+        64,
+        2,
+        2
+      ]
+    ],
+    "template_default_BK": 32
+  },
+  "local_proxy_host_grid": {
+    "constants": {
+      "bk": null,
+      "bm": 32,
+      "bn": 32,
+      "wm": 2,
+      "wn": 2
+    },
+    "grid_dims": "(N + bn - 1) / bn, (M + bm - 1) / bm, B",
+    "group_dims": "32, wn, wm",
+    "launcher": "qmm"
+  },
+  "local_proxy_register_neutral_tilings": [
+    [
+      16,
+      64
+    ],
+    [
+      32,
+      32
+    ],
+    [
+      64,
+      16
+    ]
+  ],
+  "models_disagree_in_direction": {
+    "128x32": true,
+    "16x256": true,
+    "32x128": true,
+    "64x64": false
+  },
+  "staging": {
+    "nax_qmm_t_declares_Xs": false,
+    "nax_qmm_t_reads_x_from_device_in_kloop": true,
+    "non_nax_qmm_t_declares_Xs": true
+  },
+  "threadgroup_bytes": {
+    "128x32/bf16": {
+      "BK_padded": 72,
+      "Ws_bytes_doubled": 9216,
+      "Ws_bytes_single": 4608,
+      "Ws_tile_elements": 2304,
+      "pipelined": true
+    },
+    "128x32/f32": {
+      "BK_padded": 68,
+      "Ws_bytes_doubled": 17408,
+      "Ws_bytes_single": 8704,
+      "Ws_tile_elements": 2176,
+      "pipelined": true
+    },
+    "16x256/bf16": {
+      "BK_padded": 72,
+      "Ws_bytes_doubled": 73728,
+      "Ws_bytes_single": 36864,
+      "Ws_tile_elements": 18432,
+      "pipelined": false
+    },
+    "16x256/f32": {
+      "BK_padded": 68,
+      "Ws_bytes_doubled": 139264,
+      "Ws_bytes_single": 69632,
+      "Ws_tile_elements": 17408,
+      "pipelined": false
+    },
+    "32x128/bf16": {
+      "BK_padded": 72,
+      "Ws_bytes_doubled": 36864,
+      "Ws_bytes_single": 18432,
+      "Ws_tile_elements": 9216,
+      "pipelined": false
+    },
+    "32x128/f32": {
+      "BK_padded": 68,
+      "Ws_bytes_doubled": 69632,
+      "Ws_bytes_single": 34816,
+      "Ws_tile_elements": 8704,
+      "pipelined": false
+    },
+    "64x64/bf16": {
+      "BK_padded": 72,
+      "Ws_bytes_doubled": 18432,
+      "Ws_bytes_single": 9216,
+      "Ws_tile_elements": 4608,
+      "pipelined": true
+    },
+    "64x64/f32": {
+      "BK_padded": 68,
+      "Ws_bytes_doubled": 34816,
+      "Ws_bytes_single": 17408,
+      "Ws_tile_elements": 4352,
+      "pipelined": false
+    }
+  },
+  "threadgroup_count_preserved": {
+    "attn k": true,
+    "attn o": true,
+    "attn q(+gate)": true,
+    "attn v": true,
+    "mlp down": true,
+    "mlp gate": true,
+    "mlp up": true
+  },
+  "threadgroup_counts": {
+    "attn k": {
+      "128x32": 128,
+      "16x256": 128,
+      "32x128": 128,
+      "64x64": 128,
+      "K": 5120,
+      "N": 1024
+    },
+    "attn o": {
+      "128x32": 640,
+      "16x256": 640,
+      "32x128": 640,
+      "64x64": 640,
+      "K": 6144,
+      "N": 5120
+    },
+    "attn q(+gate)": {
+      "128x32": 1536,
+      "16x256": 1536,
+      "32x128": 1536,
+      "64x64": 1536,
+      "K": 5120,
+      "N": 12288
+    },
+    "attn v": {
+      "128x32": 128,
+      "16x256": 128,
+      "32x128": 128,
+      "64x64": 128,
+      "K": 5120,
+      "N": 1024
+    },
+    "mlp down": {
+      "128x32": 640,
+      "16x256": 640,
+      "32x128": 640,
+      "64x64": 640,
+      "K": 17408,
+      "N": 5120
+    },
+    "mlp gate": {
+      "128x32": 2176,
+      "16x256": 2176,
+      "32x128": 2176,
+      "64x64": 2176,
+      "K": 5120,
+      "N": 17408
+    },
+    "mlp up": {
+      "128x32": 2176,
+      "16x256": 2176,
+      "32x128": 2176,
+      "64x64": 2176,
+      "K": 5120,
+      "N": 17408
+    }
+  },
+  "traffic": {
+    "128x32": {
+      "Atile_halves_per_lane": 64,
+      "Btile_halves_per_lane": 16,
+      "accumulator_floats_per_lane": 32,
+      "ratio_cold": 1.8150684931506849,
+      "ratio_x_cached": 0.5,
+      "total_cold": 0.12939453125,
+      "w_term": 0.00439453125,
+      "x_term": 0.125
+    },
+    "16x256": {
+      "Atile_halves_per_lane": 8,
+      "Btile_halves_per_lane": 128,
+      "accumulator_floats_per_lane": 32,
+      "ratio_cold": 0.7123287671232876,
+      "ratio_x_cached": 4.0,
+      "total_cold": 0.05078125,
+      "w_term": 0.03515625,
+      "x_term": 0.015625
+    },
+    "32x128": {
+      "Atile_halves_per_lane": 16,
+      "Btile_halves_per_lane": 64,
+      "accumulator_floats_per_lane": 32,
+      "ratio_cold": 0.684931506849315,
+      "ratio_x_cached": 2.0,
+      "total_cold": 0.048828125,
+      "w_term": 0.017578125,
+      "x_term": 0.03125
+    },
+    "64x64": {
+      "Atile_halves_per_lane": 32,
+      "Btile_halves_per_lane": 32,
+      "accumulator_floats_per_lane": 32,
+      "ratio_cold": 1.0,
+      "ratio_x_cached": 1.0,
+      "total_cold": 0.0712890625,
+      "w_term": 0.0087890625,
+      "x_term": 0.0625
+    }
+  },
+  "weight_bytes_per_element_bf16": 0.5625
+}

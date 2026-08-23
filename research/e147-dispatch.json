@@ -1,0 +1,292 @@
+{
+  "m": 512,
+  "group_size": 64,
+  "dtype": "bfloat16",
+  "nax_predicate_verbatim_present": true,
+  "eval_gpu_calls_qmm_splitk_before_qmm": true,
+  "qmm_splitk_falls_back_to_qmm": true,
+  "hosts": {
+    "applegpu_g16s": {
+      "label": "local g16s (this Mac)",
+      "nax": false,
+      "rows": [
+        {
+          "projection": "gdn.in_proj",
+          "N": 16480,
+          "K": 5120,
+          "layers": 48,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t -> qmm_t_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=8240 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=False transpose=True K%64==0 dtype=bfloat16 -> False"
+          ]
+        },
+        {
+          "projection": "gdn.out_proj",
+          "N": 5120,
+          "K": 6144,
+          "layers": 48,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t -> qmm_t_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=2560 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=False transpose=True K%64==0 dtype=bfloat16 -> False"
+          ]
+        },
+        {
+          "projection": "fa.qkv",
+          "N": 14336,
+          "K": 5120,
+          "layers": 16,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t -> qmm_t_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=7168 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=False transpose=True K%64==0 dtype=bfloat16 -> False"
+          ]
+        },
+        {
+          "projection": "fa.o_proj",
+          "N": 5120,
+          "K": 6144,
+          "layers": 16,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t -> qmm_t_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=2560 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=False transpose=True K%64==0 dtype=bfloat16 -> False"
+          ]
+        },
+        {
+          "projection": "mlp.gate_up",
+          "N": 34816,
+          "K": 5120,
+          "layers": 64,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t -> qmm_t_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=17408 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=False transpose=True K%64==0 dtype=bfloat16 -> False"
+          ]
+        },
+        {
+          "projection": "mlp.down",
+          "N": 5120,
+          "K": 17408,
+          "layers": 64,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t -> qmm_t_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=2560 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=False transpose=True K%64==0 dtype=bfloat16 -> False"
+          ]
+        },
+        {
+          "projection": "lm_head",
+          "N": 248320,
+          "K": 5120,
+          "layers": 1,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t -> qmm_t_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=124160 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=False transpose=True K%64==0 dtype=bfloat16 -> False"
+          ]
+        }
+      ]
+    },
+    "applegpu_g17s": {
+      "label": "ranked M5 g17s",
+      "nax": true,
+      "rows": [
+        {
+          "projection": "gdn.in_proj",
+          "N": 16480,
+          "K": 5120,
+          "layers": 48,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t_nax -> qmm_t_nax_tgp_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=8240 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=True transpose=True K%64==0 dtype=bfloat16 -> True"
+          ]
+        },
+        {
+          "projection": "gdn.out_proj",
+          "N": 5120,
+          "K": 6144,
+          "layers": 48,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t_nax -> qmm_t_nax_tgp_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=2560 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=True transpose=True K%64==0 dtype=bfloat16 -> True"
+          ]
+        },
+        {
+          "projection": "fa.qkv",
+          "N": 14336,
+          "K": 5120,
+          "layers": 16,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t_nax -> qmm_t_nax_tgp_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=7168 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=True transpose=True K%64==0 dtype=bfloat16 -> True"
+          ]
+        },
+        {
+          "projection": "fa.o_proj",
+          "N": 5120,
+          "K": 6144,
+          "layers": 16,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t_nax -> qmm_t_nax_tgp_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=2560 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=True transpose=True K%64==0 dtype=bfloat16 -> True"
+          ]
+        },
+        {
+          "projection": "mlp.gate_up",
+          "N": 34816,
+          "K": 5120,
+          "layers": 64,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t_nax -> qmm_t_nax_tgp_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=17408 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=True transpose=True K%64==0 dtype=bfloat16 -> True"
+          ]
+        },
+        {
+          "projection": "mlp.down",
+          "N": 5120,
+          "K": 17408,
+          "layers": 64,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t_nax -> qmm_t_nax_tgp_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=2560 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=True transpose=True K%64==0 dtype=bfloat16 -> True"
+          ]
+        },
+        {
+          "projection": "lm_head",
+          "N": 248320,
+          "K": 5120,
+          "layers": 1,
+          "K_mod_64": 0,
+          "kernel": "affine_qmm_t_nax -> qmm_t_nax_tgp_impl",
+          "split_k": null,
+          "trail": [
+            "vector_limit=10",
+            "qmm_splitk: tgs=124160 k_align=64 split_k=1",
+            "split_k<=1 -> delegates to qmm()",
+            "nax predicate: avail=True transpose=True K%64==0 dtype=bfloat16 -> True"
+          ]
+        }
+      ]
+    }
+  },
+  "ranked_all_nax": true,
+  "local_all_qmm_t_impl": true,
+  "any_non_transposed_scored_gemm": false,
+  "any_scored_K_not_mult_64": false,
+  "any_scored_uses_splitk": false,
+  "splitk_activation_sweep": [
+    {
+      "M": 1,
+      "splitk_projections": []
+    },
+    {
+      "M": 8,
+      "splitk_projections": []
+    },
+    {
+      "M": 16,
+      "splitk_projections": [
+        "gdn.out_proj",
+        "fa.o_proj",
+        "mlp.down"
+      ]
+    },
+    {
+      "M": 32,
+      "splitk_projections": [
+        "gdn.out_proj",
+        "fa.o_proj",
+        "mlp.down"
+      ]
+    },
+    {
+      "M": 64,
+      "splitk_projections": []
+    },
+    {
+      "M": 128,
+      "splitk_projections": []
+    },
+    {
+      "M": 192,
+      "splitk_projections": []
+    },
+    {
+      "M": 256,
+      "splitk_projections": []
+    },
+    {
+      "M": 384,
+      "splitk_projections": []
+    },
+    {
+      "M": 511,
+      "splitk_projections": []
+    },
+    {
+      "M": 512,
+      "splitk_projections": []
+    }
+  ],
+  "f6_section5_confirmed": true
+}

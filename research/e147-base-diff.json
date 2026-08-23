@@ -1,0 +1,166 @@
+{
+  "experiment": "e147",
+  "question": "does the base tree difference explain F8's +4.3978 % candidate-leg gap between e003a86d and 7226dc9a?",
+  "harness": "ranked",
+  "our_base": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+  "their_row": "e003a86d",
+  "arm_configuration": [
+    {
+      "arm": "qmv_launch_grid",
+      "ours_770a3ff2": "wide",
+      "theirs_e003a86d": "tight",
+      "differs": true,
+      "source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "ledger_line": 51511
+    },
+    {
+      "arm": "qmv_width_table",
+      "ours_770a3ff2": "onePass67",
+      "theirs_e003a86d": "shipped",
+      "differs": true,
+      "source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "ledger_line": 51511
+    },
+    {
+      "arm": "qmv_entry_points",
+      "ours_770a3ff2": "tiered",
+      "theirs_e003a86d": "tiered",
+      "differs": false,
+      "source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "ledger_line": 51100
+    },
+    {
+      "arm": "cluster_probe_fraction",
+      "ours_770a3ff2": "0.25",
+      "theirs_e003a86d": "0.15",
+      "differs": true,
+      "source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+      "ledger_line": 51511
+    },
+    {
+      "arm": "depth_price_arm",
+      "ours_770a3ff2": "pb6",
+      "theirs_e003a86d": "pb6",
+      "differs": false,
+      "source": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "ledger_line": 51511
+    },
+    {
+      "arm": "depth_price_tier",
+      "ours_770a3ff2": "1.45",
+      "theirs_e003a86d": "1.45",
+      "differs": false,
+      "source": "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
+      "ledger_line": 51511
+    }
+  ],
+  "arms_that_differ": [
+    "cluster_probe_fraction",
+    "qmv_launch_grid",
+    "qmv_width_table"
+  ],
+  "arms_that_match": [
+    "depth_price_arm",
+    "depth_price_tier",
+    "qmv_entry_points"
+  ],
+  "differing_arms_without_a_ledger_price": [],
+  "priced_contrasts_not_applicable": [],
+  "contrast_terms": [
+    {
+      "arm": "qmv_launch_grid",
+      "change": "wide -> tight",
+      "ledger_row": "OURS   tight grid, onePass67",
+      "ledger_pair": "623e77af -> 572b2cc4",
+      "ledger_line": 51150,
+      "cand8_pct": -3.7674,
+      "sign": 1,
+      "applies": true,
+      "applied_cand8_pct": -3.7674,
+      "ledger_text": "OURS   tight grid, onePass67        -3.7674   -3.9480  -0.1349  -0.0929  +4.0142"
+    },
+    {
+      "arm": "qmv_width_table",
+      "change": "onePass67 -> shipped",
+      "ledger_row": "F194   add onePass67 to tight base",
+      "ledger_pair": "F194",
+      "ledger_line": 51152,
+      "cand8_pct": 0.328,
+      "sign": -1,
+      "applies": true,
+      "applied_cand8_pct": -0.328,
+      "ledger_text": "F194   add onePass67 to tight base  +0.3280   +0.2646  -0.2067  -0.2752  -0.5399"
+    },
+    {
+      "arm": "cluster_probe_fraction",
+      "change": "0.25 -> 0.15",
+      "ledger_row": "F192   probe 0.15 on tight base",
+      "ledger_pair": "F192",
+      "ledger_line": 51153,
+      "cand8_pct": -0.1961,
+      "sign": 1,
+      "applies": true,
+      "applied_cand8_pct": -0.1961,
+      "ledger_text": "F192   probe 0.15 on tight base     -0.1961   -0.2603  +0.0089  -0.0138  +0.2444"
+    }
+  ],
+  "predicted_our_leg_slower_pct_additive": 4.2915,
+  "predicted_our_leg_slower_pct_multiplicative": 4.4617,
+  "observed_per_prompt_candidate_dpct": {
+    "beagle": 5.1348,
+    "drama": 4.0762,
+    "republic": 3.7663,
+    "essays": 3.7622,
+    "medicine": 3.1803,
+    "botany": 3.8434,
+    "travel": 4.6656
+  },
+  "observed_unweighted_mean_pct": 4.0613,
+  "observed_unweighted_sd_pp": 0.6478,
+  "observed_weighted_five_pct": 4.3978,
+  "comparisons": [
+    {
+      "observed": "F8 weighted-five",
+      "observed_pct": 4.3978,
+      "observed_se_pp": 0.3222,
+      "composition": "additive",
+      "predicted_pct": 4.2915,
+      "residual_pp": 0.1063,
+      "residual_sigma": 0.33
+    },
+    {
+      "observed": "F8 weighted-five",
+      "observed_pct": 4.3978,
+      "observed_se_pp": 0.3222,
+      "composition": "multiplicative",
+      "predicted_pct": 4.4617,
+      "residual_pp": -0.0639,
+      "residual_sigma": -0.198
+    },
+    {
+      "observed": "unweighted 7-prompt mean",
+      "observed_pct": 4.0613,
+      "observed_se_pp": 0.2448,
+      "composition": "additive",
+      "predicted_pct": 4.2915,
+      "residual_pp": -0.2302,
+      "residual_sigma": -0.94
+    },
+    {
+      "observed": "unweighted 7-prompt mean",
+      "observed_pct": 4.0613,
+      "observed_se_pp": 0.2448,
+      "composition": "multiplicative",
+      "predicted_pct": 4.4617,
+      "residual_pp": -0.4004,
+      "residual_sigma": -1.635
+    }
+  ],
+  "max_abs_residual_sigma": 1.635,
+  "e147_base_arm_gap_explains_four_percent": true,
+  "caveats": [
+    "FINDING 201 measured every contrast on trees without pb6. The tight-grid saving is 1296.8 * ln(Mbar) microseconds per round (FINDING 200), so its percentage value depends on the width distribution, and pb6 changes that distribution. The three terms are therefore approximately, not exactly, transferable.",
+    "The three differing arms are all draft-length neutral by the ledger's own statement at line 51527, which is why the pair stays schedule-matched while the leg time moves.",
+    "This result prices the base gap. It does not by itself prove rung A and rung B are inert; it removes the evidence that they are not."
+  ]
+}
