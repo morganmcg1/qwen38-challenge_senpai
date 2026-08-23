@@ -796,14 +796,15 @@ struct QwenDraftProbeSortTests {
         env["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
     }
 
-    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 8 over 98,336
+    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 16 over 98,336
     /// compact rows. The probe count is pinned because the promoted frontier
     /// removed the `ProbeArm` rung surface that used to derive it. The live
     /// source now computes it from `qwen35DerivedClusterProbeFraction` 0.15,
     /// which is `private` and unreachable from a test target, so this constant
-    /// restates `ceil(0.15 * 12_292) = 1_844`. Update it if that fraction moves.
-    private static let liveClusters = 12_292
-    private static let liveProbes = 1_844
+    /// restates `ceil(0.15 * 6_146) = 922`. Update both if the fraction or the
+    /// leaf width moves.
+    private static let liveClusters = 6_146
+    private static let liveProbes = 922
 
     private static func emit(_ name: String, _ payload: [String: Any]) throws {
         print("E87_PROBE_SORT \(name) \(payload)")
@@ -920,16 +921,17 @@ struct QwenRowTop32SelectionTests {
         env["MLXFAST_RUN_MLX_RUNTIME_TESTS"] == "1"
     }
 
-    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 8 over 98,336
+    /// The live arm C geometry: `derivedClusterRowsPerLeaf` 16 over 98,336
     /// compact rows. The probe count is pinned because the promoted frontier
     /// removed the `ProbeArm` rung surface that used to derive it. The live
     /// source now computes it from `qwen35DerivedClusterProbeFraction` 0.15,
     /// which is `private` and unreachable from a test target, so this constant
-    /// restates `ceil(0.15 * 12_292) = 1_844`. The selection therefore runs
-    /// over 1,844 * 8 = 14,752 rows. Update it if that fraction moves.
-    private static let liveClusters = 12_292
-    private static let liveRowsPerCluster = 8
-    private static let liveProbes = 1_844
+    /// restates `ceil(0.15 * 6_146) = 922`. The selection therefore runs over
+    /// 922 * 16 = 14,752 rows, the same row count the leaf-8 geometry scored.
+    /// Update these if the fraction or the leaf width moves.
+    private static let liveClusters = 6_146
+    private static let liveRowsPerCluster = 16
+    private static let liveProbes = 922
 
     private static func emit(_ name: String, _ payload: [String: Any]) throws {
         print("E101_ROW_TOP32 \(name) \(payload)")
