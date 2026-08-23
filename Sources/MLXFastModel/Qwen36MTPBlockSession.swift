@@ -195,7 +195,26 @@ public final class Qwen36MTPBlockSession {
             guard let self else { return Swift.min(offeredDepth, 1) }
             return self.costModelDepth(offeredDepth: offeredDepth)
         }
+        // E159 research instrument. Unset on every ranked and submitted run, so
+        // the shipped adaptive schedule above is the default path.
+        if let pinned = Self.pinnedDraftDepth {
+            draftPolicy = { offeredDepth, _ in Swift.min(offeredDepth, pinned) }
+        }
     }
+
+    /// E159 ROUND-BUDGET INSTRUMENT, off unless `MLX_E159_FIXED_DRAFT_DEPTH`
+    /// is set. It pins the PROPOSED draft count per round so a leg measures
+    /// one point of the round-cost law `R(D) = (s + t0) + (h + t1)·D`, which
+    /// the adaptive schedule hides by varying `D` round to round. The pinned
+    /// count is still an offer-bounded proposal, so every ledger quantity, the
+    /// accept walk and the emitted token stream are unchanged.
+    private static let pinnedDraftDepth: Int? = {
+        guard let raw = ProcessInfo.processInfo
+            .environment["MLX_E159_FIXED_DRAFT_DEPTH"],
+            let value = Int(raw), value >= 0
+        else { return nil }
+        return Swift.min(value, Qwen36MTPLimits.maxDepth)
+    }()
 
     // MARK: - warm
 
