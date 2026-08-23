@@ -37,11 +37,25 @@ e145_gpu_temp() {
 
 # Take the real gate. Returns non-zero if the gate refuses, which is the
 # correct behaviour: a leg that starts on a hot GPU is not a gated leg.
+#
+# `benchmark.sh` gives up after 180 s of its own waiting. Late in a long
+# session the GPU can sit just above 40 C and cool slower than that, so a
+# single refusal is not evidence that something else is loading the GPU. The
+# gate is therefore re-entered up to `E145_GATE_ATTEMPTS` times, and each
+# attempt is the SAME real gate at the SAME real 40 C threshold. Nothing here
+# lowers, bypasses or fakes the gate: a leg still runs only after the
+# unmodified `benchmark.sh` says the GPU is cool enough.
 e145_cool_gate() {
-  local log="$1" started elapsed
+  local log="$1" started elapsed attempt rc=1
   started="$(date +%s)"
-  ./benchmark.sh --local-cool-gate-only > "${log}" 2>&1
-  local rc=$?
+  for (( attempt = 1; attempt <= ${E145_GATE_ATTEMPTS:-3}; attempt++ )); do
+    ./benchmark.sh --local-cool-gate-only > "${log}" 2>&1
+    rc=$?
+    E145_GATE_ATTEMPTS_USED="${attempt}"
+    ((rc == 0)) && break
+    echo "e145_leg: the real cool gate refused on attempt ${attempt};" \
+         "re-entering the same gate" >&2
+  done
   elapsed=$(( $(date +%s) - started ))
   E145_GATE_WAIT_S="${elapsed}"
   E145_GATE_LINE="$(grep -h 'cool-down gate passed' "${log}" | tail -1)"
@@ -60,13 +74,22 @@ e145_leg() {
   local out=".mlxfast-private/e128/e145/${slot}/${fixture}"
   local gate_log=".mlxfast-private/e128/e145/${slot}-${fixture}-gate.log"
   E145_LEG_OUT="${out}"
-  mkdir -p "$(dirname "${gate_log}")"
+  # Created BEFORE the gate so a refused gate can still record why it refused.
+  mkdir -p "${out}"
 
   echo "=== e145 ${slot}: fixture=${fixture} arm=${arm} pin=${pin}" \
        "tokens=${tokens} ==="
   if ! e145_cool_gate "${gate_log}"; then
     echo "e145_leg: the real cool gate refused before ${slot}/${fixture}" >&2
     tail -5 "${gate_log}" >&2
+    {
+      echo "e145_slot=${slot}"
+      echo "e145_real_cool_gate_taken=false"
+      echo "e145_gate_refused=true"
+      echo "e145_gate_attempts=${E145_GATE_ATTEMPTS_USED}"
+      echo "e145_gate_wait_s=${E145_GATE_WAIT_S}"
+      echo "e145_leg_exit=4"
+    } >> "${out}/meta.txt"
     return 4
   fi
   local entry_c
@@ -97,6 +120,7 @@ e145_leg() {
     echo "e145_cool_gate_source=benchmark.sh --local-cool-gate-only"
     echo "e145_cool_gate_line=${E145_GATE_LINE}"
     echo "e145_gate_wait_s=${E145_GATE_WAIT_S}"
+    echo "e145_gate_attempts=${E145_GATE_ATTEMPTS_USED}"
     echo "e145_gate_entry_temp_c=${entry_c}"
     echo "e145_leg_exit_temp_c=${exit_c}"
     echo "e145_session_commit=${E145_SESSION_COMMIT}"
