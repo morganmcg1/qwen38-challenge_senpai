@@ -77,12 +77,38 @@ eval "$(./setup-qwen-mtp.sh --print-paths)"
 export MLXFAST_USE_RUNTIME_WORKER=1
 export MLXFAST_NO_SANDBOX=1
 
+# Same reader and same search order as benchmark.sh:419-454, including the
+# ${HOME}/bin drop used on the ranked boxes, which is where macmon actually
+# lives here. An earlier version searched only PATH and ~/.local/bin and
+# recorded "unavailable" for every leg.
+find_macmon() {
+  local candidate
+  if [[ -n "${MLXFAST_MACMON_BIN:-}" && -x "${MLXFAST_MACMON_BIN}" ]]; then
+    printf '%s\n' "${MLXFAST_MACMON_BIN}"; return 0
+  fi
+  if candidate="$(command -v macmon 2>/dev/null)"; then
+    printf '%s\n' "${candidate}"; return 0
+  fi
+  for candidate in /opt/homebrew/bin/macmon /usr/local/bin/macmon "${HOME}/bin/macmon"; do
+    [[ -x "${candidate}" ]] && { printf '%s\n' "${candidate}"; return 0; }
+  done
+  return 1
+}
+MACMON_BIN="$(find_macmon || true)"
+
 gpu_temp() {
-  local macmon
-  macmon="$(command -v macmon || echo "${HOME}/.local/bin/macmon")"
-  [[ -x "${macmon}" ]] || { echo "unavailable"; return; }
-  "${macmon}" pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // "unavailable"' 2>/dev/null \
-    || echo "unavailable"
+  [[ -n "${MACMON_BIN}" ]] || { echo "unavailable"; return; }
+  local t
+  t="$("${MACMON_BIN}" pipe -s1 2>/dev/null | jq -r '.temp.gpu_temp_avg // empty' 2>/dev/null)"
+  [[ -n "${t}" ]] && echo "${t}" || echo "unavailable"
+}
+
+# The gate's own last reading, taken by the trusted gate itself rather than by
+# a second sample after it returned. This is the temperature the leg actually
+# started from.
+gate_temp() {
+  grep -o 'gate passed (current [0-9.]*C' "$1" 2>/dev/null \
+    | tail -1 | sed 's/.*current //; s/C$//'
 }
 
 select_arm() {
@@ -178,7 +204,8 @@ for label in ${schedule}; do
   echo "e162_abba: leg ${leg} arm ${label}: cool gate" >&2
   ./benchmark.sh --local-cool-gate-only >> "${legdir}/gate.log" 2>&1
   gate_status=$?
-  entry_c="$(gpu_temp)"
+  gate_c="$(gate_temp "${legdir}/gate.log")"
+  entry_c="${gate_c:-$(gpu_temp)}"
 
   "${swift_bin}" mtp-timed \
     --weights "${weights_path}" \
@@ -201,7 +228,9 @@ for label in ${schedule}; do
     echo "cool_gate_passed_real_gate=$([[ ${gate_status} == 0 ]] && echo true || echo false)"
     echo "gate_qualified_for_timing=$([[ ${gate_status} == 0 ]] && echo true || echo false)"
     echo "gpu_temp_entry_c=${entry_c}"
+    echo "gpu_temp_entry_source=$([[ -n "${gate_c}" ]] && echo cool_gate || echo macmon_sample)"
     echo "gpu_temp_exit_c=${exit_c}"
+    echo "macmon_bin=${MACMON_BIN:-none}"
     echo "timed_exit=${timed_status}"
   } > "${legdir}/meta.txt"
 
