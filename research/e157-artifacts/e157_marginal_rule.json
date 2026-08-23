@@ -1,0 +1,426 @@
+{
+  "e157_local_fixture_power": {
+    "d_star_measured_price": 7,
+    "d_star_shipped_price": 7,
+    "harness": "local",
+    "mechanism_visible_locally": false,
+    "walk_measured_price": [
+      {
+        "pays": true,
+        "reach": 0.9615384615384616,
+        "row": 1,
+        "threshold": 0.40816624591398465
+      },
+      {
+        "pays": true,
+        "reach": 0.9225571725571725,
+        "row": 2,
+        "threshold": 0.5712902913852307
+      },
+      {
+        "pays": true,
+        "reach": 0.8705821205821205,
+        "row": 3,
+        "threshold": 0.6529440058133068
+      },
+      {
+        "pays": true,
+        "reach": 0.8571885494962418,
+        "row": 4,
+        "threshold": 0.6952327596382879
+      },
+      {
+        "pays": true,
+        "reach": 0.8143291220214297,
+        "row": 5,
+        "threshold": 0.722393567181058
+      },
+      {
+        "pays": true,
+        "reach": 0.7992489530951069,
+        "row": 6,
+        "threshold": 0.7364855566779688
+      },
+      {
+        "pays": true,
+        "reach": 0.7672789949713026,
+        "row": 7,
+        "threshold": 0.7454525194060028
+      }
+    ]
+  },
+  "e157_marginal_rule_breakeven": {
+    "by_prompt": [
+      {
+        "d_star_measured_price": 4,
+        "d_star_shipped_price_true_p": 7,
+        "harness": "ranked",
+        "live_d_recovered": 5,
+        "p_recovered": 0.8973,
+        "prompt": "beagle",
+        "raw_gain_at_d_star_vs_live_pct": 0.9872765485543056,
+        "rule148_weight": 0.5,
+        "walk": [
+          {
+            "pays": true,
+            "reach": 0.8973,
+            "row": 1,
+            "threshold": 0.40816624591398465
+          },
+          {
+            "pays": true,
+            "reach": 0.80514729,
+            "row": 2,
+            "threshold": 0.5525810944308853
+          },
+          {
+            "pays": true,
+            "reach": 0.7224586633169999,
+            "row": 3,
+            "threshold": 0.6118197809294296
+          },
+          {
+            "pays": true,
+            "reach": 0.648262158594344,
+            "row": 4,
+            "threshold": 0.6341707525924651
+          },
+          {
+            "pays": false,
+            "reach": 0.5816856349067049,
+            "row": 5,
+            "threshold": 0.6380129535473973
+          }
+        ]
+      },
+      {
+        "d_star_measured_price": 4,
+        "d_star_shipped_price_true_p": 7,
+        "harness": "ranked",
+        "live_d_recovered": 6,
+        "p_recovered": 0.9187,
+        "prompt": "republic",
+        "raw_gain_at_d_star_vs_live_pct": 0.9848121628075246,
+        "rule148_weight": 0.0,
+        "walk": [
+          {
+            "pays": true,
+            "reach": 0.9187,
+            "row": 1,
+            "threshold": 0.40816624591398465
+          },
+          {
+            "pays": true,
+            "reach": 0.8440096899999999,
+            "row": 2,
+            "threshold": 0.558813759492194
+          },
+          {
+            "pays": true,
+            "reach": 0.7753917022029999,
+            "row": 3,
+            "threshold": 0.6254628697336821
+          },
+          {
+            "pays": true,
+            "reach": 0.712352356813896,
+            "row": 4,
+            "threshold": 0.6551305213122006
+          },
+          {
+            "pays": false,
+            "reach": 0.6544381102049261,
+            "row": 5,
+            "threshold": 0.6657826232107905
+          }
+        ]
+      },
+      {
+        "d_star_measured_price": 4,
+        "d_star_shipped_price_true_p": 7,
+        "harness": "ranked",
+        "live_d_recovered": 6,
+        "p_recovered": 0.9222,
+        "prompt": "essays",
+        "raw_gain_at_d_star_vs_live_pct": 0.6645353080010574,
+        "rule148_weight": 0.447,
+        "walk": [
+          {
+            "pays": true,
+            "reach": 0.9222,
+            "row": 1,
+            "threshold": 0.40816624591398465
+          },
+          {
+            "pays": true,
+            "reach": 0.85045284,
+            "row": 2,
+            "threshold": 0.5598331206003521
+          },
+          {
+            "pays": true,
+            "reach": 0.784287609048,
+            "row": 3,
+            "threshold": 0.6277139463327556
+          },
+          {
+            "pays": true,
+            "reach": 0.7232700330640656,
+            "row": 4,
+            "threshold": 0.658618844501325
+          },
+          {
+            "pays": false,
+            "reach": 0.6669996244916813,
+            "row": 5,
+            "threshold": 0.6704436587114987
+          }
+        ]
+      },
+      {
+        "d_star_measured_price": 5,
+        "d_star_shipped_price_true_p": 7,
+        "harness": "ranked",
+        "live_d_recovered": 6,
+        "p_recovered": 0.9299,
+        "prompt": "medicine",
+        "raw_gain_at_d_star_vs_live_pct": 0.4669465735341882,
+        "rule148_weight": 0.03,
+        "walk": [
+          {
+            "pays": true,
+            "reach": 0.9299,
+            "row": 1,
+            "threshold": 0.40816624591398465
+          },
+          {
+            "pays": true,
+            "reach": 0.8647140099999999,
+            "row": 2,
+            "threshold": 0.5620757150382995
+          },
+          {
+            "pays": true,
+            "reach": 0.8040975578989998,
+            "row": 3,
+            "threshold": 0.6326858391308402
+          },
+          {
+            "pays": true,
+            "reach": 0.7477303190902799,
+            "row": 4,
+            "threshold": 0.6663533698399586
+          },
+          {
+            "pays": true,
+            "reach": 0.6953144237220512,
+            "row": 5,
+            "threshold": 0.6808180142701931
+          },
+          {
+            "pays": false,
+            "reach": 0.6465728826191354,
+            "row": 6,
+            "threshold": 0.6843064820708809
+          }
+        ]
+      },
+      {
+        "d_star_measured_price": 5,
+        "d_star_shipped_price_true_p": 7,
+        "harness": "ranked",
+        "live_d_recovered": 7,
+        "p_recovered": 0.9312,
+        "prompt": "botany",
+        "raw_gain_at_d_star_vs_live_pct": 1.4464945683417607,
+        "rule148_weight": 0.023,
+        "walk": [
+          {
+            "pays": true,
+            "reach": 0.9312,
+            "row": 1,
+            "threshold": 0.40816624591398465
+          },
+          {
+            "pays": true,
+            "reach": 0.86713344,
+            "row": 2,
+            "threshold": 0.5624543348784724
+          },
+          {
+            "pays": true,
+            "reach": 0.807474659328,
+            "row": 3,
+            "threshold": 0.6335278984213961
+          },
+          {
+            "pays": true,
+            "reach": 0.7519204027662336,
+            "row": 4,
+            "threshold": 0.6676673950244361
+          },
+          {
+            "pays": true,
+            "reach": 0.7001882790559167,
+            "row": 5,
+            "threshold": 0.6825859272167779
+          },
+          {
+            "pays": false,
+            "reach": 0.6520153254568697,
+            "row": 6,
+            "threshold": 0.6864999071380752
+          }
+        ]
+      },
+      {
+        "d_star_measured_price": 1,
+        "d_star_shipped_price_true_p": 2,
+        "harness": "ranked",
+        "live_d_recovered": 4,
+        "p_recovered": 0.6248,
+        "prompt": "travel",
+        "raw_gain_at_d_star_vs_live_pct": 25.327899764802698,
+        "rule148_weight": 0.0,
+        "walk": [
+          {
+            "pays": true,
+            "reach": 0.6248,
+            "row": 1,
+            "threshold": 0.40816624591398465
+          },
+          {
+            "pays": false,
+            "reach": 0.39037504,
+            "row": 2,
+            "threshold": 0.4732165510100156
+          }
+        ]
+      },
+      {
+        "d_star_measured_price": 1,
+        "d_star_shipped_price_true_p": 2,
+        "harness": "ranked",
+        "live_d_recovered": 4,
+        "p_recovered": 0.528,
+        "prompt": "drama",
+        "raw_gain_at_d_star_vs_live_pct": 39.85435379668498,
+        "rule148_weight": 0.0,
+        "walk": [
+          {
+            "pays": true,
+            "reach": 0.528,
+            "row": 1,
+            "threshold": 0.40816624591398465
+          },
+          {
+            "pays": false,
+            "reach": 0.27878400000000003,
+            "row": 2,
+            "threshold": 0.4450239352186754
+          }
+        ]
+      }
+    ],
+    "host_invariance_max_abs_price_difference": 4.440892098500626e-16,
+    "note": "prices are ratios, so the local/ranked scale cancels exactly",
+    "rule148_weighted_raw_gain_pct": 0.8379633292315116
+  },
+  "e157_measured_acceptance_by_position": {
+    "1": {
+      "n_accepted": 150,
+      "n_at_risk": 156,
+      "p": 0.9615384615384616,
+      "wilson_high": 0.9822558098198803,
+      "wilson_low": 0.9186360731442541
+    },
+    "2": {
+      "n_accepted": 142,
+      "n_at_risk": 148,
+      "p": 0.9594594594594594,
+      "wilson_high": 0.9812898818573954,
+      "wilson_low": 0.9143803429031445
+    },
+    "3": {
+      "n_accepted": 134,
+      "n_at_risk": 142,
+      "p": 0.9436619718309859,
+      "wilson_high": 0.9711796293984745,
+      "wilson_low": 0.8927713969204907
+    },
+    "4": {
+      "n_accepted": 128,
+      "n_at_risk": 130,
+      "p": 0.9846153846153847,
+      "wilson_high": 0.9957708827689584,
+      "wilson_low": 0.9456404572030683
+    },
+    "5": {
+      "n_accepted": 114,
+      "n_at_risk": 120,
+      "p": 0.95,
+      "wilson_high": 0.9768859506955258,
+      "wilson_low": 0.8951958053541377
+    },
+    "6": {
+      "n_accepted": 106,
+      "n_at_risk": 108,
+      "p": 0.9814814814814815,
+      "wilson_high": 0.9949068823933572,
+      "wilson_low": 0.9349796714470743
+    },
+    "7": {
+      "n_accepted": 96,
+      "n_at_risk": 100,
+      "p": 0.96,
+      "wilson_high": 0.984336949448152,
+      "wilson_low": 0.9016278276739262
+    }
+  },
+  "e157_row_price_us": {
+    "fixed_term_a_us": 23421.071843078098,
+    "h_cumulative_measured": 0.40144826918153576,
+    "h_marginal_measured": 0.40816624591398465,
+    "h_shipped": 0.18,
+    "refit": {
+      "fixed_term_us": 23421.071843078098,
+      "n": 156,
+      "r": 0.9776749158723881,
+      "row_price_us": 15708.498145888343,
+      "se_us": 272.05319876375097
+    },
+    "rollback_us_per_rejected_draft": 262.87154073660724,
+    "row_price_b_us": 15708.498145888343,
+    "source": "refit on this session",
+    "underprice_factor": 2.2675902550776925
+  },
+  "e157_rule_tracks_p": [
+    {
+      "d_star_measured_price": 4,
+      "p": 0.8973
+    },
+    {
+      "d_star_measured_price": 5,
+      "p": 0.9273
+    },
+    {
+      "d_star_measured_price": 1,
+      "p": 0.528
+    },
+    {
+      "d_star_measured_price": 1,
+      "p": 0.6248
+    },
+    {
+      "d_star_measured_price": 7,
+      "p": 0.96
+    }
+  ],
+  "experiment": "e157-r0-marginal-rule",
+  "harness": "local",
+  "n_rounds": 156,
+  "official_or_ranked_score": false,
+  "sessions": [
+    ".mlxfast-private/e154/runs-r2a/*zero/rounds.txt"
+  ]
+}

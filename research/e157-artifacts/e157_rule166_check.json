@@ -1,0 +1,274 @@
+{
+  "experiment": "e157-r0-ranked-law-bracket-test",
+  "harness": "ranked",
+  "law_summary": {
+    "finding_281_tokens": {
+      "rms_best_case_relative_miss": 0.001423444752074428,
+      "worst_best_case_relative_miss": 0.0034636225330264814
+    },
+    "finding_286_rows": {
+      "rms_best_case_relative_miss": 0.17166069443304705,
+      "worst_best_case_relative_miss": 0.48541659367524015
+    },
+    "rule_166_from_local": {
+      "rms_best_case_relative_miss": 0.16548791587597833,
+      "worst_best_case_relative_miss": 0.4679259258642537
+    }
+  },
+  "method": "tokens per round lies in [1, 1 + edl] by construction, so the clean time per round is bracketed with no fitted parameter",
+  "official_or_ranked_score": true,
+  "official_score": 3.68278758168578,
+  "per_prompt": [
+    {
+      "bracket_width_pct": 438.1818181818182,
+      "clean_us_per_round_lower_bound": 9713.593654474784,
+      "clean_us_per_round_upper_bound": 52276.79494044611,
+      "laws": {
+        "finding_281_tokens": {
+          "best_case_relative_miss": -0.0006008354016374911,
+          "observed_us_per_round": 45466.6827346907,
+          "predicted_us_per_round": 45494.00072727272,
+          "tokens_per_round_used": 4.680727272727273
+        },
+        "finding_286_rows": {
+          "best_case_relative_miss": 0.00520075824877534,
+          "observed_us_per_round": 39082.202541795,
+          "predicted_us_per_round": 38878.94545454545,
+          "tokens_per_round_used": 4.023454545454546
+        },
+        "rule_166_from_local": {
+          "best_case_relative_miss": -0.004635385422940848,
+          "observed_us_per_round": 39507.83455465471,
+          "predicted_us_per_round": 39690.96859504132,
+          "tokens_per_round_used": 4.067272727272727
+        }
+      },
+      "prompt": "beagle",
+      "verify_width_mean": 5.381818181818182
+    },
+    {
+      "bracket_width_pct": 614.8148148148148,
+      "clean_us_per_round_lower_bound": 8663.236433046532,
+      "clean_us_per_round_upper_bound": 61926.09746585113,
+      "laws": {
+        "finding_281_tokens": {
+          "best_case_relative_miss": -0.0013834544183303624,
+          "observed_us_per_round": 50208.26803863412,
+          "predicted_us_per_round": 50277.72888888889,
+          "tokens_per_round_used": 5.795555555555556
+        },
+        "finding_286_rows": {
+          "best_case_relative_miss": -0.0053628845235261045,
+          "observed_us_per_round": 48610.38220764998,
+          "predicted_us_per_round": 48871.07407407407,
+          "tokens_per_round_used": 5.611111111111111
+        },
+        "rule_166_from_local": {
+          "best_case_relative_miss": -0.0027005554237260893,
+          "observed_us_per_round": 49675.63942830607,
+          "predicted_us_per_round": 49809.791245791246,
+          "tokens_per_round_used": 5.734074074074074
+        }
+      },
+      "prompt": "botany",
+      "verify_width_mean": 7.148148148148148
+    },
+    {
+      "bracket_width_pct": 229.76190476190476,
+      "clean_us_per_round_lower_bound": 16985.136756433534,
+      "clean_us_per_round_upper_bound": 56010.510494429625,
+      "laws": {
+        "finding_281_tokens": {
+          "best_case_relative_miss": 0.0034636225330264814,
+          "observed_us_per_round": 34156.301201151815,
+          "predicted_us_per_round": 34037.996666666666,
+          "tokens_per_round_used": 2.010952380952381
+        },
+        "finding_286_rows": {
+          "best_case_relative_miss": 0.0015886554116096904,
+          "observed_us_per_round": 27131.73392831252,
+          "predicted_us_per_round": 27088.63095238095,
+          "tokens_per_round_used": 1.5973809523809523
+        },
+        "rule_166_from_local": {
+          "best_case_relative_miss": 0.005770988706572854,
+          "observed_us_per_round": 27912.24140307244,
+          "predicted_us_per_round": 27751.160173160173,
+          "tokens_per_round_used": 1.6433333333333333
+        }
+      },
+      "prompt": "drama",
+      "verify_width_mean": 3.2976190476190474
+    },
+    {
+      "bracket_width_pct": 508.69565217391306,
+      "clean_us_per_round_lower_bound": 8839.298945595288,
+      "clean_us_per_round_upper_bound": 53804.42836449306,
+      "laws": {
+        "finding_281_tokens": {
+          "best_case_relative_miss": -0.0007585388345967913,
+          "observed_us_per_round": 49307.915422603284,
+          "predicted_us_per_round": 49345.31739130434,
+          "tokens_per_round_used": 5.578260869565217
+        },
+        "finding_286_rows": {
+          "best_case_relative_miss": 0.003368398931496626,
+          "observed_us_per_round": 43012.797303957595,
+          "predicted_us_per_round": 42867.913043478264,
+          "tokens_per_round_used": 4.866086956521739
+        },
+        "rule_166_from_local": {
+          "best_case_relative_miss": 0.004135216917174951,
+          "observed_us_per_round": 43912.09989233556,
+          "predicted_us_per_round": 43730.513833992096,
+          "tokens_per_round_used": 4.9678260869565225
+        }
+      },
+      "prompt": "essays",
+      "verify_width_mean": 6.086956521739131
+    },
+    {
+      "bracket_width_pct": 525.5555555555555,
+      "clean_us_per_round_lower_bound": 8716.548800306797,
+      "clean_us_per_round_upper_bound": 54526.8552730303,
+      "laws": {
+        "finding_281_tokens": {
+          "best_case_relative_miss": -0.0010132053003675914,
+          "observed_us_per_round": 49945.82462575795,
+          "predicted_us_per_round": 49996.43,
+          "tokens_per_round_used": 5.73
+        },
+        "finding_286_rows": {
+          "best_case_relative_miss": 0.003837352721930998,
+          "observed_us_per_round": 43990.48478430389,
+          "predicted_us_per_round": 43821.677777777775,
+          "tokens_per_round_used": 5.046777777777778
+        },
+        "rule_166_from_local": {
+          "best_case_relative_miss": 0.004683471266911047,
+          "observed_us_per_round": 44906.69091375836,
+          "predicted_us_per_round": 44696.371717171714,
+          "tokens_per_round_used": 5.151888888888888
+        }
+      },
+      "prompt": "medicine",
+      "verify_width_mean": 6.2555555555555555
+    },
+    {
+      "bracket_width_pct": 15.573770491803284,
+      "clean_us_per_round_lower_bound": 29095.39641717925,
+      "clean_us_per_round_upper_bound": 33626.646678871104,
+      "laws": {
+        "finding_281_tokens": {
+          "best_case_relative_miss": 0.0004518109066699093,
+          "observed_us_per_round": 29820.396459049945,
+          "predicted_us_per_round": 29806.923278688526,
+          "tokens_per_round_used": 1.0249180327868852
+        },
+        "finding_286_rows": {
+          "best_case_relative_miss": 0.48541659367524015,
+          "observed_us_per_round": 29095.39641717925,
+          "predicted_us_per_round": 14972.008196721312,
+          "tokens_per_round_used": 1.0
+        },
+        "rule_166_from_local": {
+          "best_case_relative_miss": 0.4679259258642537,
+          "observed_us_per_round": 29095.39641717925,
+          "predicted_us_per_round": 15480.90611028316,
+          "tokens_per_round_used": 1.0
+        }
+      },
+      "prompt": "plutarch",
+      "verify_width_mean": 1.1557377049180328
+    },
+    {
+      "bracket_width_pct": 498.9247311827957,
+      "clean_us_per_round_lower_bound": 8720.464757158876,
+      "clean_us_per_round_upper_bound": 52229.020104704236,
+      "laws": {
+        "finding_281_tokens": {
+          "best_case_relative_miss": 0.0003031777004859536,
+          "observed_us_per_round": 50053.59233732697,
+          "predicted_us_per_round": 50038.41720430108,
+          "tokens_per_round_used": 5.7397849462365595
+        },
+        "finding_286_rows": {
+          "best_case_relative_miss": -0.0022054746987522932,
+          "observed_us_per_round": 42222.052374768806,
+          "predicted_us_per_round": 42315.17204301075,
+          "tokens_per_round_used": 4.841720430107527
+        },
+        "rule_166_from_local": {
+          "best_case_relative_miss": -0.0018226243695902882,
+          "observed_us_per_round": 43092.22348171971,
+          "predicted_us_per_round": 43170.76441837732,
+          "tokens_per_round_used": 4.941505376344086
+        }
+      },
+      "prompt": "republic",
+      "verify_width_mean": 5.989247311827957
+    },
+    {
+      "bracket_width_pct": 264.78873239436615,
+      "clean_us_per_round_lower_bound": 14750.931687761902,
+      "clean_us_per_round_upper_bound": 53809.73672014553,
+      "laws": {
+        "finding_281_tokens": {
+          "best_case_relative_miss": 0.00019978333558155536,
+          "observed_us_per_round": 35842.686405249064,
+          "predicted_us_per_round": 35835.52563380282,
+          "tokens_per_round_used": 2.4298591549295776
+        },
+        "finding_286_rows": {
+          "best_case_relative_miss": 0.004540368035919894,
+          "observed_us_per_round": 29202.689549743845,
+          "predicted_us_per_round": 29070.098591549297,
+          "tokens_per_round_used": 1.9797183098591549
+        },
+        "rule_166_from_local": {
+          "best_case_relative_miss": -0.005557816294201451,
+          "observed_us_per_round": 29593.277600067682,
+          "predicted_us_per_round": 29757.751600512165,
+          "tokens_per_round_used": 2.0061971830985916
+        }
+      },
+      "prompt": "travel",
+      "verify_width_mean": 3.647887323943662
+    }
+  ],
+  "receipt": "0cf1637e",
+  "transfer": {
+    "local_h_marginal": 0.40144831645223805,
+    "measured_ratio_over_m_three_to_eight": [
+      1.880038641935828,
+      2.070074102647393
+    ],
+    "ranked_h_by_width": {
+      "1": 0.054945054945054944,
+      "2": 0.09406070120355835,
+      "3": 0.13317634746206175,
+      "4": 0.17229199372056514,
+      "5": 0.21140763997906856,
+      "6": 0.250523286237572,
+      "7": 0.28963893249607536,
+      "8": 0.32875457875457875,
+      "9": 0.36787022501308214
+    },
+    "reading": "the measured round-total ratio runs 1.28 at width one and 1.88 to 2.07 over M in [3, 8], not a constant 2.75; and the ranked depth price h rises with width from 0.055 to 0.33, while a single divisor would leave the local h of 0.40 unchanged at every width",
+    "round_total_local_over_ranked_by_width": {
+      "1": 1.27974784144427,
+      "2": 1.6393061700346765,
+      "3": 1.880038641935828,
+      "4": 2.0156821368480093,
+      "5": 2.070074102647393,
+      "6": 2.0674690772366295,
+      "7": 2.0279232804232805,
+      "8": 1.9662517144967293,
+      "9": 1.8926586043733922
+    },
+    "rule_166_claim": "2.75 +- 0.03 for M in [3, 8]",
+    "shipped_h": 0.18,
+    "single_divisor_h": 0.40144831645223805,
+    "single_divisor_preserves_h": true
+  }
+}
