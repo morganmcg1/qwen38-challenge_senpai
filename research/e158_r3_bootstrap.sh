@@ -48,10 +48,10 @@ step "head digests"
 python3 research/e158_head_census.py --digest-only 2>/dev/null || true
 
 step "swift build"
-# The rebuild guard refuses to run without an assertion. `installExactQKVRows`
-# is the island selector this branch reads at warm-up. `installExactQKVRows` is
-# fully inlined by the release compiler and leaves no symbol, so it cannot be
-# used as a witness.
+# The rebuild guard refuses to run without an assertion. `Qwen35IslandArm` is
+# the island selector this branch reads at warm-up. `installExactQKVRows` is
+# fully inlined by the release compiler and leaves no symbol of its own, so it
+# cannot be used as a witness.
 senpai/rebuild-and-assert-worker.sh --require-symbol Qwen35IslandArm || exit 1
 
 step "done"
