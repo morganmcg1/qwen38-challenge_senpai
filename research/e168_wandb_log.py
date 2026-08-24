@@ -439,6 +439,40 @@ def main() -> int:
             {f"clamp_counterfactual/{k}": v for k, v in counter["pooled"].items()}
         )
 
+    value_curve = report.get("auc_value_curve", {})
+    if value_curve.get("curve"):
+        fields = [
+            "auc",
+            "raw",
+            "gap_recovered",
+            "mean_depth",
+            "mean_accepted",
+            "floor",
+            "tau",
+            "replicate_spread",
+            "break_even_ms_per_round",
+            "break_even_wasted_head_steps",
+        ]
+        table = wandb.Table(columns=fields)
+        for row in value_curve["curve"]:
+            table.add_data(*(row[field] for field in fields))
+        run.log({"value/auc_curve": table})
+        for row in value_curve["curve"]:
+            key = f"{row['auc']:.3f}".replace(".", "p")
+            summary[f"value/auc{key}/raw"] = row["raw"]
+            summary[f"value/auc{key}/gap_recovered"] = row["gap_recovered"]
+            summary[f"value/auc{key}/budget_ms_per_round"] = row[
+                "break_even_ms_per_round"
+            ]
+        summary["value/best_constant_depth"] = value_curve["best_constant_depth"]
+        summary["value/best_constant_raw"] = value_curve["best_constant_raw"]
+        summary["value/oracle_raw"] = value_curve["oracle_raw"]
+        summary["value/head_step_ms"] = value_curve["head_step_ms"]
+        constants = wandb.Table(columns=["depth", "raw"])
+        for depth, raw in sorted(value_curve["constants"].items()):
+            constants.add_data(int(depth), raw)
+        run.log({"value/constant_depths": constants})
+
     timing = report.get("timing", {})
     if timing.get("legs"):
         fields = [
