@@ -1,0 +1,319 @@
+{
+  "arm_flag_value" : false,
+  "cells" : [
+    {
+      "kv" : 512,
+      "qL" : 6,
+      "seq_major" : {
+        "barriers" : 2,
+        "barriers_between_sdpa" : 0,
+        "copy_dispatches" : 5,
+        "dispatches" : 7,
+        "event_sequence" : [
+          "g3_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g3_copybfloat16bfloat16" : 1,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks" : 1
+        },
+        "sdpa_calls" : 2
+      },
+      "shipped" : {
+        "barriers" : 3,
+        "barriers_between_sdpa" : 1,
+        "copy_dispatches" : 6,
+        "dispatches" : 8,
+        "event_sequence" : [
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g2_copybfloat16bfloat16" : 2,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+        },
+        "sdpa_calls" : 2
+      },
+      "today" : {
+        "barriers" : 3,
+        "barriers_between_sdpa" : 1,
+        "copy_dispatches" : 6,
+        "dispatches" : 8,
+        "event_sequence" : [
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g2_copybfloat16bfloat16" : 2,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+        },
+        "sdpa_calls" : 2
+      }
+    },
+    {
+      "kv" : 512,
+      "qL" : 7,
+      "seq_major" : {
+        "barriers" : 2,
+        "barriers_between_sdpa" : 0,
+        "copy_dispatches" : 5,
+        "dispatches" : 7,
+        "event_sequence" : [
+          "g3_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g3_copybfloat16bfloat16" : 1,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      },
+      "shipped" : {
+        "barriers" : 3,
+        "barriers_between_sdpa" : 1,
+        "copy_dispatches" : 6,
+        "dispatches" : 8,
+        "event_sequence" : [
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g2_copybfloat16bfloat16" : 2,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      },
+      "today" : {
+        "barriers" : 3,
+        "barriers_between_sdpa" : 1,
+        "copy_dispatches" : 6,
+        "dispatches" : 8,
+        "event_sequence" : [
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g2_copybfloat16bfloat16" : 2,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      }
+    },
+    {
+      "kv" : 512,
+      "qL" : 8,
+      "seq_major" : {
+        "barriers" : 2,
+        "barriers_between_sdpa" : 0,
+        "copy_dispatches" : 5,
+        "dispatches" : 7,
+        "event_sequence" : [
+          "g3_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g3_copybfloat16bfloat16" : 1,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      },
+      "shipped" : {
+        "barriers" : 3,
+        "barriers_between_sdpa" : 1,
+        "copy_dispatches" : 6,
+        "dispatches" : 8,
+        "event_sequence" : [
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g2_copybfloat16bfloat16" : 2,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      },
+      "today" : {
+        "barriers" : 3,
+        "barriers_between_sdpa" : 1,
+        "copy_dispatches" : 6,
+        "dispatches" : 8,
+        "event_sequence" : [
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g2_copybfloat16bfloat16" : 2,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      }
+    },
+    {
+      "kv" : 512,
+      "qL" : 9,
+      "seq_major" : {
+        "barriers" : 2,
+        "barriers_between_sdpa" : 0,
+        "copy_dispatches" : 5,
+        "dispatches" : 7,
+        "event_sequence" : [
+          "g3_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g3_copybfloat16bfloat16" : 1,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      },
+      "shipped" : {
+        "barriers" : 3,
+        "barriers_between_sdpa" : 1,
+        "copy_dispatches" : 6,
+        "dispatches" : 8,
+        "event_sequence" : [
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g2_copybfloat16bfloat16" : 2,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      },
+      "today" : {
+        "barriers" : 3,
+        "barriers_between_sdpa" : 1,
+        "copy_dispatches" : 6,
+        "dispatches" : 8,
+        "event_sequence" : [
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "g2_copybfloat16bfloat16",
+          "BARRIER(scope:1)",
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+          "BARRIER(scope:1)",
+          "gg2_copybfloat16bfloat16",
+          "gg2_copybfloat16bfloat16"
+        ],
+        "kernel_counts" : {
+          "g2_copybfloat16bfloat16" : 2,
+          "gg2_copybfloat16bfloat16" : 4,
+          "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+        },
+        "sdpa_calls" : 2
+      }
+    }
+  ],
+  "env_MLX_E194_SEQ_MAJOR_Q" : "0",
+  "harness" : "local",
+  "probe" : "e194-arm-liveness"
+}
