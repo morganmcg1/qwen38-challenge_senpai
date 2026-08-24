@@ -1,0 +1,485 @@
+{
+  "cells" : [
+    {
+      "barriers" : 3,
+      "barriers_between_sdpa" : 1,
+      "copy_dispatches" : 6,
+      "dispatches" : 8,
+      "event_sequence" : [
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "today",
+      "kernel_counts" : {
+        "g2_copybfloat16bfloat16" : 2,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+      },
+      "kv" : 512,
+      "qL" : 6,
+      "sdpa_calls" : 2
+    },
+    {
+      "barriers" : 2,
+      "barriers_between_sdpa" : 0,
+      "copy_dispatches" : 5,
+      "dispatches" : 7,
+      "event_sequence" : [
+        "g3_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "seqMajor",
+      "kernel_counts" : {
+        "g3_copybfloat16bfloat16" : 1,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks" : 1
+      },
+      "kv" : 512,
+      "qL" : 6,
+      "sdpa_calls" : 2
+    },
+    {
+      "barriers" : 3,
+      "barriers_between_sdpa" : 1,
+      "copy_dispatches" : 6,
+      "dispatches" : 8,
+      "event_sequence" : [
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "today",
+      "kernel_counts" : {
+        "g2_copybfloat16bfloat16" : 2,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+      },
+      "kv" : 512,
+      "qL" : 7,
+      "sdpa_calls" : 2
+    },
+    {
+      "barriers" : 2,
+      "barriers_between_sdpa" : 0,
+      "copy_dispatches" : 5,
+      "dispatches" : 7,
+      "event_sequence" : [
+        "g3_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "seqMajor",
+      "kernel_counts" : {
+        "g3_copybfloat16bfloat16" : 1,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks" : 2
+      },
+      "kv" : 512,
+      "qL" : 7,
+      "sdpa_calls" : 2
+    },
+    {
+      "barriers" : 3,
+      "barriers_between_sdpa" : 1,
+      "copy_dispatches" : 6,
+      "dispatches" : 8,
+      "event_sequence" : [
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "today",
+      "kernel_counts" : {
+        "g2_copybfloat16bfloat16" : 2,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+      },
+      "kv" : 512,
+      "qL" : 8,
+      "sdpa_calls" : 2
+    },
+    {
+      "barriers" : 2,
+      "barriers_between_sdpa" : 0,
+      "copy_dispatches" : 5,
+      "dispatches" : 7,
+      "event_sequence" : [
+        "g3_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "seqMajor",
+      "kernel_counts" : {
+        "g3_copybfloat16bfloat16" : 1,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks" : 2
+      },
+      "kv" : 512,
+      "qL" : 8,
+      "sdpa_calls" : 2
+    },
+    {
+      "barriers" : 3,
+      "barriers_between_sdpa" : 1,
+      "copy_dispatches" : 6,
+      "dispatches" : 8,
+      "event_sequence" : [
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "today",
+      "kernel_counts" : {
+        "g2_copybfloat16bfloat16" : 2,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2
+      },
+      "kv" : 512,
+      "qL" : 9,
+      "sdpa_calls" : 2
+    },
+    {
+      "barriers" : 2,
+      "barriers_between_sdpa" : 0,
+      "copy_dispatches" : 5,
+      "dispatches" : 7,
+      "event_sequence" : [
+        "g3_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "seqMajor",
+      "kernel_counts" : {
+        "g3_copybfloat16bfloat16" : 1,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_bfloat16_t_256_256_nomask_qt_c_nosinks" : 2
+      },
+      "kv" : 512,
+      "qL" : 9,
+      "sdpa_calls" : 2
+    },
+    {
+      "barriers" : 5,
+      "barriers_between_sdpa" : 3,
+      "copy_dispatches" : 6,
+      "dispatches" : 10,
+      "event_sequence" : [
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "today",
+      "kernel_counts" : {
+        "g2_copybfloat16bfloat16" : 2,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 2
+      },
+      "kv" : 1024,
+      "qL" : 6,
+      "sdpa_calls" : 4
+    },
+    {
+      "barriers" : 4,
+      "barriers_between_sdpa" : 2,
+      "copy_dispatches" : 5,
+      "dispatches" : 9,
+      "event_sequence" : [
+        "g3_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "seqMajor",
+      "kernel_counts" : {
+        "g3_copybfloat16bfloat16" : 1,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 2
+      },
+      "kv" : 1024,
+      "qL" : 6,
+      "sdpa_calls" : 4
+    },
+    {
+      "barriers" : 5,
+      "barriers_between_sdpa" : 3,
+      "copy_dispatches" : 6,
+      "dispatches" : 10,
+      "event_sequence" : [
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "today",
+      "kernel_counts" : {
+        "g2_copybfloat16bfloat16" : 2,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 2
+      },
+      "kv" : 1024,
+      "qL" : 7,
+      "sdpa_calls" : 4
+    },
+    {
+      "barriers" : 4,
+      "barriers_between_sdpa" : 2,
+      "copy_dispatches" : 5,
+      "dispatches" : 9,
+      "event_sequence" : [
+        "g3_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "seqMajor",
+      "kernel_counts" : {
+        "g3_copybfloat16bfloat16" : 1,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128" : 2,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 2
+      },
+      "kv" : 1024,
+      "qL" : 7,
+      "sdpa_calls" : 4
+    },
+    {
+      "barriers" : 5,
+      "barriers_between_sdpa" : 3,
+      "copy_dispatches" : 6,
+      "dispatches" : 10,
+      "event_sequence" : [
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "today",
+      "kernel_counts" : {
+        "g2_copybfloat16bfloat16" : 2,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 2
+      },
+      "kv" : 1024,
+      "qL" : 8,
+      "sdpa_calls" : 4
+    },
+    {
+      "barriers" : 4,
+      "barriers_between_sdpa" : 2,
+      "copy_dispatches" : 5,
+      "dispatches" : 9,
+      "event_sequence" : [
+        "g3_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "seqMajor",
+      "kernel_counts" : {
+        "g3_copybfloat16bfloat16" : 1,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128" : 2,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 2
+      },
+      "kv" : 1024,
+      "qL" : 8,
+      "sdpa_calls" : 4
+    },
+    {
+      "barriers" : 5,
+      "barriers_between_sdpa" : 3,
+      "copy_dispatches" : 6,
+      "dispatches" : 10,
+      "event_sequence" : [
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "g2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "today",
+      "kernel_counts" : {
+        "g2_copybfloat16bfloat16" : 2,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 2
+      },
+      "kv" : 1024,
+      "qL" : 9,
+      "sdpa_calls" : 4
+    },
+    {
+      "barriers" : 4,
+      "barriers_between_sdpa" : 2,
+      "copy_dispatches" : 5,
+      "dispatches" : 9,
+      "event_sequence" : [
+        "g3_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128",
+        "BARRIER(scope:1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256",
+        "BARRIER(scope:1)",
+        "gg2_copybfloat16bfloat16",
+        "gg2_copybfloat16bfloat16"
+      ],
+      "form" : "seqMajor",
+      "kernel_counts" : {
+        "g3_copybfloat16bfloat16" : 1,
+        "gg2_copybfloat16bfloat16" : 4,
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qt_c_nosinks_128" : 2,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 2
+      },
+      "kv" : 1024,
+      "qL" : 9,
+      "sdpa_calls" : 4
+    }
+  ],
+  "full_attention_layers" : 16,
+  "gqa_factor" : 6,
+  "harness" : "local",
+  "host_architecture" : "applegpu_g16s",
+  "probe" : "e194-dispatch-barrier-census"
+}
