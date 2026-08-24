@@ -2237,12 +2237,19 @@
    "protectedBelow": "FINDING 421 minimumTableWidth = 4",
    "role": "physics discriminator (FINDING 428)",
    "predictions": {
-    "stepTransfers": "published ~4.16-4.31, new crown, next direction cap-shallower",
-    "stepAbsent": "published ~3.55-3.65, rejection, next direction declamp-deeper (E168 s4)"
+    "askeladdPreRegistered": "central 3.9847 (+7.56 pct), band +4 to +8 pct; within-group slope below the step eats part of the cap gain (some capped rounds land at M=5); registered in PR 168 F13 before the receipt",
+    "advisorRoof": "published ~4.16-4.31 from the FINDING 408 roof under flat within-group cost",
+    "stepAbsent": "published ~3.55-3.65, rejection, pivot declamp-deeper (E168 s4)",
+    "readingBands": {
+     ">=3.9": "step transfers; magnitude arbitrates within-group-slope vs flat-roof; crown either way",
+     "3.65-3.9": "partial transfer; askeladd within-group-slope model best supported; follow-up prices the slope directly",
+     "3.55-3.65": "step absent at ranked; pivot declamp-deeper"
+    },
+    "promoteLine": 3.7291100106
    }
   }
  },
- "lastAdvisorUpdate": "2026-08-24T08:15Z",
+ "lastAdvisorUpdate": "2026-08-24T08:30Z",
  "ledgerEntry": 368,
  "threeReceiptFactorial": {
   "A": {
