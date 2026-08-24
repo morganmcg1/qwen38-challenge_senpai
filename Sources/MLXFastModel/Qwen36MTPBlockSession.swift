@@ -1463,6 +1463,7 @@ public final class Qwen36MTPBlockSession {
         // the single blocking eval's GPU wall. Never on in a ranked run.
         let tRound0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
         let cpuRound0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
+        if Qwen35BandTimer.enabled { Qwen35BandTimer.reset() }
         var tDraftBuilt: UInt64 = 0
         var tSnapshotDone: UInt64 = 0
         var tVerifyBuilt: UInt64 = 0
@@ -1565,6 +1566,30 @@ public final class Qwen36MTPBlockSession {
             Self.traceRow(
                 pos: seedTokenCount + committedTokenCount,
                 ids: tailTokens, values: tailLogits)
+            if Self.traceRounds {
+                // The M = 1 anchor of the width ladder. The serial body has no
+                // draft, no snapshot and no rollback, so only the verify
+                // window, the blocking eval and the round total are defined;
+                // the drafting-only fields stay zero rather than absent so one
+                // parser reads every width.
+                let tSerialDone = DispatchTime.now().uptimeNanoseconds
+                Self.traceWrite(
+                    "mtp-trace: round=\(roundCount) d=0 acc=0 "
+                        + "draft_build_us=0 d_pre_us=0 d_flush_us=0 "
+                        + "d_head1_us=0 d_submit1_us=0 d_chain_us=0 "
+                        + "d_submit2_us=0 "
+                        + "verify_build_us=0 "
+                        + "eval_wall_us=\((tSerialDone - tRound0) / 1000) "
+                        + "readout_us=0 commit_us=0 upkeep_us=0 "
+                        + "round_us=\((tSerialDone - tRound0) / 1000) "
+                        + "band_pre_us=\(Qwen35BandTimer.preNs / 1000) "
+                        + "band_gdn_mixer_us=\(Qwen35BandTimer.gdnMixerNs / 1000) "
+                        + "band_gdn_mlp_us=\(Qwen35BandTimer.gdnMLPNs / 1000) "
+                        + "band_fa_mixer_us=\(Qwen35BandTimer.faMixerNs / 1000) "
+                        + "band_fa_mlp_us=\(Qwen35BandTimer.faMLPNs / 1000) "
+                        + "band_fwd=\(Qwen35BandTimer.forwards) "
+                        + "serial_body=1\n")
+            }
             return Qwen36MTPRoundResult(
                 tokens: committed,
                 declaredRows: 1,
@@ -1874,6 +1899,18 @@ public final class Qwen36MTPBlockSession {
                 // the same host work at a lower clock. E89 measures the same
                 // field on a second host under the same name and units.
                 + "host_thread_cpu_ns=\(Self.threadCPUNanoseconds() &- cpuRound0) "
+                // E182 verify-forward band attribution. All zero unless
+                // MLX_E182_BAND_SYNC=1, which adds a device drain at every
+                // mixer and MLP boundary: the bands are then real device time
+                // per layer family, and the round is inflated by the lost
+                // overlap. `band_fwd` counts the forwards folded into one
+                // round, so a repair forward is visible instead of silent.
+                + "band_pre_us=\(Qwen35BandTimer.preNs / 1000) "
+                + "band_gdn_mixer_us=\(Qwen35BandTimer.gdnMixerNs / 1000) "
+                + "band_gdn_mlp_us=\(Qwen35BandTimer.gdnMLPNs / 1000) "
+                + "band_fa_mixer_us=\(Qwen35BandTimer.faMixerNs / 1000) "
+                + "band_fa_mlp_us=\(Qwen35BandTimer.faMLPNs / 1000) "
+                + "band_fwd=\(Qwen35BandTimer.forwards) "
                 // Which row-selection path the drafts of this run actually
                 // took, and the text that resolved the gate. A leg that
                 // exports nothing must read sel_env=unset with sel_argpart=0,

@@ -3911,11 +3911,30 @@ final class Qwen35DecoderLayer: Module {
         } else {
             r = selfAttn!(normedIn, mask: attentionMask, cache: cache)
         }
+        if Qwen35BandTimer.enabled {
+            eval(r)
+            let d = Qwen35BandTimer.lap()
+            if isLinear {
+                Qwen35BandTimer.gdnMixerNs &+= d
+            } else {
+                Qwen35BandTimer.faMixerNs &+= d
+            }
+        }
         let (h, postAttnNorm) = qwen35FusedResidualRMSNorm(
             x: hIn, r: r,
             weight: postAttentionLayerNorm.weight,
             eps: postAttentionLayerNorm.eps)
-        return (h, (mlp as! UnaryLayer)(postAttnNorm))
+        let mlpOut = (mlp as! UnaryLayer)(postAttnNorm)
+        if Qwen35BandTimer.enabled {
+            eval(h, mlpOut)
+            let d = Qwen35BandTimer.lap()
+            if isLinear {
+                Qwen35BandTimer.gdnMLPNs &+= d
+            } else {
+                Qwen35BandTimer.faMLPNs &+= d
+            }
+        }
+        return (h, mlpOut)
     }
 }
 
@@ -3942,6 +3961,44 @@ let qwen35DecodeLadderRungs: Set<Int> = {
         return parsed.isEmpty ? shipped : parsed
     }
 }()
+
+/// E182 research-only band timer for one target verify forward.
+///
+/// `MLX_E182_BAND_SYNC=1` drains the device at every mixer and MLP boundary of
+/// every layer, so each band accumulates real device time instead of enqueue
+/// time. The scored path has exactly one blocking sync per round; this adds
+/// 129 of them, removes all host/device overlap, and therefore inflates the
+/// round. A run with this variable set is ATTRIBUTION ONLY: its absolute round
+/// time is not comparable with a shipped-schedule run, and only the shape of
+/// each band against verify width M is meaningful.
+public enum Qwen35BandTimer {
+    public static let enabled: Bool =
+        ProcessInfo.processInfo.environment["MLX_E182_BAND_SYNC"] == "1"
+
+    public nonisolated(unsafe) static var preNs: UInt64 = 0
+    public nonisolated(unsafe) static var gdnMixerNs: UInt64 = 0
+    public nonisolated(unsafe) static var gdnMLPNs: UInt64 = 0
+    public nonisolated(unsafe) static var faMixerNs: UInt64 = 0
+    public nonisolated(unsafe) static var faMLPNs: UInt64 = 0
+    public nonisolated(unsafe) static var forwards: Int = 0
+    nonisolated(unsafe) static var mark: UInt64 = 0
+
+    public static func reset() {
+        preNs = 0
+        gdnMixerNs = 0
+        gdnMLPNs = 0
+        faMixerNs = 0
+        faMLPNs = 0
+        forwards = 0
+    }
+
+    @inline(__always) static func lap() -> UInt64 {
+        let now = DispatchTime.now().uptimeNanoseconds
+        let delta = now &- mark
+        mark = now
+        return delta
+    }
+}
 
 public class Qwen35TextModelInner: Module {
     @ModuleInfo(key: "embed_tokens") var embedTokens: Embedding
@@ -4010,6 +4067,14 @@ public class Qwen35TextModelInner: Module {
         // whole graph in 118.7 ms of a 4043 ms GPU-bound block.
         let prefillLadder = inputs.dim(1) >= 512
         let ladderActive = inputs.dim(1) <= 9 || prefillLadder
+        if Qwen35BandTimer.enabled {
+            let t0 = DispatchTime.now().uptimeNanoseconds
+            eval(hiddenStates)
+            let t1 = DispatchTime.now().uptimeNanoseconds
+            Qwen35BandTimer.preNs &+= t1 &- t0
+            Qwen35BandTimer.mark = t1
+            Qwen35BandTimer.forwards &+= 1
+        }
         if hiddenStates.dtype == .bfloat16 && hiddenStates.dim(-1) == 5120 {
             // Boundary-fused chain: the residual boundary flows as an
             // UNMERGED (base, delta) pair, so each interior layer pays one
