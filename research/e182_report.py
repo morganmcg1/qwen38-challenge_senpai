@@ -60,20 +60,34 @@ def groups(m: int) -> int:
     return (m + ipg - 1) // ipg
 
 
-def parse_leg(path: pathlib.Path) -> list[dict[str, float]]:
-    rows = []
+def parse_leg(path: pathlib.Path, depth: int) -> list[dict[str, float]]:
+    """Rounds of the MTP leg at the pinned depth.
+
+    `--local-iterate` runs two sessions from the same candidate build: the
+    pinned serial leg first, then the MTP leg. Each session opens with a
+    `mtp-trace: begin` line, so keep only the last session, and inside it keep
+    only rounds that actually drafted the pinned depth. The parent offers a
+    smaller cap near the end of the window, and those short rounds have a
+    different width.
+    """
+    sessions: list[list[dict[str, float]]] = []
     for line in path.read_text().splitlines():
-        if not line.startswith("mtp-trace: round="):
+        if line.startswith("mtp-trace: begin"):
+            sessions.append([])
+            continue
+        if not line.startswith("mtp-trace: round=") or not sessions:
             continue
         kv = dict(re.findall(r"(\w+)=(-?[\d.]+)", line))
         if "round" not in kv or float(kv["round"]) <= DROP_FIRST_ROUNDS:
             continue
-        row = {"round": float(kv["round"]), "d": float(kv.get("d", "nan"))}
+        if int(float(kv.get("d", "-1"))) != depth:
+            continue
+        row = {"round": float(kv["round"]), "d": float(kv["d"])}
         for field in PHASES + COUNTERS:
             if field in kv:
                 row[field] = float(kv[field])
-        rows.append(row)
-    return rows
+        sessions[-1].append(row)
+    return sessions[-1] if sessions else []
 
 
 def read_meta(path: pathlib.Path) -> dict[str, str]:
@@ -149,7 +163,7 @@ def main() -> int:
         trace = meta_path.parent / "trace.txt"
         if not trace.exists():
             continue
-        rows = parse_leg(trace)
+        rows = parse_leg(trace, int(meta["fixed_draft_depth"]))
         if not rows:
             continue
         legs.append(
@@ -214,6 +228,64 @@ def main() -> int:
                 continue
             shapes[f"{kind}.{field}"] = shape_verdict(ms, vals)
 
+    closure = []
+    for row in tables.get("band", []):
+        bands = [
+            row.get(f)
+            for f in (
+                "band_pre_us",
+                "band_gdn_mixer_us",
+                "band_gdn_mlp_us",
+                "band_fa_mixer_us",
+                "band_fa_mlp_us",
+            )
+        ]
+        # With the band sync on, the phase that absorbs the verify forward's
+        # device time is `verify_build_us` on the drafting body and
+        # `eval_wall_us` on the serial body, which has no separate build.
+        verify = row.get("verify_build_us") or row.get("eval_wall_us")
+        if any(b is None for b in bands) or not verify:
+            continue
+        total = sum(bands)
+        closure.append(
+            {
+                "m": row["m"],
+                "band_sum_us": total,
+                "verify_device_us": verify,
+                "verify_device_phase": (
+                    "verify_build_us"
+                    if row.get("verify_build_us")
+                    else "eval_wall_us"
+                ),
+                "closure_frac": total / verify,
+            }
+        )
+
+    drift = []
+    by_arm: dict[str, list[dict]] = collections.defaultdict(list)
+    for summary in per_leg:
+        by_arm[summary["arm"]].append(summary)
+    for arm, entries in sorted(by_arm.items()):
+        if len(entries) != 2:
+            continue
+        first, second = sorted(entries, key=lambda e: e["leg"])
+        a, b = first.get("round_us_p50"), second.get("round_us_p50")
+        if not a or not b:
+            continue
+        drift.append(
+            {
+                "arm": arm,
+                "m": first["m"],
+                "leg_first": first["leg"],
+                "leg_second": second["leg"],
+                "round_us_first": a,
+                "round_us_second": b,
+                "delta_frac": (b - a) / a,
+                "entry_c_first": first["entry_c"],
+                "entry_c_second": second["entry_c"],
+            }
+        )
+
     report = {
         "harness": "local",
         "gate_qualified_for_timing": False,
@@ -223,6 +295,8 @@ def main() -> int:
         "legs": per_leg,
         "tables": tables,
         "shapes": shapes,
+        "band_closure": closure,
+        "abba_drift": drift,
     }
     out = pathlib.Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -235,6 +309,24 @@ def main() -> int:
         for row in table:
             cells = " ".join(f"{row.get(c, float('nan')):>14.1f}" for c in cols)
             print(f"{row['m']:>3} {row['groups']:>2} {row['n']:>5} {cells}")
+    if closure:
+        print("\n== band closure vs verify_build_us ==")
+        for row in closure:
+            print(
+                f"  M={row['m']} sum={row['band_sum_us']:.0f}us "
+                f"verify={row['verify_device_us']:.0f}us "
+                f"closure={row['closure_frac'] * 100:.1f}%"
+            )
+    if drift:
+        print("\n== ABBA drift (same arm, both palindrome positions) ==")
+        for row in drift:
+            print(
+                f"  {row['arm']:>3} M={row['m']} "
+                f"legs {row['leg_first']}/{row['leg_second']} "
+                f"{row['round_us_first']:.0f} -> {row['round_us_second']:.0f}us "
+                f"({row['delta_frac'] * 100:+.1f}%) "
+                f"entry {row['entry_c_first']}C/{row['entry_c_second']}C"
+            )
     print(f"\nwrote {out}")
     return 0
 
