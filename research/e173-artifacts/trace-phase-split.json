@@ -1,0 +1,75 @@
+{
+  "experiment": "e173-trace-phase-split",
+  "harness": "local",
+  "gate_qualified_for_timing": false,
+  "trace_perturbs_timing": true,
+  "caveat": "verify_build_us is dominated by device wait and is an upper bound on host build time, not the host share of F",
+  "rounds_used": 485,
+  "drop_first_rounds": 2,
+  "source_files": [
+    "research/results/e37/medicine-rounds.txt",
+    "research/results/e37/natural_history-rounds.txt"
+  ],
+  "per_width": [
+    {
+      "m": 2,
+      "n": 47,
+      "round_ms": 72.277,
+      "verify_build_ms": 36.441,
+      "eval_wall_ms": 34.139,
+      "draft_build_ms": 1.149,
+      "readout_ms": 0.034,
+      "commit_ms": 0.235,
+      "upkeep_ms": 0.104,
+      "unnamed_ms": 34.314
+    },
+    {
+      "m": 3,
+      "n": 245,
+      "round_ms": 78.079,
+      "verify_build_ms": 39.401,
+      "eval_wall_ms": 35.412,
+      "draft_build_ms": 1.79,
+      "readout_ms": 0.035,
+      "commit_ms": 1.924,
+      "upkeep_ms": 0.156,
+      "unnamed_ms": 34.773
+    },
+    {
+      "m": 4,
+      "n": 150,
+      "round_ms": 89.82,
+      "verify_build_ms": 45.543,
+      "eval_wall_ms": 40.285,
+      "draft_build_ms": 2.1005,
+      "readout_ms": 0.036,
+      "commit_ms": 1.97,
+      "upkeep_ms": 0.2025,
+      "unnamed_ms": 39.968
+    },
+    {
+      "m": 5,
+      "n": 35,
+      "round_ms": 105.778,
+      "verify_build_ms": 53.844,
+      "eval_wall_ms": 47.402,
+      "draft_build_ms": 2.149,
+      "readout_ms": 0.036,
+      "commit_ms": 1.985,
+      "upkeep_ms": 0.234,
+      "unnamed_ms": 47.53
+    },
+    {
+      "m": 6,
+      "n": 8,
+      "round_ms": 141.032,
+      "verify_build_ms": 71.4355,
+      "eval_wall_ms": 64.622,
+      "draft_build_ms": 2.654,
+      "readout_ms": 0.038,
+      "commit_ms": 1.97,
+      "upkeep_ms": 0.2115,
+      "unnamed_ms": 64.723
+    }
+  ]
+}
