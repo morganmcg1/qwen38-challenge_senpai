@@ -23,6 +23,7 @@ import json
 import math
 import os
 import statistics
+import subprocess
 from pathlib import Path
 
 
@@ -259,6 +260,12 @@ def main() -> int:
                 "added_timing_instrument": "none",
                 "timing_source": "trusted-parent-report",
                 "predeclared_noise_pct": 0.2,
+                "host_chip": subprocess.run(
+                    ["sysctl", "-n", "machdep.cpu.brand_string"],
+                    capture_output=True, text=True, check=True,
+                ).stdout.strip(),
+                "organizer_sha": "0863b06ac16e26e48fc06e97444095b00feb66d4",
+                "base_sha": "38634ebfbf67f8ccc8a5a404acbc15e749d26b7a",
             },
         )
         columns = [
