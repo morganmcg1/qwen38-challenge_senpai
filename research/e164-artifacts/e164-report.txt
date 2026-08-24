@@ -1,0 +1,141 @@
+==============================================================================
+E164 - run-to-run error bar for a two-receipt ranked A/B    harness=ranked
+==============================================================================
+board            /tmp/yukon-board/full.json
+receipts scored  946 of 1285
+window           2026-08-14T23:49:37.150Z .. 2026-08-23T23:09:05.130Z
+harness          decode_tokens=512 pairs_per_prompt=1 prompts=8
+weights hash     b53e4991737cdf50...  (identical on every receipt)
+
+------------------------------------------------------------------------------
+Q1  dispersion of the pinned serial leg
+------------------------------------------------------------------------------
+prompt    mean s/tok     rel sd %   p2.5        p97.5
+919318e1  0.0379792    0.2449   0.0378324  0.0381551
+192fb621  0.0379901    0.2350   0.0378534  0.0381537
+4b9e88cd  0.0379792    0.2381   0.0378388  0.0381542
+a2ea8b60  0.0379903    0.2350   0.0378539  0.0381579
+00142a44  0.0379809    0.2388   0.0378404  0.0381524
+c1ec5866  0.0379874    0.2130   0.0378521  0.0381509
+ea82dcb5  0.0379797    0.2333   0.0378317  0.0381482
+3b10cb4d  0.0379942    0.2368   0.0378514  0.0381624
+pooled    0.0379851    0.2349   0.0378448  0.0381557   n=7568 cells
+
+  sd total (per prompt cell)            0.2342 %
+  sd within receipt (prompt jitter)     0.2122 %
+  sd run level (common shift)           0.0990 %
+  INTRACLASS CORRELATION                0.1787   CI95 [0.1551, 0.2025]
+  sd of run mean, measured              0.1242 %
+  sd of run mean, if prompts iid        0.0750 %
+  design effect / SE inflation          2.251 / 1.500x
+  cross-prompt corr: mean off-diag 0.1783, range [0.1248, 0.2835], 100 % of 28 pairs positive
+  drift: within-day rel sd 0.2277 % vs between-day 0.0639 % over 9 days
+  FINDING 329: daily median range [0.037917, 0.037991] -> CONFIRMED
+
+------------------------------------------------------------------------------
+Q2  does raw cancel the run-level component?
+------------------------------------------------------------------------------
+  replicates by submissionCommitSha  groups=0 pairs=0
+  replicates by promotedSourceRef    groups=0 pairs=0
+  replicates by behaviour fingerprint    groups=40 receipts=787 pairs=52476
+  raw == serial/mtp to 5.66e-11 relative
+
+  channel   sd(run mean of 8) %   sd within receipt %   SE of a 1-pair A/B %
+  serial                0.1115               0.1917               0.1576
+  mtp                   4.1065               1.1751               5.8075
+  raw                   4.1023               1.1907               5.8015
+  prefill               0.9298               0.4413               1.3150
+  serial TRUE NULL  sd(run mean) 0.1242 %  SE of a 1-pair A/B 0.1757 %
+  naive |z| on 199798 TRUE NULL pairs: p50 1.23  p95 4.30  p99 6.53  max 34.53
+  false positive rate of naive z: |z|>1.96 30.0 %   |z|>3 13.5 %   |z|>4.16 5.51 %
+  cross-leg corr(run-mean serial, run-mean mtp) = 0.0520 (ATTENUATED by mechanism variance, do not read as decoupling)
+  cross-leg regression slope beta = 1.914 CI95 [-0.370, 4.140]  n=787  -> unresolved, CI spans zero
+  var identity: cov 0.023783 vs cov needed 0.006212 -> raw tighter than mtp: True (by only 0.10 % of the mtp sd)
+  same solver + same fingerprint, 2991 pairs:
+     serial  sd(mean8)   0.1650 %   median |mean8|  0.1175 %   p25  0.0525 %   p10  0.0205 %
+     mtp     sd(mean8)   2.8788 %   median |mean8|  0.9151 %   p25  0.1966 %   p10  0.0452 %
+     raw     sd(mean8)   2.8334 %   median |mean8|  0.8918 %   p25  0.2444 %   p10  0.0794 %
+  DELIVERABLE SE of a single-receipt-pair ranked A/B (mean of 8):
+     serial leg        0.1757 %   (exact, true null)
+     candidate leg    <5.8075 %   (vacuous upper bound)
+     raw              <5.8015 %   (vacuous upper bound)
+  prior art: FINDING 20 ICC 0.131 / run-level sd 0.0821 %, ledger 4030 common-mode sd 0.0978 %, FINDING 207 serial pair 0.1517 %
+
+------------------------------------------------------------------------------
+Q3  re-price FINDING 259 / 348   684821ed -> c47b45be
+------------------------------------------------------------------------------
+  single mechanism: edl digit-identical on 8/8 = True, non-drafting identical = True
+  prompt      cand d%    serial d%     raw d%
+  919318e1   +1.3162    -0.1806    -1.4774
+  192fb621   +1.3512    +0.0553    -1.2786
+  4b9e88cd   +1.1936    -0.0664    -1.2452
+  a2ea8b60   +1.2362    -1.4530    -2.6564
+  00142a44   +1.1356    -0.1672    -1.2882
+  c1ec5866   -0.4520    +0.0258    +0.4800
+  ea82dcb5   +0.6470    -0.1201    -0.7621
+  3b10cb4d   +2.0384    -0.0526    -2.0492
+
+  leg         mean %     sd %    naive se   naive z    sign p
+  candidate   +1.0583   0.7190    0.2542     +4.16    0.0703
+  serial      -0.2449   0.4953    0.1751     -1.40    0.2891
+  raw         -1.2846   0.9175    0.3244     -3.96    0.0703
+  published median delta -1.8814 %  (median rule reproduces both receipts: True / True)
+
+  THE SAME +1.0583 % UNDER FOUR DENOMINATORS
+  key                          se %       z      valid   basis
+  A_naive_between_prompt        0.2542   +4.16   False   sd of the 8 per-prompt deltas / sqrt(8), as 
+  B_naive_times_icc_inflation   0.3814   +2.77   True    denominator A inflated by sqrt(1 + 7 * ICC) 
+  C_serial_true_null            0.1757   +6.02   True    measured sd of the mean-of-8 pair delta on t
+  D_same_arm_replicates         0.7759   +1.36   True    spread of the two independent ranked receipt
+  opposite-sign defence: beta = 1.91 CI [-0.37, 4.14] -> implied candidate drift -0.4687 % (range -1.0137 to 0.0906 %)
+
+------------------------------------------------------------------------------
+Q4  FINDING 259 and FINDING 279 are two replicates of ONE arm
+------------------------------------------------------------------------------
+  base 684821ed newjordan 3.71959723  2026-08-23T00:04:10.820Z
+  arm        solver          score        cand mean %   serial mean %   published %   tree==base
+  c47b45be   scarletbright  3.64961555     +1.0583       -0.2449      -1.8814   True
+  24fb4012   newjordan      3.69247642     -0.0390       -0.3254      -0.7291   True
+
+  replicate spread on the candidate leg   1.0972 pp
+  pooled effect                          +0.5096 %
+  sd of ONE single-pair estimate         0.7759 %   CI95 [0.3462, 24.7589]  dof=1
+  t = +0.929 on 1 dof, two-sided p = 0.5234
+  FINDING 259 quoted se 0.2542 -> understated 3.1x
+  FINDING 279 quoted se 0.0799 -> understated 9.7x
+  provenance of -0.0390 % +/- 0.0799: 1 match(es) from the base
+     684821ed -> 24fb4012  channel=mtp      mean -0.0390 % sd 0.2259 se 0.0799
+  -> FINDING 279's figure is a real candidate-leg measurement, not a mislabelled prefill number
+
+==============================================================================
+PROPOSED RULE E164  Significance of a board-deconvolved ranked A/B
+==============================================================================
+  scope: any claim of the form 'arm X moves the ranked serial leg, candidate leg or raw by D %' that is obtained by differencing officialMetrics.per_prompt cells of two Yukon receipts. harness=ranked only.
+
+  denominator ladder, use the first rung that applies:
+    rung 1  when two or more independent ranked receipts exist for the SAME arm against the SAME base
+             use  the sample sd of those single-receipt-pair estimates, with Student-t on n-1 dof
+             why  this is the only denominator that prices the whole receipt-level error
+    rung 2  when only one ranked receipt exists for the arm
+             use  the channel floor below, as a LOWER bound on the standard error
+             floor se, mean of 8, one receipt pair:  serial 0.1757 %   candidate 0.7759 %   raw 0.7064 %
+             why  the serial floor is exact: the pinned serial build is byte-identical on every receipt, so 199798 board pairs are a true null. The candidate and raw floors come from the single same-arm replicate pair on the board (dof 1), so they are the weakest supported values, not point estimates
+    rung 3  when never
+             use  the between-prompt sd of one receipt pair divided by sqrt(8)
+             why  it prices the prompt-to-prompt spread of one draw, not the error of the effect. The eight prompts are positively correlated on every off-diagonal
+
+  if a naive between-prompt z is unavoidable, use the measured critical values:
+    nominal |z|>1.96 really fires  30.0 % of the time under the true null
+    nominal |z|>3.00 really fires  13.5 % of the time under the true null
+    true 5 % critical value 4.30   2.5 % 5.24   1 % 6.53
+    sign test, all 8 same sign: nominal p 0.0078, measured rate 0.0685
+    sign test, 7 or 8 of 8:     nominal p 0.0703, measured rate 0.2303
+
+  minimum detectable effect from ONE receipt pair at 95 %:  serial 0.344 %   candidate 1.521 %   raw 1.385 %
+  a wide error bar still refutes a far larger prediction. An observed candidate-leg effect of 1.06 % with a 0.78 % standard error refutes a predicted 28.4 % at more than 30 sigma. State 'the effect is below X'; do not state 'the effect is exactly X'
+  every board-derived ranked A/B must report:
+    - name the channel: serial, candidate or raw
+    - name the number of independent ranked receipts behind the arm
+    - name which rung of the ladder produced the denominator
+    - quote a one-receipt candidate-leg effect as a bound, never as a point estimate
+  worked example: FINDING 259 claimed +1.0583 % on the candidate leg, se 0.2542, z 4.16 on rung 3. On rung 1 it is se 0.7759 %, t +0.929, p 0.523. not resolved. The two replicates of this arm differ by 1.0972 pp

@@ -1,0 +1,414 @@
+{
+  "receipt": "5a9f130a-a29b-4b92-84ad-f0a2a59af210",
+  "solver": null,
+  "decode_tokens": 512,
+  "board_official_score": 3.70784519415395,
+  "baseline_published": 3.7078451941539488,
+  "baseline_central_prompts": [
+    "beagle",
+    "essays"
+  ],
+  "baseline_order": [
+    "plutarch",
+    "drama",
+    "travel",
+    "beagle",
+    "essays",
+    "medicine",
+    "republic",
+    "botany"
+  ],
+  "max_raw_identity_error": 4.544542520079631e-11,
+  "prompts": [
+    {
+      "name": "beagle",
+      "serial_spt": 0.0379208068,
+      "mtp_spt": 0.010696088,
+      "cand_leg_ms": 5476.397056,
+      "raw": 3.5452968225392314,
+      "edl": 4.381818181818182,
+      "non_drafting": 0
+    },
+    {
+      "name": "botany",
+      "serial_spt": 0.0379494708,
+      "mtp_spt": 0.0096484784,
+      "cand_leg_ms": 4940.0209408,
+      "raw": 3.9332078309881484,
+      "edl": 6.148148148148148,
+      "non_drafting": 0
+    },
+    {
+      "name": "drama",
+      "serial_spt": 0.0379454063,
+      "mtp_spt": 0.0178803029,
+      "cand_leg_ms": 9154.7150848,
+      "raw": 2.1221903517081917,
+      "edl": 2.2976190476190474,
+      "non_drafting": 0
+    },
+    {
+      "name": "essays",
+      "serial_spt": 0.0380200704,
+      "mtp_spt": 0.0098233086,
+      "cand_leg_ms": 5029.5340032,
+      "raw": 3.8703935657686657,
+      "edl": 5.086956521739131,
+      "non_drafting": 0
+    },
+    {
+      "name": "medicine",
+      "serial_spt": 0.0379067911,
+      "mtp_spt": 0.0097035996,
+      "cand_leg_ms": 4968.2429952,
+      "raw": 3.9064669465545547,
+      "edl": 5.2555555555555555,
+      "non_drafting": 0
+    },
+    {
+      "name": "plutarch",
+      "serial_spt": 0.0379739688,
+      "mtp_spt": 0.0301213379,
+      "cand_leg_ms": 15422.1250048,
+      "raw": 1.2606999372361878,
+      "edl": 0.1557377049180328,
+      "non_drafting": 449
+    },
+    {
+      "name": "republic",
+      "serial_spt": 0.0380130236,
+      "mtp_spt": 0.0096974531,
+      "cand_leg_ms": 4965.095987199999,
+      "raw": 3.9198976481773347,
+      "edl": 4.989247311827957,
+      "non_drafting": 0
+    },
+    {
+      "name": "travel",
+      "serial_spt": 0.0379645897,
+      "mtp_spt": 0.0156378809,
+      "cand_leg_ms": 8006.5950208,
+      "raw": 2.4277323726132227,
+      "edl": 2.647887323943662,
+      "non_drafting": 0
+    }
+  ],
+  "sweep": [
+    {
+      "delta_ms": 2.0,
+      "published": 3.709262647633495,
+      "delta_published": 0.00141745347954636,
+      "delta_published_pct": 0.03822849675011291,
+      "published_per_ms": 0.00070872673977318,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "sort_order_changed": false,
+      "order": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "essays",
+        "medicine",
+        "republic",
+        "botany"
+      ]
+    },
+    {
+      "delta_ms": 5.0,
+      "published": 3.711390864700168,
+      "delta_published": 0.0035456705462193483,
+      "delta_published_pct": 0.09562617532710652,
+      "published_per_ms": 0.0007091341092438696,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "sort_order_changed": false,
+      "order": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "essays",
+        "medicine",
+        "republic",
+        "botany"
+      ]
+    },
+    {
+      "delta_ms": 10.0,
+      "published": 3.7149433351729435,
+      "delta_published": 0.0070981410189947525,
+      "delta_published_pct": 0.1914357436007896,
+      "published_per_ms": 0.0007098141018994752,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "sort_order_changed": false,
+      "order": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "essays",
+        "medicine",
+        "republic",
+        "botany"
+      ]
+    },
+    {
+      "delta_ms": 15.0,
+      "published": 3.718502625187617,
+      "delta_published": 0.010657431033668452,
+      "delta_published_pct": 0.28742923384373525,
+      "published_per_ms": 0.0007104954022445635,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "sort_order_changed": false,
+      "order": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "essays",
+        "medicine",
+        "republic",
+        "botany"
+      ]
+    },
+    {
+      "delta_ms": 20.0,
+      "published": 3.7220687544351803,
+      "delta_published": 0.014223560281231507,
+      "delta_published_pct": 0.3836071771188662,
+      "published_per_ms": 0.0007111780140615753,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "sort_order_changed": false,
+      "order": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "essays",
+        "medicine",
+        "republic",
+        "botany"
+      ]
+    },
+    {
+      "delta_ms": 25.0,
+      "published": 3.725641742682644,
+      "delta_published": 0.017796548528695055,
+      "delta_published_pct": 0.4799701065393548,
+      "published_per_ms": 0.0007118619411478022,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "sort_order_changed": false,
+      "order": [
+        "plutarch",
+        "drama",
+        "travel",
+        "beagle",
+        "essays",
+        "medicine",
+        "republic",
+        "botany"
+      ]
+    }
+  ],
+  "crossing_events": [],
+  "adjacent_crossing_deltas_ms": [
+    {
+      "lower": "plutarch",
+      "upper": "drama",
+      "crossing_delta_ms": -8317126.803095656
+    },
+    {
+      "lower": "drama",
+      "upper": "travel",
+      "crossing_delta_ms": 2280174.571296529
+    },
+    {
+      "lower": "travel",
+      "upper": "beagle",
+      "crossing_delta_ms": -2185953.3206859664
+    },
+    {
+      "lower": "beagle",
+      "upper": "essays",
+      "crossing_delta_ms": 176187.5891877223
+    },
+    {
+      "lower": "essays",
+      "upper": "medicine",
+      "crossing_delta_ms": -15541.642187391557
+    },
+    {
+      "lower": "medicine",
+      "upper": "republic",
+      "crossing_delta_ms": 6091.185360728675
+    },
+    {
+      "lower": "republic",
+      "upper": "botany",
+      "crossing_delta_ms": -10033.11543030307
+    }
+  ],
+  "max_evaluable_delta_ms": 4940.0209408,
+  "smallest_positive_crossing_delta_ms": 6091.185360728675,
+  "any_reachable_crossing": false,
+  "extended_sweep": [
+    {
+      "delta_ms": 1.1396,
+      "published": 3.7086527261016458,
+      "delta_published": 0.0008075319476970044,
+      "delta_published_pct": 0.02177900924693988,
+      "published_per_ms": 0.0007086099927141142,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "note": "measured ours-vs-ec24d591 prefill gap"
+    },
+    {
+      "delta_ms": 50.0,
+      "published": 3.7436102661314585,
+      "delta_published": 0.03576507197750978,
+      "delta_published_pct": 0.9645783495465108,
+      "published_per_ms": 0.0007153014395501955,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "note": ""
+    },
+    {
+      "delta_ms": 100.0,
+      "published": 3.7800733248952287,
+      "delta_published": 0.07222813074127998,
+      "delta_published_pct": 1.9479812926159907,
+      "published_per_ms": 0.0007222813074127998,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "note": ""
+    },
+    {
+      "delta_ms": 250.0,
+      "published": 3.8938613247081424,
+      "delta_published": 0.18601613055419364,
+      "delta_published_pct": 5.016825698318793,
+      "published_per_ms": 0.0007440645222167745,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "note": ""
+    },
+    {
+      "delta_ms": 527.36,
+      "published": 4.123413596228434,
+      "delta_published": 0.4155684020744852,
+      "delta_published_pct": 11.207814250975195,
+      "published_per_ms": 0.0007880165391278921,
+      "central_prompts": [
+        "beagle",
+        "essays"
+      ],
+      "central_pair_changed": false,
+      "note": ""
+    }
+  ],
+  "prefill_probe_seconds_per_seed_token": 0.0010299990244675428,
+  "prefill_leg_ms_if_512_seed_tokens": 527.3595005273819,
+  "shortcut_comparison": [
+    {
+      "delta_ms": 2.0,
+      "median_rule_delta": 0.00141745347954636,
+      "mean_of_raw_delta": 0.0011018238055218177,
+      "frozen_central_delta": 0.00141745347954636,
+      "median_over_mean": 1.286461113331148
+    },
+    {
+      "delta_ms": 5.0,
+      "median_rule_delta": 0.0035456705462193483,
+      "mean_of_raw_delta": 0.002756095601617936,
+      "frozen_central_delta": 0.0035456705462193483,
+      "median_over_mean": 1.286483148167248
+    },
+    {
+      "delta_ms": 10.0,
+      "median_rule_delta": 0.0070981410189947525,
+      "mean_of_raw_delta": 0.005517319339428894,
+      "frozen_central_delta": 0.0070981410189947525,
+      "median_over_mean": 1.2865198808176093
+    },
+    {
+      "delta_ms": 15.0,
+      "median_rule_delta": 0.010657431033668452,
+      "mean_of_raw_delta": 0.008283685957214182,
+      "frozen_central_delta": 0.010657431033668452,
+      "median_over_mean": 1.286556623309337
+    },
+    {
+      "delta_ms": 20.0,
+      "median_rule_delta": 0.014223560281231507,
+      "mean_of_raw_delta": 0.011055210256262438,
+      "frozen_central_delta": 0.014223560281231507,
+      "median_over_mean": 1.2865933755691616
+    },
+    {
+      "delta_ms": 25.0,
+      "median_rule_delta": 0.017796548528695055,
+      "mean_of_raw_delta": 0.013831907095655183,
+      "frozen_central_delta": 0.017796548528695055,
+      "median_over_mean": 1.2866301375234965
+    }
+  ],
+  "marginal": {
+    "analytic_published_per_ms_at_zero": 0.0007084554205098889,
+    "per_prompt_raw_per_ms": {
+      "beagle": 0.0006473776072636964,
+      "botany": 0.0007961925421213284,
+      "drama": 0.0002318139157855129,
+      "essays": 0.0007695332337560814,
+      "medicine": 0.0007862874159594718,
+      "plutarch": 8.174618846908619e-05,
+      "republic": 0.0007894908090967058,
+      "travel": 0.0003032165816188177
+    },
+    "spread_max_over_min": 9.739812424678652
+  },
+  "gap_accounting": {
+    "reference_receipt": "ec24d591-0c2d-4069-8900-94f3068c4a28",
+    "reference_score": 3.7291100105909,
+    "our_score": 3.7078451941539488,
+    "published_gap": 0.021264816436951328,
+    "uniform_ms_needed_to_close": 29.844274664533096,
+    "prefill_probe_gap_ms": 1.1589974164962769,
+    "prefill_share_of_needed_ms_pct": 3.883483279537124,
+    "prefill_share_of_published_gap_pct": 3.8621551392573306
+  }
+}

@@ -1,0 +1,253 @@
+==============================================================================
+E2 / E3   prefill consistency and the honest neutral ranking
+==============================================================================
+eligible receipts (parity_all_ok, 8 prompts, scored): 946
+
+------------------------------------------------------------------------------
+E2  is any solver CONSISTENTLY below the main prefill mode?
+------------------------------------------------------------------------------
+receipts carrying per-prompt prefill on all 8 prompts: 815
+main mode 520-535 ms: n=738 mean 527.839 sd 1.690 ms
+all receipts        : n=815 mean 530.293 sd 20.205 ms  min 500.307 max 944.950
+
+prefill by submission day (median, n)
+  2026-08-16  n=  42  median  544.337  min  530.034  max  546.969
+  2026-08-17  n= 120  median  530.507  min  529.668  max  546.818
+  2026-08-18  n= 119  median  530.348  min  500.307  max  944.950
+  2026-08-19  n= 116  median  526.879  min  524.111  max  779.880
+  2026-08-20  n= 115  median  526.856  min  526.128  max  530.080
+  2026-08-21  n= 119  median  526.838  min  525.684  max  527.647
+  2026-08-22  n=  97  median  526.852  min  525.776  max  535.843
+  2026-08-23  n=  87  median  526.736  min  504.643  max  537.778
+
+per-solver prefill: raw and day-residualised
+  solver                n    median       min       max     span  <512  medResid  residMin  residMax
+  Kamciosz              6   530.046   529.873   543.497   13.624     0    -0.385    -0.840    -0.159
+  EternaPeptix          5   530.395   526.582   531.024    4.443     0    -0.256   -13.942    +0.676
+  mitiskuma             3   527.104   526.890   530.110    3.220     0    -0.238    -3.244    +0.011
+  a-github-name         5   526.627   526.383   527.367    0.984     0    -0.225    -0.353    +0.631
+  companygardener       3   530.138   526.849   530.676    3.827     0    -0.210    -3.499    +0.169
+  claudiodekker         6   530.252   529.727   646.561  116.834     0    -0.175    -0.638  +116.213
+  mega-dmitriy          7   530.358   529.792   545.250   15.458     0    -0.148    -0.715   +14.743
+  xadenryan            11   530.349   526.468   543.895   17.427     0    -0.096    -3.880    +0.959
+  vibecodooor          36   526.984   504.795   543.852   39.058     1    -0.089   -21.941    +0.779
+  kaarelkaarelson      21   526.788   524.111   527.264    3.153     0    -0.068    -2.769    +0.426
+  Carme99               8   526.727   526.499   527.044    0.545     0    -0.067    -0.353    +0.192
+  igneous-prose        15   526.816   526.329   544.182   17.854     0    -0.063    -0.407   +13.676
+  nijaru               11   526.983   525.776   530.808    5.032     0    -0.062    -1.076    +0.399
+  Lieisyourlie         78   526.929   526.250   545.288   19.038     0    -0.056    -3.781   +14.435
+  ofou                 17   526.787   526.132   529.267    3.135     0    -0.051    -3.850    +2.388
+  scarletbright        49   526.955   504.643   545.244   40.600     1    -0.044   -22.092   +14.737
+  DawgZter             13   530.333   526.997   779.880  252.882     0    -0.030    -0.748  +253.001
+  ivanfioravanti       22   526.840   526.400   545.284   18.884     0    -0.026    -0.456   +14.526
+  morganmcg1           32   526.847   525.957   537.778   11.821     0    -0.026    -3.423   +11.042
+  fabinulleins          3   530.487   529.931   530.555    0.625     0    -0.020    -0.576    +0.049
+  paul-hf               6   526.917   526.739   531.282    4.543     0    -0.010    -3.405    +0.775
+  francip               8   526.984   525.684   530.515    4.832     0    +0.004    -1.154    +0.161
+  newjordan            68   526.892   526.138   545.261   19.123     0    +0.008    -3.952   +14.754
+  Amal-David           31   526.875   504.673   944.950  440.277     2    +0.017   -22.063  +414.602
+  zeeshan8281           4   530.288   530.003   530.553    0.550     0    +0.018    -0.504    +3.224
+  gibavargas            6   526.943   526.762   545.051   18.289     0    +0.024    -0.117   +14.544
+  jungjipdo            17   527.267   525.974   544.798   18.824     0    +0.029    -0.762   +14.292
+  hadakang             32   526.883   526.189   545.271   19.082     0    +0.033    -0.690   +14.664
+  458187375-ship-it     4   530.906   530.002   544.245   14.242     0    +0.048    -0.505    +0.770
+  nagaral              16   526.900   526.400   529.882    3.481     0    +0.048    -0.452    +3.030
+  andreolf             11   527.339   526.352   530.569    4.217     0    +0.050    -0.527    +0.501
+  ArcherHume            4   526.920   526.821   527.500    0.679     0    +0.053    -0.034    +0.645
+  jonathan308          55   527.001   526.352   536.480   10.128     0    +0.056    -0.596    +6.132
+  rinaldofesta          4   528.565   526.696   536.292    9.596     0    +0.063    -0.119    +5.944
+  welttowelt            9   530.429   526.833   530.791    3.958     0    +0.081    -0.305    +0.443
+  bold84                3   530.434   526.766   530.486    3.720     0    +0.086    -3.582    +0.138
+  audreyt              21   527.002   526.358   544.853   18.495     0    +0.142    -0.656    +1.270
+  yijunyu              20   527.140   525.804   544.979   19.174     0    +0.158   -14.303   +14.472
+  BitWonka             12   528.454   500.307   545.207   44.900     1    +0.162   -30.041   +14.700
+  kirtangajjar          5   526.918   526.638   527.246    0.608     0    +0.182    -0.098    +0.510
+  fkiene               35   527.071   526.016   531.298    5.282     0    +0.215    -3.541    +2.240
+  lBroth                3   527.057   526.651   527.266    0.615     0    +0.219    -0.187    +0.428
+  SSHdotCodes           6   530.568   526.996   779.335  252.339     0    +0.220    -3.352  +252.455
+  Floofy6              15   530.654   526.866   544.907   18.041     0    +0.306    -0.483   +14.343
+  yzxoi                 4   544.452   530.273   545.275   15.003     0    +0.352    -0.279   +14.340
+  noskillcoding         6   527.322   526.740   535.843    9.102     0    +0.470    -0.112    +8.991
+  yoits9090             4   544.538   531.110   545.176   14.065     0    +0.721    -0.318   +14.551
+  alfranli123           4   534.080   526.537   536.989   10.453     0    +3.732    -3.811    +6.641
+
+solvers with >=5 receipts and >=50% of them below 512 ms: NONE
+solvers with >=5 receipts whose WORST day-residual is still below -2.0 ms (i.e. never in the pack): NONE
+
+every receipt below 512 ms
+  2026-08-18  BitWonka         5cdc9c17   500.307 ms  status=rejected  solver median  528.454 (n=12, min 500.307, max 545.207)
+  2026-08-23  scarletbright    ac89ef87   504.643 ms  status=rejected  solver median  526.955 (n=49, min 504.643, max 545.244)
+  2026-08-23  Amal-David       a9dd132a   504.673 ms  status=rejected  solver median  526.875 (n=31, min 504.673, max 944.950)
+  2026-08-23  vibecodooor      8b84c190   504.795 ms  status=rejected  solver median  526.984 (n=36, min 504.795, max 543.852)
+  2026-08-23  Amal-David       43925f29   504.803 ms  status=rejected  solver median  526.875 (n=31, min 504.673, max 944.950)
+
+one-way ANOVA of day-residual prefill by solver (groups with n>=3)
+  groups=48  n=764  MS_between=456.6903  MS_within=416.5605  F=1.0963  df=(47, 716)
+  solver variance component = 2.5212 ms^2 (sd 1.588 ms) against within-solver sd 20.410 ms
+  spread of the 48 per-solver MEDIAN day-residuals: min -0.385  max +3.732  sd 0.560 ms
+  46 of 48 solver medians are within +/-0.5 ms of their own day, against a 22 ms low cluster.
+
+------------------------------------------------------------------------------
+E3  neutral ranking, with the low-prefill day handled honestly
+------------------------------------------------------------------------------
+reference serial_spt per prompt (mean over all eligible receipts)
+  plutarch=0.0379874  drama=0.0379792  travel=0.0379942  beagle=0.0379792
+  medicine=0.0379809  essays=0.0379903  republic=0.0379797  botany=0.0379901
+
+A) neutral ranking, best receipt per solver, NOTHING excluded
+  rank solver           receipt    day              neutral    official  prefill_ms
+     1 vibecodooor      8b84c190   2026-08-23      3.728924    3.719792     504.795
+     2 scarletbright    ac89ef87   2026-08-23      3.724168    3.722981     504.643
+     3 Amal-David       43925f29   2026-08-23      3.721453    3.716544     504.803
+     4 ofou             9f63972a   2026-08-23      3.717756    3.702219     526.132
+     5 a-github-name    b3868faa   2026-08-23      3.717196    3.704386     526.383
+     6 newjordan        ec24d591   2026-08-23      3.716765    3.729110     526.201
+     7 jungjipdo        10bdecde   2026-08-23      3.713460    3.711408     526.764
+     8 igneous-prose    f89b0aeb   2026-08-23      3.713344    3.712430     527.264
+     9 nijaru           4debb1df   2026-08-23      3.711896    3.697225     526.247
+    10 rinaldofesta     570e0e35   2026-08-23      3.711501    3.705439     526.901
+    11 morganmcg1       5a9f130a   2026-08-23      3.709058    3.707845     527.360
+    12 Lieisyourlie     26846d30   2026-08-23      3.708217    3.700095     526.881
+
+B) neutral ranking, best receipt per solver, low-prefill receipts EXCLUDED
+  rank solver           receipt    day              neutral    official  prefill_ms
+     1 ofou             9f63972a   2026-08-23      3.717756    3.702219     526.132
+     2 scarletbright    83134a4a   2026-08-23      3.717318    3.707487     520.159
+     3 a-github-name    b3868faa   2026-08-23      3.717196    3.704386     526.383
+     4 newjordan        ec24d591   2026-08-23      3.716765    3.729110     526.201
+     5 jungjipdo        10bdecde   2026-08-23      3.713460    3.711408     526.764
+     6 igneous-prose    f89b0aeb   2026-08-23      3.713344    3.712430     527.264
+     7 vibecodooor      4117c901   2026-08-23      3.711929    3.708389     527.240
+     8 nijaru           4debb1df   2026-08-23      3.711896    3.697225     526.247
+     9 rinaldofesta     570e0e35   2026-08-23      3.711501    3.705439     526.901
+    10 Amal-David       5b923d0f   2026-08-23      3.710773    3.705748     526.798
+    11 morganmcg1       5a9f130a   2026-08-23      3.709058    3.707845     527.360
+    12 Lieisyourlie     26846d30   2026-08-23      3.708217    3.700095     526.881
+
+C) neutral ranking, every receipt corrected to a common prefill of 527.839 ms
+  rank solver           receipt    day         neutral_prefill_corrected    official  prefill_ms
+     1 ofou             9f63972a   2026-08-23      3.716052    3.702219     526.132
+     2 a-github-name    b3868faa   2026-08-23      3.715673    3.704386     526.383
+     3 newjordan        ec24d591   2026-08-23      3.715667    3.729110     526.201
+     4 igneous-prose    f89b0aeb   2026-08-23      3.713185    3.712430     527.264
+     5 jungjipdo        10bdecde   2026-08-23      3.712636    3.711408     526.764
+     6 vibecodooor      8b84c190   2026-08-23      3.712479    3.719792     504.795
+     7 scarletbright    83134a4a   2026-08-23      3.711557    3.707487     520.159
+     8 rinaldofesta     570e0e35   2026-08-23      3.711005    3.705439     526.901
+     9 nijaru           4debb1df   2026-08-23      3.710629    3.697225     526.247
+    10 Amal-David       5b923d0f   2026-08-23      3.709913    3.705748     526.798
+    11 morganmcg1       5a9f130a   2026-08-23      3.709163    3.707845     527.360
+    12 Lieisyourlie     26846d30   2026-08-23      3.707534    3.700095     526.881
+
+effect of the prefill correction on the five anomalous receipts
+  solver           receipt     prefill_ms     neutral   corrected      shift
+  BitWonka         5cdc9c17       500.307    3.180337    3.166088  -0.014249
+  Amal-David       43925f29       504.803    3.721453    3.705121  -0.016332
+  Amal-David       a9dd132a       504.673    3.639310    3.623788  -0.015522
+  scarletbright    ac89ef87       504.643    3.724168    3.707844  -0.016324
+  vibecodooor      8b84c190       504.795    3.728924    3.712479  -0.016444
+
+anchors
+  5a9f130a morganmcg1       official 3.707845  neutral 3.709058  corrected 3.709163  prefill 527.360 ms
+  ec24d591 newjordan        official 3.729110  neutral 3.716765  corrected 3.715667  prefill 526.201 ms
+
+serial-draw share (official - neutral), corrected ranking, top 12
+   1 ofou             official 3.702219  corrected 3.716052  draw -0.3722%
+   2 a-github-name    official 3.704386  corrected 3.715673  draw -0.3038%
+   3 newjordan        official 3.729110  corrected 3.715667  draw +0.3618%
+   4 igneous-prose    official 3.712430  corrected 3.713185  draw -0.0203%
+   5 jungjipdo        official 3.711408  corrected 3.712636  draw -0.0331%
+   6 vibecodooor      official 3.719792  corrected 3.712479  draw +0.1970%
+   7 scarletbright    official 3.707487  corrected 3.711557  draw -0.1097%
+   8 rinaldofesta     official 3.705439  corrected 3.711005  draw -0.1500%
+   9 nijaru           official 3.697225  corrected 3.710629  draw -0.3612%
+  10 Amal-David       official 3.705748  corrected 3.709913  draw -0.1123%
+  11 morganmcg1       official 3.707845  corrected 3.709163  draw -0.0355%
+  12 Lieisyourlie     official 3.700095  corrected 3.707534  draw -0.2007%
+
+all receipts below 525 ms, which a 512 ms cut would keep
+  2026-08-18  BitWonka         5cdc9c17   500.307 ms
+  2026-08-23  scarletbright    ac89ef87   504.643 ms
+  2026-08-23  Amal-David       a9dd132a   504.673 ms
+  2026-08-23  vibecodooor      8b84c190   504.795 ms
+  2026-08-23  Amal-David       43925f29   504.803 ms
+  2026-08-23  scarletbright    83134a4a   520.159 ms
+  2026-08-19  kaarelkaarelson  d5e94249   524.111 ms
+
+------------------------------------------------------------------------------
+E3b  best-of-n selection bias in the neutral ranking
+------------------------------------------------------------------------------
+  regression of solver best   neutral on log(n receipts): slope +0.190824 +/- 0.023674  t=+8.060  n=62
+  regression of solver median neutral on log(n receipts): slope +0.090832 +/- 0.026682  t=+3.404  n=62
+  a positive 'best' slope with a flat 'median' slope is best-of-n selection on noise, not a faster implementation.
+
+D) prefill-corrected neutral, each solver's LATEST receipt (no selection on score)
+  rank solver           receipt    day           corrected    official n receipts
+     1 a-github-name    b3868faa   2026-08-23     3.715673    3.704386          5
+     2 newjordan        db5aeaeb   2026-08-23     3.713101    3.715076         68
+     3 vibecodooor      8b84c190   2026-08-23     3.712479    3.719792         36
+     4 rinaldofesta     570e0e35   2026-08-23     3.711005    3.705439          4
+     5 nijaru           4debb1df   2026-08-23     3.710629    3.697225         11
+     6 Amal-David       5b923d0f   2026-08-23     3.709913    3.705748         31
+     7 ofou             538e2eb6   2026-08-23     3.708931    3.707905         17
+     8 Lieisyourlie     3bc963db   2026-08-23     3.707290    3.698588         78
+     9 igneous-prose    5fe22f58   2026-08-23     3.706986    3.703361         15
+    10 kirtangajjar     de827d46   2026-08-23     3.705527    3.697403          5
+    11 jonathan308      165d4ba7   2026-08-23     3.700327    3.696347         55
+    12 morganmcg1       1509bf95   2026-08-23     3.695214    3.682422         32
+
+E) prefill-corrected neutral, MEAN over everything a solver shipped on 2026-08-23 (n>=3, no selection on score, run noise averaged)
+  rank solver             n        mean       sem  best that day
+     1 vibecodooor        3    3.706590  0.005274       3.712479
+     2 igneous-prose      5    3.700457  0.007526       3.713185
+     3 a-github-name      4    3.699637  0.009393       3.715673
+     4 newjordan         11    3.696953  0.006739       3.715667
+     5 jungjipdo          7    3.692264  0.008993       3.712636
+     6 scarletbright     10    3.686351  0.007349       3.711557
+     7 ofou               8    3.685435  0.011998       3.716052
+     8 Lieisyourlie       7    3.677006  0.018130       3.707534
+     9 Amal-David         5    3.670581  0.017111       3.709913
+    10 kirtangajjar       5    3.664983  0.017111       3.706444
+    11 yijunyu            3    3.632279  0.050330       3.698639
+    12 fkiene             4    3.616604  0.066870       3.702811
+  caution: this mean includes each solver's failed experiments that day, so it measures what they shipped, not their best code.
+
+best-of-n exposure of the corrected top 12
+  solver              n         max         2nd   max-2nd within .01   top2 mean
+  ofou               17    3.716052    3.714544  0.001508          4    3.715298
+  a-github-name       5    3.715673    3.706367  0.009307          2    3.711020
+  newjordan          68    3.715667    3.713101  0.002566          6    3.714384
+  igneous-prose      15    3.713185    3.706986  0.006198          4    3.710085
+  jungjipdo          17    3.712636    3.711218  0.001419          4    3.711927
+  vibecodooor        36    3.712479    3.711224  0.001255          2    3.711851
+  scarletbright      49    3.711557    3.708400  0.003157          7    3.709978
+  rinaldofesta        4    3.711005    3.706797  0.004207          2    3.708901
+  nijaru             11    3.710629    3.709705  0.000924          2    3.710167
+  Amal-David         31    3.709913    3.706967  0.002946          3    3.708440
+  morganmcg1         32    3.709163    3.695214  0.013949          1    3.702189
+  Lieisyourlie       78    3.707534    3.707290  0.000244          4    3.707412
+
+F) ranking by the mean of each solver's two best corrected neutrals
+  rank solver             top2 mean    n
+     1 ofou                3.715298   17
+     2 newjordan           3.714384   68
+     3 jungjipdo           3.711927   17
+     4 vibecodooor         3.711851   36
+     5 a-github-name       3.711020    5
+     6 nijaru              3.710167   11
+     7 igneous-prose       3.710085   15
+     8 scarletbright       3.709978   49
+     9 rinaldofesta        3.708901    4
+    10 Amal-David          3.708440   31
+    11 Lieisyourlie        3.707412   78
+    12 kirtangajjar        3.705985    5
+
+------------------------------------------------------------------------------
+E3c  is the top of the ranking separable at all?
+------------------------------------------------------------------------------
+  spread of the corrected top 12: 0.008517 (0.2292 %)
+  1st minus 2nd: 0.000378
+  1st minus 4th: 0.002867
+  run-level neutral sd at beta=1.914 (point estimate): 0.1895 % = 0.007041 score units
+  run-level neutral sd at beta=0.000 (CI lower): 0.0000 % = 0.000000 score units
+  run-level neutral sd at beta=4.140 (CI upper): 0.4099 % = 0.015231 score units
