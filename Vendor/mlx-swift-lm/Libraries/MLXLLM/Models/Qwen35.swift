@@ -2404,6 +2404,26 @@ enum Qwen35XSumsSidecar {
     nonisolated(unsafe) static var next = 0
     static let lock = NSLock()
 
+    /// E174 screen switch. `off` stops the producer emitting the table, so all
+    /// 257 routed table-paying cells take the standalone fill the shipped tree
+    /// pays for 130 of them. Arithmetic is unchanged: both arms read a table
+    /// written by the same fill body, and the `off` arm is the shipped
+    /// pre-sidecar dispatch. The contrast prices the whole sidecar channel -
+    /// 127 epilogues against 127 fills plus their host kernel records - which
+    /// bounds from above what extending the epilogue to the remaining 130
+    /// cells could pay, because those producers have strictly worse grids than
+    /// the served ones (FINDING 359).
+    ///
+    /// `MLX_` prefix and 22 UTF-8 bytes for the two reasons
+    /// `MLX_E120_QMV_ARM` documents: `sanitizedRuntimeWorkerEnvironment` drops
+    /// every `MLXFAST_*` name before the runtime worker sees it, and a literal
+    /// longer than 15 bytes is not stored inline in the `String` value, so it
+    /// reaches the binary's string table where `strings` can witness the arm
+    /// inside the built worker. Read once at process start; never varies with
+    /// the request, the prompt or the benchmark phase.
+    static let enabled: Bool =
+        ProcessInfo.processInfo.environment["MLX_E174_XSUMS_SIDECAR"] != "off"
+
     /// True when the producer should emit the table for this activation.
     ///
     /// The consumer's `routable` test is strictly stronger (it also demands
@@ -2416,7 +2436,7 @@ enum Qwen35XSumsSidecar {
     /// published table can never be offered to a cell the consumer would have
     /// declined on shape.
     static func wants(_ x: MLXArray) -> Bool {
-        guard Qwen35CustomQMV.arm == .sumTable, x.ndim >= 2 else { return false }
+        guard enabled, Qwen35CustomQMV.arm == .sumTable, x.ndim >= 2 else { return false }
         let k = x.dim(-1)
         let rows = x.size / k
         return Qwen35CustomQMV.widths.contains(rows)
