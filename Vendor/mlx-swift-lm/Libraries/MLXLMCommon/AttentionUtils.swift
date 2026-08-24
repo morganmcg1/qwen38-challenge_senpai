@@ -124,15 +124,35 @@ public func attentionWithCacheUpdate(
         {
             let split = 5
             let kSplit = kL - (qL - split)
+            // SEQUENCE-MAJOR QUERY SHARE (E194): the fused QK kernel returns
+            // ROW-CONTIGUOUS [B, H, qL, D] queries, and an axis-2 slice of that
+            // layout fails `q_copy_unless`
+            // (scaled_dot_product_attention.cpp:686-699), so MLX copied each
+            // chunk immediately before its own sdpa call. That copy is a
+            // read-after-write dependency, so `maybeInsertBarrier`
+            // (device.cpp:315-375) also separated the two sdpa dispatches.
+            // Materializing the queries ONCE in sequence-major layout gives
+            // chunk views with strides[3]==1, strides[2]==D*H, strides[1]==D,
+            // which that predicate accepts: one copy replaces two, and the two
+            // sdpa calls share an already-written buffer, so no barrier stands
+            // between them and the GPU may overlap them. The values are copied
+            // bit-for-bit, both key windows are unchanged, and the only kernel
+            // change is chunk A's `query_transposed` function constant, which
+            // the kernel reads only to compute the query base offset
+            // (sdpa_vector.h:66, :229) — never the reduction order.
+            let sharedQueries = queries
+                .transposed(0, 2, 1, 3)
+                .contiguous()
+                .transposed(0, 2, 1, 3)
             let outA = MLXFast.scaledDotProductAttention(
-                queries: queries[0..., 0..., 0 ..< split, 0...],
+                queries: sharedQueries[0..., 0..., 0 ..< split, 0...],
                 keys: cachedKeys[0..., 0..., 0 ..< kSplit, 0...],
                 values: cachedValues[0..., 0..., 0 ..< kSplit, 0...],
                 scale: scale,
                 mask: .causal
             )
             let outB = MLXFast.scaledDotProductAttention(
-                queries: queries[0..., 0..., split..., 0...],
+                queries: sharedQueries[0..., 0..., split..., 0...],
                 keys: cachedKeys,
                 values: cachedValues,
                 scale: scale,
