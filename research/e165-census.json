@@ -1,0 +1,928 @@
+{
+  "legs": [
+    {
+      "tag": "e165c1",
+      "rounds": 259,
+      "rounds_used": 259,
+      "depths": [
+        1
+      ],
+      "depth_counts": {
+        "1": 259
+      },
+      "off_pin_is_clipped_tail": false,
+      "sync_head": "0",
+      "trace": "1",
+      "ladder": "default",
+      "pinned_depth": "1",
+      "cool_gate": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "35.02605438232422",
+      "gpu_temp_exit_c": "66.13971710205078",
+      "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+      "base_sha": "1b84a9b67d04b8e36ce210478a90a2eac3cae247",
+      "full_accept_rounds": 254,
+      "mtp_seconds_per_token": 0.042799849761649966,
+      "serial_seconds_per_token": 0.07333406247198582,
+      "mtp_decode_speedup": 1.713418689093051,
+      "effective_mean_draft_len": 1,
+      "accepted_draft_rate": 0.9806949806949807,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "decode_tokens": 512,
+      "median": {
+        "gpu_idle_window": 876.0835000000001,
+        "host_post_eval_tail": 287.83299999999997,
+        "readout": 35.334,
+        "commit": 248.459,
+        "upkeep": 107.584,
+        "upkeep_net": 4.043000000000006,
+        "host_draft_pre": 20.209,
+        "host_head1_build": 259.666,
+        "protocol_gap": 303.9995,
+        "next_pre_submit": 279.8335,
+        "host_draft_build": 778.083,
+        "host_chain_build": 0.167,
+        "submit1": 491.208,
+        "submit2": 4.416,
+        "snapshot": 175.875,
+        "verify_window": 34327.291,
+        "gpu_verify_eval": 32773.708,
+        "verify_pipeline": 67112.0,
+        "gpu_covered": 67799.917,
+        "round_period": 68662.52100000001,
+        "round_total": 68463.875
+      },
+      "budget": {
+        "rounds": 258,
+        "round_period": 68662.52100000001,
+        "terms": {
+          "submit1": 491.083,
+          "host_chain_build": 0.167,
+          "submit2": 4.3955,
+          "snapshot": 175.875,
+          "verify_window": 34326.708,
+          "gpu_verify_eval": 32773.5415,
+          "readout": 35.3545,
+          "commit": 248.542,
+          "upkeep_net": 4.0625,
+          "protocol_gap": 303.9995,
+          "host_draft_pre": 20.2295,
+          "host_head1_build": 259.6665
+        },
+        "covered_us": 67771.77,
+        "idle_us": 871.8545,
+        "residual_us": 18.89650000000381,
+        "idle_fraction": 0.012697676801001815,
+        "busy_fraction": 0.9870271148360544,
+        "measured_idle_window_us": 876.0835000000001
+      }
+    },
+    {
+      "tag": "e165c4",
+      "rounds": 109,
+      "rounds_used": 109,
+      "depths": [
+        4
+      ],
+      "depth_counts": {
+        "4": 109
+      },
+      "off_pin_is_clipped_tail": false,
+      "sync_head": "0",
+      "trace": "1",
+      "ladder": "default",
+      "pinned_depth": "4",
+      "cool_gate": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "61.156166076660156",
+      "gpu_temp_exit_c": "66.78217315673828",
+      "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+      "base_sha": "1b84a9b67d04b8e36ce210478a90a2eac3cae247",
+      "full_accept_rounds": 95,
+      "mtp_seconds_per_token": 0.027174552669748664,
+      "serial_seconds_per_token": 0.07340148650109768,
+      "mtp_decode_speedup": 2.7011111238202608,
+      "effective_mean_draft_len": 4,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "decode_tokens": 512,
+      "median": {
+        "gpu_idle_window": 1125.2920000000001,
+        "host_post_eval_tail": 474.74899999999997,
+        "readout": 40.459,
+        "commit": 431.333,
+        "upkeep": 170.084,
+        "upkeep_net": 4.623999999999995,
+        "host_draft_pre": 22.5,
+        "host_head1_build": 268.75,
+        "protocol_gap": 351.5835,
+        "next_pre_submit": 291.35400000000004,
+        "host_draft_build": 2306.5,
+        "host_chain_build": 458.291,
+        "submit1": 561.375,
+        "submit2": 874.75,
+        "snapshot": 178.208,
+        "verify_window": 45807.417,
+        "gpu_verify_eval": 41467.875,
+        "verify_pipeline": 87256.667,
+        "gpu_covered": 89502.792,
+        "round_period": 90636.97899999999,
+        "round_total": 90447.084
+      },
+      "budget": {
+        "rounds": 108,
+        "round_period": 90636.97899999999,
+        "terms": {
+          "submit1": 561.8335,
+          "host_chain_build": 458.58299999999997,
+          "submit2": 869.2085,
+          "snapshot": 178.208,
+          "verify_window": 45803.5005,
+          "gpu_verify_eval": 41466.25,
+          "readout": 40.4795,
+          "commit": 431.41650000000004,
+          "upkeep_net": 4.624499999999998,
+          "protocol_gap": 351.5835,
+          "host_draft_pre": 22.5625,
+          "host_head1_build": 268.77049999999997
+        },
+        "covered_us": 89337.58350000001,
+        "idle_us": 1119.4370000000001,
+        "residual_us": 179.95849999998404,
+        "idle_fraction": 0.012350775724773442,
+        "busy_fraction": 0.9856637377554256,
+        "measured_idle_window_us": 1125.2920000000001
+      }
+    },
+    {
+      "tag": "e165c4b",
+      "rounds": 109,
+      "rounds_used": 109,
+      "depths": [
+        4
+      ],
+      "depth_counts": {
+        "4": 109
+      },
+      "off_pin_is_clipped_tail": false,
+      "sync_head": "0",
+      "trace": "1",
+      "ladder": "default",
+      "pinned_depth": "4",
+      "cool_gate": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "60.277427673339844",
+      "gpu_temp_exit_c": "67.0203628540039",
+      "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+      "base_sha": "228c2b24c87e8b77bf887dd5fd8fe4710922e771",
+      "full_accept_rounds": 95,
+      "mtp_seconds_per_token": 0.02713735168799758,
+      "serial_seconds_per_token": 0.07328017172403634,
+      "mtp_decode_speedup": 2.7003435179139825,
+      "effective_mean_draft_len": 4,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "decode_tokens": 512,
+      "median": {
+        "gpu_idle_window": 1141.5414999999998,
+        "host_post_eval_tail": 482.625,
+        "readout": 40.834,
+        "commit": 434.833,
+        "upkeep": 173.625,
+        "upkeep_net": 4.792000000000002,
+        "host_draft_pre": 22.792,
+        "host_head1_build": 270.084,
+        "protocol_gap": 361.64599999999996,
+        "next_pre_submit": 293.146,
+        "host_draft_build": 2393.0,
+        "host_chain_build": 509.417,
+        "submit1": 560.875,
+        "submit2": 911.791,
+        "snapshot": 185.5,
+        "verify_window": 45678.5,
+        "gpu_verify_eval": 41416.333,
+        "verify_pipeline": 87046.208,
+        "gpu_covered": 89314.375,
+        "round_period": 90536.89499999999,
+        "round_total": 90324.0
+      },
+      "budget": {
+        "rounds": 108,
+        "round_period": 90536.89499999999,
+        "terms": {
+          "submit1": 560.104,
+          "host_chain_build": 506.25,
+          "submit2": 910.8125,
+          "snapshot": 185.583,
+          "verify_window": 45676.375,
+          "gpu_verify_eval": 41410.7705,
+          "readout": 40.8335,
+          "commit": 435.1875,
+          "upkeep_net": 4.792000000000002,
+          "protocol_gap": 361.64599999999996,
+          "host_draft_pre": 22.792,
+          "host_head1_build": 270.083
+        },
+        "covered_us": 89249.895,
+        "idle_us": 1135.334,
+        "residual_us": 151.6659999999854,
+        "idle_fraction": 0.012540014764146706,
+        "busy_fraction": 0.9857848007710007,
+        "measured_idle_window_us": 1141.5414999999998
+      }
+    },
+    {
+      "tag": "e165c7",
+      "rounds": 73,
+      "rounds_used": 73,
+      "depths": [
+        4,
+        7
+      ],
+      "depth_counts": {
+        "4": 1,
+        "7": 72
+      },
+      "off_pin_is_clipped_tail": true,
+      "sync_head": "0",
+      "trace": "1",
+      "ladder": "default",
+      "pinned_depth": "7",
+      "cool_gate": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "62.192626953125",
+      "gpu_temp_exit_c": "73.12774658203125",
+      "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+      "base_sha": "72a3fd5264ab184303ba5436cb687abc4f48dc4d",
+      "full_accept_rounds": 58,
+      "mtp_seconds_per_token": 0.02853123447857797,
+      "serial_seconds_per_token": 0.07332128519192338,
+      "mtp_decode_speedup": 2.5698602437610965,
+      "effective_mean_draft_len": 6.958904109589041,
+      "accepted_draft_rate": 0.8641732283464567,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "decode_tokens": 512,
+      "median": {
+        "gpu_idle_window": 1286.6665,
+        "host_post_eval_tail": 528.25,
+        "readout": 43.958,
+        "commit": 477.833,
+        "upkeep": 279.541,
+        "upkeep_net": 4.832999999999998,
+        "host_draft_pre": 25.208,
+        "host_head1_build": 287.708,
+        "protocol_gap": 426.5625,
+        "next_pre_submit": 313.14549999999997,
+        "host_draft_build": 4691.167,
+        "host_chain_build": 870.0,
+        "submit1": 830.709,
+        "submit2": 2630.334,
+        "snapshot": 199.0,
+        "verify_window": 72353.791,
+        "gpu_verify_eval": 67804.0,
+        "verify_pipeline": 140227.79200000002,
+        "gpu_covered": 144765.958,
+        "round_period": 146137.312,
+        "round_total": 145972.25
+      },
+      "budget": {
+        "rounds": 72,
+        "round_period": 146137.312,
+        "terms": {
+          "submit1": 832.2294999999999,
+          "host_chain_build": 873.2915,
+          "submit2": 2633.2505,
+          "snapshot": 199.02100000000002,
+          "verify_window": 72355.1035,
+          "gpu_verify_eval": 67805.27100000001,
+          "readout": 43.958,
+          "commit": 478.41650000000004,
+          "upkeep_net": 4.813000000000017,
+          "protocol_gap": 426.5625,
+          "host_draft_pre": 25.25,
+          "host_head1_build": 287.7495
+        },
+        "covered_us": 144698.16700000002,
+        "idle_us": 1266.7495000000001,
+        "residual_us": 172.3954999999894,
+        "idle_fraction": 0.008668214042420597,
+        "busy_fraction": 0.9901521043441665,
+        "measured_idle_window_us": 1286.6665
+      }
+    },
+    {
+      "tag": "e165L4",
+      "rounds": 109,
+      "rounds_used": 109,
+      "depths": [
+        4
+      ],
+      "depth_counts": {
+        "4": 109
+      },
+      "off_pin_is_clipped_tail": false,
+      "sync_head": "0",
+      "trace": "1",
+      "ladder": "off",
+      "pinned_depth": "4",
+      "cool_gate": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "61.5833625793457",
+      "gpu_temp_exit_c": "62.39529800415039",
+      "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+      "base_sha": "1b84a9b67d04b8e36ce210478a90a2eac3cae247",
+      "full_accept_rounds": 95,
+      "mtp_seconds_per_token": 0.028722949093207717,
+      "serial_seconds_per_token": 0.08257893938571215,
+      "mtp_decode_speedup": 2.8750160409273597,
+      "effective_mean_draft_len": 4,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "decode_tokens": 512,
+      "median": {
+        "gpu_idle_window": 1090.0425,
+        "host_post_eval_tail": 438.668,
+        "readout": 40.417,
+        "commit": 393.041,
+        "upkeep": 161.583,
+        "upkeep_net": 4.501000000000005,
+        "host_draft_pre": 22.583,
+        "host_head1_build": 278.958,
+        "protocol_gap": 342.47950000000003,
+        "next_pre_submit": 301.7495,
+        "host_draft_build": 2135.208,
+        "host_chain_build": 429.458,
+        "submit1": 541.208,
+        "submit2": 827.959,
+        "snapshot": 192.583,
+        "verify_window": 10412.459,
+        "gpu_verify_eval": 85479.792,
+        "verify_pipeline": 95863.916,
+        "gpu_covered": 97974.208,
+        "round_period": 99106.6245,
+        "round_total": 98916.291
+      },
+      "budget": {
+        "rounds": 108,
+        "round_period": 99106.6245,
+        "terms": {
+          "submit1": 541.6875,
+          "host_chain_build": 429.5625,
+          "submit2": 826.3544999999999,
+          "snapshot": 192.5205,
+          "verify_window": 10410.5005,
+          "gpu_verify_eval": 85476.375,
+          "readout": 40.4165,
+          "commit": 393.062,
+          "upkeep_net": 4.521000000000001,
+          "protocol_gap": 342.47950000000003,
+          "host_draft_pre": 22.561999999999998,
+          "host_head1_build": 278.97900000000004
+        },
+        "covered_us": 97877.0005,
+        "idle_us": 1082.02,
+        "residual_us": 147.60400000001073,
+        "idle_fraction": 0.010917736381991295,
+        "busy_fraction": 0.9875929181706717,
+        "measured_idle_window_us": 1090.0425
+      }
+    },
+    {
+      "tag": "e165s4",
+      "rounds": 109,
+      "rounds_used": 109,
+      "depths": [
+        4
+      ],
+      "depth_counts": {
+        "4": 109
+      },
+      "off_pin_is_clipped_tail": false,
+      "sync_head": "1",
+      "trace": "1",
+      "ladder": "default",
+      "pinned_depth": "4",
+      "cool_gate": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "62.7824821472168",
+      "gpu_temp_exit_c": "66.91644287109375",
+      "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+      "base_sha": "3ba28ad390c9d4d898ac37eee49678259b5630b0",
+      "full_accept_rounds": 95,
+      "mtp_seconds_per_token": 0.02740400191396475,
+      "serial_seconds_per_token": 0.07345356233417988,
+      "mtp_decode_speedup": 2.680395460662584,
+      "effective_mean_draft_len": 4,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "decode_tokens": 512,
+      "median": {
+        "gpu_idle_window": 1149.666,
+        "host_post_eval_tail": 510.16700000000003,
+        "readout": 41.25,
+        "commit": 463.875,
+        "upkeep": 171.458,
+        "upkeep_net": 4.665999999999997,
+        "host_draft_pre": 22.083,
+        "host_head1_build": 265.208,
+        "protocol_gap": 350.396,
+        "next_pre_submit": 288.0,
+        "host_draft_build": 7294.167,
+        "host_chain_build": 487.459,
+        "submit1": 549.583,
+        "submit2": 5753.166,
+        "snapshot": 213.5,
+        "verify_window": 41807.333,
+        "gpu_verify_eval": 41416.875,
+        "verify_pipeline": 83273.667,
+        "gpu_covered": 90381.834,
+        "round_period": 91591.70850000001,
+        "round_total": 91367.167
+      },
+      "budget": {
+        "rounds": 108,
+        "round_period": 91591.70850000001,
+        "terms": {
+          "submit1": 549.25,
+          "host_chain_build": 484.47950000000003,
+          "submit2": 5752.8125,
+          "snapshot": 213.66649999999998,
+          "verify_window": 41807.25,
+          "gpu_verify_eval": 41414.875,
+          "readout": 41.25,
+          "commit": 464.20849999999996,
+          "upkeep_net": 4.665999999999997,
+          "protocol_gap": 350.396,
+          "host_draft_pre": 22.083,
+          "host_head1_build": 264.9585
+        },
+        "covered_us": 90222.3335,
+        "idle_us": 1147.562,
+        "residual_us": 221.81300000001465,
+        "idle_fraction": 0.012529103548712598,
+        "busy_fraction": 0.9850491379358862,
+        "measured_idle_window_us": 1149.666
+      }
+    },
+    {
+      "tag": "e165s7",
+      "rounds": 73,
+      "rounds_used": 73,
+      "depths": [
+        4,
+        7
+      ],
+      "depth_counts": {
+        "4": 1,
+        "7": 72
+      },
+      "off_pin_is_clipped_tail": true,
+      "sync_head": "1",
+      "trace": "1",
+      "ladder": "default",
+      "pinned_depth": "7",
+      "cool_gate": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "62.29671859741211",
+      "gpu_temp_exit_c": "66.0029296875",
+      "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+      "base_sha": "3ba28ad390c9d4d898ac37eee49678259b5630b0",
+      "full_accept_rounds": 58,
+      "mtp_seconds_per_token": 0.028734402265399694,
+      "serial_seconds_per_token": 0.07325158594176173,
+      "mtp_decode_speedup": 2.5492643022530195,
+      "effective_mean_draft_len": 6.958904109589041,
+      "accepted_draft_rate": 0.8641732283464567,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "decode_tokens": 512,
+      "median": {
+        "gpu_idle_window": 1251.375,
+        "host_post_eval_tail": 509.584,
+        "readout": 44.625,
+        "commit": 460.542,
+        "upkeep": 284.25,
+        "upkeep_net": 4.95799999999997,
+        "host_draft_pre": 24.417,
+        "host_head1_build": 285.583,
+        "protocol_gap": 427.75,
+        "next_pre_submit": 310.83299999999997,
+        "host_draft_build": 11893.375,
+        "host_chain_build": 898.75,
+        "submit1": 787.25,
+        "submit2": 9813.416,
+        "snapshot": 208.291,
+        "verify_window": 66028.542,
+        "gpu_verify_eval": 67802.25,
+        "verify_pipeline": 133848.125,
+        "gpu_covered": 145549.209,
+        "round_period": 147058.54200000002,
+        "round_total": 146905.792
+      },
+      "budget": {
+        "rounds": 72,
+        "round_period": 147058.54200000002,
+        "terms": {
+          "submit1": 783.479,
+          "host_chain_build": 900.0415,
+          "submit2": 9813.875,
+          "snapshot": 208.3955,
+          "verify_window": 66042.4795,
+          "gpu_verify_eval": 67805.458,
+          "readout": 44.667,
+          "commit": 460.83349999999996,
+          "upkeep_net": 4.957999999999984,
+          "protocol_gap": 427.75,
+          "host_draft_pre": 24.396,
+          "host_head1_build": 285.375
+        },
+        "covered_us": 145553.7285,
+        "idle_us": 1247.9795,
+        "residual_us": 256.8340000000185,
+        "idle_fraction": 0.008486276846128392,
+        "busy_fraction": 0.9897672486104206,
+        "measured_idle_window_us": 1251.375
+      }
+    },
+    {
+      "tag": "e165n4",
+      "rounds": 0,
+      "rounds_used": 0,
+      "depths": [],
+      "depth_counts": {},
+      "off_pin_is_clipped_tail": false,
+      "sync_head": "0",
+      "trace": "0",
+      "ladder": "default",
+      "pinned_depth": "4",
+      "cool_gate": "0",
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "61.83530044555664",
+      "gpu_temp_exit_c": "65.13784790039062",
+      "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+      "base_sha": "3ba28ad390c9d4d898ac37eee49678259b5630b0",
+      "full_accept_rounds": 0,
+      "mtp_seconds_per_token": 0.0270851191598922,
+      "serial_seconds_per_token": 0.07315601385198534,
+      "mtp_decode_speedup": 2.7009670299075212,
+      "effective_mean_draft_len": 4,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "residual_divergence_count": 0,
+      "decode_tokens": 512,
+      "median": {
+        "gpu_idle_window": null,
+        "host_post_eval_tail": null,
+        "readout": null,
+        "commit": null,
+        "upkeep": null,
+        "upkeep_net": null,
+        "host_draft_pre": null,
+        "host_head1_build": null,
+        "protocol_gap": null,
+        "next_pre_submit": null,
+        "host_draft_build": null,
+        "host_chain_build": null,
+        "submit1": null,
+        "submit2": null,
+        "snapshot": null,
+        "verify_window": null,
+        "gpu_verify_eval": null,
+        "verify_pipeline": null,
+        "gpu_covered": null,
+        "round_period": null,
+        "round_total": null
+      },
+      "budget": null
+    }
+  ],
+  "fit": {
+    "gpu_idle_window": {
+      "intercept_us": 790.3057500000008,
+      "per_draft_us": 85.77774999999968,
+      "points": [
+        [
+          1.0,
+          876.0835000000001
+        ],
+        [
+          4.0,
+          1133.4167499999999
+        ]
+      ]
+    },
+    "host_post_eval_tail": {
+      "intercept_us": 224.2149999999999,
+      "per_draft_us": 63.61800000000004,
+      "points": [
+        [
+          1.0,
+          287.83299999999997
+        ],
+        [
+          4.0,
+          478.687
+        ]
+      ]
+    },
+    "readout": {
+      "intercept_us": 33.56316666666667,
+      "per_draft_us": 1.7708333333333333,
+      "points": [
+        [
+          1.0,
+          35.334
+        ],
+        [
+          4.0,
+          40.6465
+        ]
+      ]
+    },
+    "commit": {
+      "intercept_us": 186.9176666666666,
+      "per_draft_us": 61.54133333333337,
+      "points": [
+        [
+          1.0,
+          248.459
+        ],
+        [
+          4.0,
+          433.083
+        ]
+      ]
+    },
+    "upkeep": {
+      "intercept_us": 86.16049999999998,
+      "per_draft_us": 21.423500000000004,
+      "points": [
+        [
+          1.0,
+          107.584
+        ],
+        [
+          4.0,
+          171.8545
+        ]
+      ]
+    },
+    "upkeep_net": {
+      "intercept_us": 3.8213333333333424,
+      "per_draft_us": 0.22166666666666401,
+      "points": [
+        [
+          1.0,
+          4.043000000000006
+        ],
+        [
+          4.0,
+          4.707999999999998
+        ]
+      ]
+    },
+    "host_draft_pre": {
+      "intercept_us": 19.396666666666675,
+      "per_draft_us": 0.8123333333333309,
+      "points": [
+        [
+          1.0,
+          20.209
+        ],
+        [
+          4.0,
+          22.646
+        ]
+      ]
+    },
+    "host_head1_build": {
+      "intercept_us": 256.41566666666677,
+      "per_draft_us": 3.2503333333333,
+      "points": [
+        [
+          1.0,
+          259.666
+        ],
+        [
+          4.0,
+          269.41700000000003
+        ]
+      ]
+    },
+    "protocol_gap": {
+      "intercept_us": 286.4610833333335,
+      "per_draft_us": 17.53841666666661,
+      "points": [
+        [
+          1.0,
+          303.9995
+        ],
+        [
+          4.0,
+          356.61474999999996
+        ]
+      ]
+    },
+    "next_pre_submit": {
+      "intercept_us": 275.69466666666654,
+      "per_draft_us": 4.138833333333372,
+      "points": [
+        [
+          1.0,
+          279.8335
+        ],
+        [
+          4.0,
+          292.25
+        ]
+      ]
+    },
+    "host_draft_build": {
+      "intercept_us": 254.19399999999996,
+      "per_draft_us": 523.889,
+      "points": [
+        [
+          1.0,
+          778.083
+        ],
+        [
+          4.0,
+          2349.75
+        ]
+      ]
+    },
+    "host_chain_build": {
+      "intercept_us": -161.06200000000007,
+      "per_draft_us": 161.229,
+      "points": [
+        [
+          1.0,
+          0.167
+        ],
+        [
+          4.0,
+          483.854
+        ]
+      ]
+    },
+    "submit1": {
+      "intercept_us": 467.90233333333356,
+      "per_draft_us": 23.30566666666659,
+      "points": [
+        [
+          1.0,
+          491.208
+        ],
+        [
+          4.0,
+          561.125
+        ]
+      ]
+    },
+    "submit2": {
+      "intercept_us": -291.8688333333334,
+      "per_draft_us": 296.2848333333334,
+      "points": [
+        [
+          1.0,
+          4.416
+        ],
+        [
+          4.0,
+          893.2705000000001
+        ]
+      ]
+    },
+    "snapshot": {
+      "intercept_us": 173.88200000000003,
+      "per_draft_us": 1.9929999999999888,
+      "points": [
+        [
+          1.0,
+          175.875
+        ],
+        [
+          4.0,
+          181.85399999999998
+        ]
+      ]
+    },
+    "verify_window": {
+      "intercept_us": 30522.068500000016,
+      "per_draft_us": 3805.222499999994,
+      "points": [
+        [
+          1.0,
+          34327.291
+        ],
+        [
+          4.0,
+          45742.9585
+        ]
+      ]
+    },
+    "gpu_verify_eval": {
+      "intercept_us": 29884.24266666668,
+      "per_draft_us": 2889.4653333333295,
+      "points": [
+        [
+          1.0,
+          32773.708
+        ],
+        [
+          4.0,
+          41442.104
+        ]
+      ]
+    },
+    "verify_pipeline": {
+      "intercept_us": 60432.1875,
+      "per_draft_us": 6679.8125,
+      "points": [
+        [
+          1.0,
+          67112.0
+        ],
+        [
+          4.0,
+          87151.4375
+        ]
+      ]
+    },
+    "gpu_covered": {
+      "intercept_us": 60597.0281666667,
+      "per_draft_us": 7202.888833333324,
+      "points": [
+        [
+          1.0,
+          67799.917
+        ],
+        [
+          4.0,
+          89408.58350000001
+        ]
+      ]
+    },
+    "round_period": {
+      "intercept_us": 61354.38233333332,
+      "per_draft_us": 7308.138666666669,
+      "points": [
+        [
+          1.0,
+          68662.52100000001
+        ],
+        [
+          4.0,
+          90586.93699999999
+        ]
+      ]
+    },
+    "round_total": {
+      "intercept_us": 61156.65266666669,
+      "per_draft_us": 7307.222333333326,
+      "points": [
+        [
+          1.0,
+          68463.875
+        ],
+        [
+          4.0,
+          90385.542
+        ]
+      ]
+    }
+  },
+  "contrasts": {
+    "instrument neutrality d=4": {
+      "untraced_tag": "e165n4",
+      "traced_tags": "e165c4,e165c4b",
+      "untraced_s_per_tok": 0.0270851191598922,
+      "traced_s_per_tok": 0.027155952178873122,
+      "traced_over_untraced": 1.002615,
+      "within_5_percent": true
+    },
+    "ladder exposure d=4": {
+      "ladder_off_tag": "e165L4",
+      "shipped_tags": "e165c4,e165c4b",
+      "host_encode_H_us": 10412.5,
+      "verify_gpu_wall_us": 85479.8,
+      "shipped_verify_pipeline_us": 87151.4,
+      "residual_encode_exposure_us": 1671.6,
+      "ladder_off_round_period_us": 99106.6,
+      "shipped_round_period_us": 90586.9,
+      "ladder_worth_us_per_round": 8519.7
+    },
+    "head chain GPU wall, sync-head legs": {
+      "e165s4 d=4": "head_chain_gpu_wall=5753.2 us idle_window=1149.7 us",
+      "e165s7 d=7": "head_chain_gpu_wall=9813.4 us idle_window=1251.4 us",
+      "head_chain_gpu_intercept_us": 339.5,
+      "head_chain_gpu_per_draft_us": 1353.4
+    }
+  }
+}
