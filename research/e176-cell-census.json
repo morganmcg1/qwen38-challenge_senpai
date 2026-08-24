@@ -1,0 +1,289 @@
+{
+ "branches": {
+  "gen13/14 size d": {
+   "arch_gen": 13,
+   "arch_size": "d",
+   "first_consuming_M": null,
+   "provenance": "Ultra, not the ranked runner",
+   "q_consuming_calls_by_M": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+   }
+  },
+  "gen13/14 size s": {
+   "arch_gen": 13,
+   "arch_size": "s",
+   "first_consuming_M": 6,
+   "provenance": "M1/M2 class, not the ranked runner",
+   "q_consuming_calls_by_M": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 497,
+    "7": 497,
+    "8": 497,
+    "9": 497
+   }
+  },
+  "gen16 size s": {
+   "arch_gen": 16,
+   "arch_size": "s",
+   "first_consuming_M": null,
+   "provenance": "first-hand probe, this host (applegpu_g16s)",
+   "q_consuming_calls_by_M": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+   }
+  },
+  "gen>=17 size d": {
+   "arch_gen": 17,
+   "arch_size": "d",
+   "first_consuming_M": null,
+   "provenance": "Ultra, not the ranked runner",
+   "q_consuming_calls_by_M": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+   }
+  },
+  "gen>=17 size s": {
+   "arch_gen": 17,
+   "arch_size": "s",
+   "first_consuming_M": null,
+   "provenance": "ranked M5, requires arch_gen>=17 for _nax",
+   "q_consuming_calls_by_M": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+   }
+  }
+ },
+ "cells": [
+  {
+   "K": 5120,
+   "N": 10240,
+   "calls_per_round": 48,
+   "cell": "gdn.in_qkv",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35GatedDelta.swift:241",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 6144,
+   "calls_per_round": 48,
+   "cell": "gdn.in_z",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35GatedDelta.swift:245",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 48,
+   "calls_per_round": 48,
+   "cell": "gdn.in_b",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35GatedDelta.swift:254",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 48,
+   "calls_per_round": 48,
+   "cell": "gdn.in_a",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35GatedDelta.swift:255",
+   "transpose": true
+  },
+  {
+   "K": 6144,
+   "N": 5120,
+   "calls_per_round": 48,
+   "cell": "gdn.out",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35GatedDelta.swift:346",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 6144,
+   "calls_per_round": 16,
+   "cell": "attn.q",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35Attention.swift:143",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 1024,
+   "calls_per_round": 16,
+   "cell": "attn.k",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35Attention.swift:162",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 1024,
+   "calls_per_round": 16,
+   "cell": "attn.v",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35Attention.swift:163",
+   "transpose": true
+  },
+  {
+   "K": 6144,
+   "N": 5120,
+   "calls_per_round": 16,
+   "cell": "attn.o",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35Attention.swift:211",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 17408,
+   "calls_per_round": 64,
+   "cell": "mlp.gate",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35MLP.swift:28",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 17408,
+   "calls_per_round": 64,
+   "cell": "mlp.up",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35MLP.swift:29",
+   "transpose": true
+  },
+  {
+   "K": 17408,
+   "N": 5120,
+   "calls_per_round": 64,
+   "cell": "mlp.down",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35MLP.swift:30",
+   "transpose": true
+  },
+  {
+   "K": 5120,
+   "N": 248320,
+   "calls_per_round": 1,
+   "cell": "lm_head",
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "source": "Qwen35FastEngine.swift:263",
+   "transpose": true
+  }
+ ],
+ "harness": "source",
+ "max_decode_M": 9,
+ "total_calls_per_round": 497
+}

@@ -1,228 +1,331 @@
-# E176 result: Q has no decode consumer, and the cap-4 composition is refused
+# E176 result: Q has no decode consumer, and receipt C is the outlier
 
 `assignment_id` `e176-q-decode-consumer-census`, revision `r0`.
 Base `senpai/qwen38-mtp-r1` at `6368dc25265bd05461df4f070a18f4d97a18bc12`.
 
-W&B: <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/qpty8v51>
-(run `qpty8v51`). Run `hjgb79i4` is an earlier upload of the same analysis. It
-put the `B - C` channel numbers under `B - A` column names, so read `qpty8v51`
-only.
+W&B: <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/vxdn8h60>
+(run `vxdn8h60`).
 
-Every number below carries a harness label. No GPU decode leg was timed for
-this experiment. Task 4 was not needed, because the desk answer at the routing
-threshold is not close.
+Every number carries a harness label. No GPU decode leg was timed. Task 4, the
+local GPU probe, was not needed: the desk answer at the routing threshold is
+not close.
 
-## 1. Consumer census (`harness=source`)
+## 1. Cell census (`harness=source`)
 
-### 1.1 FINDING 390 is wrong
+Reproduce with `python3 research/e176_cell_census.py`.
 
-`get_qmv_batch_limit` in `backend/metal/quantized.cpp:84-125` returns the
-`6 / 10 / 14` limits that FINDING 390 quotes **only** inside
-`if (arch_gen == 13 || arch_gen == 14)`. Every other generation returns
-`10 / 12 / 18`, and `arch_size == 'd'` returns `32 / 18 / 12`.
+### 1.1 One entry point, one routing decision
 
-| branch | limits | minimum `vector_limit` | provenance |
+Every quantized projection in the scored decode path goes through exactly one
+Swift entry point, `Qwen35Ops.linear`
+(`Sources/MLXFastModel/Qwen35Ops.swift:36`), which calls MLX
+`quantizedMM(transpose: true)`. MLX then decides in
+`QuantizedMatmul::eval_gpu`
+(`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/quantized.cpp:1415`):
+
+```cpp
+int vector_limit = transpose_ ? get_qmv_batch_limit(K, N, d) : 4;
+if (M >= vector_limit) { /* qmm_splitk or qmm */ return; }
+dispatch_qmv(...);
+```
+
+Q (RULE 377) edits only `qmm_t`, `qmm_t_nax` and `qmm_t_splitk`. A cell
+consumes Q only if it reaches `M >= vector_limit` with `transpose_ == true`.
+
+### 1.2 The thirteen cells
+
+497 quantized-projection calls per decode round, 13 distinct cells. Shapes
+follow from `fixtures/qwen3_6_27b_config.json`: hidden 5120, intermediate
+17408, vocab 248320, 24 attention heads and 4 KV heads at head_dim 256, GDN
+16 key heads and 48 value heads at dim 128, 48 GDN layers and 16
+full-attention layers.
+
+| cell | K | N | calls/round | source |
+| --- | --- | --- | --- | --- |
+| gdn.in_qkv | 5120 | 10240 | 48 | `Qwen35GatedDelta.swift:241` |
+| gdn.in_z | 5120 | 6144 | 48 | `Qwen35GatedDelta.swift:245` |
+| gdn.in_b | 5120 | 48 | 48 | `Qwen35GatedDelta.swift:254` |
+| gdn.in_a | 5120 | 48 | 48 | `Qwen35GatedDelta.swift:255` |
+| gdn.out | 6144 | 5120 | 48 | `Qwen35GatedDelta.swift:346` |
+| attn.q | 5120 | 6144 | 16 | `Qwen35Attention.swift:143` |
+| attn.k | 5120 | 1024 | 16 | `Qwen35Attention.swift:162` |
+| attn.v | 5120 | 1024 | 16 | `Qwen35Attention.swift:163` |
+| attn.o | 6144 | 5120 | 16 | `Qwen35Attention.swift:211` |
+| mlp.gate | 5120 | 17408 | 64 | `Qwen35MLP.swift:28` |
+| mlp.up | 5120 | 17408 | 64 | `Qwen35MLP.swift:29` |
+| mlp.down | 17408 | 5120 | 64 | `Qwen35MLP.swift:30` |
+| lm_head | 5120 | 248320 | 1 | `Qwen35FastEngine.swift:263` |
+
+**Correction to my own interim comment.** That comment cited sites in a file
+called `Qwen35.swift` near lines 1737 and 1904. No such file exists in this
+tree. Those references were wrong. The table above replaces them and I read
+every row cell by cell.
+
+### 1.3 The limit is one constant per host class
+
+`get_qmv_batch_limit(D, O, d)` (`quantized.cpp:84-125`) is guarded on
+`arch_gen == 13 || arch_gen == 14`, and each size branch tests
+`D <= 2048 && O <= 2048`, then `D <= 4096 && O <= 4096`, then falls through.
+
+**Every cell has K >= 5120 > 4096, and `D` is `K`.** No cell can take either
+narrow branch, so the limit does not depend on `N` at all:
+
+| host class | limit, all 13 cells | first M that consumes Q | provenance |
 | --- | --- | --- | --- |
-| `arch_gen` 13 or 14 | 6 / 10 / 14 | 6 | not the ranked runner |
-| `arch_gen` 16, `arch_size` s | 10 / 12 / 18 | 10 | first-hand probe, this host |
-| `arch_gen` >= 17 | 10 / 12 / 18 | 10 | inferred for ranked M5 |
-| `arch_size` d | 32 / 18 / 12 | 12 | not this chip |
+| gen 13/14, size s | 6 | **6** | M1/M2 class, not in this campaign |
+| gen 13/14, size d | 12 | none at M <= 9 | Ultra |
+| gen 16, size s | 10 | none at M <= 9 | **first-hand probe, this host** |
+| gen >= 17, size s | 10 | none at M <= 9 | ranked M5 |
+| gen >= 17, size d | 12 | none at M <= 9 | Ultra |
 
 `research/e176_arch_probe.swift` reads Metal device metadata only. On this host
-it reports `architecture applegpu_g16s`, so `arch_gen` is 16 and `arch_size` is
-`s`, and the limit is 10 for every Qwen cell. The ranked M5 must satisfy
-`is_nax_available` (`device.cpp:913-925`), which requires `arch_gen >= 17`, so
-the ranked runner takes the same `10 / 12 / 18` table.
-
-**The minimum `vector_limit` over every branch in the function is 10.**
-
-### 1.2 Decode never reaches the QMM threshold
-
-Maximum decode width is `M = 1 primary + 8 drafts = 9`. `9 < 10`, so every
-transposed decode cell routes to `dispatch_qmv`. It never reaches `qmm`,
-`qmm_nax`, or `qmm_splitk`.
-
-Wide quantized matmul call sites reached once per decode round, all
-affine-4 group-64, `transpose = true`, `x = [1, M, K]` row contiguous:
-
-| site | calls / round | K | N | source |
-| --- | --- | --- | --- | --- |
-| `mlp.gate_up` | 64 | 5120 | 34816 | `Qwen35.swift:1737` |
-| `mlp.down` | 64 | 17408 | 5120 | `Qwen35.swift:1741` |
-| `gdn.in_proj` | 48 | 5120 | 16480 | `Qwen35.swift:1743` |
-| `gdn.out_proj` | 48 | 6144 | 5120 | `Qwen35.swift:1744` |
-| `fa.qkv` | 16 | 5120 | 14336 | `Qwen35.swift:1746` |
-| `fa.o_proj` | 16 | 6144 | 5120 | `Qwen35.swift:1747` |
-| `lm_head` | 1 | 5120 | 248320 | `Qwen35.swift:1737` |
-| **total** | **257** | | | |
-
-No site has `x.size() / K != M`, so no site takes a reshape path that would
-change the routing width. The only `M >= 10` event in the whole request is the
-untimed seed-prime head-fc flush at `M` near 512.
-
-### 1.3 What Q actually touches
-
-Q is RULE 377, commits `2679ef6c` and `232b9fda`:
-`QuantizedBlockLoader::shift_dst`, `qmm_t_pipelined_k_loop`, the `qmm_t_impl`
-rewrite, and `Ws[BN*BK_padded] -> Ws[2*BN*BK_padded]` in `affine_qmm_t`,
-`affine_qmm_t_splitk` and `affine_gather_qmm_t`. Nothing in Q touches qmv,
-crossrow, or `qmm_n`. `qmm_t_splitk` is inside the blast radius, but ledger
-entry 258 already proves it is dead code on this model.
+it reports `applegpu_g16s`. `device.cpp:565-572` parses `arch_gen` from the two
+digits before the final character, so that is gen 16, size `s`. The ranked M5
+must satisfy `is_nax_available`, which requires `arch_gen >= 17`
+(`device.cpp:913-925`), so it takes the same fall-through and the same limit
+of 10.
 
 ### 1.4 Required statement
 
-**The set of Q-consuming cells at `M <= 5` is empty. It is also empty at
-`M = 6, 7, 8, 9`. Q's only live consumer inside a timed leg is the 512-token
-seed prefill.**
+Maximum decode width is `M = 1 committed primary + 8 drafts = 9`.
 
-### 1.5 Anomalies found while counting
+**The set of Q-consuming cells at `M <= 5` is EMPTY, and it is equally empty at
+`M = 6, 7, 8, 9`, on this host and on the ranked M5.** Q's only live consumer
+inside a timed leg is the 512-token seed prefill.
 
-These are observations, not part of the ruling.
+The tree already says so independently. `Qwen36MTPBlockSession.swift:1049` and
+`:1658` both record that projections at `M` in 6..9 stay on the per-row-exact
+QMV dispatch because the host limit is "10+ on this generation for these
+shapes".
 
-- The MTP head fc at `Qwen35MTP.swift:195` and `:229` (K=10240, N=5120) is
-  un-routed and reaches the MLX crossrow qmv path.
-- The 2-bit centroid readout at `Qwen35.swift:5823` has N=12292, so `N % 8 == 4`.
-- `gatherQuantizedMM` at `Qwen35.swift:5853` has `w.ndim == 3` and B=1844, so it
-  reaches `gather_qmv`.
-- One `transpose = false` site at `KVCache.swift:2124` is unreachable.
+### 1.5 The small-N hypothesis is refuted cell by cell
+
+F2 relayed a characterization in which Q's decode consumers are the
+non-routable small-`N` cells, for example a kv projection at `n=1024` that
+fails an `n >= 4096` test. Three separate parts of that do not hold here.
+
+1. There is no custom quantized matvec replica in this tree. The only
+   `MLXFast.metalKernel` uses are the two linear top-two evidence kernels at
+   `Qwen36MTPBlockSession.swift:2209` and `:2261`. Every projection reaches MLX.
+2. `get_qmv_batch_limit` gates on a **conjunction** of `D` and `O`. attn.k and
+   attn.v at `N=1024`, and gdn.in_b and gdn.in_a at `N=48`, all still have
+   `D = 5120 > 4096`, so they land in the same fall-through and get the same
+   limit of 10.
+3. Falling through to MLX does not reach Q anyway. At `M < vector_limit` the
+   dispatch is `dispatch_qmv`, which Q does not touch. Even the
+   `transpose_ == false` path, whose limit is the constant 4, reaches
+   `affine_qmm_n`, and Q does not touch `qmm_n` either.
+
+### 1.6 The M = 9 row, for the reopened declamp question
+
+At `M = 9` on gen 16 and on gen >= 17, the count of cells that reach `qmm_t` or
+`qmm_t_nax` is **0 of 497**. A declamp to `M = 9` cannot create a Q consumer
+and cannot be priced through Q.
+
+The only host class where `M = 9` crosses the limit is gen 13/14 size s, where
+the limit is 6 and **all 497 calls** switch at `M >= 6`. That is a cheap,
+falsifiable explanation for a local step law that does not transfer: if any
+local host reports gen 13 or 14, its `M >= 6` behaviour is a different kernel
+family from the ranked runner's. Running `research/e176_arch_probe.swift` on
+each student Mac settles it in seconds.
 
 ## 2. Per-prompt null calibration (`harness=ranked`)
 
 Board snapshot: 976 scored 512-token receipts, 192 distinct schedule
-fingerprints. The organizer-main-schedule cluster holds 115 receipts.
+fingerprints, 115 in the organizer-main-schedule cluster.
 
-The serial leg is byte-identical by construction across all of these receipts,
-so its spread is pure measurement noise.
+Scalar widths:
 
-- Per-receipt common offset, robust sd: **0.1422 %**; pairwise **0.2011 %**.
-- Per-prompt serial residual sd: 0.155 % to 0.171 %.
-- **Adopted per-prompt pairwise 1 sigma: 0.298 % to 0.314 %**, from
+- Per-receipt common offset, robust sd **0.1421 %**; pairwise 0.2011 %.
+- Per-prompt serial residual sd 0.155 % to 0.171 %.
+- **Adopted per-prompt pairwise 1 sigma 0.298 % to 0.314 %**, from
   `sqrt(2 * serial_resid_p^2 + common_null^2)`.
-- Contaminated upper bound from the 115-receipt candidate cluster: 0.68 % to
-  0.97 %. Use it only as a ceiling; it contains real candidate differences.
-- Byte-identical control pair, crown `ec24d591` against A `5a9f130a`:
-  mean −0.2346 %, sd of the eight prompts 0.1816 %.
+- Contaminated ceiling from the candidate cluster 0.68 % to 0.97 %.
 
-At sigma near 0.30 %, the original `B - C` vector is significant on travel
-(−3.8 sigma), medicine (−3.0), beagle (−2.9), republic (−2.2) and drama (−2.2),
-and is **not** significant on plutarch (+0.39), essays (−0.39) or botany
-(−0.80).
+### 2.1 Sign structure of the byte-identical pair, crown `ec24d591` vs A `5a9f130a`
 
-## 3. Mechanism fit, and the split that settles it (`harness=ranked`)
+| prompt | serial % | prefill % | decode % | leg % |
+| --- | --- | --- | --- | --- |
+| plutarch | −0.0935 | −0.2456 | −0.0049 | −0.0131 |
+| drama | −0.2427 | −0.1009 | −0.5710 | −0.5440 |
+| travel | −0.2137 | −0.3742 | −0.4705 | −0.4641 |
+| beagle | −0.1513 | −0.2499 | −0.2473 | −0.2475 |
+| republic | −0.4306 | −0.1471 | −0.1742 | −0.1713 |
+| essays | **+1.1256** | −0.3802 | −0.1459 | −0.1705 |
+| medicine | −0.0075 | −0.0218 | −0.0927 | −0.0852 |
+| botany | +0.0541 | −0.2373 | −0.1748 | −0.1815 |
+| **mean8** | **+0.0051** | **−0.2196** | **−0.2351** | **−0.2346** |
+| **sd8** | 0.4768 | 0.1254 | 0.1916 | 0.1816 |
+| **negative** | 6/8 | **8/8** | **8/8** | **8/8** |
 
-One-parameter fits to the `B - C` vector, seven degrees of freedom:
+This is the decisive property, and a scalar sigma hides it. **The null is not
+sign-symmetric.** Two byte-identical candidate builds differ by a coherent
+whole-receipt offset of about −0.23 % that appears on all eight prompts in the
+candidate channel, with a per-prompt spread of only 0.18 % around it.
 
-| model | beta | se | chi2 |
-| --- | --- | --- | --- |
-| prefill, constant s per leg | 34.7 ms | 6.6 ms | 14.38 |
-| round, constant s per round | 249.9 us | 56.3 us | 22.41 |
-| uniform, constant per cent | −0.5754 % | 0.1093 % | 14.41 |
+Two consequences.
 
-The round model is refuted: it needs plutarch at −0.82 % but plutarch measures
-+0.05 %, a +3.1 sigma miss.
+1. A whole-receipt shift of about +-0.25 % in the candidate channel is
+   **ordinary**, and averaging over prompts does not reduce it. Any
+   cross-receipt claim smaller than that is unsafe.
+2. The serial channel does not carry the same offset: mean8 +0.0051 %, 6/8
+   negative, with one large excursion at essays of +1.1256 %. The serial leg is
+   byte-identical by construction, so that essays value is pure measurement
+   noise, and it is why essays is a weak lever throughout this analysis.
+
+## 3. Mechanism fit (`harness=ranked`)
+
+One-parameter fits to the `B - C` vector, 7 dof: prefill (34.7 +- 6.6 ms/leg,
+chi2 14.38), round (249.9 +- 56.3 us/round, chi2 22.41), uniform
+(−0.5754 +- 0.1093 %, chi2 14.41). The round model is refuted: it needs
+plutarch at −0.82 % and plutarch measures +0.05 %, a +3.1 sigma miss.
 
 Two-parameter fit: per leg **+35.5 +- 12.5 ms** (2.8 sigma), per round
 **−7.9 +- 107 us** (0.1 sigma, consistent with zero, 95 % upper bound
-218 us per round).
+218 us/round).
 
-**Essays as a falsification lever.** The assignment asked whether essays
-discriminates. It does not, in either direction. Essays sits at −0.39 sigma
-against zero, and all three one-parameter models predict essays within
-0.29 percentage points of each other (−0.687, −0.417, −0.575). Essays cannot
-separate the prefill model from the uniform model, and it cannot reject the
-round model either. Plutarch is the only prompt that discriminates, because its
-edl of 0.156 makes its round count and its prefill share diverge. The
-discriminating evidence is therefore plutarch, not essays.
+**Essays as a falsification lever: it does not work, in either direction.**
+Essays sits at −0.39 sigma against zero, and the three one-parameter models
+predict −0.687, −0.417 and −0.575 %, a spread of 0.29 pp that is inside the
+per-prompt sigma. Section 2.1 explains why: essays carries the largest serial
+excursion in the byte-identical control. Plutarch is the only prompt that
+discriminates, because its edl of 0.156 makes round count and prefill share
+diverge.
 
-### 3.1 The decisive channel split, with no model at all
+### 3.1 The channel split, with no model
 
-Each receipt carries a per-prompt `prefill_seconds_per_token` field, so the leg
-splits directly:
-
-```text
-leg     = 512 * mtp_seconds_per_token_mean
-prefill = 512 * prefill_seconds_per_token
-decode  = leg - prefill
-```
+Each receipt carries per-prompt `prefill_seconds_per_token`, so
+`leg = 512 * mtp_seconds_per_token_mean`,
+`prefill = 512 * prefill_seconds_per_token`, `decode = leg - prefill`.
 
 Prefill share of the candidate leg: plutarch 3.42 %, drama 5.71 %, travel
 6.47 %, beagle 9.51 %, republic 10.49 %, essays 10.42 %, medicine 10.47 %,
-botany 10.60 %.
+botany 10.60 %; mean7 9.10 %.
 
-`B - A` per prompt, the clean Q instrument, because both trees were inspected
-first hand and only A is free of the instrumentation that contaminates C:
+`B - A` is the clean Q instrument, because A is organizer-pure and both trees
+were inspected first hand:
 
-| prompt | prefill % | decode % |
-| --- | --- | --- |
-| plutarch | +1.9225 | −0.0579 |
-| drama | +2.1709 | −0.1685 |
-| travel | +1.7964 | +0.1604 |
-| beagle | +1.7070 | −0.0839 |
-| republic | +2.0347 | +0.1444 |
-| essays | +1.9133 | +0.0178 |
-| medicine | +2.0869 | +0.0709 |
-| botany | +1.8552 | +0.0391 |
-| **mean** | **+1.9359** | **+0.0258**, sd 0.11 % |
-
-Factor system by channel, mean8 prefill / mean7 decode / mean7 leg:
-
-| pair | content | prefill | decode | leg |
-| --- | --- | --- | --- | --- |
-| B − A | Q + I | +1.9359 | +0.0258 | +0.2004 |
-| C − A | I | −0.2315 | +0.9889 | +0.8765 |
-| B − C | Q as previously derived | +2.1724 | −0.9524 | −0.6691 |
-| D − B | E165 − I | +0.0692 | +0.7579 | +0.6878 |
-| D − A | Q + I + E165 | +2.0064 | +0.7841 | +0.8899 |
-| crown − A | byte-identical null | −0.2196 | −0.2680 | −0.2663 |
-
-Prefill-only closure test, mean7. A factor that acts only on the seed must show
-`leg % = prefill % * prefill share`. This form does not depend on the
-subtraction being exact, so it survives the probe caveat on
-`prefill_seconds_per_token`:
-
-| pair | prediction | measured leg | residual |
+| prompt | prefill % | decode % | leg % |
 | --- | --- | --- | --- |
-| B − A | +0.1782 | +0.2004 | **+0.0222** |
-| C − A | −0.0231 | +0.8765 | +0.8996 |
-| B − C | +0.1996 | −0.6691 | −0.8687 |
-| D − B | +0.0061 | +0.6878 | +0.6817 |
-| crown − A | −0.0199 | −0.2663 | −0.2464 (null scale) |
+| plutarch | +1.9225 | −0.0579 | +0.0098 |
+| drama | +2.1709 | −0.1685 | −0.0340 |
+| travel | +1.7964 | +0.1604 | +0.2684 |
+| beagle | +1.7070 | −0.0839 | +0.0888 |
+| republic | +2.0347 | +0.1444 | +0.3450 |
+| essays | +1.9133 | +0.0178 | +0.2167 |
+| medicine | +2.0869 | +0.0709 | +0.2846 |
+| botany | +1.8552 | +0.0391 | +0.2331 |
+| **mean8** | **+1.9359** | **+0.0153** | **+0.1766** |
+| **sd8** | 0.1544 | 0.1136 | 0.1379 |
+| **negative** | **0/8** | 3/8 | 1/8 |
+
+Q's prefill effect is 8/8 the same sign. Q's decode effect is 3/8 negative with
+a mean of +0.0153 % and a spread of 0.11 %, which is the sign-symmetric null of
+section 2.1 with no offset at all. That is what "no consumer" looks like in a
+measurement.
+
+Prefill-only closure test, mean7, where a seed-only factor must satisfy
+`leg % = prefill % * prefill share`:
+
+| pair | content | prediction | measured leg | residual |
+| --- | --- | --- | --- | --- |
+| B − A | Q + I | +0.1782 | +0.2004 | **+0.0222** |
+| C − A | I | −0.0231 | +0.8765 | +0.8996 |
+| B − C | Q as previously derived | +0.1996 | −0.6691 | −0.8687 |
+| D − B | E165 − I | +0.0061 | +0.6878 | +0.6817 |
+| crown − A | byte-identical null | −0.0199 | −0.2663 | −0.2464 |
 
 Only `B - A` closes, and it closes at the null scale.
 
-### 3.2 What this means
+**Q is prefill-only: +1.94 % of prefill, which is +10 to +12 ms per leg, and a
+decode effect indistinguishable from zero. Net candidate leg +0.20 % slower.**
+This reproduces Edward's E175 local +1.936 %, 8/8 same sign (`harness=local`,
+W&B `8bc65oel`) to three digits, so the prefill penalty transfers from local to
+ranked.
 
-- **Q is prefill-only.** It costs +1.94 % of prefill, which is +10 ms to +12 ms
-  per leg. Its decode effect is +0.026 % with sd 0.11 %, and all eight prompts
-  sit inside +-0.17 %. Net candidate leg: **+0.20 % slower**.
-- This reproduces Edward's E175 local measurement of **+1.936 % slower prefill,
-  8 of 8 same sign** (W&B `8bc65oel`, `harness=local`) to three digits. The
-  penalty transfers from the local host to the ranked runner exactly.
-- **FINDING 440's `Q = −0.6691 %` is an artifact of receipt C** (`fda590bb`,
-  already flagged unfetchable by FINDING 443). B and C do not carry the same
-  instrumentation: C carries +0.90 % of decode cost that B does not, so
-  `B - C` credits Q with removing a cost Q never added.
-- The `+0.0070 %` additivity residual cannot detect this. `(C - A) + (B - C) +
-  (D - B) = D - A` is an identity in receipt values and holds for any C.
-- **E167's original reading was correct**: decode flat, leg about +0.23 %
-  slower.
+## 4. The quantitative implication: receipt C is the outlier
 
-### 3.3 Score prediction for `A + Q`
+FINDING 450 makes the Q decode term identically zero. Then `B - C` must equal
+its prefill-only prediction, and it does not:
+
+| quantity | value |
+| --- | --- |
+| prefill share, mean7 | 9.0960 % |
+| `B - C` prefill, mean7 | +2.1947 % |
+| predicted `B - C` leg | **+0.1996 %** |
+| measured `B - C` leg, mean7 | **−0.6691 %** |
+| **unexplained, located in C** | **−0.8687 %** |
+
+Q-prefill pushes B the wrong way for FINDING 440: it makes B *slower* than C by
+about +0.20 %, not faster by 0.67 %. So `B - C` needs a non-code component of
+about **−0.87 %** sitting in receipt C.
+
+The independent check agrees. `C - A` is an inert-instrumentation-only
+contrast, yet its decode channel is **+0.9889 % mean7** while its prefill
+channel is −0.2315 %. Against the whole-receipt common-offset sigma of
+0.1421 % that is **7.0 sigma**, and it is about four times the −0.23 % coherent
+offset that section 2.1 measures between two byte-identical builds. `C - A`
+decode is 7/8 positive with a spread of 0.56 %, so it is not one bad prompt.
+
+**Conclusion: receipt C is an outlier.** Its candidate decode channel is slow by
+about +0.9 % for a reason that is not in its diff. FINDING 440's attribution of
+−0.6691 % to Q is therefore conditional on receipt C, and the E175 receipt is
+the test.
+
+The `+0.0070 %` additivity residual that validated FINDING 440 cannot detect
+this. `(C - A) + (B - C) + (D - B) = D - A` is an identity in receipt values and
+holds for any C, however anomalous.
+
+This converges with Edward's independent C/A anomaly of −1.08 % published on an
+inert-only contrast. It would also re-open D's E165 verdict, but only after the
+E175 receipt confirms the model. One step at a time.
+
+## 5. Registered prediction for E175 (`15017ddf`, frozen `9c4fefe8`)
 
 Applying the measured per-prompt `B - A` channel factors to A's own per-prompt
-legs and recomputing the published median gives **3.702087**, which is
-−0.155 % against A's `3.707845`. Compare the advisor's 3.7328 and 3.7267 and
-Edward's 3.7218 and 3.7157. **Q should come out of the ship set.**
+legs and recomputing the published median gives **3.702087**, against A's
+`3.70784519415395`, a change of **−0.155 %**.
 
-## 4. cap-4 composition ruling: NO
+| model | predicted published |
+| --- | --- |
+| advisor, ranked route | 3.7328 / 3.7267 |
+| Edward, prefill-adjusted | 3.7218 / 3.7157 |
+| **this census, model 3** | **3.7021**, band 3.700 to 3.704 |
 
-The cap-4 receipt landed while this analysis was running.
-`90c131dc` is organizer main with one literal changed,
-`segmentedVerifyDepthCap 7 -> 4`. Status **rejected**, published
-**3.54742900664627**, which is **−4.33 %** against organizer-pure A at
-`3.70784519415395`.
+The three models are separated by far more than the +-0.25 % whole-receipt null
+of section 2.1, so the receipt discriminates cleanly. If E175 lands near 3.702,
+Q is a net cost, it should leave the ship set, and receipt C is confirmed as the
+outlier. If it lands near 3.727, this census is wrong about the live call path
+and section 1 must be re-derived.
 
-cap-4 against A, by channel:
+## 6. Open conflict: FINDING 444
+
+FINDING 444 derives a local `Q` leg effect near **−0.88 %**. At the 23.4 %
+local prefill share, and with the measured local prefill penalty of +1.936 %,
+that requires about **−1.33 % of local decode**. Section 1 forbids that channel
+on any gen 16 or gen >= 17 host.
+
+The two results cannot both be right. Two measurements settle it, in this
+order.
+
+1. **Free, seconds.** Run `research/e176_arch_probe.swift` on the host that
+   produced FINDING 444. If it reports gen 13 or 14, the limit there is 6, all
+   497 calls switch to `qmm_t` at `M >= 6`, and FINDING 444 is real but
+   host-specific and non-transferable. If it reports gen 16, the local decode
+   channel is as empty as the ranked one and FINDING 444 is an artifact.
+2. **One ABBA-counterbalanced local session.** Organizer-pure against
+   organizer-pure plus Q, on one host, with **prefill seconds and decode
+   seconds logged separately** instead of only the leg total. The existing local
+   evidence reports only the leg, and that is exactly the aggregation that lets
+   a +1.94 % prefill penalty and a spurious decode term hide in one number.
+
+## 7. cap-4 (`harness=ranked`, moot for composition)
+
+Recorded because I measured it before F2 declared the composition dead.
+
+Receipt `90c131dc` is organizer main with one literal changed,
+`segmentedVerifyDepthCap 7 -> 4`. Rejected at **3.54742900664627**, which is
+**−4.33 %** against A at `3.70784519415395`.
 
 | prompt | A edl | cap-4 edl | prefill % | decode % | leg % |
 | --- | --- | --- | --- | --- | --- |
@@ -236,70 +339,44 @@ cap-4 against A, by channel:
 | botany | 6.148 | 3.827 | −0.0980 | −0.3191 | −0.2955 |
 | **mean** | | | **−0.0363** (8) | **+2.7264** (7) | **+2.4393** (7) |
 
-cap-4 behaves exactly as a decode-channel factor: prefill is flat within the
-null on all eight prompts, and the whole cost is decode.
+cap-4 is a clean decode-channel factor: prefill flat within the null on all
+eight prompts, and the whole cost in decode. It is the exact mirror of Q, which
+is prefill-only.
 
-**The ruling.** Q pays nothing at `M <= 5` because it pays nothing at any
-decode `M`. Section 1 shows the consumer set is empty at every width the decode
-path can reach, and section 3 confirms it in the ranked measurement. cap-4
-changes only the decode denominator, which is the channel Q does not touch.
-Composition therefore cannot create a Q consumer, and Q's fixed prefill penalty
-rides on top unchanged.
+**Ruling, for the record: do not compose.** Q pays nothing at `M <= 5` because
+it pays nothing at any decode `M`. cap-4 moves only the decode denominator, the
+one channel Q does not touch, so composition cannot create a Q consumer and Q's
+fixed prefill penalty rides on top unchanged. Composing the measured `B - A`
+factors onto cap-4 gives a published median of **3.542212**, a further
+−0.147 %.
 
-Composing the measured per-prompt `B - A` factors onto each base and recomputing
-the published median:
+**Anomaly worth its own question.** botany is clipped hardest, edl 6.148 to
+3.827, and is the one clipped prompt that does not regress, at −0.32 % decode,
+while beagle, republic, essays and medicine are clipped less and lose 4 % to
+6 %. Whatever makes botany's deep drafts worthless is a real signal about the
+adaptive depth walk, and it may be useful to Askeladd's E177 cost(M) fit.
 
-| base | published | reconstructed | + Q | delta |
-| --- | --- | --- | --- | --- |
-| organizer-pure A | 3.707845 | 3.707845 | 3.702087 | −0.1553 % |
-| cap-4 | 3.547429 | 3.547429 | 3.542212 | −0.1471 % |
-
-**Do not compose Q with cap-4.** cap-4 alone already costs 4.33 % of published
-score, and adding Q costs a further 0.147 %. There is no width at which the
-composition pays.
-
-### 4.1 A cap-4 anomaly worth a separate question
-
-botany is clipped hardest, edl 6.148 down to 3.827, and it is the one clipped
-prompt that does **not** regress: decode −0.32 %. beagle, republic, essays and
-medicine are clipped less and each regress by 4 % to 6 %. Whatever makes
-botany's deep drafts worthless is a real and separate signal about the adaptive
-depth walk. I did not chase it; it belongs in its own experiment.
-
-## 5. Open conflict, stated honestly
-
-FINDING 444 derives a local `Q` leg effect near **−0.88 %**. At the 23.4 %
-local prefill share, and with the measured local prefill penalty of +1.936 %,
-that would need about **−1.33 % of local decode**. That is the same channel
-this experiment shows is empty. The two results cannot both be right.
-
-I am not papering over it. The settling measurement is a matched local pair,
-organizer-pure against organizer-pure plus Q, on one host in one
-ABBA-counterbalanced session, with **prefill seconds and decode seconds logged
-separately** rather than only the leg total. If that pair reproduces a local
-decode gain, section 1's source census is wrong about the live call path and
-the routing claim must be re-derived. If it shows local decode flat, FINDING 444
-is measuring something other than Q.
-
-## 6. Reproduction
+## 8. Reproduction
 
 ```bash
+python3 research/e176_cell_census.py                 # task 1, source only
 YUKON_API_TOKEN=... python3 research/board_per_prompt.py fetch
-python3 research/e176_q_consumer_census.py     # writes research/e176-q-census.json
+python3 research/e176_q_consumer_census.py           # tasks 2 and 3
 WANDB_API_KEY=... python3 research/e176_wandb.py
-swift research/e176_arch_probe.swift           # Metal device metadata only
+swift research/e176_arch_probe.swift                 # Metal metadata only
 ```
 
-## 7. Suggested follow-ups, not implemented
+## 9. Suggested follow-ups, not implemented
 
-1. Run the section 5 settling pair. It is cheap and it closes the only open
-   conflict in the Q story.
-2. Ask why botany tolerates a 2.32-token edl clip with no decode cost while
-   beagle loses 4.6 %. The adaptive depth walk is spending real time on drafts
-   that four other prompts need and botany does not.
-3. If a QMM-path win is still wanted, it needs a mechanism that raises decode
-   `M` to 10 or more, or a change to the qmv path instead. Optimizing `qmm_t`
-   further cannot move this model's decode at all.
-4. Re-audit any other finding that was derived from receipt C `fda590bb`. The
-   additivity check that validated FINDING 440 is an identity and cannot detect
-   a contaminated leg.
+1. Run `research/e176_arch_probe.swift` on every student Mac. It is free and it
+   either explains or kills FINDING 444 and the non-transferring local step law
+   in one reading.
+2. Re-audit every finding derived from receipt C `fda590bb`. The additivity
+   check that validated FINDING 440 is an identity and cannot detect a
+   contaminated leg.
+3. Report the null as a coherent whole-receipt offset of about −0.23 % plus a
+   0.18 % per-prompt spread, not as a single symmetric sigma. Sign structure
+   across the eight prompts is a stronger test than any mean.
+4. A QMM-path win needs decode `M >= 10`, which the eight-draft cap forbids, or
+   a change to the qmv path instead. Further `qmm_t` work cannot move ranked
+   decode at all.

@@ -11,26 +11,7 @@ import json
 import wandb
 
 CENSUS = "research/e176-q-census.json"
-
-# harness=source. Wide quantized matmul call sites reached once per decode
-# round by the scored worker, from Sources/MLXFastModel/Qwen35.swift.
-CONSUMERS = [
-    ("mlp.gate_up", 64, 5120, 34816, "Qwen35.swift:1737"),
-    ("mlp.down", 64, 17408, 5120, "Qwen35.swift:1741"),
-    ("gdn.in_proj", 48, 5120, 16480, "Qwen35.swift:1743"),
-    ("gdn.out_proj", 48, 6144, 5120, "Qwen35.swift:1744"),
-    ("fa.qkv", 16, 5120, 14336, "Qwen35.swift:1746"),
-    ("fa.o_proj", 16, 6144, 5120, "Qwen35.swift:1747"),
-    ("lm_head", 1, 5120, 248320, "Qwen35.swift:1737"),
-]
-
-# harness=source. get_qmv_batch_limit, backend/metal/quantized.cpp:84-125.
-ARCH_TABLE = [
-    ("arch_gen 13/14 (M3/M4 family)", "6/10/14", 6, "not the ranked runner"),
-    ("arch_gen 16 size s (this host, probed)", "10/12/18", 10, "first-hand"),
-    ("arch_gen >= 17 (ranked M5, _nax required)", "10/12/18", 10, "inferred"),
-    ("arch_size d", "32/18/12", 12, "not this chip"),
-]
+CELLS = "research/e176-cell-census.json"
 
 
 def main():
@@ -60,18 +41,34 @@ def main():
             "max_decode_width_M": 9,
         })
 
+    cc = json.load(open(CELLS))
+    branch_names = sorted(cc["branches"])
     consumers = wandb.Table(
-        columns=["site", "calls_per_round", "K", "N", "source",
-                 "transpose", "M_decode_max", "vector_limit_min",
-                 "routed_kernel", "consumes_Q"])
-    for name, calls, k, n, src in CONSUMERS:
-        consumers.add_data(name, calls, k, n, src, True, 9, 10,
-                           "dispatch_qmv", False)
+        columns=["cell", "K", "N", "calls_per_round", "source", "transpose",
+                 "M_decode_max", "routed_kernel", "consumes_Q"]
+        + ["limit_" + b.replace(" ", "_") for b in branch_names])
+    for c in cc["cells"]:
+        consumers.add_data(c["cell"], c["K"], c["N"], c["calls_per_round"],
+                           c["source"], c["transpose"], cc["max_decode_M"],
+                           "dispatch_qmv", False,
+                           *[c["limits"][b] for b in branch_names])
 
     arch = wandb.Table(
-        columns=["branch", "limits_str", "vector_limit_min", "provenance"])
-    for row in ARCH_TABLE:
-        arch.add_data(*row)
+        columns=["branch", "arch_gen", "arch_size", "limit_all_cells",
+                 "first_consuming_M", "q_calls_at_M9", "provenance"])
+    for b in branch_names:
+        v = cc["branches"][b]
+        arch.add_data(b, v["arch_gen"], v["arch_size"],
+                      cc["cells"][0]["limits"][b], v["first_consuming_M"] or 0,
+                      v["q_consuming_calls_by_M"]["9"], v["provenance"])
+
+    signs = wandb.Table(
+        columns=["pair", "channel", "mean8_pct", "sd8_pct", "negative_of_8",
+                 "max_abs_pct"])
+    for pair, chans in sorted(d["sign_structure"].items()):
+        for chan, v in sorted(chans.items()):
+            signs.add_data(pair, chan, v["mean8"], v["sd8"],
+                           v["negative_of_8"], v["max_abs"])
 
     prompts = sorted(ch["q_prefill_pct"])
     channel = wandb.Table(
@@ -121,12 +118,29 @@ def main():
                         m["pred_pct"]["plutarch"],
                         d["q_vector"]["pct"]["plutarch"])
 
+    oc = d["receipt_c_outlier"]
     scalars = {
-        "census/wide_qmv_calls_per_round": sum(c[1] for c in CONSUMERS),
-        "census/distinct_shapes": len(CONSUMERS),
-        "census/q_consuming_cells_at_M_le_5": 0,
-        "census/q_consuming_cells_at_M_le_9": 0,
-        "census/vector_limit_min_over_all_branches": 10,
+        "census/quantized_calls_per_round": cc["total_calls_per_round"],
+        "census/distinct_cells": len(cc["cells"]),
+        "census/q_consuming_calls_at_M_le_5": 0,
+        "census/q_consuming_calls_at_M_le_9": 0,
+        "census/vector_limit_this_host": 10,
+        "census/vector_limit_ranked_m5": 10,
+        "outlier/bc_leg_predicted_pct": oc["bc_leg_predicted_pct"],
+        "outlier/bc_leg_measured_pct": oc["bc_leg_measured_pct"],
+        "outlier/unexplained_in_C_pct": oc["unexplained_pct"],
+        "outlier/ca_decode_mean7_pct": oc["ca_decode_mean7_pct"],
+        "outlier/ca_decode_sigma": oc["ca_decode_sigma"],
+        "null/byte_identical_leg_negative_of_8":
+            d["sign_structure"]["crown-A"]["leg"]["negative_of_8"],
+        "null/byte_identical_leg_mean8_pct":
+            d["sign_structure"]["crown-A"]["leg"]["mean8"],
+        "null/byte_identical_leg_sd8_pct":
+            d["sign_structure"]["crown-A"]["leg"]["sd8"],
+        "q/prefill_negative_of_8":
+            d["sign_structure"]["B-A"]["prefill"]["negative_of_8"],
+        "q/decode_negative_of_8":
+            d["sign_structure"]["B-A"]["decode"]["negative_of_8"],
         "null/common_pairwise_pct": d["null"]["common_pairwise_null_pct"],
         "null/cluster_common_offset_sd_pct":
             d["null"]["cluster_common_offset_sd_pct"],
@@ -158,6 +172,7 @@ def main():
     run.log({"consumers": consumers, "arch_branches": arch,
              "channel_split": channel, "factor_by_channel": factors,
              "models": models, "cap4_composition": cap, "cap4_edl": edl,
+             "sign_structure": signs,
              **scalars})
     run.summary.update(scalars)
     print("logged", run.url, run.id)

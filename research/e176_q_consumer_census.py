@@ -467,6 +467,83 @@ def main():
         "composed": composed,
     }
 
+    # --------------------------------- byte-identical null, sign structure
+    print()
+    print("=" * 78)
+    print("5. BYTE-IDENTICAL NULL PAIR AND THE RECEIPT-C OUTLIER TEST")
+    print("=" * 78)
+
+    def channels(hi, lo):
+        return {
+            "serial": {p: 100.0 * (vv[hi][p]["serial_seconds_per_token_mean"]
+                                   - vv[lo][p]["serial_seconds_per_token_mean"])
+                       / vv[lo][p]["serial_seconds_per_token_mean"]
+                       for p in ALL8},
+            "prefill": {p: 100.0 * (pre[hi][p] - pre[lo][p]) / pre[lo][p]
+                        for p in ALL8},
+            "decode": {p: 100.0 * (dec[hi][p] - dec[lo][p]) / dec[lo][p]
+                       for p in ALL8},
+            "leg": {p: 100.0 * (lg[hi][p] - lg[lo][p]) / lg[lo][p]
+                    for p in ALL8}}
+
+    out["sign_structure"] = {}
+    for hi, lo, what in (("crown", "A", "byte-identical null"),
+                         ("C", "A", "inert instrumentation only"),
+                         ("B", "A", "Q + I")):
+        ch = channels(hi, lo)
+        print()
+        print("  %s - %s  (%s)" % (hi, lo, what))
+        print("    prompt      serial %%  prefill %%   decode %%      leg %%")
+        for p in sorted(ALL8, key=lambda x: edl[x]):
+            print("    %-9s %+9.4f %+10.4f %+10.4f %+10.4f"
+                  % (p, ch["serial"][p], ch["prefill"][p], ch["decode"][p],
+                     ch["leg"][p]))
+        summary = {}
+        for name, v in ch.items():
+            xs = [v[p] for p in ALL8]
+            summary[name] = {"mean8": st.mean(xs), "sd8": st.stdev(xs),
+                             "negative_of_8": sum(x < 0 for x in xs),
+                             "max_abs": max(abs(x) for x in xs),
+                             "per_prompt": v}
+            print("    %-8s mean8 %+.4f %%  sd %.4f %%  negative %d/8"
+                  % (name, summary[name]["mean8"], summary[name]["sd8"],
+                     summary[name]["negative_of_8"]))
+        out["sign_structure"]["%s-%s" % (hi, lo)] = summary
+
+    # Under FINDING 450 the Q decode term is identically zero, so B - C must
+    # equal its prefill-only prediction.  Whatever is left sits in receipt C.
+    common_sd = out["null"]["common_pairwise_null_pct"] / (2 ** 0.5)
+    share7 = st.mean(pre["C"][p] / lg["C"][p] for p in DRAFTING)
+    bc_pre7 = st.mean(100.0 * (pre["B"][p] - pre["C"][p]) / pre["C"][p]
+                      for p in DRAFTING)
+    bc_leg7 = st.mean(100.0 * (lg["B"][p] - lg["C"][p]) / lg["C"][p]
+                      for p in DRAFTING)
+    predicted = bc_pre7 * share7
+    residual = bc_leg7 - predicted
+    ca_dec7 = st.mean(100.0 * (dec["C"][p] - dec["A"][p]) / dec["A"][p]
+                      for p in DRAFTING)
+    print()
+    print("  FINDING 450 constraint: Q decode == 0, so B - C must be")
+    print("  prefill-only.")
+    print("    prefill share mean7            %8.4f %%" % (100.0 * share7))
+    print("    B - C prefill mean7            %+8.4f %%" % bc_pre7)
+    print("    predicted B - C leg            %+8.4f %%" % predicted)
+    print("    measured  B - C leg mean7      %+8.4f %%" % bc_leg7)
+    print("    UNEXPLAINED, sits in C         %+8.4f %%" % residual)
+    print("    independent check, C - A decode mean7 %+.4f %%" % ca_dec7)
+    print("    whole-receipt common-offset 1 sigma    %.4f %%" % common_sd)
+    print("    C - A decode significance              %.1f sigma"
+          % (ca_dec7 / common_sd))
+    out["receipt_c_outlier"] = {
+        "prefill_share_mean7": 100.0 * share7,
+        "bc_prefill_mean7_pct": bc_pre7,
+        "bc_leg_predicted_pct": predicted,
+        "bc_leg_measured_pct": bc_leg7,
+        "unexplained_pct": residual,
+        "ca_decode_mean7_pct": ca_dec7,
+        "common_offset_sigma_pct": common_sd,
+        "ca_decode_sigma": ca_dec7 / common_sd}
+
     out["q_vector"] = {"pct": q_pct, "ms": q_ms, "leg_s": leg, "edl": edl,
                        "rounds": rounds, "ndrc": ndrc,
                        "mean7_pct": st.mean(q_pct[p] for p in DRAFTING),
