@@ -498,6 +498,37 @@ struct E198DispatchPricingTests {
                         Cell(arm: "today_pair", mode: mode, m: m, kv: kvLength, kL: kL,
                             run: pair))
 
+                    // today_shipped: what the qL 6...9 branch actually issues.
+                    // The two SDPA calls above are only part of it: slicing the
+                    // wide query into head and tail rows materializes a copy for
+                    // each call, and the branch then concatenates the two
+                    // outputs. The fused kernel replaces all of that with one
+                    // dispatch, so this is the arm the gate must beat.
+                    let shipped: () -> Void = {
+                        switch mode {
+                        case .indep:
+                            var outputs: [MLXArray] = []
+                            outputs.reserveCapacity(chain)
+                            for index in 0 ..< chain {
+                                outputs.append(
+                                    E198Probe.today(
+                                        queries: wide[index % poolSize], keys: keys,
+                                        values: values))
+                            }
+                            eval(outputs)
+                        case .serial:
+                            var current = wide[0]
+                            for _ in 0 ..< chain {
+                                current = E198Probe.today(
+                                    queries: current, keys: keys, values: values)
+                            }
+                            eval(current)
+                        }
+                    }
+                    cells.append(
+                        Cell(arm: "today_shipped", mode: mode, m: m, kv: kvLength, kL: kL,
+                            run: shipped))
+
                     let fused: () -> Void = {
                         switch mode {
                         case .indep:
