@@ -29,7 +29,7 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-arm="${1:?usage: e167_build_arm.sh {B0|B1|B2|B3}}"
+arm="${1:?usage: e167_build_arm.sh ARM, one of B0 B1 B2 B3}"
 
 qwen35="Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
 session="Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
