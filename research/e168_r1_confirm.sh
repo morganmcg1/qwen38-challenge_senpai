@@ -13,11 +13,18 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 out="research/out/e174"
 rm -rf "${out}"
-mkdir -p "${out}"
+mkdir -p "${out}/reports"
 
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 export MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512
 export MLXFAST_SCORE_PATH="${PWD}/${out}/score.json"
+# Row-ledger closure and the per-round width census live in the CLI reports,
+# which benchmark-qwen-mtp.sh deletes with its scratch run directory. The
+# research passthrough keeps a copy after each measured phase has ended; the
+# E168 r0 timed legs used exactly this pair and were read as valid evidence.
+export MLXFAST_CAPTURE_DIR="${PWD}/${out}/reports"
+export MLXFAST_CAPTURE_REAL_BIN="${PWD}/.build/release/mlxfast-swift"
+export MLXFAST_SWIFT_BIN="${PWD}/research/capture-cli.sh"
 
 gpu_temp() {
   local macmon
