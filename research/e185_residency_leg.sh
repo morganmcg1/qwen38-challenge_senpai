@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # E185 stage 1: sample the GPU hardware idle counter across one decode leg.
 #
-#   usage: research/e185_residency_leg.sh TAG TOKENS [e79_trace_leg args...]
+#   usage: research/e185_residency_leg.sh TAG TOKENS [e90_leg args...]
 #
 # E165 sampled `powermetrics` in its human text form at 100 ms and read the
 # percentage field, so its window had to be found by thresholding whole
@@ -23,8 +23,8 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-tag="${1:?usage: e185_residency_leg.sh TAG TOKENS [e79 args...]}"
-tokens="${2:?usage: e185_residency_leg.sh TAG TOKENS [e79 args...]}"
+tag="${1:?usage: e185_residency_leg.sh TAG TOKENS [e90 args...]}"
+tokens="${2:?usage: e185_residency_leg.sh TAG TOKENS [e90 args...]}"
 shift 2
 
 interval_ms="${E185_RESIDENCY_INTERVAL_MS:-20}"
@@ -52,7 +52,7 @@ sudo -n powermetrics --samplers gpu_power -i "${interval_ms}" \
   -n "${max_samples}" -f plist > "${sampler_log}" 2>/dev/null &
 sleep 1
 
-research/e79_trace_leg.sh "${tag}" "${tokens}" "$@"
+research/e90_leg.sh "${tag}" "${tokens}" "$@"
 status=$?
 
 sleep 1
