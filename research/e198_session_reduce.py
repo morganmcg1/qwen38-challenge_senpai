@@ -236,6 +236,24 @@ def main() -> int:
         sensitivity["sign_agrees_with_headline"] = (
             (sensitivity["improvement"] >= 0) == (absolute["improvement"] >= 0))
 
+    # STEADY-STATE SENSITIVITY. The session's second half is balanced 2v2 under
+    # this ABBA order, and by then per-leg time has stopped drifting. Early legs
+    # carry a warm-up transient that the arm labels do not share evenly, so this
+    # is the cleaner estimate of the arm effect even though it uses fewer legs.
+    half = len(legs) // 2
+    late = legs[half:]
+    late_off = [x for x in late if x["arm"] == "OFF"]
+    late_fused = [x for x in late if x["arm"] == "FUSED"]
+    steady = None
+    if len(late_off) > 1 and len(late_fused) > 1:
+        steady = contrast([x["mtp_ms_per_round"] for x in late_off],
+                          [x["mtp_ms_per_round"] for x in late_fused],
+                          lower_is_better=True)
+        steady["legs_used"] = [x["leg"] for x in late]
+        steady["balanced_design"] = len(late_off) == len(late_fused)
+        steady["excludes_promotion_bar"] = (
+            steady["improvement_plus_2sigma"] < PROMOTION_MS_PER_ROUND)
+
     report = {
         "harness": "local",
         "probe": "e198-route1-row-amortized-kernel",
@@ -254,6 +272,7 @@ def main() -> int:
         "ratio_implied_improvement_ms_per_round": ratio_implied_improvement,
         "decisive_metric_absolute_mtp_ms_per_round": absolute,
         "cold_leg_sensitivity_absolute_mtp_ms_per_round": sensitivity,
+        "steady_state_sensitivity_absolute_mtp_ms_per_round": steady,
         "session_serial_seconds_per_token_mean": serial_mean,
         "session_effective_mean_draft_len_mean": edl_mean,
         "legs": legs,
@@ -288,6 +307,11 @@ def main() -> int:
               f"(2sig {sensitivity['min_detectable_effect_2sigma']:.3f}, "
               f"balanced={sensitivity['balanced_design']}, "
               f"sign_agrees={sensitivity['sign_agrees_with_headline']})")
+    if steady:
+        print(f"  steady state legs {steady['legs_used']}  "
+              f"{steady['improvement']:+.3f} ms/round "
+              f"(2sig {steady['min_detectable_effect_2sigma']:.3f}, "
+              f"excludes 0.5 bar={steady['excludes_promotion_bar']})")
     print()
     print("ratio mtp_decode_speedup (within-leg serial control, higher is better)")
     print(f"  OFF   {ratio['mean_off']:.4f} +/- {ratio['stdev_off']:.4f}")
