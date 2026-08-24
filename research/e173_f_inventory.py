@@ -220,7 +220,7 @@ def main() -> int:
     args = ap.parse_args()
 
     admission = load("admission.json")
-    gpu = load("gpu.json")
+    gpu = load("gpu-line-items.json")
     tablepays = load("tablepays.json")
 
     rows: list[dict] = []
@@ -238,7 +238,7 @@ def main() -> int:
         g_rows, slopes = gpu_rows(gpu)
         rows.extend(g_rows)
     else:
-        gaps.append("gpu.json missing: GPU line items unpriced")
+        gaps.append("gpu-line-items.json missing: GPU line items unpriced")
 
     rows.extend(PRIOR_HOST_ROWS)
 
