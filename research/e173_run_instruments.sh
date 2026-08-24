@@ -35,10 +35,24 @@ gpu)
   ;;
 esac
 
+# Host-side line items are the deliverable, and the scored worker is a release
+# build. A debug `swift test` inflates every host measurement, so set
+# E173_RELEASE=1 for any number that will be quoted. `-enable-testing` is
+# mandatory: SwiftPM refuses to test in release without it.
+config_args=(--force-resolved-versions)
+if [[ "${E173_RELEASE:-0}" == "1" ]]; then
+  config_args+=(-c release -Xswiftc -enable-testing)
+  export MLXFAST_E173_BUILD_CONFIGURATION=release
+else
+  export MLXFAST_E173_BUILD_CONFIGURATION=debug
+fi
+
 echo "arm=${arm} started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "configuration=${MLXFAST_E173_BUILD_CONFIGURATION}"
 sysctl -n machdep.cpu.brand_string
 git rev-parse HEAD
-swift test --force-resolved-versions --filter "${filter}" 2>&1 | tail -40
+set -o pipefail
+swift test "${config_args[@]}" --filter "${filter}" 2>&1 | tail -40
 status=$?
 echo "arm=${arm} finished=$(date -u +%Y-%m-%dT%H:%M:%SZ) status=${status}"
 exit "${status}"

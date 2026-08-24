@@ -151,6 +151,7 @@ struct E173AdmissionCensusTests {
         var payload: [String: Any] = [
             "experiment": "e173-admission-path-host-census",
             "harness": "local",
+            "build_configuration": env["MLXFAST_E173_BUILD_CONFIGURATION"] ?? "unset",
             "evaluates_anything": false,
             "holds_model": false,
             "reps": reps,
@@ -398,6 +399,7 @@ struct E173GPULineItemTests {
         var payload: [String: Any] = [
             "experiment": "e173-non-weight-pass-gpu-line-items",
             "harness": "local",
+            "build_configuration": env["MLXFAST_E173_BUILD_CONFIGURATION"] ?? "unset",
             "cool_gate_passed_real_gate": false,
             "gate_qualified_for_timing": false,
             "reps": reps,
