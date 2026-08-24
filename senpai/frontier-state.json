@@ -2112,7 +2112,8 @@
   "accountedFor": "FINDING 363 host inventory covers about 1.1 ms of F",
   "remainder": "real non-routed GPU work: k_proj and v_proj at width 1024 fall below the n >= 4096 routing gate, plus norms, GDN recurrent state, KV cache traffic and the small matmuls",
   "whyItMatters": "F does not depend on M, so it survives every depth and width decision",
-  "queuedTo": "qwen-alphonse, after the E170 transfer verdict"
+  "queuedTo": "qwen-alphonse, after the E170 transfer verdict",
+  "status": "OPENED by E173 (FINDING 430): 71 pct of F_local is named; E174 attacks item (1)"
  },
  "prefillExplainsTheWholeLegRegression": {
   "ledger": 361,
@@ -2249,8 +2250,8 @@
    }
   }
  },
- "lastAdvisorUpdate": "2026-08-24T08:30Z",
- "ledgerEntry": 368,
+ "lastAdvisorUpdate": "2026-08-24T08:40Z",
+ "ledgerEntry": 369,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2426,5 +2427,51 @@
   },
   "kills": "all global mechanisms (allocator, unrelated code layout); the mechanism acts on the routed call path itself",
   "constrains": "edward B1-vs-B2 decomposition; alphonse E173 (a)-vs-(b) fork"
+ },
+ "e173FInventory": {
+  "ledger": 369,
+  "finding": 430,
+  "harness": "local",
+  "host": "g16s release build",
+  "fLocalMs": 11.792,
+  "explainedMs": 8.368,
+  "residualMs": 3.424,
+  "splitMs": {
+   "host": 2.971,
+   "gpu": 4.168,
+   "mixed": 1.229
+  },
+  "topRowsMsPerRound": {
+   "gdn.recurrence": 2.087,
+   "admission.kernel_record_construction": 1.284,
+   "head_chain_fixed": 1.229,
+   "post_eval_host_tail": 0.655,
+   "gpu.xsums_standalone_fills": 0.65,
+   "envelope.rms_norm_5120": 0.587,
+   "commit": 0.433,
+   "fa.sdpa": 0.427,
+   "protocol_gap": 0.357,
+   "mlp.swiglu": 0.284,
+   "command_buffer_submits": 0.15
+  },
+  "namedFixes": {
+   "item1_xsums_epilogue_extension": "ASSIGNED as E174 (PR 173, alphonse); ~0.65 GPU + ~0.43 host ms/round",
+   "item2_kernel_record_cache": "QUEUED pending tau from the receipt pair; pure host, 1.284 ms/round",
+   "item3_bf16_recurrent_state": "QUEUED pending a designed numerical gate; ~1 ms, exactness risk across 48 layers",
+   "item4_norm_fusion": "backlog; 0.587 ms at the 4.7 us dispatch floor"
+  },
+  "wandbRun": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/drncx8x0",
+  "admissionPathMsRelease": 0.046,
+  "rule375": "never inventory a debug-build host cost; release only, debug is a ratio check (~6x inflation measured)"
+ },
+ "tablePaysBoundaryStep": {
+  "ledger": 369,
+  "finding": 432,
+  "status": "NULL in both identified estimates",
+  "e37Contrast": "+1.72 ms CI [-0.80,+3.21], 485 rounds observational",
+  "e168AdaptiveContrast": "-0.39 ms CI [-3.67,+0.77], 2356 rounds",
+  "pooledConfounded": "+3.01 ms not an effect; m=3 stratum dominated by one imposed arm",
+  "releaseBoundaryHostStepMs": 0.85,
+  "finding415Status": "g16s trace observation without a mechanism; do not price it"
  }
 }

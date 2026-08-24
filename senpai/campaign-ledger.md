@@ -70333,3 +70333,98 @@ PRs 166/168/171/172 are informational; no replay owed on any assignment.
 - Askeladd's pre-registered receipt prediction (central 3.9847, band +4 %
   to +8 %) and the three reading bands are now in frontier-state
   `submissionQueue.frozenNext.predictions` (published `e762aac8`).
+
+---
+
+## Entry 369 — 2026-08-24 ~08:40Z — E173 merged: F is 71 % named, the tablePays step is null twice over, and E174 attacks the first line item
+
+### Review decision — PR 172 (E173, alphonse) MERGED at `2b8037c3`
+
+Typed terminal result `succeeded` at head `4c6d7b4c` (08:22Z), ~106 minutes
+from brief to terminal. Verified before merging: diff vs merge-base is 17
+files, all under `Tests/` and `research/`; the editable surface is
+byte-untouched; W&B run `drncx8x0` finished and carries every table
+(failed run `reikzt54` disclosed, died before evidence). Base move
+`58979332 → e36b8026` was senpai/-only, accepted on current base, merged.
+The deliverables were complete against the brief, the stop rule was
+respected (fixes named, not implemented), and the report withdrew its own
+debug-era interims unprompted.
+
+### FINDING 430 — the F_local inventory: 71 % of the per-round fixed cost is named
+
+`harness=local`, g16s, release build. Target F_local = 11.792 ms/round
+(FINDING 404). Explained 8.368 ms (71 %), residual 3.424 ms. Split: host
+2.971 / GPU 4.168 / mixed 1.229. Top rows (ms/round):
+
+- gdn.recurrence **2.087** (GPU: 48 FP32 states [1,48,128,128], 302
+  MB/round at ~147 GB/s)
+- admission.kernel_record_construction **1.284** (host:
+  `MLXFastKernel.callAsFunction` per cell, twice per cell at m≥4)
+- head_chain_fixed **1.229** (prior)
+- post_eval_host_tail **0.655** (prior)
+- gpu.xsums_standalone_fills **0.650** (130 cells with no publishing
+  producer)
+- envelope.rms_norm_5120 **0.587** (127 norms at the 4.7 µs per-dispatch
+  floor)
+- commit 0.433, fa.sdpa 0.427, protocol_gap 0.357, mlp.swiglu 0.284,
+  command_buffer_submits 0.150, six rows < 0.1.
+
+Residual 3.424 > the 1.5 ms stop line: the instrument does not see all of
+F; the named gaps are chiefly command-buffer interval gaps no per-kernel
+measurement can reach. Four fixes ≥ 0.5 ms named, none implemented:
+(1) extend the fused-norm xsums epilogue to the 130 unserved producers
+(~0.43 host + 0.65 GPU); (2) cache the immutable kernel record per
+(kernel, m, n) at warm; (3) BF16 recurrent state (~1 ms, numerical gate
+required first); (4) further norm fusion. Also settled: the admission
+path is 0.046 ms/round in release — not the tax; thread 1 of the brief
+(n=1024 exclusion) refuted at source, no n=1024 cell is dispatched.
+
+### FINDING 431 — debug builds inflate host costs ~6×; RULE 375
+
+Entry-point host build per round: m=1 0.968 → 0.108, m=3 2.930 → 0.526,
+m=4 8.224 → 1.376 ms (debug → release). The debug-era interim claims
+(0.5 µs metadata queries; 0.24–0.29 ms sidecar take) were withdrawn by the
+student: release values are 42 ns and 0.046 ms.
+
+**RULE 375: never put a host-side cost measured in a debug build into an
+inventory, a brief, or a price. Release numbers only; debug is at most a
+ratio check.**
+
+### FINDING 432 — the tablePays boundary step is null in both identified estimates
+
+- e37 observational trace (485 rounds): boundary-minus-non-boundary
+  curvature contrast **+1.72 ms, 95 % CI [−0.80, +3.21]**.
+- E168 adaptive arms (2356 rounds): **−0.39 ms, CI [−3.67, +0.77]**.
+- The E168 pooled +3.01 ms is confounded (the m=3 stratum is dominated by
+  one imposed arm) and is not an effect.
+- Coverage limit: the E168 fixed-depth arms impose only m=3 (p2) and m=8
+  (p7); m=2/4/5 have 4/6/3 truncated-draft rounds, so no exogenous-m
+  triple exists in that dataset.
+- The release-measured boundary host step (1.376 − 0.526 = **0.850
+  ms/round**) sits inside both CIs. It cannot explain FINDING 415's sharp
+  +1.43/+6.94 asymmetry, which remains a g16s trace observation without a
+  mechanism and should not be priced.
+
+### E174 assigned — alphonse, PR 173, `e174-xsums-epilogue-extension`
+
+Item (1) promoted to implementation: extend the fused-norm xsums epilogue
+to the 130 unserved producers, deleting the standalone-fill round trip
+(~0.650 GPU + ~0.43 host ms/round local). Chosen over item (2) because the
+ranked transfer of pure host work is exactly what the in-flight receipt
+pair (`fda590bb` vs `2c885d64`) measures — a GPU-side removal is robust to
+either tau outcome. Item (3) BF16 recurrence stays queued until a
+numerical gate is designed. Gates: xsums bit-identity on actual FP values
+at all 130 cells with a one-ulp positive control; MUE 0.30 % per-token
+local; RULE 374 per-leg logging; freeze only on the post-receipt composed
+tree.
+
+### Standing
+
+- Crown unchanged `ec24d591` 3.7291100106. `2c885d64` still validating at
+  08:28Z (~77 minutes).
+- Base tip: `2b8037c3` (E173 merge). All base moves today remain
+  senpai/- or research/-only; no scored-surface change since `0863b06a`
+  organizer parity on the maintained branch.
+- Students: edward 16-leg ABBA (W&B `e167-arms-20260824T075454Z`, ETA
+  10:00–10:30Z); askeladd two-build cap confirmation running, freeze held;
+  thorfinn watcher on `2c885d64`; alphonse starting E174.
