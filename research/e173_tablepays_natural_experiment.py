@@ -143,6 +143,75 @@ def invert(matrix: list[list[float]]) -> list[list[float]]:
     return [row[size:] for row in aug]
 
 
+def boundary_contrast(rounds: list[dict], draws: int = 4000, seed: int = 173) -> dict:
+    """Bootstrap the width increments, their second differences, and the
+    boundary-against-neighbour contrast, resampling rounds within each
+    (prompt, M) stratum."""
+    import random
+
+    generator = random.Random(seed)
+    strata: dict[tuple[str, int], list[float]] = {}
+    for row in rounds:
+        strata.setdefault((row["prompt"], row["m_verify"]), []).append(row["round_us"])
+    widths = sorted({width for _, width in strata})
+
+    def medians(sample: dict[tuple[str, int], list[float]]) -> dict[int, float]:
+        pooled: dict[int, list[float]] = {}
+        for (_, width), values in sample.items():
+            pooled.setdefault(width, []).extend(values)
+        return {width: statistics.median(values) for width, values in pooled.items()}
+
+    def summarise(sample: dict[tuple[str, int], list[float]]) -> dict:
+        table = medians(sample)
+        increments = {
+            width: (table[width + 1] - table[width]) / 1e3
+            for width in widths
+            if width + 1 in table
+        }
+        curvature = {
+            width: increments[width] - increments[width - 1]
+            for width in increments
+            if width - 1 in increments
+        }
+        contrast = (
+            curvature.get(3, float("nan")) - curvature.get(4, float("nan"))
+            if 3 in curvature and 4 in curvature
+            else float("nan")
+        )
+        return {"increments_ms": increments, "curvature_ms": curvature, "contrast_ms": contrast}
+
+    point = summarise(strata)
+    draws_contrast: list[float] = []
+    draws_curvature: dict[int, list[float]] = {}
+    for _ in range(draws):
+        sample = {
+            key: [generator.choice(values) for _ in values] for key, values in strata.items()
+        }
+        result = summarise(sample)
+        if not math.isnan(result["contrast_ms"]):
+            draws_contrast.append(result["contrast_ms"])
+        for width, value in result["curvature_ms"].items():
+            draws_curvature.setdefault(width, []).append(value)
+
+    def interval(values: list[float]) -> list[float]:
+        ordered = sorted(values)
+        low = ordered[int(0.025 * len(ordered))]
+        high = ordered[int(0.975 * len(ordered)) - 1]
+        return [low, high]
+
+    return {
+        "definition": "curvature(M) = inc(M -> M+1) - inc(M-1 -> M); "
+        "contrast = curvature(3) - curvature(4); "
+        "curvature(3) is the second difference that straddles tablePays",
+        "point": point,
+        "bootstrap_draws": len(draws_contrast),
+        "contrast_ci95_ms": interval(draws_contrast) if draws_contrast else None,
+        "curvature_ci95_ms": {
+            width: interval(values) for width, values in sorted(draws_curvature.items())
+        },
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", type=Path)
@@ -234,6 +303,27 @@ def main() -> None:
     # table dispatch record, counter writes) inside the verify graph build.
     host = [row["draft_build_us"] + row["readout_us"] + row["commit_us"] + row["upkeep_us"] for row in subset]
     report["controlled_fits"]["host_phases_us"] = {"with_step": ols(host, columns)}
+
+    # --- the local contrast. `step4` above is not separately identified from
+    # the curvature of the width cost, because the M curve is convex over
+    # 2...6. So compare the boundary increment with its NEIGHBOURING
+    # increments: a cost that switches on at m >= 4 raises the 3 -> 4 second
+    # difference above the 4 -> 5 one, whatever the smooth width curve does.
+    report["boundary_contrast"] = boundary_contrast(rounds)
+
+    # --- the same contrast with controls, restricted to M in {3, 4}: the two
+    # bins that differ by one head step and the tablePays branch alone.
+    pair = [row for row in rounds if row["m_verify"] in (3, 4)]
+    pair_columns = {
+        "is_m4": [1.0 if row["m_verify"] == 4 else 0.0 for row in pair],
+        "cache_pos": [float(row["cache_pos"]) for row in pair],
+        "shortfall": [float(row["shortfall"]) for row in pair],
+        "medicine": [1.0 if row["prompt"] == "medicine" else 0.0 for row in pair],
+    }
+    report["restricted_m3_m4"] = {
+        response: ols([row[response] for row in pair], pair_columns)
+        for response in ("round_us", "eval_wall_us")
+    }
 
     print(json.dumps(report, indent=2, sort_keys=True))
     if args.json:
