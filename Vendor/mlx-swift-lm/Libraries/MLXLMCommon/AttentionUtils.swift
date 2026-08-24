@@ -290,7 +290,14 @@ public enum FusedRowAmortizedSDPA {
                 "rows_env": "\(rowsEnv)", "out_env_set": \(envPath != nil), \
                 "pid": \(ProcessInfo.processInfo.processIdentifier)}
                 """
-            try? json.write(toFile: path, atomically: true, encoding: .utf8)
+            do {
+                try json.write(toFile: path, atomically: true, encoding: .utf8)
+                FileHandle.standardError.write(
+                    Data("e198-liveness: wrote \(path)\n".utf8))
+            } catch {
+                FileHandle.standardError.write(
+                    Data("e198-liveness: FAILED \(path): \(error)\n".utf8))
+            }
         }
     }
 

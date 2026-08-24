@@ -25,17 +25,28 @@ export MLXFAST_LOCAL_COOL_GATE=0
 export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
 export MLXFAST_SCORE_PATH="${PWD}/${out}/score.json"
 rm -f "${DARKBLOOM_E198_LIVENESS_OUT}"
+# Clear stale fallback files so this leg cannot read an earlier run's evidence.
+find "${TMPDIR:-/tmp}" /tmp /var/folders -maxdepth 4 -name 'e198-liveness.json' \
+  -delete 2>/dev/null
 
 echo "e198_liveness: rows=${rows} tokens=${tokens}"
 ./benchmark-qwen-mtp.sh --local-iterate > "${out}/run.log" 2>&1
 rc=$?
 echo "exit: ${rc}"
+# The probe reports every write on stderr, which the run log captures. This is
+# the witness that the probe ran at all, independent of where it wrote.
+echo "--- probe stderr witness ---"
+grep -c "e198-liveness: wrote" "${out}/run.log" || echo "PROBE NEVER WROTE"
+grep -m 2 "e198-liveness: FAILED" "${out}/run.log"
 echo "--- counts (requested path) ---"
 cat "${DARKBLOOM_E198_LIVENESS_OUT}" 2>/dev/null || echo "NO COUNTS FILE AT REQUESTED PATH"
 echo
-# The probe falls back to the worker's TMPDIR when the requested path did not
-# arrive, so a file here and not above isolates environment delivery.
-echo "--- counts (TMPDIR fallback) ---"
-find "${TMPDIR:-/tmp}" /tmp -maxdepth 2 -name 'e198-liveness.json' -print -exec cat {} \; 2>/dev/null
+# The probe falls back to NSTemporaryDirectory() when the requested path did
+# not arrive, so a file here and not above isolates environment delivery.
+# NSTemporaryDirectory() is the CoreFoundation per-user directory under
+# /var/folders, which is NOT $TMPDIR in this workspace.
+echo "--- counts (NSTemporaryDirectory fallback) ---"
+find "${TMPDIR:-/tmp}" /tmp /var/folders -maxdepth 4 -name 'e198-liveness.json' \
+  -print -exec cat {} \; 2>/dev/null
 echo
 exit "${rc}"
