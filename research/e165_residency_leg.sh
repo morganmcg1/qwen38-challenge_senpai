@@ -41,10 +41,13 @@ sample_idle() {
 pre="$(mktemp -t e165res)"
 sample_idle > "${pre}"
 
+# Bound the sampler by its own sample count as well as by the kill below. An
+# unbounded sampler that survives the kill would otherwise hold the whole job
+# allocation open.
+max_samples="${E165_RESIDENCY_MAX_SAMPLES:-9000}"
 sampler_log="$(mktemp -t e165pm)"
-sudo -n powermetrics --samplers gpu_power -i "${interval_ms}" \
+sudo -n powermetrics --samplers gpu_power -i "${interval_ms}" -n "${max_samples}" \
   > "${sampler_log}" 2>/dev/null &
-sampler_wait_pid=$!
 sleep 1
 
 research/e79_trace_leg.sh "${tag}" "${tokens}" "$@"
@@ -52,7 +55,8 @@ status=$?
 
 sleep 1
 sudo -n pkill -INT -f 'powermetrics --samplers gpu_power -i' 2>/dev/null
-wait "${sampler_wait_pid}" 2>/dev/null
+sleep 1
+sudo -n pkill -KILL -f 'powermetrics --samplers gpu_power -i' 2>/dev/null
 
 mv "${sampler_log}" "${out}/powermetrics.txt"
 mv "${pre}" "${out}/powermetrics-idle-pre.txt"
