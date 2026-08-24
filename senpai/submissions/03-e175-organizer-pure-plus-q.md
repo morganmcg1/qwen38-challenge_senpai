@@ -183,7 +183,40 @@ locally, the same sign as the ranked decode estimate.
 One thermally gated 512-token `--local-submit` run at the real cool gate, on
 the committed candidate, with the worker rebuilt and asserted as in §6.
 
-MEASUREMENTS_PLACEHOLDER
+Correctness, which is the part this run is allowed to gate on:
+
+| field | value |
+| --- | --- |
+| `all_tokens_matched`, serial leg | `true` |
+| `all_tokens_matched`, MTP leg | `true` |
+| `residual_divergence_count` | `0` |
+| `public_drift_tripwire_passed` | `true` |
+| reference rows, serial leg | 512 of 512 |
+| reference rows, MTP leg | 568 of 568 |
+| `mtp-verify` | `rows=513 self_consistent=true chain_contradictions=0` |
+
+Timing, which is `harness=local` and directional only:
+
+| field | value |
+| --- | --- |
+| serial seconds per token | `0.073254123097285628` |
+| MTP seconds per token | `0.031417890684679151` |
+| local serial-to-MTP ratio | `2.33160538473093` |
+| `accepted_draft_rate` | `0.88594704684317716` |
+| `effective_mean_draft_len` | `6.3766233766233764` |
+| `mtp_depth` | `8` |
+| `uses_pinned_mtp_head` | `true` |
+| head provenance sha256 | `b51574209a…8cd8b057` |
+| cool gate | real gate, entry 38.2 °C serial and 38.7 °C MTP |
+| `gate_qualified_for_timing` | `true` |
+
+Two limits of this run are worth stating. First, both legs of the local harness
+use the candidate build, so a change that speeds the target model equally in
+both legs partly cancels in that ratio; the ranked numerator comes from a
+separate prebuilt organizer workspace and cannot cancel in the same way.
+Second, the local harness reports no prefill field, so the prefill penalty this
+submission prices in §7 cannot be reproduced locally at all. It is measured
+only from ranked per-prompt telemetry.
 
 ## 9. Caveats, stated plainly
 
