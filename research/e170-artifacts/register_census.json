@@ -1,0 +1,549 @@
+{
+ "experiment": "e170-f1-occupancy-law",
+ "harness": "static_compile",
+ "gpu_seconds": 0,
+ "official_or_ranked_score": false,
+ "source": "Qwen35.swift qwen35E120QMVHeader, read live",
+ "template_signature": "template <int NA, bool USE_TABLE, int ROWS> qwen_e120_qmv_wide",
+ "ipg_table_read_live": {
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 3,
+  "7": 4,
+  "8": 4,
+  "9": 3
+ },
+ "register_file_bytes": {
+  "applegpu_g16s": 393216,
+  "applegpu_g17s": 507904
+ },
+ "bytes_per_simdgroup_register": 128,
+ "cells": {
+  "e170_entry_r2_rec": {
+   "applegpu_g16s": {
+    "registers": 79,
+    "spill_bytes": 0,
+    "text_bytes": 32804,
+    "text_sha8": "3835f2db",
+    "resident_simdgroups_derived": 38
+   },
+   "applegpu_g17s": {
+    "registers": 89,
+    "spill_bytes": 0,
+    "text_bytes": 33720,
+    "text_sha8": "45826212",
+    "resident_simdgroups_derived": 44
+   }
+  },
+  "e170_entry_r2_tbl": {
+   "applegpu_g16s": {
+    "registers": 85,
+    "spill_bytes": 0,
+    "text_bytes": 29502,
+    "text_sha8": "d42c1c0d",
+    "resident_simdgroups_derived": 36
+   },
+   "applegpu_g17s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 30462,
+    "text_sha8": "447d8ad7",
+    "resident_simdgroups_derived": 42
+   }
+  },
+  "e170_entry_r4_rec": {
+   "applegpu_g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 55966,
+    "text_sha8": "6c71c6ba",
+    "resident_simdgroups_derived": 32
+   },
+   "applegpu_g17s": {
+    "registers": 101,
+    "spill_bytes": 0,
+    "text_bytes": 58228,
+    "text_sha8": "37086fd1",
+    "resident_simdgroups_derived": 39
+   }
+  },
+  "e170_entry_r4_tbl": {
+   "applegpu_g16s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 52724,
+    "text_sha8": "6c47002b",
+    "resident_simdgroups_derived": 32
+   },
+   "applegpu_g17s": {
+    "registers": 102,
+    "spill_bytes": 0,
+    "text_bytes": 54890,
+    "text_sha8": "636c7d48",
+    "resident_simdgroups_derived": 38
+   }
+  },
+  "e170_wide_na2_r2_rec": {
+   "applegpu_g16s": {
+    "registers": 46,
+    "spill_bytes": 0,
+    "text_bytes": 2504,
+    "text_sha8": "4b9b3b5f",
+    "resident_simdgroups_derived": 66
+   },
+   "applegpu_g17s": {
+    "registers": 55,
+    "spill_bytes": 0,
+    "text_bytes": 2594,
+    "text_sha8": "05fe5dd2",
+    "resident_simdgroups_derived": 72
+   }
+  },
+  "e170_wide_na2_r2_tbl": {
+   "applegpu_g16s": {
+    "registers": 49,
+    "spill_bytes": 0,
+    "text_bytes": 2302,
+    "text_sha8": "7d18ba3c",
+    "resident_simdgroups_derived": 62
+   },
+   "applegpu_g17s": {
+    "registers": 54,
+    "spill_bytes": 0,
+    "text_bytes": 2392,
+    "text_sha8": "39dba9e6",
+    "resident_simdgroups_derived": 73
+   }
+  },
+  "e170_wide_na2_r4_rec": {
+   "applegpu_g16s": {
+    "registers": 65,
+    "spill_bytes": 0,
+    "text_bytes": 4270,
+    "text_sha8": "682be6fd",
+    "resident_simdgroups_derived": 47
+   },
+   "applegpu_g17s": {
+    "registers": 92,
+    "spill_bytes": 0,
+    "text_bytes": 4472,
+    "text_sha8": "12b52e75",
+    "resident_simdgroups_derived": 43
+   }
+  },
+  "e170_wide_na2_r4_tbl": {
+   "applegpu_g16s": {
+    "registers": 71,
+    "spill_bytes": 0,
+    "text_bytes": 4062,
+    "text_sha8": "8ea7d20a",
+    "resident_simdgroups_derived": 43
+   },
+   "applegpu_g17s": {
+    "registers": 81,
+    "spill_bytes": 0,
+    "text_bytes": 4258,
+    "text_sha8": "5cba8bf0",
+    "resident_simdgroups_derived": 48
+   }
+  },
+  "e170_wide_na3_r2_rec": {
+   "applegpu_g16s": {
+    "registers": 57,
+    "spill_bytes": 0,
+    "text_bytes": 3190,
+    "text_sha8": "b2a28376",
+    "resident_simdgroups_derived": 53
+   },
+   "applegpu_g17s": {
+    "registers": 62,
+    "spill_bytes": 0,
+    "text_bytes": 3330,
+    "text_sha8": "f1eac70f",
+    "resident_simdgroups_derived": 64
+   }
+  },
+  "e170_wide_na3_r2_tbl": {
+   "applegpu_g16s": {
+    "registers": 56,
+    "spill_bytes": 0,
+    "text_bytes": 2860,
+    "text_sha8": "fb4788f1",
+    "resident_simdgroups_derived": 54
+   },
+   "applegpu_g17s": {
+    "registers": 63,
+    "spill_bytes": 0,
+    "text_bytes": 2996,
+    "text_sha8": "0fbc1b45",
+    "resident_simdgroups_derived": 62
+   }
+  },
+  "e170_wide_na3_r4_rec": {
+   "applegpu_g16s": {
+    "registers": 87,
+    "spill_bytes": 0,
+    "text_bytes": 5440,
+    "text_sha8": "94a65eeb",
+    "resident_simdgroups_derived": 35
+   },
+   "applegpu_g17s": {
+    "registers": 89,
+    "spill_bytes": 0,
+    "text_bytes": 5694,
+    "text_sha8": "77fc77d6",
+    "resident_simdgroups_derived": 44
+   }
+  },
+  "e170_wide_na3_r4_tbl": {
+   "applegpu_g16s": {
+    "registers": 87,
+    "spill_bytes": 0,
+    "text_bytes": 5110,
+    "text_sha8": "0648d83d",
+    "resident_simdgroups_derived": 35
+   },
+   "applegpu_g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 5374,
+    "text_sha8": "8d2c747b",
+    "resident_simdgroups_derived": 44
+   }
+  },
+  "e170_wide_na4_r2_rec": {
+   "applegpu_g16s": {
+    "registers": 69,
+    "spill_bytes": 0,
+    "text_bytes": 3930,
+    "text_sha8": "abf2ca40",
+    "resident_simdgroups_derived": 44
+   },
+   "applegpu_g17s": {
+    "registers": 74,
+    "spill_bytes": 0,
+    "text_bytes": 3990,
+    "text_sha8": "f6a907db",
+    "resident_simdgroups_derived": 53
+   }
+  },
+  "e170_wide_na4_r2_tbl": {
+   "applegpu_g16s": {
+    "registers": 71,
+    "spill_bytes": 0,
+    "text_bytes": 3472,
+    "text_sha8": "3c1c00a6",
+    "resident_simdgroups_derived": 43
+   },
+   "applegpu_g17s": {
+    "registers": 79,
+    "spill_bytes": 0,
+    "text_bytes": 3538,
+    "text_sha8": "aac2cd5f",
+    "resident_simdgroups_derived": 50
+   }
+  },
+  "e170_wide_na4_r4_rec": {
+   "applegpu_g16s": {
+    "registers": 88,
+    "spill_bytes": 0,
+    "text_bytes": 6686,
+    "text_sha8": "3422f552",
+    "resident_simdgroups_derived": 34
+   },
+   "applegpu_g17s": {
+    "registers": 92,
+    "spill_bytes": 0,
+    "text_bytes": 6892,
+    "text_sha8": "f7b91ac9",
+    "resident_simdgroups_derived": 43
+   }
+  },
+  "e170_wide_na4_r4_tbl": {
+   "applegpu_g16s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 6228,
+    "text_sha8": "5dca0dfd",
+    "resident_simdgroups_derived": 34
+   },
+   "applegpu_g17s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 6434,
+    "text_sha8": "bf10baf9",
+    "resident_simdgroups_derived": 42
+   }
+  },
+  "e170_wide_na5_r2_rec": {
+   "applegpu_g16s": {
+    "registers": 79,
+    "spill_bytes": 0,
+    "text_bytes": 4606,
+    "text_sha8": "cf1c22dc",
+    "resident_simdgroups_derived": 38
+   },
+   "applegpu_g17s": {
+    "registers": 84,
+    "spill_bytes": 0,
+    "text_bytes": 4644,
+    "text_sha8": "f0728f5d",
+    "resident_simdgroups_derived": 47
+   }
+  },
+  "e170_wide_na5_r2_tbl": {
+   "applegpu_g16s": {
+    "registers": 82,
+    "spill_bytes": 0,
+    "text_bytes": 4036,
+    "text_sha8": "0c27d238",
+    "resident_simdgroups_derived": 37
+   },
+   "applegpu_g17s": {
+    "registers": 88,
+    "spill_bytes": 0,
+    "text_bytes": 4070,
+    "text_sha8": "8eee46e7",
+    "resident_simdgroups_derived": 45
+   }
+  },
+  "e170_wide_na5_r4_rec": {
+   "applegpu_g16s": {
+    "registers": 92,
+    "spill_bytes": 0,
+    "text_bytes": 7938,
+    "text_sha8": "917faaac",
+    "resident_simdgroups_derived": 33
+   },
+   "applegpu_g17s": {
+    "registers": 98,
+    "spill_bytes": 0,
+    "text_bytes": 8102,
+    "text_sha8": "5c05ddf9",
+    "resident_simdgroups_derived": 40
+   }
+  },
+  "e170_wide_na5_r4_tbl": {
+   "applegpu_g16s": {
+    "registers": 92,
+    "spill_bytes": 0,
+    "text_bytes": 7360,
+    "text_sha8": "8a2221e0",
+    "resident_simdgroups_derived": 33
+   },
+   "applegpu_g17s": {
+    "registers": 98,
+    "spill_bytes": 0,
+    "text_bytes": 7494,
+    "text_sha8": "5f149e19",
+    "resident_simdgroups_derived": 40
+   }
+  }
+ },
+ "local_occupancy": {
+  "e170_entry_r2_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_entry_r2_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_entry_r4_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_entry_r4_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na2_r2_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na2_r2_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na2_r4_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na2_r4_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na3_r2_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na3_r2_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na3_r4_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na3_r4_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na4_r2_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na4_r2_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na4_r4_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na4_r4_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na5_r2_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na5_r2_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na5_r4_rec": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  },
+  "e170_wide_na5_r4_tbl": {
+   "max_total_threads_per_threadgroup": 1024,
+   "thread_execution_width": 32,
+   "static_threadgroup_memory_bytes": 0
+  }
+ },
+ "occupancy_law": {
+  "applegpu_g16s": {
+   "per_na_table_pipeline": {
+    "na2": {
+     "registers_rows4": 71,
+     "registers_rows2": 49,
+     "resident_simdgroups_rows4": 43,
+     "resident_simdgroups_rows2": 62,
+     "occupancy_ratio_rows2_over_rows4": 1.4419
+    },
+    "na3": {
+     "registers_rows4": 87,
+     "registers_rows2": 56,
+     "resident_simdgroups_rows4": 35,
+     "resident_simdgroups_rows2": 54,
+     "occupancy_ratio_rows2_over_rows4": 1.5429
+    },
+    "na4": {
+     "registers_rows4": 90,
+     "registers_rows2": 71,
+     "resident_simdgroups_rows4": 34,
+     "resident_simdgroups_rows2": 43,
+     "occupancy_ratio_rows2_over_rows4": 1.2647
+    },
+    "na5": {
+     "registers_rows4": 92,
+     "registers_rows2": 82,
+     "resident_simdgroups_rows4": 33,
+     "resident_simdgroups_rows2": 37,
+     "occupancy_ratio_rows2_over_rows4": 1.1212
+    }
+   },
+   "entry_table_pipeline": {
+    "rows4": {
+     "registers": 96,
+     "resident_simdgroups": 32
+    },
+    "rows2": {
+     "registers": 85,
+     "resident_simdgroups": 36
+    }
+   },
+   "dip_vanishes_if": {
+    "reference_resident_simdgroups": 43,
+    "na5_rows4_registers": 92,
+    "required_register_file_bytes": 506368,
+    "actual_register_file_bytes": 393216,
+    "required_over_actual": 1.2878,
+    "equivalent_max_registers_at_actual_file": 71
+   }
+  },
+  "applegpu_g17s": {
+   "per_na_table_pipeline": {
+    "na2": {
+     "registers_rows4": 81,
+     "registers_rows2": 54,
+     "resident_simdgroups_rows4": 48,
+     "resident_simdgroups_rows2": 73,
+     "occupancy_ratio_rows2_over_rows4": 1.5208
+    },
+    "na3": {
+     "registers_rows4": 90,
+     "registers_rows2": 63,
+     "resident_simdgroups_rows4": 44,
+     "resident_simdgroups_rows2": 62,
+     "occupancy_ratio_rows2_over_rows4": 1.4091
+    },
+    "na4": {
+     "registers_rows4": 93,
+     "registers_rows2": 79,
+     "resident_simdgroups_rows4": 42,
+     "resident_simdgroups_rows2": 50,
+     "occupancy_ratio_rows2_over_rows4": 1.1905
+    },
+    "na5": {
+     "registers_rows4": 98,
+     "registers_rows2": 88,
+     "resident_simdgroups_rows4": 40,
+     "resident_simdgroups_rows2": 45,
+     "occupancy_ratio_rows2_over_rows4": 1.125
+    }
+   },
+   "entry_table_pipeline": {
+    "rows4": {
+     "registers": 102,
+     "resident_simdgroups": 38
+    },
+    "rows2": {
+     "registers": 93,
+     "resident_simdgroups": 42
+    }
+   },
+   "dip_vanishes_if": {
+    "reference_resident_simdgroups": 48,
+    "na5_rows4_registers": 98,
+    "required_register_file_bytes": 602112,
+    "actual_register_file_bytes": 507904,
+    "required_over_actual": 1.1855,
+    "equivalent_max_registers_at_actual_file": 82
+   }
+  }
+ }
+}
