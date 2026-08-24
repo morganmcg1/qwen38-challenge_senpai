@@ -93,9 +93,13 @@ def main() -> int:
                     help="seconds of seed prefill inside the timed leg")
     ap.add_argument("--two-se", type=float, default=None,
                     help="2se of the fuse-off contrast, per cent of the leg")
+    ap.add_argument("--rep", type=int, default=None,
+                    help="price one replicate instead of the pooled set")
     args = ap.parse_args()
 
     legs = load(args.label)
+    if args.rep is not None:
+        legs = [d for d in legs if d["rep"] == args.rep]
     if not legs:
         raise SystemExit(f"no legs under research/out/e160{args.label}k*")
 
