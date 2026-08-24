@@ -58,13 +58,19 @@ gpu_temp() {
     | jq -r '.temp.gpu_temp_avg // empty' 2>/dev/null
 }
 
-declare -A worker_digest cli_digest
+# Plain variables plus `${!name}` indirection, not `declare -A`: the system
+# bash on this host is 3.2, which has no associative arrays. It failed on the
+# `declare` line and still reported exit status 0, so never read success from
+# the exit code alone; check that the leg directories exist.
+worker_digest_base="$(digest "${bin_root}/base/mlxfast-runtime-worker")"
+worker_digest_cap="$(digest "${bin_root}/cap/mlxfast-runtime-worker")"
+cli_digest_base="$(digest "${bin_root}/base/mlxfast-swift")"
+cli_digest_cap="$(digest "${bin_root}/cap/mlxfast-swift")"
 for arm in base cap; do
-  worker_digest["${arm}"]="$(digest "${bin_root}/${arm}/mlxfast-runtime-worker")"
-  cli_digest["${arm}"]="$(digest "${bin_root}/${arm}/mlxfast-swift")"
-  echo "e168_confirm: ${arm} worker ${worker_digest[${arm}]}"
+  name="worker_digest_${arm}"
+  echo "e168_confirm: ${arm} worker ${!name}"
 done
-[[ "${worker_digest[base]}" != "${worker_digest[cap]}" ]] || {
+[[ "${worker_digest_base}" != "${worker_digest_cap}" ]] || {
   echo "e168_confirm: both arms have the SAME worker; nothing is under test" >&2
   exit 2
 }
@@ -88,7 +94,9 @@ for arm in "${session[@]}"; do
   export MLXFAST_SWIFT_BIN="${PWD}/research/capture-cli.sh"
 
   before_worker="$(digest "${MLXFAST_RUNTIME_WORKER_EXECUTABLE}")"
-  [[ "${before_worker}" == "${worker_digest[${arm}]}" ]] || {
+  name="worker_digest_${arm}"; staged_worker="${!name}"
+  name="cli_digest_${arm}"; staged_cli="${!name}"
+  [[ "${before_worker}" == "${staged_worker}" ]] || {
     echo "e168_confirm: ${arm} worker changed before leg ${leg}" >&2
     status=1; break
   }
@@ -105,7 +113,7 @@ for arm in "${session[@]}"; do
     echo "e170_session_order=${session[*]}"
     echo "fixed_draft_depth=unset"
     echo "worker_path=${MLXFAST_RUNTIME_WORKER_EXECUTABLE}"
-    echo "cli_sha256=${cli_digest[${arm}]}"
+    echo "cli_sha256=${staged_cli}"
     echo "gpu_temp_entry=${entry:-unavailable}"
     echo "gpu_temp_exit=${exit_temp:-unavailable}"
     echo "worker_sha256_before=${before_worker}"
@@ -124,4 +132,16 @@ for arm in "${session[@]}"; do
   }
   ((status)) && break
 done
+
+# Do not let a partial session read as a complete one. The first run of this
+# script died on line 1 of its bookkeeping and still reported exit status 0.
+produced=0
+leg=0
+for arm in "${session[@]}"; do
+  leg=$((leg + 1))
+  [[ -s "${out_root}/${arm}/leg${leg}/score.json" ]] && produced=$((produced + 1))
+done
+echo "e168_confirm: ${produced}/${#session[@]} legs produced a score"
+[[ "${produced}" -eq "${#session[@]}" ]] || status=1
+
 exit "${status}"
