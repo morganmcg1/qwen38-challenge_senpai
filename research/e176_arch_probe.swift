@@ -25,17 +25,23 @@ func qmvBatchLimit(_ D: Int, _ O: Int) -> Int {
     return (D <= 2048 && O <= 2048) ? 18 : ((D <= 4096 && O <= 4096) ? 12 : 10)
 }
 
+// Exact scored-tree shapes (revision r1). The r0 list carried approximate N
+// values taken from the non-scored Sources/MLXFastModel tree; they are kept
+// as extra rows because they show the limit does not depend on N here.
 let cells: [(String, Int, Int)] = [
-    ("fa.qkv (fused)", 5120, 8192),
-    ("fa.q_proj", 5120, 6144),
-    ("fa.kv_proj", 5120, 1024),
-    ("fa.o_proj", 6144, 5120),
-    ("gdn.in_proj", 5120, 12288),
-    ("gdn.out_proj", 8192, 5120),
-    ("mlp.gate_up", 5120, 34816),
+    ("mlp.gate_up (fused)", 5120, 34816),
     ("mlp.down", 17408, 5120),
+    ("gdn.in_proj (fused)", 5120, 16480),
+    ("gdn.out_proj", 6144, 5120),
+    ("fa.qkv (fused)", 5120, 14336),
+    ("fa.o_proj", 6144, 5120),
     ("lm_head", 5120, 248320),
-    ("small 2048x2048", 2048, 2048),
+    ("mtp.fc", 10240, 5120),
+    ("fa.q_gate (island path)", 5120, 12288),
+    ("unfused fa.kv_proj, N=1024", 5120, 1024),
+    ("unfused gdn.in_b, N=48", 5120, 48),
+    ("control: small 2048x2048", 2048, 2048),
+    ("control: 4096x4096", 4096, 4096),
 ]
 for (label, k, n) in cells {
     print("get_qmv_batch_limit(K=\(k), N=\(n)) = \(qmvBatchLimit(k, n))  [\(label)]")

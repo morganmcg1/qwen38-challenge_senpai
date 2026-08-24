@@ -1,11 +1,19 @@
 {
+ "barriers": {
+  "1_replica": "Qwen35.swift:1767 routable(), no arch_gen term, widths 2...9, n>=4096; consumed before MLX",
+  "2_mlx_limit": "quantized.cpp:1415 with get_qmv_batch_limit :84-125; minimum 10 outside arch_gen 13/14"
+ },
  "branches": {
   "gen13/14 size d": {
    "arch_gen": 13,
    "arch_size": "d",
    "first_consuming_M": null,
+   "limit_all_scored_cells": [
+    12
+   ],
    "provenance": "Ultra, not the ranked runner",
-   "q_consuming_calls_by_M": {
+   "q_consuming_head_cell_widths": 0,
+   "q_consuming_target_calls_by_M": {
     "1": 0,
     "2": 0,
     "3": 0,
@@ -20,26 +28,34 @@
   "gen13/14 size s": {
    "arch_gen": 13,
    "arch_size": "s",
-   "first_consuming_M": 6,
+   "first_consuming_M": null,
+   "limit_all_scored_cells": [
+    6
+   ],
    "provenance": "M1/M2 class, not the ranked runner",
-   "q_consuming_calls_by_M": {
+   "q_consuming_head_cell_widths": 12,
+   "q_consuming_target_calls_by_M": {
     "1": 0,
     "2": 0,
     "3": 0,
     "4": 0,
     "5": 0,
-    "6": 497,
-    "7": 497,
-    "8": 497,
-    "9": 497
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
    }
   },
   "gen16 size s": {
    "arch_gen": 16,
    "arch_size": "s",
    "first_consuming_M": null,
+   "limit_all_scored_cells": [
+    10
+   ],
    "provenance": "first-hand probe, this host (applegpu_g16s)",
-   "q_consuming_calls_by_M": {
+   "q_consuming_head_cell_widths": 0,
+   "q_consuming_target_calls_by_M": {
     "1": 0,
     "2": 0,
     "3": 0,
@@ -55,8 +71,12 @@
    "arch_gen": 17,
    "arch_size": "d",
    "first_consuming_M": null,
+   "limit_all_scored_cells": [
+    12
+   ],
    "provenance": "Ultra, not the ranked runner",
-   "q_consuming_calls_by_M": {
+   "q_consuming_head_cell_widths": 0,
+   "q_consuming_target_calls_by_M": {
     "1": 0,
     "2": 0,
     "3": 0,
@@ -72,8 +92,12 @@
    "arch_gen": 17,
    "arch_size": "s",
    "first_consuming_M": null,
+   "limit_all_scored_cells": [
+    10
+   ],
    "provenance": "ranked M5, requires arch_gen>=17 for _nax",
-   "q_consuming_calls_by_M": {
+   "q_consuming_head_cell_widths": 0,
+   "q_consuming_target_calls_by_M": {
     "1": 0,
     "2": 0,
     "3": 0,
@@ -86,12 +110,26 @@
    }
   }
  },
- "cells": [
+ "harness": "source",
+ "head_cells": [
   {
-   "K": 5120,
-   "N": 10240,
-   "calls_per_round": 48,
-   "cell": "gdn.in_qkv",
+   "K": 10240,
+   "N": 5120,
+   "bits": 4,
+   "cell": "mtp.fc",
+   "front": "mlx",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "dispatch_qmv",
+    "3": "dispatch_qmv",
+    "4": "dispatch_qmv",
+    "5": "dispatch_qmv",
+    "6": "dispatch_qmv",
+    "7": "dispatch_qmv",
+    "8": "dispatch_qmv",
+    "9": "dispatch_qmv"
+   },
    "limits": {
     "gen13/14 size d": 12,
     "gen13/14 size s": 6,
@@ -99,14 +137,29 @@
     "gen>=17 size d": 12,
     "gen>=17 size s": 10
    },
-   "source": "Qwen35GatedDelta.swift:241",
-   "transpose": true
+   "scored": true,
+   "source": "Qwen35MTP.swift:194 fc(...) - plain QuantizedLinear, no replica front",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+   "widths_in_decode": "1 per draft step"
   },
   {
    "K": 5120,
-   "N": 6144,
-   "calls_per_round": 48,
-   "cell": "gdn.in_z",
+   "N": 14336,
+   "bits": 4,
+   "cell": "mtp.layer fa.qkv (fused)",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
    "limits": {
     "gen13/14 size d": 12,
     "gen13/14 size s": 6,
@@ -114,44 +167,29 @@
     "gen>=17 size d": 12,
     "gen>=17 size s": 10
    },
-   "source": "Qwen35GatedDelta.swift:245",
-   "transpose": true
-  },
-  {
-   "K": 5120,
-   "N": 48,
-   "calls_per_round": 48,
-   "cell": "gdn.in_b",
-   "limits": {
-    "gen13/14 size d": 12,
-    "gen13/14 size s": 6,
-    "gen16 size s": 10,
-    "gen>=17 size d": 12,
-    "gen>=17 size s": 10
-   },
-   "source": "Qwen35GatedDelta.swift:254",
-   "transpose": true
-  },
-  {
-   "K": 5120,
-   "N": 48,
-   "calls_per_round": 48,
-   "cell": "gdn.in_a",
-   "limits": {
-    "gen13/14 size d": 12,
-    "gen13/14 size s": 6,
-    "gen16 size s": 10,
-    "gen>=17 size d": 12,
-    "gen>=17 size s": 10
-   },
-   "source": "Qwen35GatedDelta.swift:255",
-   "transpose": true
+   "scored": true,
+   "source": "Qwen35MTP.swift:37 Qwen35Attention inside Qwen35MTPDecoderLayer",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+   "widths_in_decode": "1 per draft step"
   },
   {
    "K": 6144,
    "N": 5120,
-   "calls_per_round": 48,
-   "cell": "gdn.out",
+   "bits": 4,
+   "cell": "mtp.layer fa.o_proj",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
    "limits": {
     "gen13/14 size d": 12,
     "gen13/14 size s": 6,
@@ -159,14 +197,29 @@
     "gen>=17 size d": 12,
     "gen>=17 size s": 10
    },
-   "source": "Qwen35GatedDelta.swift:346",
-   "transpose": true
+   "scored": true,
+   "source": "Qwen35MTP.swift:37 Qwen35Attention inside Qwen35MTPDecoderLayer",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+   "widths_in_decode": "1 per draft step"
   },
   {
    "K": 5120,
-   "N": 6144,
-   "calls_per_round": 16,
-   "cell": "attn.q",
+   "N": 34816,
+   "bits": 4,
+   "cell": "mtp.layer mlp.gate_up",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
    "limits": {
     "gen13/14 size d": 12,
     "gen13/14 size s": 6,
@@ -174,89 +227,29 @@
     "gen>=17 size d": 12,
     "gen>=17 size s": 10
    },
-   "source": "Qwen35Attention.swift:143",
-   "transpose": true
-  },
-  {
-   "K": 5120,
-   "N": 1024,
-   "calls_per_round": 16,
-   "cell": "attn.k",
-   "limits": {
-    "gen13/14 size d": 12,
-    "gen13/14 size s": 6,
-    "gen16 size s": 10,
-    "gen>=17 size d": 12,
-    "gen>=17 size s": 10
-   },
-   "source": "Qwen35Attention.swift:162",
-   "transpose": true
-  },
-  {
-   "K": 5120,
-   "N": 1024,
-   "calls_per_round": 16,
-   "cell": "attn.v",
-   "limits": {
-    "gen13/14 size d": 12,
-    "gen13/14 size s": 6,
-    "gen16 size s": 10,
-    "gen>=17 size d": 12,
-    "gen>=17 size s": 10
-   },
-   "source": "Qwen35Attention.swift:163",
-   "transpose": true
-  },
-  {
-   "K": 6144,
-   "N": 5120,
-   "calls_per_round": 16,
-   "cell": "attn.o",
-   "limits": {
-    "gen13/14 size d": 12,
-    "gen13/14 size s": 6,
-    "gen16 size s": 10,
-    "gen>=17 size d": 12,
-    "gen>=17 size s": 10
-   },
-   "source": "Qwen35Attention.swift:211",
-   "transpose": true
-  },
-  {
-   "K": 5120,
-   "N": 17408,
-   "calls_per_round": 64,
-   "cell": "mlp.gate",
-   "limits": {
-    "gen13/14 size d": 12,
-    "gen13/14 size s": 6,
-    "gen16 size s": 10,
-    "gen>=17 size d": 12,
-    "gen>=17 size s": 10
-   },
-   "source": "Qwen35MLP.swift:28",
-   "transpose": true
-  },
-  {
-   "K": 5120,
-   "N": 17408,
-   "calls_per_round": 64,
-   "cell": "mlp.up",
-   "limits": {
-    "gen13/14 size d": 12,
-    "gen13/14 size s": 6,
-    "gen16 size s": 10,
-    "gen>=17 size d": 12,
-    "gen>=17 size s": 10
-   },
-   "source": "Qwen35MLP.swift:29",
-   "transpose": true
+   "scored": true,
+   "source": "Qwen35MTP.swift:50 Qwen35FusedMLP inside Qwen35MTPDecoderLayer",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+   "widths_in_decode": "1 per draft step"
   },
   {
    "K": 17408,
    "N": 5120,
-   "calls_per_round": 64,
-   "cell": "mlp.down",
+   "bits": 4,
+   "cell": "mtp.layer mlp.down",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
    "limits": {
     "gen13/14 size d": 12,
     "gen13/14 size s": 6,
@@ -264,14 +257,29 @@
     "gen>=17 size d": 12,
     "gen>=17 size s": 10
    },
-   "source": "Qwen35MLP.swift:30",
-   "transpose": true
+   "scored": true,
+   "source": "Qwen35MTP.swift:50 Qwen35FusedMLP inside Qwen35MTPDecoderLayer",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+   "widths_in_decode": "1 per draft step"
   },
   {
    "K": 5120,
    "N": 248320,
-   "calls_per_round": 1,
-   "cell": "lm_head",
+   "bits": 2,
+   "cell": "draft_lm_head (2-bit)",
+   "front": "mlx",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "dispatch_qmv",
+    "3": "dispatch_qmv",
+    "4": "dispatch_qmv",
+    "5": "dispatch_qmv",
+    "6": "dispatch_qmv",
+    "7": "dispatch_qmv",
+    "8": "dispatch_qmv",
+    "9": "dispatch_qmv"
+   },
    "limits": {
     "gen13/14 size d": 12,
     "gen13/14 size s": 6,
@@ -279,11 +287,422 @@
     "gen>=17 size d": 12,
     "gen>=17 size s": 10
    },
-   "source": "Qwen35FastEngine.swift:263",
-   "transpose": true
+   "scored": true,
+   "source": "Qwen35.swift:5613 quantizedMM - bits 2, replica declines",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+   "widths_in_decode": "1 per draft step"
+  },
+  {
+   "K": 5120,
+   "N": 1024,
+   "bits": 2,
+   "cell": "draft centroid (2-bit)",
+   "front": "mlx",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "dispatch_qmv",
+    "3": "dispatch_qmv",
+    "4": "dispatch_qmv",
+    "5": "dispatch_qmv",
+    "6": "dispatch_qmv",
+    "7": "dispatch_qmv",
+    "8": "dispatch_qmv",
+    "9": "dispatch_qmv"
+   },
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "scored": true,
+   "source": "Qwen35.swift:5823 quantizedMM - bits 2, replica declines",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+   "widths_in_decode": "1 per draft step"
   }
  ],
- "harness": "source",
  "max_decode_M": 9,
- "total_calls_per_round": 497
+ "parallel_tree_cells": {
+  "cells": [
+   {
+    "K": 5120,
+    "N": 10240,
+    "calls_per_round": 48,
+    "cell": "gdn.in_qkv",
+    "source": "Qwen35GatedDelta.swift:241"
+   },
+   {
+    "K": 5120,
+    "N": 6144,
+    "calls_per_round": 48,
+    "cell": "gdn.in_z",
+    "source": "Qwen35GatedDelta.swift:245"
+   },
+   {
+    "K": 5120,
+    "N": 48,
+    "calls_per_round": 48,
+    "cell": "gdn.in_b",
+    "source": "Qwen35GatedDelta.swift:254"
+   },
+   {
+    "K": 5120,
+    "N": 48,
+    "calls_per_round": 48,
+    "cell": "gdn.in_a",
+    "source": "Qwen35GatedDelta.swift:255"
+   },
+   {
+    "K": 6144,
+    "N": 5120,
+    "calls_per_round": 48,
+    "cell": "gdn.out",
+    "source": "Qwen35GatedDelta.swift:346"
+   },
+   {
+    "K": 5120,
+    "N": 6144,
+    "calls_per_round": 16,
+    "cell": "attn.q",
+    "source": "Qwen35Attention.swift:143"
+   },
+   {
+    "K": 5120,
+    "N": 1024,
+    "calls_per_round": 16,
+    "cell": "attn.k",
+    "source": "Qwen35Attention.swift:162"
+   },
+   {
+    "K": 5120,
+    "N": 1024,
+    "calls_per_round": 16,
+    "cell": "attn.v",
+    "source": "Qwen35Attention.swift:163"
+   },
+   {
+    "K": 6144,
+    "N": 5120,
+    "calls_per_round": 16,
+    "cell": "attn.o",
+    "source": "Qwen35Attention.swift:211"
+   },
+   {
+    "K": 5120,
+    "N": 17408,
+    "calls_per_round": 64,
+    "cell": "mlp.gate",
+    "source": "Qwen35MLP.swift:28"
+   },
+   {
+    "K": 5120,
+    "N": 17408,
+    "calls_per_round": 64,
+    "cell": "mlp.up",
+    "source": "Qwen35MLP.swift:29"
+   },
+   {
+    "K": 17408,
+    "N": 5120,
+    "calls_per_round": 64,
+    "cell": "mlp.down",
+    "source": "Qwen35MLP.swift:30"
+   },
+   {
+    "K": 5120,
+    "N": 248320,
+    "calls_per_round": 1,
+    "cell": "lm_head",
+    "source": "Qwen35FastEngine.swift:263"
+   }
+  ],
+  "note": "r0 census of Sources/MLXFastModel (Qwen35Ops.linear, Qwen35FastEngine). NOT the scored path: referenced only from inside Sources/MLXFastModel/. Retained for the record; withdrawn as a scored-path census.",
+  "scored": false,
+  "total_calls_per_round": 497,
+  "tree": "Sources/MLXFastModel"
+ },
+ "q_consuming_calls_at_M_le_5": 0,
+ "q_consuming_calls_at_M_le_9": 0,
+ "revision": "r1",
+ "scored_entry_point": "Qwen36MTPBlockSession.swift:775 -> Qwen35TextModelInner",
+ "scored_tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+ "target_cell_variants": [
+  {
+   "K": 5120,
+   "N": 12288,
+   "bits": 4,
+   "calls_per_round": 16,
+   "cell": "fa.q_gate (island path)",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
+   "replica_routable_at_M2_9": true,
+   "scored": true,
+   "source": "Qwen35.swift:3078 Qwen35Attention.qkv, _qOnlyW branch",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  },
+  {
+   "K": 5120,
+   "N": 2048,
+   "bits": 16,
+   "calls_per_round": 16,
+   "cell": "fa.kv (island path, BF16 dense)",
+   "front": "mlx",
+   "group_size": 0,
+   "kernel_by_M": {
+    "1": "matmul (BF16 dense, not quantized)",
+    "2": "matmul (BF16 dense, not quantized)",
+    "3": "matmul (BF16 dense, not quantized)",
+    "4": "matmul (BF16 dense, not quantized)",
+    "5": "matmul (BF16 dense, not quantized)",
+    "6": "matmul (BF16 dense, not quantized)",
+    "7": "matmul (BF16 dense, not quantized)",
+    "8": "matmul (BF16 dense, not quantized)",
+    "9": "matmul (BF16 dense, not quantized)"
+   },
+   "replica_routable_at_M2_9": false,
+   "scored": true,
+   "source": "Qwen35.swift:3086 matmul(x, kvExact.T) - not quantized at all",
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  }
+ ],
+ "target_cells": [
+  {
+   "K": 5120,
+   "N": 34816,
+   "bits": 4,
+   "calls_per_round": 64,
+   "cell": "mlp.gate_up (fused)",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "replica_routable_at_M2_9": true,
+   "scored": true,
+   "source": "Qwen35.swift:1948 Qwen35FusedMLP.fusedGateUp",
+   "transpose": true,
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  },
+  {
+   "K": 17408,
+   "N": 5120,
+   "bits": 4,
+   "calls_per_round": 64,
+   "cell": "mlp.down",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "replica_routable_at_M2_9": true,
+   "scored": true,
+   "source": "Qwen35.swift:1985 qwen35RoutedLinear(downProj)",
+   "transpose": true,
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  },
+  {
+   "K": 5120,
+   "N": 16480,
+   "bits": 4,
+   "calls_per_round": 48,
+   "cell": "gdn.in_proj (fused)",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "replica_routable_at_M2_9": true,
+   "scored": true,
+   "source": "Qwen35.swift:809 fusedInProjections",
+   "transpose": true,
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  },
+  {
+   "K": 6144,
+   "N": 5120,
+   "bits": 4,
+   "calls_per_round": 48,
+   "cell": "gdn.out_proj",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "replica_routable_at_M2_9": true,
+   "scored": true,
+   "source": "Qwen35.swift:1322 qwen35RoutedLinear(outProj)",
+   "transpose": true,
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  },
+  {
+   "K": 5120,
+   "N": 14336,
+   "bits": 4,
+   "calls_per_round": 16,
+   "cell": "fa.qkv (fused)",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "replica_routable_at_M2_9": true,
+   "scored": true,
+   "source": "Qwen35.swift:3098 Qwen35Attention.qkv",
+   "transpose": true,
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  },
+  {
+   "K": 6144,
+   "N": 5120,
+   "bits": 4,
+   "calls_per_round": 16,
+   "cell": "fa.o_proj",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "replica_routable_at_M2_9": true,
+   "scored": true,
+   "source": "Qwen35.swift:3398 qwen35RoutedLinear(oProj)",
+   "transpose": true,
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  },
+  {
+   "K": 5120,
+   "N": 248320,
+   "bits": 4,
+   "calls_per_round": 1,
+   "cell": "lm_head",
+   "front": "replica",
+   "group_size": 64,
+   "kernel_by_M": {
+    "1": "dispatch_qmv",
+    "2": "qwen35CustomAffine4QMV (replica)",
+    "3": "qwen35CustomAffine4QMV (replica)",
+    "4": "qwen35CustomAffine4QMV (replica)",
+    "5": "qwen35CustomAffine4QMV (replica)",
+    "6": "qwen35CustomAffine4QMV (replica)",
+    "7": "qwen35CustomAffine4QMV (replica)",
+    "8": "qwen35CustomAffine4QMV (replica)",
+    "9": "qwen35CustomAffine4QMV (replica)"
+   },
+   "limits": {
+    "gen13/14 size d": 12,
+    "gen13/14 size s": 6,
+    "gen16 size s": 10,
+    "gen>=17 size d": 12,
+    "gen>=17 size s": 10
+   },
+   "replica_routable_at_M2_9": true,
+   "scored": true,
+   "source": "Qwen35.swift:5602 routedLMHead",
+   "transpose": true,
+   "tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models"
+  }
+ ],
+ "total_target_calls_per_round": 257
 }
