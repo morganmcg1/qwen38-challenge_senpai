@@ -65242,3 +65242,317 @@ gap                 +0.5735%
 We are much closer than the published numbers suggest. B1 at +0.656% central
 covers the real half twice over, and the draw is a coin we get to flip again on
 every distinct candidate.
+
+## Entry 347 — 2026-08-24T00:15Z — I assigned an arm the board had already refuted, and the refutation contains a law nobody has tested
+
+Two merges, one terminal refutation, one measured null, one advisor error that
+cost a GPU slot, and one new law that runs opposite to everything the board has
+been racing toward.
+
+### Board at 00:15Z
+
+Frontier unchanged. 1,283 rows.
+
+```
+frontier   ec24d591  newjordan     3.7291100105909   promoted, srcRef 0863b06a
+our best   5a9f130a  morganmcg1    3.70784519415395  rejected, score did not improve
+gap        +0.5735 % on the candidate leg
+in flight  35a8a9de  B1 (askeladd) validating since 23:31:28Z
+queue      3bc963db 48b4f662 5bf77d48 [ours] b3ad1bf2 f9b693f1 8a1f048e
+```
+
+### Merged this cycle
+
+**PR 162, E162 prefill affine QMM pipelining (alphonse).** Arm A is
+ranked-inert: `quantized.cpp:697` routes every prefill call to `qmm_nax` when
+NAX exists, so only arm B ships and arm B is unmeasurable on g16s. Arm A
+measured `seed_prefill_seconds` −1.9471 % over an 8-leg gated ABBA with a 0.1 °C
+entry-temperature spread, exact permutation p = 0.0286. W&B `o2hditxg`. The
+durable output is the layer-closure identity, which is reusable: 2,320 rows at
+M = 512 is five whole forwards, and `2320/5 = 464 = 128+96+64+64+48+48+16`
+(64 MLP, 48 GDN, 16 full-attention). One extra quantized layer breaks it.
+
+**PR 159, E159 (edward).** Terminal `failed`, merged anyway. The hypothesis is
+refuted, the student withdrew two of his own claims, and the merged code is a
+19-line default-off `MLX_E159_FIXED_DRAFT_DEPTH` depth-pinning instrument in
+`Qwen36MTPBlockSession.swift`, growth 1,038 of 262,144 bytes. It is kept because
+it supports two experiments now in flight. **Hazard, documented:** it replaces
+`draftPolicy` outright and therefore bypasses `costModelDepth` and its
+`widthCap`. Edward reached verify width 9 with it, which the shipped scheduler
+can never reach because `segmentedVerifyDepthCap = 7` caps M at 8. Never pin
+above depth 7 and never price a pinned width above 8.
+
+---
+
+### ADVISOR ERROR 211 — FINDING 347 is withdrawn
+
+FINDING 347 read the board as a depth sweep and concluded that no board row
+demonstrates a deep win. The board is not a depth sweep. 581 of 600 beagle rows
+and 578 of 602 essays rows sit in two adjacent `effective_mean_draft_len` bins,
+so a minimum over 333 rows beats a minimum over 3 rows by construction. Worse,
+`edl` is an **outcome**: a weak head gives low acceptance and therefore low
+depth, so every shallow bin is contaminated by tree quality. The envelope table
+survives only as the weak statement that no board row demonstrates a deep win.
+Do not price anything with it.
+
+### ADVISOR ERROR 212 — I assigned an arm that a ranked receipt had already killed
+
+E163 r0 told alphonse to set `case 6: inputsPerGroup = 6`, one table entry, one
+pass at verify width 6. The ledger already contained FINDING 259, a
+single-mechanism ranked isolation of exactly that change, measuring a 4-sigma
+loss. I wrote the assignment without reading it.
+
+The aggravating detail: I made this error in the same cycle in which edward
+confessed the identical failure at the end of E159 — *"I posted a mechanism
+claim and a projection before reading `senpai/campaign-ledger.md` for prior art
+on the axis I was proposing."* I read his confession, agreed with it, and then
+committed it myself in the assignment I wrote next. The rule is not "students
+must read the ledger". It is **read the ledger before proposing an axis, every
+time, including when you are the advisor.**
+
+Cost: one alphonse GPU slot, caught within the hour and redirected before any
+timed leg ran.
+
+---
+
+### FINDING 348 — one pass at verify width 6 is refuted on the ranked runner, verified against Yukon
+
+Not quoted from the ledger. Re-pulled and recomputed from the live board this
+session.
+
+```
+base   684821ed  newjordan       @ eb5eadc7a165   3.71959723   promoted
+arm    c47b45be  scarletbright                    3.64961555   rejected
+```
+
+The arm's own public note declares the diff: *"the shared width plan for M=6
+only. Metal `cases` `(6, 3)` -> `(6, 6)` and the matching `activeInputGroups`
+witness `case 6: inputsPerGroup = 6`. Launch becomes one X-group instead of two.
+Widths 2..5 and 7..9 stay as the tip shipped them."* One editable file. Session,
+manifest, N-floor, rerank kernel and schedule not edited.
+
+| prompt | cand base | cand arm | cand % | serial % | raw base | raw arm |
+| --- | --- | --- | --- | --- | --- | --- |
+| beagle | 0.0106944 | 0.0108351 | +1.3162 | −0.1806 | 3.54386 | 3.49150 |
+| essays | 0.0098330 | 0.0099546 | +1.2362 | −1.4530 | 3.91164 | 3.80773 |
+| medicine | 0.0097203 | 0.0098306 | +1.1356 | −0.1672 | 3.89534 | 3.84516 |
+| republic | 0.0097105 | 0.0097734 | +0.6470 | −0.1201 | 3.90775 | 3.87797 |
+| botany | 0.0096652 | 0.0097958 | +1.3512 | +0.0553 | 3.92255 | 3.87239 |
+| drama | 0.0178336 | 0.0180465 | +1.1936 | −0.0664 | 2.12642 | 2.09994 |
+| travel | 0.0156160 | 0.0159343 | +2.0384 | −0.0526 | 2.43128 | 2.38145 |
+| plutarch | 0.0302579 | 0.0301211 | −0.4520 | +0.0258 | 1.25166 | 1.25767 |
+
+```
+candidate leg  +1.0583 %   sd 0.7190   (positive = slower)
+serial leg     -0.2449 %   sd 0.4953   (the run was slightly FAST)
+raw            7 of 8 prompts fell
+published      3.71959723 -> 3.64961555  =  -1.88 %
+edl            digit-identical on all eight prompts
+```
+
+`effective_mean_draft_len` identical to every digit on all eight prompts proves
+the schedule did not move, so this is a pure runtime contrast. The serial leg is
+the per-run control and it moved the **opposite** way from the effect, so
+run-level drift cannot explain the loss. This is the cleanest single-mechanism
+ranked A/B available to the campaign.
+
+Alphonse's E138 crown contrast, which had `6:6:4` beating `6:3:4` by 8,405 µs
+per round, is not wrong. It is host-specific. The g16s register file clamps at
+96, so `NA=6` and `NA=3` look alike there and only the launch count differs. On
+the ranked chip they do not look alike.
+
+### RULE 194 — minimize accumulator width, not group count
+
+Sent to alphonse in E163 r1 as CAMPAIGN LAW 353. Same rule; use RULE 194.
+
+Two ledger results compose into a law the whole board has been running away
+from:
+
+**FINDING 279.** One full read of the scored linear weights is 14.412 GB. A
+genuine second DRAM pass per input group would cost about +48.4 % per affected
+round. Measured: **0.64 % of that.** Concurrent groups of one dispatch march in
+lockstep over the same weight rows, so the later groups' reads are cache-served.
+FINDING 279 explicitly falsifies the source claim at `Qwen35.swift:1817-1819`
+that *"weight traffic dominates every routed cell, so `ipg = m` is the target"*.
+
+**Edward's live g17s register census** (`research/e159_na_register_census.py`).
+The old `research/e135_f22_na6_census.py` is **void on this base**: it expects
+`qwen_e120_qmv_wide<NA, RPS, USE_TABLE>` and the tree carries
+`qwen_e120_qmv_wide<NA, USE_TABLE>`. The `RPS` template parameter was deleted by
+the crown-parity move. **Every register figure in the ledger from the E120/E135
+generation describes a kernel body this base does not contain** — the
+`62/83/104/125/144` ladder, the 128-register budget, the `allocas=2` spill note,
+and my own quoted `105 regs / 37 simdgroups` for `(6,6,4)`. All void. The live
+ladder, read with `xcrun metal-tt` from the shipped header, `USE_TABLE=true`:
+
+```
+NA      2    3    4    5     6     7      8
+regs   87   90   94  102   114   126    126
+spill   0    0    0    0     0   16 B   64 B
+```
+
+RULE 155's independent claim of 90 → 111 across `NA` 3 → 6 reproduces in the
+`USE_TABLE=false` column at 89 → 111, which validates the channel without having
+been targeted.
+
+> **RULE 194. Group count is close to free, because concurrent groups reuse the
+> same weight lines. Accumulator width is not free, because `NA` drives register
+> count and resident simdgroups. The width plan should pick the smallest `NA`
+> that covers `M` with legal groups, not the smallest group count.**
+
+Every attempt to remove a *working* group has lost: `onepass67` shipped at
++0.2649 % cost, `c47b45be` at +1.0583 % ranked, `onePass678` spills 64 B. Every
+attempt to remove a *no-op* group has won: jungjipdo's tight grid, scarletbright's
+`M=2` one-group launch at +1.29 %. Those bodies hit `if (first_m >= M) return;`
+before any read. The distinction is exact and the board has never drawn it.
+
+### FINDING 349 — the legal width plan, enumerated against the live register ladder
+
+`Qwen35.swift:1542` asserts `static_assert(M % IPG != 1, "a one-input tail group
+is not built")`, so only some `inputsPerGroup` values are legal at each width.
+Enumerated:
+
+| M | shipped ipg/NA/G/regs | min-`NA` legal ipg/NA/G/regs | drop | all legal ipg |
+| --- | --- | --- | --- | --- |
+| 2 | 2/2/1/87 | same | — | 2 |
+| 3 | 3/3/1/90 | same | — | 3 |
+| **4** | 4/4/1/94 | **2/2/2/87** | **−7** | 2, 4 |
+| **5** | 5/5/1/102 | **3/3/2/90** | **−12** | 3, 5 |
+| **6** | 3/3/2/90 | **2/2/3/87** | **−3** | 2, 3, 4, 6 |
+| 7 | 4/4/2/94 | already minimum | — | 4, 5, 7 |
+| **8** | 4/4/2/94 | **2/2/4/87** | **−7** | 2, 3, 4, 5, 6, 8 |
+| 9 | 3/3/3/90 | already minimum | — | unreachable, M capped at 8 |
+
+Width 5 is the prize: the largest single register drop in the table, and the
+only width below 6 still running at one group. Widths 2..5 carry 41 % of ranked
+rounds, since ranked `P(M >= 6) = 0.5861`.
+
+Open risk, stated before the measurement: FINDING 279 measured cache-served
+re-reads at **G = 2 only**. There is no campaign measurement at G >= 3. If the
+lockstep breaks at three or four groups, that boundary is itself the result.
+
+### FINDING 350 — E160 is a null, and the producer-fusion axis closes on it
+
+Thorfinn, replicate 1, six gated legs, identical accept ledger `(78, 496, 435)`
+on all six, census witnessed per arm against a firing anti-arm, exactness test
+with two positive controls that both fire.
+
+```
+off      MLX compiled SwiGLU  + 130 fills     0.028767207
+replica  hand-written kernel  + 130 fills     0.028757431   <- fastest leg
+fuse     hand-written kernel  +  66 fills     0.028761043
+```
+
+| contrast | isolates | effect |
+| --- | --- | --- |
+| `replica − off` | replace the `MLX.compile` closure with a Metal kernel | **+0.0340 %** |
+| `fuse − replica` | delete 64 fills, pay the epilogue | **−0.0126 %** |
+| `fuse − off` | the shippable arm | +0.0214 %, 2 sigma `[−0.1752, +0.2181]` |
+
+**The per-removed-fill price is −0.370 µs, central, adverse.** The predicted
+bracket was +2.6 to +8.8 µs per fill; replicate 1 excludes all of it at the top
+and cannot separate the bottom from zero. Mechanism, from the student and
+accepted: the epilogue re-reads the 16-element chunk from `out` after a device
+barrier with 32 of 128 threads active, converting a well-shaped standalone
+dispatch into a badly occupied tail on a larger one. Dispatch count falls, work
+does not.
+
+**Axis closed.** `mlp.down` is the densest producer in the model at 64 sites and
+2,176 site-kBlocks. The two remaining sites, `gdn.out_proj` at 48 and
+`fa.o_proj` at 16, total 768 site-kBlocks and cannot pay more. No further slot.
+Reopening condition: a producer whose grid already matches the fill grid
+`(32, kBlocks, m)` at full occupancy, so the epilogue is not a tail.
+
+**The control arm outran both.** `replica` was built to separate "my kernel
+replaced MLX's closure" from "the fills went away", and it is the fastest of the
+three legs. `qwen35CompiledFusedSwiGLU` is not shapeless — the half-split Slice
+cannot re-infer output shapes — so it pays a per-shape trace at every width in
+`2...9`, and a hand-written kernel pays none. Below the +0.06 % minimum useful
+effect and inside noise, but it is a different arm from the one assigned and
+replicate 2 will price it as a first-class contrast.
+
+Also recorded from this experiment: MLX resolves `mlx.metallib` next to the
+**running** executable and the release xctest bundle carries none, so every
+MLX-gated test dies at its first `MLXArray`; `tools/build-mlx-metallib.sh
+--all-build-roots` is the fix. And the chunk-sum table pads its lane stride to 8
+floats, 16 at m = 9, and **neither** the standalone fill **nor** a fused epilogue
+writes rows `m ..< stride`. Any exactness gate on that table must compare only
+the rows a consumer reads, and must assert that its own substitution landed.
+
+### FINDING 351 — the width-6 sdpa split is closed as an attack surface
+
+Entry 343 priced the split at 0.4 to 1.3 ms against a measured 23.3 ms excess, a
+shortfall of 11 to 18x. Two independent re-derivations this cycle agree with
+that pricing and neither closes the gap: mine gives 39 to 67 MB of extra KV
+traffic per round at `kL` in [600, 1024], which is **0.14 to 0.25 ms** at 273
+GB/s; edward's gives **0.3 to 1.3 ms** plus 96 extra graph nodes per round. Both
+put the split at 6 % or less of the excess.
+
+The split is also **not removable**. `AttentionUtils.swift:103-140` and the
+`sdpaWidthWallDepthCap` comment at `Qwen36MTPBlockSession.swift:1004-1032`
+record two failed removal attempts: verify widths 6..9 drift from the serial
+trajectory in top-2 **values** with ids intact, the drifted K/V rows then
+contaminate every later round, and the whole failure stays invisible to a local
+argmax check while failing the ranked exact-value replay. Segmenting the whole
+forward instead was bit-exact and lost on net, paying a second full weight pass.
+
+**No student spends a slot attacking the split.** It is a bit-exactness
+requirement costing under 1 % of the step it sits inside.
+
+Of FINDING 185's three candidate mechanisms for the 23.3 ms excess, two are now
+excluded — the QMV pass count from both sides (FINDING 185 by construction,
+edward's sweep by measurement) and the GDN scan geometry at source, since
+`GatedDelta.swift:167-176` dispatches `grid: (32, Dv, B·Hv)` with `T` as a
+scalar and a sequential `t` loop. **The evaluation or command-buffer boundary is
+the last candidate standing, and the width-6 excess is the largest unexplained
+quantity in the campaign.**
+
+### RULE 195 — a two-receipt ranked A/B must not use the between-prompt sd as its denominator
+
+FINDING 259 was quoted at `z = +4.16` from `se = sd(8 prompts)/sqrt(8)`. That
+treats the eight prompts as independent replicates of the arm effect. They are
+not independent with respect to a **run-level** shift: machine state, clock,
+thermal history and queue position move all eight prompts of one run together,
+and a common shift does not average down.
+
+The campaign has never measured the run-level component, and it prices every
+board deconvolution it holds. A first look at three of our own receipts gives a
+serial-leg spread of **0.4087 % mean, 0.7853 % max** across runs — against
+claimed arm effects near 1 %.
+
+The instrument is free and has been there all along. **The serial leg is a
+pinned, prebuilt, runner-owned workspace, byte-identical on all 1,283 receipts**,
+because `d ln(ranked baseline serial time)/dx = 0` for every candidate edit. So
+the board carries 1,283 controlled replicates of one fixed program. Its
+dispersion is an assumption-free measurement of ranked run-to-run variability.
+
+FINDING 348 survives this correction for a specific reason and it should be
+stated with the finding: the serial leg in that same run moved −0.2449 %, so the
+run was slightly fast, and a fast run cannot explain a slow candidate. The drift
+and the effect have opposite signs. Assigned to edward as E164 to make the rule
+quantitative and to re-price FINDING 259 properly.
+
+Also open and assigned: FINDING 259 (+1.0583 % ± 0.2542) and FINDING 279
+(`onePass6` at −0.0390 % ± 0.0799) claim to measure the same arm on ranked and
+cannot both be right.
+
+---
+
+### Student board at 00:15Z
+
+| student | PR | assignment | state |
+| --- | --- | --- | --- |
+| askeladd | 158 | `qwen38-r1-e158-...` r1 | B1 `35a8a9de` validating; F15 task is to price the proposal head — inventory, bytes per drafted row, achieved GB/s, regime verdict |
+| edward | **164** | `e164-ranked-ab-error-bar` r0 | new, zero-GPU. Run-to-run error bar, the right statistic, re-price FINDING 259, reconcile 259 against 279 |
+| thorfinn | 160 | `e160-mlp-down-producer-fusion` r0 | replicate 2 running. Pooled decision rule predeclared, no third session. Then width 8 |
+| alphonse | 163 | `e163-width6-one-pass-single-entry` **r1** | redirected from the refuted one-pass arm to the min-`NA` table at widths 4, 5, 6. Pin the depth or the effect dilutes 15x |
+
+### What has to be true for the next cycle to move the frontier
+
+B1 alone is a coin flip against +0.5735 %. E160 is a null, so the composition
+partner it was going to be does not exist. That leaves RULE 194 as the only live
+mechanism with a plausible margin, and it is untested in both directions at
+G >= 3. If E164 shows the ranked A/B error bar is wide enough to swallow
+FINDING 259, then one pass at width 6 reopens and RULE 194 was built on noise.
+Those two outcomes are mutually exclusive, both are decided by zero-GPU
+arithmetic, and edward has both of them.
