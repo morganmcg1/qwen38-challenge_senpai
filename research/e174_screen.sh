@@ -14,10 +14,20 @@
 #
 #   o - s   replace 127 epilogues with 127 fills and their host kernel records.
 #           E174's own mechanism, sign flipped, at 127/130 of its scale.
-#   f - r   add 257 fills and their host kernel records with the consumer held
-#           fixed (`consume:` false on both arms). This is the coefficient the
-#           advisor asked for: it prices one dispatch AND one kernel record
-#           together, and `o - s` cannot separate those from the epilogue.
+#   f - r   add 257 fills and their host kernel records.
+#
+# CORRECTION, from source, after the session ran. This header first claimed
+# `f - r` holds the consumer fixed with `consume:` false on both arms. That is
+# WRONG and the error runs the other way: `replica` never enters the table
+# branch of `Qwen35CustomQMV.matmul` at all, so it dispatches
+# `qwen35CustomAffine4QMVKernel` while `fill_noconsume` dispatches
+# `qwen35CustomAffine4QMVTableKernel` with one extra bound buffer. `f - r`
+# therefore carries a consumer pipeline delta of unknown size and known
+# non-negative sign, which makes it an UPPER bound on the fill.
+#
+# `o - s` is the contrast that really does hold the consumer fixed: both arms
+# run the table kernel with USE_TABLE=true and identical bindings.
+# See research/e174_decompose.py, which grades all six contrasts from source.
 #
 # All four arms are bit-exact: same tokens, same schedule. The report refuses to
 # price a contrast whose arms disagree on `effective_mean_draft_len` or

@@ -5,9 +5,15 @@
 one host and one worker binary. No ranked transfer is claimed.
 
   o - s   replace 127 fused-norm epilogues with 127 standalone fills and their
-          host kernel records. E174's mechanism, sign flipped.
-  f - r   add 257 standalone fills and their host kernel records with the
-          consumer held fixed. One dispatch plus one kernel record, together.
+          host kernel records. E174's mechanism, sign flipped. The consumer IS
+          held fixed here: both arms run the table kernel with USE_TABLE=true
+          and identical bindings.
+  f - r   add 257 standalone fills and their host kernel records. This module
+          first claimed the consumer was held fixed here too. It is not:
+          `replica` never enters the table branch and dispatches a different
+          kernel object with one fewer bound buffer, so `f - r` is an upper
+          bound on the fill. research/e174_decompose.py grades all six
+          contrasts from source and reports the resulting bracket.
 
 The serial leg is the null control: `Qwen35CustomQMV.routable` refuses at M = 1
 and `Qwen35XSumsSidecar.wants` needs `tablePays(m) >= 4`, so no arm can reach
