@@ -61,6 +61,21 @@ PRIOR_HOST_ROWS = [
 ]
 
 
+# E120 rung 5d, quoted verbatim from Qwen35.swift:1735-1748: net microseconds
+# saved per matvec by the chunk-sum table path, harness=local, M4 Pro, median of
+# 6 ABBA blocks. Used only to price what the m >= 4 table path buys, against
+# what its host-side record construction costs.
+E120_RUNG5D_NET_US_SAVED_AT_M4 = {
+    "mlp.gate_up": (24.76, 64),
+    "mlp.down": (11.21, 64),
+    "gdn.in_proj": (9.69, 48),
+    "gdn.out_proj": (1.62, 48),
+    "fa.qkv": (7.67, 16),
+    "fa.o_proj": (1.11, 16),
+    "lm_head": (199.03, 1),
+}
+
+
 def load(name: str) -> dict[str, Any] | None:
     path = ART / name
     if not path.exists():
@@ -110,44 +125,53 @@ def admission_rows(payload: dict[str, Any]) -> tuple[list[dict], dict]:
             "us_per_cell": total_ns / 1e3 / cells,
         }
 
+    cells = detail["cells_per_round"]
     drafting = detail["per_m_us"].get(4) or detail["per_m_us"][max(detail["per_m_us"])]
+    routable_ms = drafting["total_us"] / 1e3
     rows.append(
         {
-            "name": "admission.routable",
-            "mechanism": f"Qwen35CustomQMV.routable over {detail['cells_per_round']} "
-            "routed cells per weight pass (m=4: all accepted, 0 refusals)",
-            "ms_per_round": drafting["total_us"] / 1e3,
+            "name": "admission.routable_predicate",
+            "mechanism": f"Qwen35CustomQMV.routable over {cells} routed cells per "
+            "weight pass (m=4: all accepted, 0 refusals). ~0.5 us of the call is "
+            "MLXArray metadata queries before the shape guards can refuse.",
+            "ms_per_round": routable_ms,
             "method": "measured-host (E173 admission census, no eval, no device buffer)",
             "side": "host",
         }
     )
 
+    sidecar_ms = 0.0
     sidecar = payload.get("xsums_sidecar") or []
     if sidecar:
         # `take` scans all 8 slots with weak loads under an NSLock on every
-        # call. Miss is the worst case and is what a cold round pays.
-        worst = max(s["host_ns_per_call"] for s in sidecar)
+        # call. Only 8 slots exist for 257 cells, so a miss is the common case.
+        miss = max(
+            (s for s in sidecar if not s["returned_table"]),
+            key=lambda s: s["host_ns_per_call"],
+        )
+        sidecar_ms = miss["host_ns_per_call"] * cells / 1e6
         rows.append(
             {
                 "name": "admission.xsums_sidecar_take",
-                "mechanism": "Qwen35XSumsSidecar.take: NSLock plus 8 weak-slot "
-                f"scan, once per routed cell ({detail['cells_per_round']} cells)",
-                "ms_per_round": worst * detail["cells_per_round"] / 1e6,
-                "method": "measured-host (E173 admission census, worst of hit/miss)",
+                "mechanism": "Qwen35XSumsSidecar.take: NSLock plus an 8-slot weak "
+                f"scan with no early exit, once per routed cell ({cells} cells); "
+                "8 slots cannot serve 257 cells, so the miss cost is the common one",
+                "ms_per_round": sidecar_ms,
+                "method": "measured-host (E173 admission census, miss branch)",
                 "side": "host",
             }
         )
 
+    counter_ms = 0.0
     pair = payload.get("counter_increment_pair")
     if pair:
+        counter_ms = pair["host_ns_per_call"] * cells / 1e6
         rows.append(
             {
                 "name": "admission.counter_increments",
-                "mechanism": "qwen35XSumsStandaloneFills / SidecarHits unsynchronised "
-                "counter pair, incremented per routed cell at m >= 4",
-                "ms_per_round": pair["host_ns_per_call"]
-                * detail["cells_per_round"]
-                / 1e6,
+                "mechanism": "qwen35XSumsStandaloneFills / SidecarHits counter pair, "
+                "incremented once per routed cell at m >= 4",
+                "ms_per_round": counter_ms,
                 "method": "measured-host (E173 admission census)",
                 "side": "host",
             }
@@ -160,13 +184,27 @@ def admission_rows(payload: dict[str, Any]) -> tuple[list[dict], dict]:
             by_bm.setdefault(b["m"], 0.0)
             by_bm[b["m"]] += b["host_ns_per_call"] * b["calls_per_round"]
         drafting_m = 4 if 4 in by_bm else max(by_bm)
+        total_ms = by_bm[drafting_m] / 1e6
+        # `routable`, the sidecar take and the counters all run inside the same
+        # entry point, so the kernel-record row is the residual. Keeping the
+        # rows disjoint is the whole point of an inventory.
+        residual = total_ms - routable_ms - sidecar_ms - counter_ms
+        detail["routed_graph_build_total_ms"] = {
+            int(m): v / 1e6 for m, v in by_bm.items()
+        }
+        detail["vendor_counterfactual_ms"] = by_bm.get(1, 0.0) / 1e6
         rows.append(
             {
-                "name": "admission.routed_graph_build",
-                "mechanism": "qwen35RoutedQuantizedMM host graph construction for "
-                f"all {detail['cells_per_round']} cells (lazy, no eval)",
-                "ms_per_round": by_bm[drafting_m] / 1e6,
-                "method": "measured-host (E173 admission census)",
+                "name": "admission.kernel_record_construction",
+                "mechanism": "MLXFastKernel.callAsFunction per routed cell: a fresh "
+                "mlx_fast_metal_kernel_config, template args, grid, output args, an "
+                "input vector_array and mlx_fast_metal_kernel_apply. At m >= 4 this "
+                "runs twice per cell, because a sidecar miss adds the standalone "
+                f"xsums fill kernel. Residual of the {total_ms:.3f} ms entry-point "
+                "total after the predicate, sidecar and counters.",
+                "ms_per_round": residual,
+                "method": "measured-host (E173 admission census, residual of the "
+                "entry-point build)",
                 "side": "host",
             }
         )
@@ -274,6 +312,10 @@ def main() -> int:
         "items_at_or_above_0p5ms": [r["name"] for r in over_bar],
         "verdict": verdict,
         "admission_detail": detail,
+        "e120_table_path_net_ms_saved_at_m4": sum(
+            us * n for us, n in E120_RUNG5D_NET_US_SAVED_AT_M4.values()
+        )
+        / 1e3,
         "m_slopes_excluded_from_F": slopes,
         "tablepays": (
             {
