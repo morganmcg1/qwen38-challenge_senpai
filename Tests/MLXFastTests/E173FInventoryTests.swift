@@ -289,25 +289,7 @@ struct E173AdmissionCensusTests {
             repeating: Qwen35XSumsSidecar.Slot(), count: Qwen35XSumsSidecar.slotCount)
         payload["xsums_sidecar"] = sidecarRows
 
-        // --- 1d. the two counter increments FINDING 413 isolated. This is the
-        // arithmetic alone, with no code-layout or specialisation change.
-        let counterSamples = e173MedianHostNanos(reps: reps, inner: inner) {
-            for _ in 0..<inner {
-                qwen35XSumsStandaloneFills &+= 1
-                qwen35XSumsSidecarHits &+= 1
-            }
-            return qwen35XSumsStandaloneFills & 1
-        }
-        let counterStats = e173Stats(counterSamples)
-        payload["counter_increment_pair"] = [
-            "host_ns_per_call": counterStats.median,
-            "host_ns_per_call_min": counterStats.min,
-            "host_ns_per_call_max": counterStats.max,
-        ]
-        qwen35XSumsStandaloneFills = 0
-        qwen35XSumsSidecarHits = 0
-
-        // --- 1e. host graph-build cost of the whole routed entry point, which
+        // --- 1d. host graph-build cost of the whole routed entry point, which
         // is admission plus the dispatch record MLX will later encode. The
         // `m = 3` and `m = 4` arms differ exactly by the `tablePays` branch.
         var buildRows: [[String: Any]] = []
