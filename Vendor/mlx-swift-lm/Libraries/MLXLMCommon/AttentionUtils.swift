@@ -205,6 +205,57 @@ public enum FusedRowAmortizedSDPA {
         return Set(raw.split(separator: ",").compactMap { Int($0) })
     }()
 
+    /// RESEARCH PROBE (E198), delete before any submission. A null timing
+    /// result cannot distinguish "the fused kernel ran and did not help" from
+    /// "the fused kernel never ran", because `attend` declines silently. This
+    /// counts served calls and declines by reason, and writes the totals to
+    /// `MLXFAST_E198_LIVENESS_OUT` when the process exits. It is inert unless
+    /// that variable is set, and no timed arm sets it.
+    enum Liveness {
+        nonisolated(unsafe) private static var servedCounts: [Int: Int] = [:]
+        nonisolated(unsafe) private static var declinedCounts: [String: Int] = [:]
+
+        nonisolated(unsafe) private static let path = ProcessInfo.processInfo
+            .environment["MLXFAST_E198_LIVENESS_OUT"]
+
+        private static let armed: Bool = {
+            guard path != nil else { return false }
+            atexit { Liveness.dump() }
+            return true
+        }()
+
+        static func served(rows: Int) {
+            guard armed else { return }
+            servedCounts[rows, default: 0] += 1
+        }
+
+        static func declined(reason: String, rows: Int) {
+            guard armed else { return }
+            declinedCounts["\(reason)_m\(rows)", default: 0] += 1
+        }
+
+        static func dump() {
+            guard let path else { return }
+            func object(_ pairs: [(String, Int)]) -> String {
+                "{" + pairs.map { "\"\($0.0)\": \($0.1)" }.joined(separator: ", ") + "}"
+            }
+            let served = object(
+                servedCounts.sorted { $0.key < $1.key }.map { ("\($0.key)", $0.value) })
+            let declined = object(
+                declinedCounts.sorted { $0.key < $1.key }.map { ($0.key, $0.value) })
+            let json = """
+                {"served_by_rows": \(served), "declined_by_reason": \(declined), \
+                "enabled_rows": \(enabledRows.sorted())}
+                """
+            try? json.write(toFile: path, atomically: true, encoding: .utf8)
+        }
+    }
+
+    private static func decline(_ reason: String, _ rows: Int) -> MLXArray? {
+        Liveness.declined(reason: reason, rows: rows)
+        return nil
+    }
+
     private static let kernel = MLXFast.metalKernel(
         name: "qwen_mtp_fused_row_amortized_sdpa",
         inputNames: ["queries", "keys", "values", "scale"],
@@ -225,23 +276,25 @@ public enum FusedRowAmortizedSDPA {
         serving: Set<Int> = enabledRows
     ) -> MLXArray? {
         let rows = queries.dim(2)
-        guard serving.contains(rows) else { return nil }
+        guard serving.contains(rows) else { return decline("width", rows) }
         guard queries.dim(0) == 1, keys.dim(0) == 1, values.dim(0) == 1,
             queries.dim(3) == headDim, keys.dim(3) == headDim,
             values.dim(3) == headDim,
             queries.dtype == .bfloat16, keys.dtype == .bfloat16,
             values.dtype == .bfloat16
-        else { return nil }
+        else { return decline("shape_or_dtype", rows) }
 
         let heads = queries.dim(1)
         let kvHeads = keys.dim(1)
         guard kvHeads > 0, heads % kvHeads == 0, values.dim(1) == kvHeads,
             values.dim(2) == keys.dim(2), keys.dim(2) >= rows
-        else { return nil }
+        else { return decline("head_grouping", rows) }
 
         // The kernel reads each thread's 8 head-dim elements as one contiguous
         // run, which is what every cache layout in this tree provides.
-        guard keys.strides[3] == 1, values.strides[3] == 1 else { return nil }
+        guard keys.strides[3] == 1, values.strides[3] == 1 else {
+            return decline("kv_stride", rows)
+        }
 
         // This kernel reproduces `sdpa_vector` arithmetic. At or above
         // `twoPassKeyLength` the vendored dispatch in
@@ -251,8 +304,11 @@ public enum FusedRowAmortizedSDPA {
         // Declining is unconditional rather than architecture-gated: the
         // vendored condition also reads the device architecture string, and a
         // fallback is always exact.
-        guard keys.dim(2) < twoPassKeyLength else { return nil }
+        guard keys.dim(2) < twoPassKeyLength else {
+            return decline("two_pass_boundary", rows)
+        }
 
+        Liveness.served(rows: rows)
         return kernel(
             [queries, keys, values, MLXArray(scale)],
             template: [("M", rows)],
