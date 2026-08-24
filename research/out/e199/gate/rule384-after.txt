@@ -1,0 +1,6 @@
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-24T19:09:02Z
+worker_sha256 2a85c32697a69057bc33d41cde1df84aeea85c2227a23ded82ad4d0773aeb51e
+ok   require-symbol 'snapshotScheduleSignal': 2
+ok   extraction: 576674 symbols
+rebuild-and-assert-worker: PASS

@@ -1,0 +1,115 @@
+== building runtime worker (the artifact that carries the JIT string) ==
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[0/1] Planning build
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[1/3] Write sources
+[3/4] Compiling MLXFastModel DenseTensorStore.swift
+[4/6] Compiling MLXFastRuntimeWorkerSupport BenchmarkSupport.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Sources/MLXFastHarness/QwenRuntimeDFlashWorker.swift:607:5: warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'ExperimentalDFlashAsyncResultBox<T>', consider removing it
+605 |     let box = ExperimentalDFlashAsyncResultBox<T>()
+606 |     nonisolated(unsafe) let unsafeOperation = operation
+607 |     nonisolated(unsafe) let unsafeBox = box
+    |     `- warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'ExperimentalDFlashAsyncResultBox<T>', consider removing it
+608 |     Task {
+609 |         do {
+
+macro expansion #adaptHuggingFaceTokenizer:8:9: warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'any Tokenizer', consider removing it
+`- /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Sources/MLXFastHarness/QwenRuntimeDFlashWorker.swift:176:53: note: expanded code originates here
+174 |             try await LLMModelFactory.shared.load(
+175 |                 from: targetURL,
+176 |                 using: #huggingFaceTokenizerLoader()
+    |                        `- note: in expansion of macro 'huggingFaceTokenizerLoader' here
+    +--- macro expansion #huggingFaceTokenizerLoader -------------------
+    |10 |             //
+    |11 |             let upstream = try await Tokenizers.AutoTokenizer.from(modelFolder: directory)
+    |12 |             return #adaptHuggingFaceTokenizer(upstream)
+    |   |                    `- note: in expansion of macro 'adaptHuggingFaceTokenizer' here
+    |   +--- macro expansion #adaptHuggingFaceTokenizer ----------------
+    |   | 6 |     struct TokenizerBridge: MLXLMCommon.Tokenizer {
+    |   | 7 |         // nonisolated(unsafe): the upstream tokenizer is immutable after init.
+    |   | 8 |         nonisolated(unsafe) private let upstream: any Tokenizers.Tokenizer
+    |   |   |         `- warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'any Tokenizer', consider removing it
+    |   | 9 | 
+    |   |10 |         init(_ upstream: any Tokenizers.Tokenizer) {
+    |   +---------------------------------------------------------------
+    |13 |         }
+    |14 |     }
+    +-------------------------------------------------------------------
+177 |             )
+178 |         }
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift:526:5: warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'QwenMTPAsyncResultBox<T>', consider removing it
+524 |     let box = QwenMTPAsyncResultBox<T>()
+525 |     nonisolated(unsafe) let unsafeOperation = operation
+526 |     nonisolated(unsafe) let unsafeBox = box
+    |     `- warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'QwenMTPAsyncResultBox<T>', consider removing it
+527 |     Task {
+528 |         do {
+
+macro expansion #adaptHuggingFaceTokenizer:8:9: warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'any Tokenizer', consider removing it
+`- /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Sources/MLXFastHarness/QwenRuntimeMTPWorker.swift:158:57: note: expanded code originates here
+156 |                 try await LLMModelFactory.shared.load(
+157 |                     from: targetURL,
+158 |                     using: #huggingFaceTokenizerLoader()
+    |                            `- note: in expansion of macro 'huggingFaceTokenizerLoader' here
+    +--- macro expansion #huggingFaceTokenizerLoader -------------------
+    |10 |             //
+    |11 |             let upstream = try await Tokenizers.AutoTokenizer.from(modelFolder: directory)
+    |12 |             return #adaptHuggingFaceTokenizer(upstream)
+    |   |                    `- note: in expansion of macro 'adaptHuggingFaceTokenizer' here
+    |   +--- macro expansion #adaptHuggingFaceTokenizer ----------------
+    |   | 6 |     struct TokenizerBridge: MLXLMCommon.Tokenizer {
+    |   | 7 |         // nonisolated(unsafe): the upstream tokenizer is immutable after init.
+    |   | 8 |         nonisolated(unsafe) private let upstream: any Tokenizers.Tokenizer
+    |   |   |         `- warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'any Tokenizer', consider removing it
+    |   | 9 | 
+    |   |10 |         init(_ upstream: any Tokenizers.Tokenizer) {
+    |   +---------------------------------------------------------------
+    |13 |         }
+    |14 |     }
+    +-------------------------------------------------------------------
+159 |                 )
+160 |             }
+[5/7] Compiling MLXFastRuntimeWorkerCLI main.swift
+[5/7] Write Objects.LinkFileList
+[6/7] Linking mlxfast-runtime-worker
+Build of product 'mlxfast-runtime-worker' complete! (31.68s)
+== building CLI (content-addressed no-op for kernel edits) ==
+[0/3] Write swift-version--58304C5D6DBC2206.txt
+[2/4] Compiling ArgumentParserToolInfo ToolInfo.swift
+[3/5] Compiling ArgumentParser BashCompletionsGenerator.swift
+[4/6] Compiling encuda encuda-compile.swift
+[4/6] Write Objects.LinkFileList
+[5/6] Linking encuda-tool
+[0/1] Planning build
+Building for production...
+[0/3] Write swift-version--58304C5D6DBC2206.txt
+[2/10] Compiling _NIOBase64 Base64.swift
+[3/10] Compiling Crypto AES-GCM.swift
+[4/10] Compiling _NIODataStructures Heap.swift
+[5/10] Compiling InternalCollectionsUtilities Debugging.swift
+[6/10] Compiling NIOConcurrencyHelpers NIOAtomic.swift
+[7/12] Compiling ContainersPreview OutputSpan+Extras.swift
+[8/13] Compiling Atomics OptionalRawRepresentable.swift
+[9/13] Compiling DequeModule Deque+Codable.swift
+[10/14] Compiling OrderedCollections _HashTable+Bucket.swift
+[11/15] Compiling MLXFastCore AcceptanceBand.swift
+[12/16] Compiling NIOCore AddressedEnvelope.swift
+[13/17] Compiling MLXFastTransform AffineMetadataCoding.swift
+[14/17] Compiling EventSource AsyncEventsSequence.swift
+[15/18] Compiling Jinja AST.swift
+[16/18] Compiling HuggingFace AccessRequest.swift
+[17/19] Compiling Hub BinaryDistinct.swift
+[18/20] Compiling Tokenizers BPETokenizer.swift
+[19/21] Compiling MLXFastHarness BenchmarkSupport.swift
+[20/22] Compiling MLXFastCLI main.swift
+[20/22] Write Objects.LinkFileList
+[21/22] Linking mlxfast-swift
+Build of product 'mlxfast-swift' complete! (52.65s)
+worker      .build-worker/release/mlxfast-runtime-worker
+worker_mtime 2026-08-24T19:09:02Z
+worker_sha256 2a85c32697a69057bc33d41cde1df84aeea85c2227a23ded82ad4d0773aeb51e
+ok   require-symbol 'snapshotScheduleSignal': 2
+ok   extraction: 576674 symbols
+rebuild-and-assert-worker: PASS
