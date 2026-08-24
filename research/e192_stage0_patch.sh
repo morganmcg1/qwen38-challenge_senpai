@@ -59,9 +59,14 @@ SESSION_FILE="Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
 MODEL_FILE="Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
 
 if [[ "${mode}" == "revert" ]]; then
-  git restore --source=HEAD --staged --worktree -- "${SESSION_FILE}" "${MODEL_FILE}"
-  echo "e192_stage0_patch: restored both files to HEAD content"
-  git status --short -- "${SESSION_FILE}" "${MODEL_FILE}"
+  # `run_job` refuses a dirty worktree, so the instrumentation has to be
+  # committed before a session. Revert therefore restores from the assignment
+  # base, not from HEAD; HEAD carries the instrumentation commit.
+  source_ref="${2:-${BASE_SHA:-55b341555913b9166edc5711c6c2fc7d373cd411}}"
+  git restore --source="${source_ref}" --staged --worktree \
+    -- "${SESSION_FILE}" "${MODEL_FILE}"
+  echo "e192_stage0_patch: restored both files to ${source_ref}"
+  git --no-pager diff --stat "${source_ref}" -- "${SESSION_FILE}" "${MODEL_FILE}"
   exit 0
 fi
 

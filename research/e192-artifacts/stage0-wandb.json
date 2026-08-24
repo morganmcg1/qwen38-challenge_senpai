@@ -1,0 +1,17 @@
+[
+ {
+  "leg": "e192s0-barrier-alt",
+  "runId": "d4qoppo1",
+  "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/d4qoppo1"
+ },
+ {
+  "leg": "e192s0-tape-alt",
+  "runId": "ao5dabij",
+  "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ao5dabij"
+ },
+ {
+  "leg": "rollup",
+  "runId": "26e8ap4p",
+  "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/26e8ap4p"
+ }
+]
