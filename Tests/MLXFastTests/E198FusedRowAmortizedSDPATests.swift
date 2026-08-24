@@ -351,7 +351,7 @@ struct E198FusedExactnessTests {
 /// reading costs nothing at the arm boundary and is at most one interval stale.
 /// A single blocking `macmon pipe -s1` call costs about 2.7 s here and would
 /// insert more idle time between arms than the arms themselves take.
-private final class E198TemperatureSampler {
+private final class E198TemperatureSampler: @unchecked Sendable {
     private let process = Process()
     private let pipe = Pipe()
     private let lock = NSLock()
