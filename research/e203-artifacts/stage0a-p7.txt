@@ -1,0 +1,97 @@
+==============================================================================
+E203 STAGE 0a  WITHIN-PROMPT ACCEPTANCE STRUCTURE  arm=p7
+==============================================================================
+  corpus: research/out/e168/p7, 512 decode tokens per prompt
+  null:   exchangeability by permutation, 20000 draws, seed 203
+  rounds: drafted depth held at 7; tail-narrowed rounds dropped
+
+  PROMPTS
+   prompt             all  kept  drop     mean      sd    cens
+   benchfixture        73    72     1    6.042   2.078   0.792
+   dramatic           193   191     2    1.654   1.693   0.021
+   english            217   215     2    1.353   1.442   0.014
+   medicine           201   199     2    1.553   1.637   0.010
+   narrative          218   215     3    1.353   1.310   0.005
+   natural_history    234   231     3    1.186   1.233   0.000
+   philosophy         219   215     4    1.349   1.248   0.005
+   technical          198   197     1    1.579   1.574   0.005
+   travel             208   206     2    1.466   1.416   0.005
+
+  AUTOCORRELATION of accepted length, pooled over prompts by
+  (N - lag). A drift or clustering rule needs acf > 0.
+   lag    pooled   null_lo   null_hi       z       p>
+     1    0.0014   -0.0514    0.0422    0.28   0.3868
+     2   -0.0139   -0.0509    0.0413   -0.37   0.6366
+     3    0.0211   -0.0504    0.0411    1.12   0.1317
+     4   -0.0147   -0.0514    0.0415   -0.40   0.6608
+     5   -0.0082   -0.0504    0.0410   -0.13   0.5475
+     6    0.0388   -0.0509    0.0406    1.88   0.0308  *
+     7   -0.0094   -0.0513    0.0409   -0.18   0.5732
+     8    0.0360   -0.0507    0.0407    1.77   0.0387  *
+     9   -0.0245   -0.0487    0.0407   -0.86   0.8061
+    10    0.0032   -0.0495    0.0417    0.35   0.3611
+    11    0.0330   -0.0491    0.0404    1.63   0.0515
+    12   -0.0015   -0.0495    0.0404    0.15   0.4381
+    13    0.0079   -0.0488    0.0412    0.54   0.2941
+    14    0.0200   -0.0491    0.0401    1.07   0.1423
+    15    0.0429   -0.0494    0.0398    2.09   0.0186  *
+    16   -0.0302   -0.0494    0.0408   -1.12   0.8676
+   max over lags 1..16: 0.0429 at lag 15, null 97.5% 0.0645, p=0.2851
+
+  DRIFT over the decode window (corr with round index)
+   pooled 0.0514, null [-0.0333, 0.0602], p=0.0578
+   null: block-16 reorder (keeps local dependence, kills position)
+   per prompt: benchfixture=-0.220  dramatic=+0.055  english=-0.058  medicine=+0.016  narrative=+0.080  natural_history=+0.082  philosophy=+0.062  technical=+0.262  travel=+0.013
+
+  ONE-STEP-AHEAD PREDICTION SKILL vs the causal running mean
+  (positive = the history predicts the next round; this is the
+  quantity every drift/EMA/lookahead depth rule consumes)
+   EMA a         skill   null97.5        p>
+   0.05        -0.0018    -0.0085    0.0023
+   0.10        -0.0200    -0.0257    0.0036
+   0.15        -0.0437    -0.0493    0.0050
+   0.20        -0.0708    -0.0756    0.0078
+   0.30        -0.1320    -0.1335    0.0185
+   0.40        -0.2010    -0.1993    0.0316
+   0.50        -0.2790    -0.2740    0.0426
+   0.70        -0.4707    -0.4574    0.0604
+   best alpha 0.05 skill -0.0018, null 97.5% over alpha -0.0085, p=0.0023
+   AR(L)         skill   null97.5        p>
+   1           -0.0173    -0.0073    0.5491
+   2           -0.0671    -0.0216    0.9900
+   4           -0.1981    -0.0601    0.9584
+   8           -0.3713    -0.1412    0.9534
+   best order 1 skill -0.0173, null 97.5% over order -0.0073, p=0.5491
+
+  STRUCTURE BUDGET, the input stage 0b prices
+   rho1                       +0.0014 (sd 0.0239)
+   rho1 95% upper             +0.0482
+   best lag 95% upper         +0.0896
+   predictable variance of accepted length, 95%% upper bound:
+     from lag 1               0.2324 %
+     from the best of 16 lags 0.8033 %
+
+  SHIPPED TRACKER STATE: does the live EMA forecast the round?
+   corr(EMA forecast, realised accepted) = +0.0085 over 1741 rounds
+   sd under no association 0.0240, so the 95% band is +-0.0470
+   per prompt: benchfixture=+0.269  dramatic=+0.012  english=-0.037  medicine=-0.052  narrative=-0.116  natural_history=+0.035  philosophy=-0.089  technical=-0.011  travel=-0.021
+   Both series are de-meaned inside each prompt, so this measures
+   WITHIN-prompt tracking only.
+
+  DRIFT SIGN AGREEMENT across prompts: 7 of 9 positive, binomial p=0.180
+   A drift rule with a fixed sign needs agreement; a rule that
+   learns the sign online is the EMA family scored above.
+
+  LEAVE-ONE-PROMPT-OUT on the two headline statistics
+   dropped               rho1      ema_skill
+   benchfixture       -0.0194        -0.0080
+   dramatic           +0.0066        -0.0008
+   english            +0.0136        +0.0008
+   medicine           -0.0025        +0.0001
+   narrative          -0.0009        +0.0011
+   natural_history    -0.0092        -0.0013
+   philosophy         +0.0168        +0.0000
+   technical          -0.0004        -0.0076
+   travel             +0.0101        -0.0000
+
+  wrote research/e203-artifacts/stage0a-p7.json
