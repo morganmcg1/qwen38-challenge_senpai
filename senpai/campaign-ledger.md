@@ -70006,3 +70006,90 @@ the ship path.
 - Askeladd queued second with `min(adaptive, 4)`, protected above by FINDING 415
   and below by FINDING 421.
 - Edward and Alphonse on characterisation, off the ship path, on separate Macs.
+
+## Entry 366 — 2026-08-24T07:55Z — E171 is FIRED: `2c885d64` validating. The submit guard demands a main-side base, and the frozen tree lived on one disk at fire time.
+
+### The fire
+
+Thorfinn submitted the crown attempt at 07:11Z, before F4's schedule cut
+arrived; the cut applies from the next candidate.
+
+```
+submission   2c885d64-8e12-4b07-b7b0-35eb314dbafe   validating
+frozen SHA   4ba44f8251960eaf79ec4f05135485442438f5ef
+submit base  770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf   (main-side merge base)
+note         13.9 KiB
+watcher      job 4a1ccf84, read-only, 3 h timeout
+```
+
+The single 512-token `--local-submit` confirmation on the exact submitted
+tree, real 40 C gate: `all_tokens_matched true`, rows `568/568`, serial
+`0.0733838` s/tok, MTP `0.0312542` s/tok, ratio `2.347963`, `edl 6.3766`
+digit-identical to the four ABBA legs. Pre-submit chain green once: twin
+audit OK, scope OK (2 paths), budget growth **-5289 bytes**, boundary PASS,
+`Qwen35.swift` at organizer parity, worktree clean at the frozen SHA. Crown
+`ec24d591 3.7291100106` unchanged at fire time and at 07:20Z.
+
+The shipped note carries the byte-identical null pair, both routes (3.7496 /
+3.7559, central 3.7527), the resample table, the single-draw sd, and the
+explicit reading rule: a receipt near 3.72 is inside the draw and settles
+nothing; only a receipt well below 3.70 counts against Q. No probability
+claim.
+
+### FINDING 424 — the submit guard requires a main-side `BASE_SHA`, and `origin/main` carries a stale frontier snapshot on the submit path
+
+Thorfinn's first attempt with `BASE_SHA=58979332` was refused:
+`BASE_SHA is not an ancestor of current origin/main`. `submit-official.sh`
+hard-codes `SOURCE_BRANCH="main"` and requires `BASE_SHA` to be an ancestor
+of both `HEAD` and `origin/main`. While the advisor branch is ahead of main,
+the valid value is the merge base, currently `770a3ff2` (same resolution as
+ledger item 249.4, thorfinn E101). He verified honestly before reuse: no
+protected path differs between `770a3ff2` and `origin/main` head `893a7581`
+(the diff is only `senpai/*.md` docs).
+
+The risk half: `origin/main` moved on 08-24 with a `senpai/program.md`
+change, and its `senpai/frontier-state.json` is still the 2026-08-19
+snapshot (promoted `0cd0a6b4` at `3.2493`). The guard reads
+`frontier-state.json` and `benchmark.json` **from `origin/main`**, not from
+the working tree. That staleness did not block `2c885d64`, but a future
+organizer sync could make it block a submission. Both halves are now
+recorded in `experiment-runbook.md`, next to the 5 KiB note minimum and the
+Yukon seven-character CLI truncation fact from Edward's watcher defect.
+
+### FINDING 425 — the frozen candidate existed on exactly one disk at fire time
+
+`git ls-remote origin` resolves neither `4ba44f82` nor its ancestors; the PR
+branch head `59378248` is only the assignment commit. Every commit of the
+submitted tree lived solely on thorfinn's Mac while its receipt was in
+flight. F5 (PR 171, 07:20Z) demands an immediate push under a new ref —
+pushing publishes the frozen object and is not a reopen. Until the push:
+askeladd's composition base is blocked, and a promotion would record a
+`promotedSourceRef` that resolves nowhere in `origin`. This is the second
+provenance gap this week (Edward's E167 push was refused by the harness for
+a different reason); the standing rule is unchanged — push candidate
+implementations early, before the receipt, not after.
+
+### `research_base_changed` reconciliation, all four assignments
+
+The advisor branch moved to `5dfe6fa2` (ledger commits 362-365). For PRs 171
+and 172 the move ranges are `senpai/`-only: zero scored-surface change,
+conclusions unaffected, no replay owed. For PRs 166 and 168 the ranges
+include the earlier merged E169/E165 session, test, and research files; both
+students were already re-coordinated onto the current tree in feedback
+(F11-F16 on PR 166, F4-F11 on PR 168) before this entry. No assignment is
+cancelled for a moved comparison point; no revision requests owed.
+
+### Standing
+
+- Crown unchanged: `ec24d591` newjordan `3.7291100106`.
+- Official slot **occupied**: `2c885d64` validating, fired 07:11Z, five
+  other solvers' rows validating beside it.
+- Today's terminal receipts, both already ingested: `180db842` rejected
+  `3.70465399` (E167 maintained base), `fda590bb` rejected `3.66784731`
+  (revert alone).
+- Queue: askeladd depth-cap `min(adaptive, 4)` second, composing on the
+  shipped stripped tree once `4ba44f82` is pushed.
+- Edward: four-arm ABBA on the 592 µs instrumentation tax, predeclared,
+  running. Alphonse: E173 fixed-cost decomposition, starting with the free
+  `tablePays` m=3-to-m=4 natural experiment against askeladd's trace.
+

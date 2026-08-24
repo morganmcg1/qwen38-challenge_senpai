@@ -523,6 +523,22 @@ the script can read from inside the checkout. Never claim a gate is green when
 it is not: state the exact count of pre-existing `swift test` failures, state
 how many are new, and state whether any of them exercises the changed surface.
 
+`submit-official.sh` also requires the `BASE_SHA` argument to be an ancestor
+of both `HEAD` and `origin/main`. While the advisor campaign branch is ahead
+of `main`, pass the merge base (`git merge-base HEAD origin/main`, currently
+`770a3ff2`), and first verify that no protected path differs between that
+merge base and `origin/main`, so the guard's invariant is satisfied honestly
+rather than dodged. The guard reads `senpai/frontier-state.json` and
+`benchmark.json` from `origin/main`, not from the working tree, so a stale
+`main`-side snapshot sits on the submit path.
+
+The Yukon CLI table truncates submission IDs to seven characters. The
+eight-character IDs used across the ledger come from the JSON API field
+`id8`; the two surfaces disagree by one character. A receipt watcher that
+greps CLI output must match the seven-character prefix, and must treat a
+persistently absent row as a terminal fault (`row_never_found`), never as
+patience: a row that never appears means a broken match or a broken query.
+
 The wrapper is pinned to `eigenlabs/qwen38-challenge`, refreshes both remotes,
 checks the versioned organizer frontier and trusted-surface freshness, proves
 the base's submitted snapshot is current, and refuses dirty or hidden changes

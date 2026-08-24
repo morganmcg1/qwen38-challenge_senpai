@@ -863,7 +863,7 @@
   },
   "observedAt": "2026-08-24T05:50:00Z",
   "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
-  "officialSlot": "free",
+  "officialSlot": "occupied: 2c885d64 validating (E171 crown attempt, qwen-thorfinn), created 2026-08-24T07:11Z, watcher job 4a1ccf84 (read-only, 3 h)",
   "onlyExactRoundCostOnBoard": {
     "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
     "optimised": {
@@ -2194,33 +2194,34 @@
     "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
   },
   "submissionQueue": {
-    "ledger": 361,
+    "ledger": 366,
     "inFlight": {
-      "id": "fda590bb-e1c7-4b2b-b65b-1de67aa15e52",
-      "content": "revert alone",
+      "id": "2c885d64-8e12-4b07-b7b0-35eb314dbafe",
+      "name": "E171 crown attempt",
+      "content": "organizer-parity quantized kernels + instrumentation strip + E165 head-prefetch default",
+      "owner": "qwen-thorfinn",
       "status": "validating",
-      "predicted": 3.712098,
-      "owner": "qwen-edward"
+      "frozenSha": "4ba44f8251960eaf79ec4f05135485442438f5ef",
+      "submitBaseSha": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
+      "firedAt": "2026-08-24T07:11Z",
+      "routes": [
+        3.7496,
+        3.7559
+      ],
+      "central": 3.7527,
+      "readingRule": "a receipt near 3.72 is inside the draw and settles nothing; only well below 3.70 counts against Q"
     },
     "frozenNext": {
-      "name": "E171",
-      "content": "revert + E165",
-      "owner": "qwen-thorfinn",
-      "formula": "3.712098*(1+0.010322*tau)",
-      "crownIff": "tau > 0.444"
-    },
-    "priority": {
-      "name": "depth-4",
+      "name": "depth cap min(adaptive, 4)",
       "owner": "qwen-askeladd",
-      "modelled": [
-        4.1637,
-        4.3058
-      ],
-      "note": "jumps the queue ahead of E171 if the gated 512-token ABBA confirms at better than 3 %"
+      "status": "gated ladder running; composes on the shipped stripped tree (4ba44f82), not on 58979332",
+      "blockedOn": "thorfinn pushing the frozen ref (F5, PR 171)",
+      "protectedAbove": "FINDING 415",
+      "protectedBelow": "FINDING 421 minimumTableWidth = 4"
     }
   },
-  "lastAdvisorUpdate": "2026-08-24T06:55Z",
-  "ledgerEntry": 363,
+  "lastAdvisorUpdate": "2026-08-24T07:50Z",
+  "ledgerEntry": 366,
   "threeReceiptFactorial": {
     "A": {
       "id": "5a9f130a",
@@ -2342,6 +2343,37 @@
     "probability": "about 90 %, read off Edward's resample requirement table between its 1.00 % row at 86.7 % and its 1.25 % row at 98.0 %. The advisor closed form says 97 %; the resample is preferred because the median rule is a min of four plus beagle and is not Gaussian.",
     "noteFramingCorrection": "do not write that the strip adds 1.09 % on top of organizer main. 5a9f130a never carried the instrumentation. The strip removes the tax from OUR base and returns it to A + Q.",
     "stopRuleReplaced": "the stop branch is removed. Fire unless the accept ledger differs between arms, all_tokens_matched is false against the S0 reference rows, an arm witness or its positive control fails, the submitted diff exceeds the default flip plus the deletion, or a scope/budget/clean-diff check fails.",
-    "acceptedStudentDesign": "reference rows generated from S0 once, which turns all_tokens_matched into a genuine cross-arm bit-exactness test and subsumes the identical-ledger condition; and a symbol witness anchored by prefetchHeadStep, RULE 197 applied to its own harness."
+    "acceptedStudentDesign": "reference rows generated from S0 once, which turns all_tokens_matched into a genuine cross-arm bit-exactness test and subsumes the identical-ledger condition; and a symbol witness anchored by prefetchHeadStep, RULE 197 applied to its own harness.",
+    "fired": {
+      "submissionId": "2c885d64",
+      "frozenSha": "4ba44f8251960eaf79ec4f05135485442438f5ef",
+      "firedAt": "2026-08-24T07:11Z",
+      "status": "validating",
+      "noteKiB": 13.9,
+      "localSubmit512": {
+        "all_tokens_matched": true,
+        "reference_checked_rows": "568/568",
+        "serial_spt": 0.07338379300199449,
+        "mtp_spt": 0.03125423821620643,
+        "ratio": 2.347962938477329,
+        "edl": 6.376623376623376,
+        "coolGate": "real 40C gate"
+      },
+      "budgetGrowthBytes": -5289
+    }
+  },
+  "submitGuardMainSideBase": {
+    "fact": "submit-official.sh requires BASE_SHA to be an ancestor of both HEAD and origin/main; while the advisor branch is ahead of main, the valid value is the merge base, currently 770a3ff2",
+    "verified": "no protected path differs between 770a3ff2 and origin/main head 893a7581 (only senpai/*.md docs)",
+    "risk": "origin/main moved 08-24 with a senpai/program.md change; its senpai/frontier-state.json is still the 2026-08-19 snapshot (promoted 0cd0a6b4 at 3.2493). The guard reads frontier-state.json and benchmark.json from origin/main, not the working tree, so that staleness is on the submit path. It did not block 2c885d64; a future organizer sync could make it block one.",
+    "observedBy": "qwen-thorfinn E171 r1 interim 3; recurrence of ledger item 249.4; now a runbook rule",
+    "ledgerEntry": 366
+  },
+  "frozenShaProvenanceGap": {
+    "frozenSha": "4ba44f8251960eaf79ec4f05135485442438f5ef",
+    "state": "not resolvable from origin at fire time; exists on one disk (thorfinn Mac)",
+    "action": "F5 on PR 171 (07:20Z) demands a push under a new ref, e.g. qwen-thorfinn/e171-frozen-4ba44f82; pushing is not reopening",
+    "blocks": "askeladd composition base; a promotedSourceRef that resolves nowhere if 2c885d64 promotes",
+    "ledgerEntry": 366
   }
 }
