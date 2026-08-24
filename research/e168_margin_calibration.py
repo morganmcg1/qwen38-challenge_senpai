@@ -519,10 +519,22 @@ def auc_value_curve(
                 ),
             }
         )
+    head_step_ms = HEAD_STEP_COST_RATIO * RANKED_ROW_MS
+    for row in rows:
+        # The per-round figure is the one a mechanism is actually priced
+        # against, because a real design pays once per round for a decision,
+        # not once per drafted position.
+        row["break_even_ms_per_round"] = (
+            row["break_even_sync_ms_per_draft"] * row["mean_depth"]
+        )
+        row["break_even_wasted_head_steps"] = (
+            row["break_even_ms_per_round"] / head_step_ms
+        )
     return {
         "best_constant_depth": best_constant_depth,
         "best_constant_raw": best_constant,
         "oracle_raw": oracle,
+        "head_step_ms": head_step_ms,
         "constants": constants,
         "curve": rows,
         "prompts": len(prompts),
@@ -1766,7 +1778,7 @@ def main() -> int:
         )
         print(
             f"{'signal AUC':>11}{'raw':>8}{'gap won':>10}{'mean d':>8}"
-            f"{'floor':>7}{'tau':>7}{'rep spread':>12}{'sync budget':>13}"
+            f"{'floor':>7}{'tau':>7}{'budget/round':>14}{'head steps':>12}"
         )
         for row in block["curve"]:
             print(
@@ -1774,8 +1786,8 @@ def main() -> int:
                 f"{100.0 * row['gap_recovered']:>9.1f}%"
                 f"{row['mean_depth']:>8.2f}"
                 f"{row['floor']:>7d}{row['tau']:>7.2f}"
-                f"{row['replicate_spread']:>12.4f}"
-                f"{1000.0 * row['break_even_sync_ms_per_draft']:>11.0f}us"
+                f"{1000.0 * row['break_even_ms_per_round']:>12.0f}us"
+                f"{row['break_even_wasted_head_steps']:>12.2f}"
             )
         print(
             "  A synthetic signal of the stated AUC is laid over the recorded\n"
@@ -1784,8 +1796,10 @@ def main() -> int:
             "  perfect signal returns the oracle, which is the check that the\n"
             "  construction is sound. The signal is equally good at every\n"
             "  position, so every row is optimistic for a real feature.\n"
-            "  The sync budget is the largest new per-draft-position cost the\n"
-            "  rule can pay and still beat the free best constant."
+            f"  The budget is what the rule may newly spend per round and still\n"
+            f"  beat the free best constant. The last column states the same\n"
+            f"  budget as discarded head steps at {block['head_step_ms'] * 1000:.0f}us each, which is\n"
+            "  what a build-deep-then-choose-the-verify-width design wastes."
         )
         print()
 
