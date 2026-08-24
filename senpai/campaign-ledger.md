@@ -68893,3 +68893,56 @@ hardware-dependent structure is subject to Rule 83.**
 - the cap 7-to-8 lever and its `p_7 > 0.93369` pre-registration.
 - FINDING 385's depth-price identity `c* = h/(s+h)`, which assumed a linear marginal row.
 - any pricing that multiplies a saving by `b` per row.
+
+### Entry 360 addendum — FINDING 407 verified in source, not inferred
+
+I read the dispatch rather than trusting the note that carried the table.
+
+`Qwen35.swift:1709-1728`, `activeInputGroups(_ m: Int)`:
+
+```
+case 2: inputsPerGroup = 2      case 6: inputsPerGroup = 3
+case 3: inputsPerGroup = 3      case 7: inputsPerGroup = 4
+case 4: inputsPerGroup = 4      case 8: inputsPerGroup = 4
+case 5: inputsPerGroup = 5      case 9: inputsPerGroup = 3
+return (m + inputsPerGroup - 1) / inputsPerGroup
+```
+
+Launch sites `Qwen35.swift:1834` and `:1883`:
+
+```
+grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1)
+```
+
+Kernel body `:1585-1588`:
+
+```
+const uint3 qmv_tid = threadgroup_position_in_grid;
+const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
+const int qmv_gx      = int(qmv_tid.x);
+```
+
+and `:1543`, `const int first_m = group_x * IPG`.
+
+So `tid.y` indexes **output rows** and `tid.x` indexes **input groups**. Each of the `groups(M)`
+threadgroups along x reads the weight rows for its `out_row` independently. **`G` groups therefore
+perform `G` complete reads of the weight matrix.** This is a dispatch geometry, not a cache effect,
+and it is fixed by candidate source on every host.
+
+Coverage check, because the step only matters for bytes that actually route. `Qwen35CustomQMV.routable`
+at `:1770-1794` requires `bits == 4`, `groupSize == 64`, `mode == .affine`, bf16 activations and
+scales, `k % 512 == 0`, `n % 8 == 0` and **`n >= 4096`**. Against the Qwen 3.8 27B shapes:
+
+```
+routed        q_proj 6144, o_proj 5120, gate_proj 17408, up_proj 17408,
+              down_proj 5120, lm_head 248320
+not routed    k_proj 1024, v_proj 1024   (n < 4096)
+```
+
+The unrouted pair is about 84 MB of the 14.41235 GB backbone, roughly 0.6 %. The mlp projections,
+which FINDING 404 attributes 64.08 % of the marginal row and 66.20 % of static FLOPs, all route.
+`widths = 2 ... 9` at `:1704`, so `M = 1` stays on MLX and makes one pass, which is what the plutarch
+calibration assumes.
+
+**Better than 99 % of the backbone bytes are subject to `groups(M)`.** FINDING 407 stands on read
+source and measured bytes, with no fitted quantity in the mechanism itself.

@@ -1930,7 +1930,18 @@
     "alreadyMeasuredLocally": "Askeladd E159: shipped adaptive 21.037 ms/token vs fixed M=5 19.530, -7.16 % harness=local. A depth-schedule change is confined to the candidate MTP leg so program.md makes the local ratio direct evidence.",
     "knob": "MLX_E159_FIXED_DRAFT_DEPTH at Qwen36MTPBlockSession.swift:200-202; ship literal is segmentedVerifyDepthCap at :1060",
     "assignedTo": "qwen-askeladd, PR 168, F5",
-    "falsificationTest": "a smooth curve through fixed depths 3, 4, 5 falsifies the step model; the model demands a sharp minimum at 4"
+    "falsificationTest": "a smooth curve through fixed depths 3, 4, 5 falsifies the step model; the model demands a sharp minimum at 4",
+    "sourceVerification": {
+      "activeInputGroups": "Qwen35.swift:1709-1728, return (m + inputsPerGroup - 1) / inputsPerGroup",
+      "launchSites": "Qwen35.swift:1834 and :1883, grid: (activeInputGroups(cell.m) * 32, (cell.n/8)*2, 1)",
+      "kernelBody": "tid.y indexes output rows, tid.x indexes input groups; first_m = group_x * IPG at :1543",
+      "therefore": "G groups perform G complete reads of the weight matrix; a dispatch geometry, not a cache effect",
+      "routableGate": "Qwen35CustomQMV.routable :1770-1794 needs bits==4, groupSize==64, affine, bf16, k%512==0, n%8==0, n>=4096",
+      "routed": "q_proj 6144, o_proj 5120, gate_proj 17408, up_proj 17408, down_proj 5120, lm_head 248320",
+      "notRouted": "k_proj 1024, v_proj 1024; about 84 MB of 14.41235 GB, roughly 0.6 %",
+      "coverage": "better than 99 % of backbone bytes are subject to groups(M)",
+      "M1": "widths = 2...9 at :1704, so M=1 stays on MLX and makes one pass, as the plutarch calibration assumes"
+    }
   },
   "breakEvenLadderStepModel": {
     "harness": "ranked",
