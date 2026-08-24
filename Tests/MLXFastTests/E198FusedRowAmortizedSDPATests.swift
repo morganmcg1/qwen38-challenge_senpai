@@ -230,7 +230,7 @@ struct E198FusedExactnessTests {
     /// elements, which proves the comparison below can fail.
     private static let controlKernel: MLXFast.MLXFastKernel = {
         let perturbed = FusedRowAmortizedSDPA.kernelSource.replacingOccurrences(
-            of: "if (i <= N - M + r) {", with: "if (i <= N - M + r + 1) {")
+            of: "if (i <= N - M + q_row) {", with: "if (i <= N - M + q_row + 1) {")
         precondition(
             perturbed != FusedRowAmortizedSDPA.kernelSource,
             "positive control substitution did not apply")
@@ -249,7 +249,7 @@ struct E198FusedExactnessTests {
         controlKernel(
             [q, keys, values, MLXArray(E198Probe.scale)],
             template: [("M", q.dim(2))],
-            grid: (32, 32, q.dim(1)),
+            grid: (32, 32, q.dim(1) * q.dim(2)),
             threadGroup: (32, 32, 1),
             outputShapes: [[1, q.dim(1), q.dim(2), E198Probe.headDim]],
             outputDTypes: [.bfloat16])[0]
