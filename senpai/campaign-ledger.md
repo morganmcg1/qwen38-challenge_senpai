@@ -71412,3 +71412,50 @@ Thorfinn's E181 PQ-arm `mlx.metallib` digest is bit-identical to Edward's frozen
 - Edward: E184 in-path ABBA `off,coarse,fine,fine,coarse,off` running; headline = E16 residual attribution.
 - Official slot: FREE, no frozen candidate. Next fire = first mechanism clearing MUE + confirmation chain (autonomous).
 - E183: dead-pending-E185 (RULE 382 arithmetic).
+
+---
+
+## Entry 385 — 2026-08-24T13:35Z — E181 MERGED: no local Q decode signature (FINDING 444 refuted), prefill sign flip exposes the charged-ratio instrument artifact; FINDING 474 completes at four gates; E185 prior-art correction (decode idle already measured twice, above MUE); E186 assigned
+
+**Experiment:** E181 (Thorfinn, PR 180, `qwen-thorfinn/e181-local-q-pair-jit-channel`, result head `09b5bf35`, merged → base `9361a2fa`). Status: succeeded (registered decision tree branch 1). W&B: [3ptd79n1](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/3ptd79n1) (validated: all summary fields match the typed result). Branch adds 4 research/ files, zero scored-surface changes.
+
+### FINDING 475 — Q has NO local decode effect at M ≤ 9; FINDING 444 is refuted; the JIT compilation-unit channel has no local decode signature (harness=local, M4 Pro, non-nax family)
+
+Arms: P = organizer `0863b06a` pure (0 files diff); PQ = + exactly the four Q files (+344/−92, receipt F's content; PQ metallib ≡ Edward's frozen E175 digest `5d6e3f9f…`). Witness counts predeclared with a positive control; exactness gate PASSED (seed/emitted/reference digests identical across arms; Q numerically inert at M ≤ 9 exactly as the census predicted). 8-leg palindromic ABBA, 512 decode tokens, trusted `seed_prefill_seconds` field, NO added instrument in either arm.
+
+- MTP decode-only s/token PQ−P: **−0.0795%** (95% CI −0.189%..+0.030%), inside the predeclared ±0.2% band. Serial decode-only −0.026%. Round count (77) and accepted_draft_rate (0.88594705) identical across all 8 legs.
+- The CI excludes BOTH FINDING 444's derived −0.88% (refuted: composite-decomposition artifact) AND receipt F's ranked +1.098% (not locally reproducible on the non-nax family).
+- PQS therefore NOT built (registered condition); the compilation-unit hypothesis has no local decode signature to explain. Receipt F's ranked decode penalty remains a ranked-only fact (nax family and/or receipt channel; B-vs-F gap consistent with channel tail per FINDING 459/460).
+
+### FINDING 476 — Q makes LOCAL prefill FASTER by 2.293%, opposite in sign to FINDING 447; the charged-ratio arithmetic mis-signs prefill and FINDING 447 is demoted to instrument-suspect
+
+- Prefill PQ−P: **−2.293%** (CI −2.560%..−2.026%), 8/8 legs same order, arms non-overlapping leg-wise (max PQ 3.9080 s < min P 3.9929 s). Positive control PASSED under the F3 sign-agnostic amendment.
+- Cold-leg read (c) ELIMINATED: all five warm-only cuts hold the branch (worst decode −0.127%; prefill within 0.01pp of −2.16%).
+- Leading read (a), instrument artifact, now has a demonstration: within this same session the CHARGED serial/MTP ratio rises +0.374% while ABSOLUTE prefill falls −2.293%, and prefill-only motion predicts +0.337% of the charged move — the exact arithmetic FINDING 447 was derived from. ~90% of the charged "decode win" (−0.626%) is prefill spread over 512 tokens. **Reading rule (standing): never read the local charged ratio or `parent_measured_seconds_per_token` for any change that touches prefill; use the FINDING 468 split.**
+- Read (b) host-difference (M4 vs M4 Pro) remains live and unexcluded. Scope: this host executes the non-nax `quantized.cpp` family; the ranked M5 executes `_nax`. The local sign flip constrains TRANSFER claims only — **FINDING 457's ranked +1.9705% stays the operative Q prefill price; Q stays out of the ship set.**
+- FINDING 447 (derived local +1.936% penalty) is now instrument-suspect and must not be cited as a local calibration.
+
+### FINDING 468 refinement — field-closure tolerance is per-round, not flat
+
+On 16 timed reports: `decode_seconds − (seed_prefill_seconds + Σ block_request_seconds)` = **+2.83–2.86 µs × round_count** (serial 512 rounds: 1.448 ms; MTP 77 rounds: 0.220 ms; same per-round constant across a 6.6× round-count range; arm-invariant, cancels in contrasts). Entry 384's "closure to 35 µs" was a low-round-count reading. Any future closure-audit GATE must use a per-round tolerance with headroom, or it will false-fail every high-round-count serial leg.
+
+### FINDING 474 — FOUR deliberate gates stand between an in-worker instrument and its output (Edward, E184 interims 4–7)
+
+| # | gate | mechanism | evidence |
+|---|---|---|---|
+| 1 | env allowlist | worker spawned from empty env + exact keys + prefixes `DARKBLOOM_ DYLD_ LC_ METAL_ MLX_ MTL_` only; `MLXFAST_*` stripped (phase-oracle defense) | `QwenRuntimeWorker.swift:2626` |
+| 2 | stale worker | `benchmark-qwen-mtp.sh` never rebuilds `.build-worker/release/mlxfast-runtime-worker`; edits under Sources/Vendor invisible until rebuilt | `strings` on the binary |
+| 3 | sandbox | worker Seatbelt profile denies ALL file writes except `/dev/null` | `benchmark.sh:1288-1296` |
+| 4 | stderr drain | `WorkerStderrDrain` always consumes but forwards only when `forwardsWorkerStderr` (default false; only DFlash trace sets it) — MTP-verb worker stderr is read and dropped (CI log hygiene) | `QwenRuntimeWorker.swift:1737,2205-2208`; `QwenRuntime.swift:306` |
+
+All four are deliberate design; each makes a live code path look dead. Working local channel: `MLXFAST_NO_SANDBOX=1` (wrapper-read, documented for local at `benchmark.sh:1854`, REJECTED for official runs at `:1256`) plus a file write; export it on every arm of a session including `off` arms for internal consistency, and compare an unsandboxed off arm against a sandboxed anchor to bound the sandbox variable itself. **Standing lesson: verify a worker-side instrument channel end to end with an unconditional one-shot liveness line (`e184_diag` pattern) before spending any measured arm. Gate 2 is the campaign-dangerous one for MECHANISMS, not just instruments: guard with `senpai/rebuild-and-assert-worker.sh`.**
+
+### E185 prior-art correction (advisor error, recorded)
+
+The E185 brief claimed the decode round "has NEVER had a GPU busy/idle decomposition". Wrong twice: **E90** (Edward, PR 92, ledger 235.4) measured a per-command-buffer GPU-interval ledger — round idle **840.4 µs = 0.5%** with phase attribution (commit 183.9 µs, d_submit1 157.0, d_head1 82.3, upkeep 66.7, d_pre 34.0 all ~100% idle; verify_graph/eval_wall ~0% idle) and a positive control (--sync-head 840→4196 µs); **E165** (Thorfinn, FINDING 405) measured `gpu_idle_window` = **925 µs/round**, commit 433.1 µs largest. Alphonse caught it by reading the ledger before measuring — the system working. Verdict logic reshaped (E185 F1): total idle ~0.9 ms/round is ABOVE the 0.54 ms MUE but fragmented; the question is the largest COHERENT single-mechanism slice on the CURRENT base, reconciling E90 vs E165 on the commit term (184 vs 433 µs). Two-regime conversion statement expected: host work in busy phases converts at ~8% (FINDING 472); host work at seams converts at ~100%. E90 ledger re-add approved on the measurement branch only (E92 precedent; strip before result or leave unmerged).
+
+### Portfolio
+
+- **Thorfinn: E186 assigned** — isolated decode-width kernel probes µs(m) at m=1..9 for the families serving the round (GDN decode path incl. `qwen35_gated_delta_step_mid` dispatch proof, FA/SDPA, routed replica QMV cells, lm_head readout at N=248320, head step): which family's curve is superlinear and can carry E177's 0.576·M² ms term (28.2 ms at M=7 = 15.5% of round). Feeds E182's in-path bands; isolated-vs-in-path dual, the E184/E182 pattern.
+- Askeladd: E182 ladder in flight. Edward: E184 v4-fine → six-arm ABBA. Alphonse: E185 Stage 1 (powermetrics) then E90-ledger replay.
+- Official slot: FREE, no frozen candidate. Live mechanism candidates by expected value: E182's M² carrier (biggest object, up to ~15% of round), E184's E16-residual slice (~1% published ceiling), E185's coherent-seam slice (~0.2–0.5% ceiling, commit path), each pending its attribution measurement.
