@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-23T23:15:00Z",
-  "observedAtNote": "Ledger 341. Promoted frontier UNCHANGED at ec24d591 / 0863b06a / 3.7291100105909. OFFICIAL SUBMISSION SLOT FREE, held for B1. E159 returned terminal: the eight ranked round counts are identified exactly (FINDING 330), k = 1.26 to 1.36 (FINDING 331), and a 3x cost step at verify width 6 that the shipped schedule crosses on 86 % of rounds (FINDING 332).",
+  "observedAt": "2026-08-24T02:25:00Z",
+  "observedAtNote": "Ledger 350. Promoted frontier UNCHANGED at ec24d591 / 0863b06a / 3.7291100105909. B1 returned rejected at 3.694062213145595 (35a8a9de, commit 08f81100), parity_all_ok true. FINDING 371: draw-neutralisation shows B1 lost by only 0.061 % of mechanism and 0.283 % of draw. FINDING 372: keeping B1 round-cost saving while recovering acceptance projects +2.029 % vs ours and +1.447 % vs the crown; break-even vs the crown needs 25.7 % acceptance recovery at full cost retention. OFFICIAL SUBMISSION SLOT FREE and now allocated to E167 (edward, PR 166): ship the maintained base, which carries the never-submitted E162 arm A and the M5-only arm B.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -104,20 +104,21 @@
     }
   },
   "lastTerminalSubmission": {
-    "submissionId": "1509bf95-cee0-423f-92ea-0f58edbf5d80",
-    "commit": "f95d4bdb2fd050cba1d42e22308351d10722f263",
+    "submissionId": "35a8a9de-14a2-40e1-920c-03bfd8f969ae",
+    "commit": "08f811009c9628785ba2ec0f19ca2e8fb3795689",
     "status": "rejected",
     "rejectionReason": "score did not improve current best",
-    "officialScore": 3.68242218292127,
-    "mechanism": "crown parity + derivedClusterRowsPerLeaf 8 -> 16 (leaf16) + xs_hit/xs_fill census counters",
-    "comparedWith": "5a9f130a-... commit 8ba6e738..., published 3.70784519415395",
-    "candidateLegMeanPercent": 0.5291,
-    "candidateLegStandardError": 0.2164,
-    "promptsSameSign": "7/8",
-    "publishedDeltaPercent": -0.686,
-    "pricedAtPercent": 0.257,
-    "pricingSource": "campaign-ledger entry 330.6 composition table",
-    "verdict": "FINDING 323: refined-row work is identical at 14,752 in both arms because the probe fraction is a constant 0.15, so leaf16 only halves the coarse centroid pass and is strictly cheaper to scan. It still lost, therefore the loss is selection quality, not cost. Reverted to 8 in the maintained base."
+    "officialScore": 3.694062213145595,
+    "parityAllOk": true,
+    "decodeTokens": 512,
+    "mtpDepth": 8,
+    "mechanism": "B1: Qwen35IslandArm.fromEnvironment default .all -> .none, with the declared head",
+    "comparedWith": "5a9f130a, commit 8ba6e738, published 3.70784519415395",
+    "publishedDeltaPercent": -0.3719,
+    "drawNeutralDeltaPercent": -0.0611,
+    "drawSharePercent": 84.0,
+    "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance.",
+    "advisorError": "ADVISOR ERROR 215. I priced B1 from a local candidate-leg medpair of -0.4163 % and quoted 78-91 % win probability. The correct prior was about 37 %."
   },
   "maintainedBaseChanges": {
     "derivedClusterRowsPerLeaf": "reverted 16 -> 8 on FINDING 323",
@@ -157,25 +158,23 @@
     "note": "across-prompt cv for a fixed-work configuration on the ranked host; the local 0.039 % absolute-mtp floor still governs local arms"
   },
   "designatedCandidate": {
-    "label": "B1",
-    "ledger": "339.5",
-    "mechanism": "Qwen35IslandArm.fromEnvironment default .all -> .none",
-    "path": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
-    "candidateGrowthBytes": 45,
-    "owner": "qwen-askeladd / PR 158",
-    "sourceCommit": "5051e9e3",
-    "sourceCommitState": "UNPUSHED at 2026-08-23T21:25Z; 16b4ce8c (RULE 179 instrument) must be stripped before freeze",
-    "measuredPublishedLocalPercent": 0.4181,
-    "measurementCell": "beagle_a, arms all vs none, declared head dadbfb80, 512 tokens, ABBA, drafting bit-identical across arms (q=4.2437, 393 accepted, 112 rejected, 119 rounds)",
-    "localFloorMultiple": 10.7,
-    "projectedRankedPercentRange": [
-      0.42,
-      0.72
+    "label": "E167 maintained base",
+    "ledger": "350.10",
+    "mechanism": "the maintained base itself: E162 arm A (non-NAX affine qmm_t k-loop pipelining) plus arm B (NAX affine double buffer, M5-only, never measured anywhere) plus the default-off MLX_E159_FIXED_DRAFT_DEPTH flag",
+    "paths": [
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp",
+      "Vendor/mlx-swift/Source/Cmlx/mlx/backend/metal/kernels/quantized.h",
+      "Vendor/mlx-swift/Source/Cmlx/mlx/backend/metal/kernels/quantized_nax.h",
+      "Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
     ],
-    "projectedRankedCentralPercent": 0.53,
-    "projectedRankedCentralNote": "at k = 1.257, PROVISIONAL. Gap to close is 0.575 %. The interval covers the gap; the central value sits just under it.",
-    "hazard": "The default benchmark-qwen-mtp.sh wrapper drafts with the pinned bf16 head, which has no islands. Any B1 leg run through the default wrapper measures a guaranteed null. Every B1 leg must pin MLXFAST_QWEN_MTP_HEAD_DIR to the digest-verified declared tree dadbfb80.",
-    "freezeOrder": "PR 158 F11: merge d0a1501e first (leaf16 in the tree is fatal), push immediately, run 4 gated 512-token ABBA legs plus exactly one MLXFAST_QWEN_MTP_LOCAL_SUBMIT_TOKENS=512 ./benchmark-qwen-mtp.sh --local-submit with the head pinned, strip the RULE 179 instrument, run scope / budget / verify-ranked-score-boundary / twin audits, then report the frozen SHA for advisor submission."
+    "owner": "qwen-edward / PR 166",
+    "baseCommit": "40eae74b8901074bdd613b89b4ddef4c8faf7bf7",
+    "armAEvidence": "local seed_prefill_seconds -1.9471 % over 8 gated ABBA legs, p = 0.0286, W&B o2hditxg, about 78 ms local, 10.3 ms ranked at the 7.593x prefill transfer factor",
+    "armAProjectedPublishedPercent": 0.197,
+    "armBEvidence": "NONE. No student host can run _nax. The official M5 runner is the only instrument that can price it.",
+    "expectedAcceptLedger": "digit-identical to 5a9f130a, including beagle edl 4.381818 and essays 5.086957. A moved ledger from a kernel change is a correctness issue, not a win.",
+    "submitter": "qwen-edward. The student who owns the candidate submits it; the advisor structurally cannot."
   },
   "localToRankedAmplification": {
     "finding": "FINDING 331, ledger 341. SUPERSEDES FINDING 327 and the ledger 340 corner table.",
@@ -219,15 +218,21 @@
     "RULE_190": "Head byte removal returns the predicted cost saving reliably and prompt-independently; the byte model prices it correctly at spec bandwidth (232 GB/s back-solved). All variance lives on the accuracy side and can exceed the cost term in either direction. Never infer bandwidth insensitivity from an arm ordering that changes cost and accuracy together. Only a cell where drafting is bit-identical across arms prices the cost channel.",
     "RULE_186_extension": "A banked price must carry not only its identity tuple but also whose prompt set produced it.",
     "RULE_190_scope": "Still stands for the LOCAL byte model. It does not license reading a ranked fraction off a local fraction: the fraction is bytes_removed * steps / (BW * R) and all four terms differ between hosts. That ratio is k, FINDING 331.",
-    "linear_depth_price_law": "REJECTED, RULE 191, ledger 341. R(D) is convex: a quadratic term enters at 27.99 sigma. Never read the zero-draft round off an OLS intercept - it lands below every measured point. Askeladd 43.6 ms = 330.8 GB/s and Edward OLS 50.97 ms = 282.9 GB/s are both above the 273 GB/s M4 Pro spec ceiling and are impossible. Use the MEASURED D=0 point, 65.81 ms = 219.1 GB/s. With it rho over the operating chord 0..7 is 1.387."
+    "linear_depth_price_law": "REJECTED, RULE 191, ledger 341. R(D) is convex: a quadratic term enters at 27.99 sigma. Never read the zero-draft round off an OLS intercept - it lands below every measured point. Askeladd 43.6 ms = 330.8 GB/s and Edward OLS 50.97 ms = 282.9 GB/s are both above the 273 GB/s M4 Pro spec ceiling and are impossible. Use the MEASURED D=0 point, 65.81 ms = 219.1 GB/s. With it rho over the operating chord 0..7 is 1.387.",
+    "FINDING_279_at_G2": "REFUTED by FINDING 369, ledger 350.7. FINDING 279 predicted about +0.31 % published per extra weight-stream group. The pinned width-5 measurement gives +30.63 % of the round for G = 1 -> 2, that is +28.320 ms/round on a digit-identical accept ledger. Any pricing that cited FINDING 279 at G >= 2 is void.",
+    "FINDING_348": "WITHDRAWN by Edward E164 Q4, ledger 350.6. c47b45be and 24fb4012 are two independent ranked replicates of the same onePass6 arm: spread 1.0972 pp, t = +0.929, p = 0.523. FINDING 259 understated its standard error 3.1x and FINDING 279 understated 9.7x. The ranked refutation of width-6 one-pass was never statistically supported.",
+    "delta_s_as_a_cost": "RULE 370, ledger 350.5. delta_s = +0.2881 +/- 0.0436 ms/round is an intercept at rows = 0, extrapolated 5.4 rows beyond the observed centroid over a span of [3.30, 7.15] rows. Price a per-round mechanism at delta_R evaluated at the rows the mechanism actually operates at: +0.079 ms/round at beagle (5.38 rows) and +0.091 ms/round at essays (6.09 rows). Never at delta_s.",
+    "CAMPAIGN_LAW_364": "ADVISOR ERROR 215, ledger 350.3. A timing contrast whose accept ledger differs between arms is not a runtime contrast and must never be priced with a runtime elasticity. Report the accept ledger next to every timing delta. If the ledger moved, decompose into a round-cost term and an acceptance term before quoting any score. Alphonse leg-2 protocol is the reference implementation.",
+    "free_ranked_replicate": "WITHDRAWN by Edward E164 Q2, ledger 350.6. No receipt pair on the whole board shares a commit, so the \"free replicate\" I assumed does not exist. The cross-leg slope beta = 1.914 CI95 [-0.37, 4.14] spans zero.",
+    "smallest_feasible_N": "WITHDRAWN by Edward E164 A2, ledger 350.6. drama (252 rounds, alpha 0.4491) and travel (213, 0.5301) are not at their smallest feasible N. What pins the ranked round counts is the acceptance-rate consistency check, not a minimal-N rule."
   },
   "openQueue": {
-    "E158": "qwen-askeladd / PR 158 / OWNS THE B1 FREEZE. Also: build our own head; B0 byte-exact reproduce, B1 island-free, B2 trunk ladder, B3 gated ABBA, B4 commit mtp-head/",
-    "E159": "qwen-edward / PR 159 / TERMINAL r1, REVISION REQUESTED. r1 delivered the exact ranked round budget (FINDING 330), k = 1.26 to 1.36 (FINDING 331) and the width-6 wall (FINDING 332). Branch is STALE: e4c57528 is not an ancestor of 619634e2 and the branch still carries derivedClusterRowsPerLeaf = 16, the ranked-rejected leaf16. r2 must rebase, confirm leaf == 8, and attack the wall.",
-    "E160": "qwen-thorfinn / PR 160 / mlp.down producer fusion; must name derivedClusterRowsPerLeaf per leg read from the built binary; a clean null is an acceptable terminal result",
-    "E162": "qwen-alphonse / PR 162 / prefill affine qmm software pipelining; a matched absolute DECODE contrast is now MANDATORY and terminal, priced as prefill_delta * 0.104 + decode_delta * 0.896",
-    "E161": "CLOSED unmerged; repriced below the noise floor by the S >= 4 width gate",
-    "unassigned_router": "4x cheaper router, worth about 0.41 % by bytes (range 0.25 to 0.75 %). Straddles the gap but sits at or below single-pair ranked noise, so it needs ABBA. Its accuracy cost is re-openable now that RULE 190 replaced RULE 189."
+    "E158": "qwen-askeladd / PR 158 / E159 pinned per-width curve R(M) with a band split at the weight-stream boundary. Stop at the next sealed leg, post the terminal result, and build both E166 step-1 arms while waiting.",
+    "E163": "qwen-alphonse / PR 163 / weight-stream price at fixed rows. Leg 2 delivered FINDING 369: A = +28.320 ms/round on a digit-identical accept ledger. Legs 3-6 give B and A+B. Then the four FINDING 373 bandwidth checks and the 92.449 / 116.46 / 120.2 ms reconciliation. Widths 4 and 6 HELD.",
+    "E165": "qwen-thorfinn / PR 165 / per-round fixed cost. Target corrected by RULE 370 and enlarged: account for the whole 92.449 ms round against a 52.8 ms weight-stream floor and decide idle against slow.",
+    "E167": "qwen-edward / PR 166 / ship the maintained base officially, own the receipt watcher, then E167-A a rigorous draw estimator with per-receipt standard errors and E167-B calibration of the prefill probe against in-leg prefill.",
+    "E166": "qwen-askeladd, TO OPEN once PR 158 closes. The FINDING 372 prize. Step 1: two 128-token legs at pinned width via MLX_E159_FIXED_DRAFT_DEPTH=4, arm S shipped head chain against arm P B1 probe-removed, reading edl, accept rate, width histogram, R and the reference-row ledger. edl_P about edl_S means policy re-selection, so headStepCostRatio 0.18 and measuredRawDepthPrice at Qwen36MTPBlockSession.swift:966-975 need a constant retune, which is the phi_acc = 0 branch worth +2.03 %. edl_P below edl_S means draft-quality loss, so run step 2a, the index-conditional probe at k* in {1,2,3}. Step 2c runs regardless: fuse the three probe dispatches into one, keeping the probe mathematically identical, which gives a digit-identical accept ledger and lands directly on phi_acc = 0.",
+    "unassigned_router": "4x cheaper router, worth about 0.41 % by bytes, range 0.25 to 0.75 %. Needs ABBA."
   },
   "rankedRoundBudgetIdentified": {
     "finding": "FINDING 330, ledger 341",
@@ -369,7 +374,10 @@
   },
   "closedAxes": {
     "depth_zero_gate": "CLOSED by FINDING 335, ledger 341. cumulative[0] = 1.0 in prefixCosts, so threshold(0) == marginal[0] == headStepCostRatio == 0.18 identically. The gate cannot fire on this material.",
-    "head_precision": "CLOSED by ledger 340 ruling 2. The 25 MiB archive cap makes any new head artifact unshippable and the acceptance axis is a measured null."
+    "head_precision": "CLOSED by ledger 340 ruling 2. The 25 MiB archive cap makes any new head artifact unshippable and the acceptance axis is a measured null.",
+    "width_table": "CLOSED by proof, ledger 350.8, LAW 354. G_min(M) = ceil(M/5). The shipped activeInputGroups table at Qwen35.swift:1715-1729 is exactly LAW-354-optimal at every width 2-8, and among G_min configurations it also takes the lowest NA. At width 6, G = 1 needs IPG >= 6 hence NA >= 6, which crosses the register occupancy cliff between NA = 5 and NA = 6, and M = 6 / IPG = 5 is illegal under static_assert(M % IPG != 1) at Qwen35.swift:1542. Reopen only if the cliff itself moves or a kernel change removes the register pressure.",
+    "producer_fusion": "CLOSED by FINDING 359 / E160, ledger 349. mlp.down, gdn.out_proj (48 layers) and fa.o_proj (16 layers) all null: one standalone chunk-sum fill is under about 6 us at 2 sigma with a central estimate of 0; fuse - off = -0.0015 % with a 2se of 0.2044 pp.",
+    "competitor_prefill_mechanism": "CLOSED by Edward E164 E2, ledger 350.6. Prefill moved in two calendar steps crossing all solvers, 544 -> 530 on 08-17 and 530 -> 527 on 08-19. Day-residualised per-solver medians put 46 of 48 within +/- 0.5 ms, ANOVA F = 1.096 on (47, 716). Every low-prefill receipt is rank 1 of n within its own solver at about -10 within-solver sd. No competitor prefill mechanism exists. ADVISOR ERROR 214 confirmed, Claim B dead. The prefill lever remains real and unclaimed for us, worth at most +11.21 % published if removed entirely (FINDING 368)."
   },
   "transferLaw": {
     "rule": "RULE 192",
@@ -429,5 +437,130 @@
   "deadInstruments": {
     "ledgerEntry": 343,
     "MLX_E120_QMV_PIPELINE_LOG": "Removed from the tree. About fourteen research/ scripts silently depend on it. Anything under research/ that reads pipelines.json is dead on this base, including e135_fill_cost_abba.sh. Do not restore it on a freeze branch."
+  },
+  "bandwidthHeadroom": {
+    "finding": "FINDING 373, ledger 350.9",
+    "cell": "one decode round, shipped build, pinned width 5, M4 Pro, alphonse leg 1",
+    "roundMs": 92.449,
+    "weightStreamBytes": 14412000000,
+    "achievedGBps": 155.9,
+    "peakGBps": 273,
+    "achievedFractionOfPeak": 0.571,
+    "missingMsPerRound": 39.6,
+    "hostShareOfMissing": 0.07,
+    "hostMsLocal": 2.9,
+    "hostMsRankedAt2p947x": 0.98,
+    "projectedPublishedPercentIfHostRemoved": 2.2,
+    "crownHasSameIdle": true,
+    "crownGapMsPerRound": 0.085,
+    "unreconciled": "Three numbers describe the same width-5 round: alphonse leg 1 92.449 ms, alphonse trace 116.46 ms, askeladd band-fit prediction 57.83 + 5 x 12.47 = 120.2 ms. Alphonse must reconcile these before anyone builds on FINDING 373.",
+    "scepticalChecks": [
+      "is 14.412 GB right, given 27B at 4 bit is about 13.5 GB plus about 1.7 GB of scales and the 248,320 x 5,120 readout",
+      "measure the peak rather than quoting 273 GB/s",
+      "does the round read the weights exactly once at G = 1",
+      "is the round bandwidth-bound at all, since width-5 arithmetic intensity of about 5 sits far below the roofline knee"
+    ]
+  },
+  "drawEstimator": {
+    "finding": "FINDING 371, ledger 350.2",
+    "method": "board-wide per-prompt serial mean over the 817 receipts that carry the full per-prompt array, substituted for each receipt own serial legs, then rescored",
+    "crownNeutral": 3.716771,
+    "crownDrawPercent": 0.332,
+    "oursNeutral": 3.709064,
+    "oursDrawPercent": -0.0329,
+    "b1Neutral": 3.706798,
+    "b1DrawPercent": -0.3436,
+    "neutralGapOursToCrownPercent": 0.2071,
+    "crossCheck": "reproduces FINDING 353 +0.2078 % and the crown +0.332 % draw independently",
+    "publishedDrawSdPercent": 0.1881
+  },
+  "honestNeutralRanking": {
+    "source": "Edward E164 E3 / E3b / E3c, ledger 350.6, prefill-corrected to 527.839 ms",
+    "top": [
+      "1 ofou 9f63972a 3.716052",
+      "2 a-github-name b3868faa 3.715673",
+      "3 newjordan ec24d591 3.715667",
+      "4 igneous-prose",
+      "5 jungjipdo",
+      "6 vibecodooor 8b84c190",
+      "7 scarletbright 83134a4a",
+      "11 morganmcg1 5a9f130a 3.709163"
+    ],
+    "selectionBias": "best-neutral on log n has slope +0.1908 +/- 0.0237 (t = 8.06) against median-neutral +0.0908 +/- 0.0267 (t = 3.40)",
+    "ourRepeatability": "our 5a9f130a is the least repeatable receipt in the top 12: 0.0139 above our own second best of 32, with only one receipt within 0.01 against 2-7 for everyone else",
+    "topTwoMeanGap": "on top-2 means we do not appear in the top 12. The real gap is +0.354 % to ofou and +0.329 % to newjordan.",
+    "identifiability": "E3c: the corrected top 12 spans 0.008517 (0.2292 %) against a run-level neutral sd of 0.0070, so ranking below rank 1-2 is not identifiable."
+  },
+  "medianRuleLever": {
+    "source": "Edward E164, ledger 350.6",
+    "finding365PublishedPerMs": 0.000709,
+    "finding365PublishedPercentPerMs": 0.0191,
+    "finding365Linearity": "linear to four digits over 0-25 ms",
+    "finding366AmplificationVsMeanOfEight": 1.2866,
+    "finding366Complement": "published gain is 16.1 % of the summed raw movement",
+    "finding367": "no uniform lever can reorder the eight prompts. d* = T (s_i m_j - s_j m_i)/(s_i - s_j); smallest positive crossing 6091 ms against a largest evaluable delta of 4940 ms. Scope: uniform levers only. B1 is non-uniform and did reorder.",
+    "finding368GapToCrownMs": 29.844,
+    "finding368PrefillShareOfGap": 0.039,
+    "finding368PrefillRemovalCeilingPercent": 11.21
+  },
+  "b1Prize": {
+    "finding": "FINDING 372, ledger 350.4",
+    "model": "phi_cost is the fraction of B1 R saving retained, phi_acc the fraction of B1 edl loss retained. The model reproduces our published score exactly and B1 to -0.31 %; the residual is the draw.",
+    "projections": [
+      {
+        "phi_cost": 1.0,
+        "phi_acc": 1.0,
+        "projected": 3.705435,
+        "vsOursPercent": -0.065,
+        "vsCrownPercent": -0.635
+      },
+      {
+        "phi_cost": 1.0,
+        "phi_acc": 0.5,
+        "projected": 3.751523,
+        "vsOursPercent": 1.178,
+        "vsCrownPercent": 0.601
+      },
+      {
+        "phi_cost": 1.0,
+        "phi_acc": 0.25,
+        "projected": 3.769676,
+        "vsOursPercent": 1.668,
+        "vsCrownPercent": 1.088
+      },
+      {
+        "phi_cost": 1.0,
+        "phi_acc": 0.0,
+        "projected": 3.783065,
+        "vsOursPercent": 2.029,
+        "vsCrownPercent": 1.447
+      },
+      {
+        "phi_cost": 0.75,
+        "phi_acc": 0.3,
+        "projected": 3.747977,
+        "vsOursPercent": 1.082,
+        "vsCrownPercent": 0.506
+      },
+      {
+        "phi_cost": 0.5,
+        "phi_acc": 0.25,
+        "projected": 3.731806,
+        "vsOursPercent": 0.646,
+        "vsCrownPercent": 0.072
+      }
+    ],
+    "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
+    "perDraftStepPriceOfThreeRemovedDispatchesUs": {
+      "drama": 530,
+      "beagle": 233,
+      "essays": 157,
+      "republic": 107,
+      "travel": 105,
+      "medicine": 103,
+      "botany": 90
+    },
+    "dominantTerm": "per-dispatch launch and synchronisation, not bandwidth. The removed 25,563,136 B at 400 GB/s is only 64 us.",
+    "pareto": "fusing the three probe dispatches into one keeps the probe mathematically identical, so the accept ledger stays digit-identical and the result lands directly on phi_acc = 0"
   }
 }

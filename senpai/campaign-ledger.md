@@ -66210,3 +66210,329 @@ Frontier unchanged: `ec24d591` newjordan `3.7291100105909`, srcRef `0863b06a`.
 | alphonse | 163 | prices one weight stream at fixed rows; widths 4 and 6 held; prefill census next |
 | edward | 164 | prefill lever priced through the median rule; check my refutation; redo the neutral ranking; botany anomaly |
 | thorfinn | 165 | the 1.03 ms of fixed per-round work and the GPU idle window |
+
+## Entry 350 — 2026-08-24T02:25:00Z — B1 was rejected, but 84 % of the loss was the draw; the prize is now measured at +2.03 %
+
+### 1. The B1 official receipt
+
+```
+35a8a9de-14a2-40e1-920c-03bfd8f969ae   commit 08f811009c9628785ba2ec0f19ca2e8fb3795689
+status              rejected
+rejectionReason     score did not improve current best
+officialScore       3.694062213145595
+parity_all_ok       true      decode_tokens 512      mtp_depth 8
+```
+
+Frontier unchanged: `ec24d591` (newjordan) `3.7291100105909`, source ref `0863b06a`.
+Our best remains `5a9f130a` `3.707845194`, commit `8ba6e738`.
+The official submission slot is free again.
+
+### 2. FINDING 371 — draw-neutralisation: B1 lost by 0.06 %, not by 0.37 %
+
+Each receipt's eight serial legs are re-timed inside its own session. I built a
+board-wide per-prompt serial mean over the 817 receipts that carry the full
+per-prompt array, then rescored every receipt with those means in place of its
+own serial legs.
+
+```
+receipt              published    draw-neutral    draw
+ec24d591 crown       3.729110     3.716771       +0.3320 %
+5a9f130a ours        3.707845     3.709064       -0.0329 %
+35a8a9de B1          3.694062     3.706798       -0.3436 %
+
+neutral B1 - ours    -0.0611 %
+neutral ours - crown -0.2071 %
+```
+
+The neutral crown-to-ours gap of `+0.2071 %` reproduces FINDING 353's
+`+0.2078 %` and the crown's `+0.332 %` draw, so the estimator is consistent with
+the earlier independent route.
+
+B1's per-prompt serial draw against ours: drama `-0.3085`, travel `-0.1390`,
+beagle `-0.1639`, republic `-0.4636`, essays `-0.1691`, medicine `-0.0727`,
+botany `-0.1410`, plutarch `-0.1104`. Mean `-0.1960 %`, sd `0.1281 %`. The
+non-zero mean is a real shared session component, not eight independent draws.
+republic drew worst of the eight and also became B1's fifth order statistic.
+
+**B1 is a tie that lost the coin flip, not a refuted mechanism.**
+
+### 3. ADVISOR ERROR 215 and CAMPAIGN LAW 364
+
+I priced B1 from a local candidate-leg medpair of `-0.4163 %` and quoted a
+78-91 % win probability. The correct prior was about 37 %: the mechanism is
+`-0.061 %` on the neutral scale against a published-draw sd of `0.1881 %`
+(FINDING 354).
+
+The error was not the arithmetic. B1 removes a probe from the head chain, so the
+accept ledger differs between the two arms. A timing delta measured across a
+moved accept ledger mixes a round-cost term and an acceptance term, and I
+applied a pure runtime elasticity to it.
+
+> **CAMPAIGN LAW 364.** A timing contrast whose accept ledger differs between
+> arms is not a runtime contrast. Never price it with a runtime elasticity.
+> Report the accept ledger next to every timing delta. If the ledger moved,
+> decompose into a round-cost term and an acceptance term before quoting any
+> score.
+
+Alphonse's leg-2 protocol is the reference implementation: digit-identical
+rounds, effective mean draft length, accept rate and width histogram printed
+beside the timing.
+
+### 4. FINDING 372 — the prize: keep B1's round-cost saving, recover the acceptance
+
+Write `R = decode_seconds_per_token x (1 + edl)` for the per-round cost.
+
+| prompt | edl B1 | edl ours | R B1 | R ours | dR % | raw B1 | raw ours |
+|---|---|---|---|---|---|---|---|
+| drama | 2.2851 | 2.2976 | 54.008 | 55.574 | -2.82 | 2.16580 | 2.12219 |
+| travel | 2.6233 | 2.6479 | 52.923 | 53.281 | -0.67 | 2.42483 | 2.42773 |
+| beagle | 4.2679 | 4.3818 | 50.699 | 52.012 | -2.52 | 3.55440 | 3.54530 |
+| republic | 4.7959 | 4.9892 | 51.229 | 51.917 | -1.33 | 3.83373 | 3.91990 |
+| essays | 5.0215 | 5.0870 | 52.491 | 53.519 | -1.92 | 3.89439 | 3.87039 |
+| medicine | 5.2809 | 5.2556 | 53.573 | 54.266 | -1.28 | 3.96327 | 3.90647 |
+| botany | 5.9881 | 6.1481 | 60.888 | 61.603 | -1.16 | 3.88938 | 3.93321 |
+| plutarch | 0.1721 | 0.1557 | 34.113 | 33.622 | +1.46 | 1.25891 | 1.26070 |
+
+R fell on all seven drafting prompts and sits below the crown's R on all seven.
+edl fell on six of eight. Under LAW 364 this dR is not a clean runtime contrast,
+because the realised width mix moved with the ledger.
+
+Let `phi_cost` be the fraction of B1's R saving retained and `phi_acc` the
+fraction of B1's edl loss retained. The model reproduces our published score
+exactly and B1 to `-0.31 %`; the residual is the draw.
+
+| phi_cost | phi_acc | projected | vs ours | vs crown | central pair |
+|---|---|---|---|---|---|
+| 1.000 | 1.000 | 3.705435 | -0.065 % | -0.635 % | beagle,republic |
+| 1.000 | 0.500 | 3.751523 | +1.178 % | +0.601 % | beagle,republic |
+| 1.000 | 0.250 | 3.769676 | +1.668 % | +1.088 % | beagle,essays |
+| **1.000** | **0.000** | **3.783065** | **+2.029 %** | **+1.447 %** | beagle,essays |
+| 0.750 | 0.300 | 3.747977 | +1.082 % | +0.506 % | beagle,essays |
+| 0.500 | 0.250 | 3.731806 | +0.646 % | +0.072 % | beagle,essays |
+
+Break-even against the crown: keep 100 % of the cost saving and recover at least
+`25.7 %` of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs
+69.9 %; 33 % needs 93.5 %.
+
+At full acceptance recovery the per-prompt raw gains are drama `+2.73`, beagle
+`+2.33`, essays `+1.75`, republic `+1.20`, medicine `+1.16`, botany `+1.05`,
+travel `+0.63`, plutarch `-1.39 %`, and the central pair stays beagle/essays
+with a `+0.343 %` margin.
+
+Per-draft-step price of B1's three removed dispatches, using `q = edl/0.778`:
+drama 530 us, beagle 233, essays 157, republic 107, travel 105, medicine 103,
+botany 90. The removed `25,563,136 B` at 400 GB/s is only 64 us, so the dominant
+term is per-dispatch launch and synchronisation, not bandwidth. Fusing the three
+dispatches into one is therefore a candidate Pareto win that lands directly on
+`phi_acc = 0`.
+
+### 5. RULE 370 — price a per-round mechanism at the rows it operates at
+
+`delta_s = +0.2881 +/- 0.0436 ms/round` (FINDING 357, Edward's A1-A4) is an
+intercept at `rows = 0`. The observed rows span `[3.30, 7.15]`, so that
+intercept is extrapolated 5.4 rows beyond the centroid.
+
+```
+delta_R at beagle (rows 5.38)  +0.079 ms/round
+delta_R at essays (rows 6.09)  +0.091 ms/round
+```
+
+> **RULE 370.** Price a per-round mechanism at `delta_R` evaluated at the rows
+> the mechanism actually operates at. Never at `delta_s`.
+
+My E165 title claimed "1.03 ms of local fixed work" against the crown. That
+overstates the crown gap by about 3x; the honest local equivalent is about
+`0.30 ms`. Corrected in public on PR #165.
+
+### 6. Edward's E164 — merged (PR #164, commit `a4272407`, W&B `bldsayi6`)
+
+Research-only diff, 11 files under `research/`.
+
+- **FINDING 365.** A uniform candidate-leg saving is worth `+0.000709`
+  published per ms, that is `+0.0191 %` published per ms, linear to four digits
+  over 0-25 ms.
+- **FINDING 366.** The median rule *amplifies* a uniform lever by `1.2866x`
+  against the mean of eight, because `d(raw_i)/d(delta) = raw_i^2/(s_i T)` is
+  monotone in `raw_i`. The complementary true statement: published gain is
+  16.1 % of the summed raw movement.
+- **FINDING 367.** No uniform lever can reorder the eight prompts. Closed form
+  `d* = T (s_i m_j - s_j m_i)/(s_i - s_j)`; the smallest positive crossing is
+  `6091 ms` against a largest evaluable delta of `4940 ms`. Scope: uniform
+  levers only. B1 is non-uniform and did reorder.
+- **FINDING 368.** The gap to the crown is `29.844 ms` of uniform candidate-leg
+  saving. Our prefill gap against the crown is `+1.159 ms`, that is `3.9 %` of
+  it. This independently confirms ADVISOR ERROR 214. Removing prefill entirely
+  is `+0.4156` published, `+11.21 %`, and that is a hard ceiling.
+- **Q1.** Pooled serial `0.0379851 s/tok`, relative sd `0.2349 %`; ICC `0.1787`
+  CI95 `[0.1551, 0.2025]`; all 28 cross-prompt correlations positive; SE
+  inflation `1.500x`. One-pair SEs: serial `0.1757 %`, candidate `0.7759 %`,
+  raw `0.7064 %`.
+- **Q2.** No receipt pair on the whole board shares a commit. The "free
+  replicate" I assumed does not exist. The cross-leg slope
+  `beta = 1.914 CI95 [-0.37, 4.14]` spans zero.
+- **Q3.** FINDING 259 under four denominators gives `z = 4.16` (invalid),
+  `2.77`, `6.02`, and `1.36` on the only candidate-leg denominator.
+- **Q4.** `c47b45be` and `24fb4012` are two independent ranked replicates of the
+  same onePass6 arm. Spread `1.0972 pp`, `t = +0.929`, `p = 0.523`. FINDING 259
+  understated its standard error 3.1x and FINDING 279 understated 9.7x.
+  **FINDING 348's ranked refutation of width-6 one-pass was never statistically
+  supported.**
+- **E2, prefill.** Calendar steps 544 -> 530 on 08-17 and 530 -> 527 on 08-19,
+  crossing all solvers. Day-residualised per-solver medians put 46 of 48 within
+  `+/- 0.5 ms`; ANOVA `F = 1.096` on `(47, 716)`, not significant. No solver is
+  consistently below the mode. Every low-prefill receipt is rank 1 of n within
+  its own solver at about `-10` within-solver sd. Our own prefill draw was rank
+  28 of 32, `+0.51 ms`. ADVISOR ERROR 214 is confirmed, Claim B is dead, and no
+  competitor prefill mechanism exists. Board-wide `corr(score, prefill) = -0.29`
+  against `corr(score, decode) = -0.83`.
+- **E3, honest neutral ranking** (prefill-corrected to `527.839 ms`): 1 ofou
+  `9f63972a` 3.716052; 2 a-github-name `b3868faa` 3.715673; 3 newjordan
+  `ec24d591` 3.715667; 4 igneous-prose; 5 jungjipdo; 6 vibecodooor `8b84c190`;
+  7 scarletbright `83134a4a`; 11 morganmcg1 `5a9f130a` 3.709163. vibecodooor
+  falls from first to sixth. ofou and newjordan differ by `0.0104 %` and are not
+  separable.
+- **E3b, best-of-n selection bias.** Best-neutral on `log n` has slope
+  `+0.1908 +/- 0.0237` (`t = 8.06`) against median-neutral `+0.0908 +/- 0.0267`
+  (`t = 3.40`). Our `5a9f130a` is the least repeatable receipt in the top 12:
+  it sits `0.0139` above our own second best of 32, and only one receipt is
+  within `0.01` of it, against 2-7 for everyone else. On top-2 means we do not
+  appear in the top 12. The real gap is `+0.354 %` to ofou and `+0.329 %` to
+  newjordan.
+- **E3c.** The corrected top 12 spans `0.008517` (`0.2292 %`) against a
+  run-level neutral sd of `0.0070`, so ranking below rank 1-2 is not
+  identifiable.
+- **A1-A4, Claim A / FINDING 357.** Single-receipt fits: ours
+  `s = 16.1581 +/- 0.6468`, `h = 5.3351 +/- 0.1164`, sigma `0.4047`; frontier
+  `s = 15.8701 +/- 0.6309`, `h = 5.3682 +/- 0.1135`. Paired difference
+  `delta_s = +0.2881 +/- 0.0436` (`t = +6.612`, `p = 0.0012`, CI95
+  `[+0.1761, +0.4001]`) and `delta_h = -0.0330 +/- 0.0078` (`t = -4.216`).
+  Pairing collapses the residual 14.8x to `0.0273 ms`. Circularity is refuted:
+  SSE affine `0.003715` against a constant-leg-gap null of `0.087411`, a factor
+  of 23.5. The prefill probe explains only 1.4 % of `delta_s`. **CLAIM A
+  stands.**
+- **A2, exact round counts**, digit-identical on all eight prompts for both
+  receipts: beagle 110 (alpha 0.8340), botany 81 (0.8655), drama 252 (0.4491),
+  essays 92 (0.8974), medicine 90 (0.8922), republic 93 (0.9030), travel 213
+  (0.5301), plutarch 488 (0.3158). drama and travel are not at their smallest
+  feasible N, so my "smallest feasible N" rule is wrong. What pins them is the
+  acceptance-rate consistency check.
+- **Prefill probe caveat.** `prefill_seconds_per_token` comes from a separate
+  `prefillWorker` process, uses `prefillPromptTokens` rather than
+  `decodeSeedTokens`, and runs with `benchmarkPrefillWarmupRuns = 0` and
+  `benchmarkPrefillTimedRuns = 1`. The board never measures the in-leg prefill
+  directly. The impact on FINDING 362 is bounded at `+/- 0.05 %` against effects
+  of 0.67-2.82 %, so FINDING 362 survives by 13x.
+
+### 7. Alphonse's leg 2 — FINDING 369, and LAW 354 confirmed
+
+PR #163, session `c6063e2e`.
+
+```
+pos 1  shipped@d4  W=5  mtp 0.0273390 s/tok   R  92.449 ms   Tgate 40.0 C
+pos 2  minna5@d4   W=5  mtp 0.0333670 s/tok   R 120.770 ms   Tgate 39.9 C
+
+A = +28.320 ms/round = +30.63 % of the shipped round; mtp +22.05 %
+Two estimators agree: leg-total 28.320 against traced 28.266 (residual 0.054 ms)
+Accept ledger digit-identical: 109 rounds, edl 4.0000, accept rate 0.9243,
+  width histogram {5:109}, 545/545 rows
+Channel split: verify pipeline +28.105 (99.4 %), draft +0.071, unattributed +0.090
+Seed prefill arm-invariant to 0.015 %
+```
+
+FINDING 279 is refuted at `G = 2`: it predicted `+0.31 %` per extra group and
+the measurement is `+30.63 %`.
+
+One full read of the scored linear weights is `14.412 GB`. At the M4 Pro's
+273 GB/s a serialised pass is `52.8 ms`, so `A` is 53.7 % of one weight stream.
+That matches my E68 rung-1 estimate of about 56 %.
+
+Alphonse retracted the `0.469` GPU share and I withdraw my endorsement of it.
+Corrected shares of a pinned width-5 round: verify pipeline `0.960`, draft
+window `0.030`, unattributed `0.010`, genuine host encode at most `0.025`
+(`2.294 ms`). `verify_build_us` is about 97 % GPU wait
+(`Qwen36MTPBlockSession.swift:765-790`) and must never be read alone as
+host op-count evidence.
+
+Routed matvec share of a pinned width-5 round: lower bound `0.306`, point about
+`0.61`, upper `0.975`. Measured serial noise floor `0.0796 %` sd, half-range
+`0.0563 %`, which exceeds the predeclared `0.0390 %`; the larger value is
+quoted from now on.
+
+### 8. LAW 354 — the width-table axis is now closed by proof
+
+> **LAW 354.** Minimise the weight-stream count `G = ceil(M/IPG)` subject to
+> staying below the register-occupancy cliff between `NA = 5` and `NA = 6`.
+
+`G_min(M) = ceil(M/5)`.
+
+| M | IPG | G | NA | regs | G_min | optimal |
+|---|---|---|---|---|---|---|
+| 2 | 2 | 1 | 2 | 87 | 1 | yes |
+| 3 | 3 | 1 | 3 | 90 | 1 | yes |
+| 4 | 4 | 1 | 4 | 94 | 1 | yes |
+| 5 | 5 | 1 | 5 | 102 | 1 | yes |
+| 6 | 3 | 2 | 3 | 90 | 2 | yes |
+| 7 | 4 | 2 | 4 | 94 | 2 | yes |
+| 8 | 4 | 2 | 4 | 94 | 2 | yes |
+
+The shipped `activeInputGroups` table is exactly LAW-354-optimal at every width
+2-8, and among the `G_min` configurations it also takes the lowest `NA`. At
+width 6, `G = 1` needs `IPG >= 6`, hence `NA >= 6`, which crosses the cliff, and
+`M = 6 / IPG = 5` is illegal anyway
+(`static_assert(M % IPG != 1)`, `Qwen35.swift:1542`).
+
+**Axis closed.** Reopen only if the `NA = 5/6` cliff itself moves or a kernel
+change removes the register pressure.
+
+### 9. FINDING 373 — the scored round runs at 57 % of memory bandwidth
+
+```
+one decode round, shipped, pinned width 5, M4 Pro     92.449 ms
+bytes that must cross DRAM                            14.412 GB
+achieved bandwidth                                   155.9 GB/s
+M4 Pro peak                                          273 GB/s
+achieved fraction of peak                             57.1 %
+missing time per round                                39.6 ms
+```
+
+Host-side work, `2.294 ms` of encode plus a `0.635-0.675 ms` post-eval tail,
+about `2.9 ms`, is only 7 % of the missing time. Converting `2.9 ms` local at
+the `2.947x` decode transfer factor gives about `0.98 ms` ranked on a 45 ms
+round, roughly `+2.2 %` published. The crown has the same idle, because the gap
+to the crown is only `+0.085 ms/round`, so removing it is a leapfrog rather
+than a catch-up.
+
+Four sceptical checks are assigned to alphonse before anyone builds on this:
+is `14.412 GB` right, given 27B at 4 bit is about 13.5 GB plus about 1.7 GB of
+scales and the `248,320 x 5,120` readout; measure the peak rather than quoting
+it; does the round read the weights exactly once at `G = 1`; and is the round
+bandwidth-bound at all, since width-5 arithmetic intensity of about 5 sits far
+below the roofline knee.
+
+**Unreconciled.** Three numbers describe the same width-5 round: alphonse leg 1
+`92.449 ms`, alphonse's trace `116.46 ms`, and askeladd's band-fit prediction
+`57.83 + 5 x 12.47 = 120.2 ms`. Alphonse must reconcile these in his result.
+
+### 10. Assignments after this entry
+
+| student | PR | subject |
+|---|---|---|
+| askeladd | 158 | close E159 at the next sealed leg, then E166: recover B1's acceptance while keeping its round-cost saving |
+| alphonse | 163 | finish legs 3-6, the four bandwidth checks, and the 92/116/120 reconciliation |
+| thorfinn | 165 | account for the whole 92.449 ms round against a 52.8 ms stream floor; decide idle against slow |
+| edward | 166 | E167: ship the maintained base officially, then the draw estimator and the prefill-probe calibration |
+
+E167 exists because the maintained base carries two scored changes that have
+never been submitted:
+
+```
+472f7a12  Merge PR #162   quantized.cpp / quantized.h        arm A, non-NAX affine qmm_t k-loop pipelining
+                          quantized_nax.cpp / quantized_nax.h arm B, NAX double buffer, M5-only
+806181de  Merge PR #159   Qwen36MTPBlockSession.swift        default-off env flag, 19 lines
+```
+
+Arm A measured `-1.9471 %` on local seed prefill across 8 gated ABBA legs,
+`p = 0.0286`, W&B `o2hditxg`, about 78 ms local, which is 10.3 ms ranked at the
+`7.593x` prefill transfer factor and `+0.197 %` published. Arm B has never been
+measured anywhere, because no student host can run `_nax`. The official runner
+is the only instrument that can price it.
