@@ -70683,3 +70683,64 @@ low edl.
 - **E175** builds now (F3); freeze then hold behind the slot.
 - Alphonse's 8-leg screen continues; census reinterpretation (FINDING 441)
   does not change his contrasts — `f − r` remains the coefficient of record.
+
+---
+
+## Entry 373 — 2026-08-24T09:40Z — Cap-4 FIRED: receipt `90c131dc` validating; cross-host Q corroboration (FINDING 444); schedule invariance (FINDING 445)
+
+### 1. The submission
+
+Askeladd fired E168 r1 at 09:24:24Z, two minutes before my fire ack landed (the crossing is
+recorded; the fire was authorized and correct). Receipt
+`90c131dc-c3e4-4022-b00c-038cf928bbb7`, benchmark `5d1ee4d7`, status `validating`.
+Frozen HEAD `99959d49a388cf77f5cd6d30d63b5159fde805b4`; candidate surface `e044a583`; packaged
+diff vs organizer-pure `0863b06a` is exactly one literal (`segmentedVerifyDepthCap 7->4`) plus
+seven doc lines. Gates green on the frozen HEAD (boundary PASS, scope 1 path, budget
+2604604/3000000, growth 503 B). Confirmation leg on the exact submitted tree: 512-token
+real-gate `--local-submit`, 30.283 ms/token, `all_tokens_matched=true`, row ledger closes at
+548, GPU 37.9→59.2 C. W&B `u2g6yfjx`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/u2g6yfjx).
+Askeladd owns the read-only receipt watcher (run_job). Registered prediction: central 3.9847,
+band +4..+8 % vs A. Reading bands per the r1 brief stand unchanged; sharpened nulls apply
+(candidate-leg pairwise 0.189 % 1σ, published +~0.271 % serial draw).
+
+Deliberate deviations, both approved: (a) tree built by enumerate-and-restore over non-campaign
+paths rather than `git checkout upstream/main -- .` (which silently keeps campaign-added files —
+runbook note); (b) local `benchmark-qwen-mtp.sh` reverted to organizer content so timed tree =
+shipped tree, with the stale-metallib risk neutralized by an explicit metallib rebuild.
+Post-receipt tasks ruled: full `swift test` once behind the receipt; no r0-base local pair; no
+campaign-base scope numbers.
+
+Yukon's 5 KiB note minimum was re-hit (first note rejected, nothing submitted — safe failure,
+matches the E167-documented contract in `submissionNoteMinimum`); recovered at 11.5 KiB with
+the full narrative and `Model: senpai`.
+
+### 2. FINDING 444 — cross-host Q corroboration
+
+r1 (organizer-pure, cap 4) vs r0-cap (campaign tree, cap 4) at digit-identical schedule:
+organizer-pure is **+0.67 % slower locally**. The contrast removes Q + instrumentation + inert
+deltas in one step; with the local instrumentation tax ~+0.21 % (E167 B3 linkage-internal),
+local Q ≈ **−0.88 %**, against ranked Q = **−0.6691 %** (FINDING 440, W&B `f4np59rg`). Same
+sign on a second host and second harness, transfer ratio ~0.76 — the first fully independent
+corroboration that Q is a real hardware-portable mechanism rather than a receipt-channel
+artifact. The apparent sign flip vs ranked B−A = +0.20 % (campaign extras net-hurt ranked,
+net-help local) is fully explained by instrumentation taxing ranked ~4× harder (+0.88 % vs
++0.21 %). This further weakens Edward's runner-drift alternative and leaves the E175
+predictions (3.7328/3.7267 straddling the crown) standing.
+
+### 3. FINDING 445 — cap-4 schedule invariance across trees
+
+111 rounds, width histogram {2:1, 4:4, 5:106}, acceptance 0.919908466819222, edl
+3.936936936936937 — digit-identical between the campaign and organizer-pure trees. The depth
+policy is fully decoupled from kernel/instrumentation state, so tree-swap timing contrasts are
+schedule-clean by construction, and the reverted campaign work provably did not interact with
+the depth controller.
+
+### 4. Board state after this entry
+
+- In flight: `90c131dc` (cap-4, Askeladd). Expected terminal ~10:45–11:00Z.
+- Frozen next: Edward's E175 four-file A+Q (building now; holds SHA until the cap-4 receipt is
+  read — F4). Yukon-note standard forwarded.
+- Thorfinn: r3 merge-clean commit pending on PR 171; merge follows his typed r3 result.
+- Alphonse: 8-leg palindrome screen running; `f−r` per-fill+per-record coefficient expected
+  ~11:30Z; pivot ruling (e173 item 2 vs item 3) follows.

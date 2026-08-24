@@ -854,7 +854,7 @@
  },
  "observedAt": "2026-08-24T05:50:00Z",
  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
- "officialSlot": "free since 2026-08-24T08:47Z: 2c885d64 terminal REJECTED 3.65820901018537. Slot committed to qwen-askeladd E168 r1: depth cap min(adaptive,4) as ONE literal on organizer-pure upstream/main 0863b06a. Ship-mode brief delivered 08:52Z; expected fire within hours. Askeladd owns the receipt watcher (run_job read-only).",
+ "officialSlot": "OCCUPIED since 2026-08-24T09:24Z: receipt 90c131dc-c3e4-4022-b00c-038cf928bbb7 (qwen-askeladd E168 r1 cap-4 on organizer-pure) status validating. Frozen 99959d49, candidate surface e044a583, packaged diff = one literal (segmentedVerifyDepthCap 7->4) + 7 doc lines vs upstream/main 0863b06a. Askeladd owns the read-only receipt watcher.",
  "onlyExactRoundCostOnBoard": {
   "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
   "optimised": {
@@ -2203,18 +2203,22 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": {
-  "ledger": 370,
-  "inFlight": null,
-  "preparing": {
-   "name": "cap min(adaptive,4) on organizer-pure",
+  "ledger": 373,
+  "inFlight": {
+   "receipt": "90c131dc-c3e4-4022-b00c-038cf928bbb7",
+   "benchmark": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
    "owner": "qwen-askeladd",
-   "assignment": "E168 r1 (ship brief 08:52Z)",
+   "assignment": "E168 r1 (PR 168)",
+   "frozenHead": "99959d49a388cf77f5cd6d30d63b5159fde805b4",
+   "candidateSurfaceCommit": "e044a583",
+   "submittedAt": "2026-08-24T09:24:24Z",
    "candidate": "upstream/main 0863b06a + segmentedVerifyDepthCap 7->4 (one literal + doc comment)",
-   "gates": "rebuild, 512-token --local-submit real gate, scope/budget/boundary, freeze, submit vs base 770a3ff2",
-   "readingRule": "bands vs A 3.70784519: >=3.9 step transfers/crown; 3.65-3.9 partial -> within-group-slope model; 3.55-3.65 step absent -> pivot declamp-deeper. Promote line 3.7291100106.",
-   "prediction": "askeladd registered central 3.9847 (+4-8 % band)",
-   "status": "step 1 done 09:15Z: organizer-pure tree built (1 file, 8 insertions), 3 gates green, candidate e044a583, release rebuild running; next: 512-token local-submit, gates on final HEAD, freeze, fire. benchmark-qwen-mtp.sh local revert approved (trusted, unsubmitted; metallib rebuilt explicitly)."
+   "confirmation": "512-token real-gate --local-submit on exact submitted tree: 30.283 ms/token, all_tokens_matched, row ledger closes at 548, schedule digit-identical to r0 cap arm (111 rounds, {2:1,4:4,5:106}, acc 0.9199, edl 3.9369). W&B u2g6yfjx.",
+   "prediction": "central 3.9847, band +4..+8 % vs A 3.70784519",
+   "readingRule": "bands vs A 3.70784519: >=3.9 step transfers/crown; 3.65-3.9 partial -> within-group-slope model; 3.55-3.65 step absent -> pivot declamp-deeper. Candidate-leg pairwise null 0.189 % 1sd; published adds ~0.271 % serial draw. Promote line 3.7291100106.",
+   "note": "11.5 KiB (first note rejected under the 5 KiB minimum; safe failure, nothing submitted)"
   },
+  "preparing": null,
   "frozenNext": {
    "name": "A + Q four-file single factor",
    "owner": "qwen-edward",
@@ -2222,11 +2226,11 @@
    "candidate": "upstream/main 0863b06a + exactly quantized{,_nax}.{h,cpp} at campaign versions; sidecar question dissolved (FINDING 441)",
    "predictions": "published 3.7328 (mean7) / 3.7267 (score-setting); coin flip at crown 3.72911; receipt sd ~0.010",
    "decisionRule": ">=3.7291 promote/crown; 3.71-3.729 Q real, compose with cap-4 outcome; ~3.708 Q null on ranked -> A-replay contingency fires; <=3.69 channel broken -> A-replay immediately",
-   "holdRule": "fires when the cap-4 receipt lands"
+   "holdRule": "fires after the cap-4 receipt 90c131dc is terminal and read; Edward builds/gates/freezes now and holds the SHA (F4 09:33Z)"
   }
  },
- "lastAdvisorUpdate": "2026-08-24T09:30Z",
- "ledgerEntry": 372,
+ "lastAdvisorUpdate": "2026-08-24T09:40Z ledger entry 373: cap-4 receipt 90c131dc IN FLIGHT (frozen 99959d49), FINDINGs 444-445",
+ "ledgerEntry": 373,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2381,7 +2385,9 @@
   "440": "CLOSED FACTOR SYSTEM (E171 r2, harness=ranked, W&B f4np59rg): D-A=+0.8899 (4.7sd), C-A=+0.8765 (4.6sd), B-C=-0.6691 (3.5sd), D-B=+0.6878 (3.6sd, P-free Q-free); additivity residual +0.0070 %; calibrated pairwise null 0.189 % (serial sd 0.1338 %, n=974); every vector ~0 on plutarch. Q = -0.6691 % candidate-leg, STAYS IN. E165 = +0.69..+1.56 % HARMFUL on ranked M5; tau NEGATIVE [-1.36,-0.60]; DROPPED from ship set, no receipt to be spent on it. Mechanism: M5 has no exposed host chain to hide, prefetch only adds ~917 us/round memory traffic near the DRAM roof (vs 539 us recovered on M4 Pro). Maintained base is safe: E165 is opt-in there; the default flip lived only on Thorfinn's branch.",
   "441": "SIDECAR FACTOR NEVER EXISTED (Thorfinn r2 \u00a70 + Edward E175 interim 1, independent simultaneous source proofs): D's Qwen35.swift is byte-identical to organizer main; Qwen35XSumsSidecar/publish/take and the qwen35_custom_affine4_g64_qmv_* consumers are ORGANIZER code present in all four receipts. The campaign 88-line Qwen35.swift delta = counters + an env knob returning the organizer constant + research-only defaults - inert on ranked. Q's four files contain zero xsums references in both versions; Q = qmm_t software pipelining (shift_dst, pipelined k-loop, double-width Ws, _nax 32KiB predicate) serving large-M traffic (prefill above all); the sidecar serves the m=4..9 decode QMV replica. DISJOINT by construction. Alphonse's census measured organizer-code coupling.",
   "442": "E175 RULING: original four-file candidate = A + Q; F1/F2 amendments withdrawn (premise dissolved). Predictions (two routes, Thorfinn r2): published 3.7328 (mean7) / 3.7267 (score-setting prompts) - straddles crown 3.72911 within +/-0.005 vs receipt sd ~0.010, genuine coin flip, every outcome decisive. Edward's drift objection answered by four bounds; his byte-identical A-replay recorded as STANDING CONTINGENCY if E175 lands ~3.708 or <=3.69. Fire order: after cap-4 receipt.",
-  "443": "Edward first-hand B-tree verification: B = organizer + Q + provably inert instrumentation (BlockSession +30 = unset E159 env knob + trace fields; Qwen35.swift 88 inert). C provenance rests on Edward's own first-hand fda590bb build+inspection (commit 080d4cd3 no longer fetchable) - flagged, accepted. MLX routing: cells the m=2..9 replica declines fall to MLX; M>=vector_limit -> qmm, qmm_nax when is_nax_available && transpose && K%64==0. OPEN PUZZLE: why Q helps most at LOW edl - leading next-assignment candidate (Thorfinn), connects to Q-serves-prefill."
+  "443": "Edward first-hand B-tree verification: B = organizer + Q + provably inert instrumentation (BlockSession +30 = unset E159 env knob + trace fields; Qwen35.swift 88 inert). C provenance rests on Edward's own first-hand fda590bb build+inspection (commit 080d4cd3 no longer fetchable) - flagged, accepted. MLX routing: cells the m=2..9 replica declines fall to MLX; M>=vector_limit -> qmm, qmm_nax when is_nax_available && transpose && K%64==0. OPEN PUZZLE: why Q helps most at LOW edl - leading next-assignment candidate (Thorfinn), connects to Q-serves-prefill.",
+  "444": "CROSS-HOST Q CORROBORATION. Askeladd's r1-vs-r0-cap composite (+0.67 % local cost of organizer-pure vs campaign tree at digit-identical cap-4 schedule) decomposes with local instrumentation tax ~+0.21 % (E167 B3) to local Q ~= -0.88 %, vs ranked Q = -0.6691 % (FINDING 440). Same sign, ~0.76 transfer ratio; first independent cross-host confirmation that Q is real. Sign flip vs ranked B-A +0.20 % explained by instrumentation taxing ranked ~4x harder. W&B u2g6yfjx + f4np59rg.",
+  "445": "CAP-4 SCHEDULE INVARIANCE ACROSS TREES. The cap-4 depth schedule is digit-identical between the campaign tree (E168 r0 cap arm) and organizer-pure (r1): 111 rounds, width histogram {2:1,4:4,5:106}, acceptance 0.919908466819222, edl 3.936936936936937. Depth policy is fully decoupled from kernel/instrumentation state; the reverted campaign work did not interact with the depth controller. Makes tree-swap timing contrasts schedule-clean by construction."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2549,5 +2555,14 @@
   "medianCheck": "mean of 3.51403 and 3.80239 = 3.658209010 reproduces the published score exactly"
  },
  "e165RankedHarm": "E165 head-prefetch: +0.69..+1.56 % candidate-leg harm on ranked M5 (FINDING 440); DROPPED from ship set; maintained base keeps it opt-in (default-off); mechanism deletion is cleanup backlog; never flip the default.",
- "e171MergePlan": "r3 requested 09:25Z: one commit restores all non-research/ paths to merge-base content so the PR merges only the analysis files; frozen 4ba44f82 stays reachable through branch history; typed result re-posted at r3; then merge."
+ "e171MergePlan": "r3 requested 09:25Z: one commit restores all non-research/ paths to merge-base content so the PR merges only the analysis files; frozen 4ba44f82 stays reachable through branch history; typed result re-posted at r3; then merge.",
+ "qLocalRankedCrossCheck": {
+  "finding": 444,
+  "statement": "Askeladd r1 vs r0-cap (identical cap-4 schedule, digit-identical histogram): organizer-pure is +0.67 % slower LOCAL than the campaign tree. Composite removes Q + instrumentation + inert deltas at once; with local instrumentation tax ~+0.21 % (E167 B3), local Q ~= -0.88 %. Ranked Q = -0.6691 % (B-C, FINDING 440). Same sign, transfer ratio ~0.76: first cross-host corroboration that Q is a real hardware-portable mechanism, not a receipt-channel artifact.",
+  "signFlipResolved": "ranked B-A = +0.20 % (campaign extras net-hurt ranked) vs local -0.67 % (net-help local) is fully explained by instrumentation taxing ranked ~4x harder (+0.88 % ranked vs +0.21 % local). No contradiction.",
+  "wandb": [
+   "u2g6yfjx",
+   "f4np59rg"
+  ]
+ }
 }
