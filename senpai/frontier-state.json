@@ -1,88 +1,8 @@
 {
   "acceptanceLadder": {
-    "capSensitivity": {
-      "0.920": -0.58,
-      "0.934": 0.0,
-      "0.950": 0.723,
-      "0.967": 1.512,
-      "0.980": 2.14
-    },
-    "capSevenToEightRule": "pays if and only if p_7 > 0.93369",
-    "discriminator": "askeladd per-position p_d census set beside q*(d)",
-    "finding": 403,
-    "harness": "ranked",
-    "law": "R(M) = 16.1585 + 5.3350*M",
-    "ledgerEntry": 358,
-    "observedOperatingPoint": {
-      "beagle": [
-        4.6545,
-        4.382,
-        5.382,
-        9.6643
-      ],
-      "botany": [
-        6.321,
-        6.148,
-        7.148,
-        8.618
-      ],
-      "drama": [
-        2.0317,
-        2.297,
-        3.297,
-        16.853
-      ],
-      "essays": [
-        5.5652,
-        5.087,
-        6.087,
-        8.7925
-      ],
-      "medicine": [
-        5.6889,
-        5.255,
-        6.255,
-        8.6748
-      ],
-      "plutarch": [
-        1.0492,
-        0.156,
-        1.156,
-        29.0913
-      ],
-      "republic": [
-        5.5054,
-        4.989,
-        5.989,
-        8.6684
-      ],
-      "travel": [
-        2.4038,
-        2.648,
-        3.648,
-        14.6059
-      ]
-    },
-    "qStar": {
-      "0->1": 0.5,
-      "1->2": 0.55631,
-      "2->3": 0.71829,
-      "3->4": 0.80727,
-      "4->5": 0.86039,
-      "5->6": 0.89441,
-      "6->7": 0.91742,
-      "7->8": 0.93369
-    },
-    "reproduces": "FINDING 385 c* = 0.24821 from a second direction",
-    "ruleIsStructurallyCorrect": true,
-    "shippedH": 0.18,
-    "shippedUnderpricesDepthPct": 37.9,
-    "suspectMechanism": "positionAcceptEMA seeds 0.85*pow(0.98,i) give 0.768/0.754/0.739 at positions 5/6/7, all below their ladder thresholds; the recordAcceptOutcome optimism transfer caps at 0.95, only 0.016 above q*(7->8), and reach is a product of these estimates",
-    "trueH": 0.248215,
-    "twoExplanations": {
-      "a": "acceptance decays with position; controller approximately right; axis closes",
-      "b": "controller held shallow by its inputs; worth about +4.8 % published"
-    }
+    "status": "SUPERSEDED by FINDING 407 breakEvenLadderStepModel",
+    "wasFinding": 403,
+    "reason": "built on the linear ranked model, which is physically impossible at low M"
   },
   "advisorErrors": [
     {
@@ -141,7 +61,38 @@
       "ledgerEntry": 358,
       "rule": "never hand a student a per-receipt file attribution without quoting the ledger line that established it",
       "source": "campaign-ledger.md:55278 and :56583 had already settled the attribution"
-    }
+    },
+    {
+      "id": 227,
+      "at": "2026-08-24T05:35:00Z",
+      "error": "I handed Thorfinn the LAW 377 per_round_fixed transfer coefficient 0.34 as a constant. FINDING 404 landed the same hour and withdrew the channel decomposition that produced it. The fault is not the number: it is that a transfer coefficient travelled without its derivation, so the student could not notice when it stopped being supported.",
+      "rule": "transfer coefficients travel with their derivation or they do not travel"
+    },
+    {
+      "id": 228,
+      "at": "2026-08-24T05:50:00Z",
+      "error": "I accepted Askeladd's E159 conclusion that the local M=5 optimum was a group-crossing artefact and that ranked-priced the optimum was monotone to M=8. groups(M) comes from a static table in candidate source, so the step exists on M5 too, 23.5 ms tall. I let Rule 83 talk me out of a conclusion Rule 83 does not cover: it scopes g16s OCCUPANCY closures, and a group count is not an occupancy property.",
+      "cost": "the campaign shipped a depth-7 controller for its entire life and tuned the clamps of a controller whose optimal policy is a constant",
+      "rule": "RULE 195: before transferring or refusing to transfer a local result, state whether the mechanism is fixed by candidate source or by hardware. Source-fixed structure transfers exactly. Only hardware-dependent structure is subject to Rule 83."
+    },
+    {
+      "id": 229,
+      "ledger": 361,
+      "error": "two campaign invariants required a needle that never matched any tree the organizer published; the four-term BF16 tree is written over the loaded vector xv, not over the device pointer xm",
+      "impact": "the rows were red on upstream/main itself and on every campaign base; the failure text said \"our carried change is gone. Restore it\", which invited exactly the wrong action",
+      "foundBy": "qwen-thorfinn while composing E171; he correctly refused to edit an advisor-owned record and escalated",
+      "repair": "replaced the single row with a pair covering both arms of the cell, including the load_vector call that makes the mirroring structural rather than textual; RESULT PASS (19 invariants hold)",
+      "rule": 196
+    },
+    {
+      "id": 230,
+      "ledger": 361,
+      "error": "F10 demanded that a student push his submitted commit, and an earlier instruction told a student to prefer another student branch over his isolation scope",
+      "impact": "the push is unsatisfiable because the typed submit tool owns it; the cross-branch instruction conflicted with a launch isolation contract that overrides repository instructions",
+      "resolution": "both withdrawn; the provenance risk is closed by Thorfinn reproducing the identical two-file submitted surface deterministically from upstream/main 0863b06a"
+    },
+    "231: I gave Thorfinn a score anchor of 3.712098 derived from an unlanded prediction and told him to invert a transfer coefficient against it. A submitted-but-unscored prediction is not an anchor. Do not build a second experiment on the predicted value of a receipt still in flight; wait for it, or state the dependency as a stop condition.",
+    "232: I told both Askeladd and Thorfinn not to spend a run on the M histogram. Askeladd recovered it from data he already owned at zero cost; Thorfinn judged ninety seconds worth it and was right. When a measurement would settle a law the campaign is about to bet on, price the run against the bet, not against the run."
   ],
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
@@ -363,7 +314,14 @@
       "reason": "refuted on the ranked host by three independent board arms; c47b45be 3.649616 and 24fb4012 3.692476 shipped the exact table entry and lost",
       "reopenIf": "the ranked host generation changes"
     },
-    "width_table": "CLOSED by proof, ledger 350.8, LAW 354. G_min(M) = ceil(M/5). The shipped activeInputGroups table at Qwen35.swift:1715-1729 is exactly LAW-354-optimal at every width 2-8, and among G_min configurations it also takes the lowest NA. At width 6, G = 1 needs IPG >= 6 hence NA >= 6, which crosses the register occupancy cliff between NA = 5 and NA = 6, and M = 6 / IPG = 5 is illegal under static_assert(M % IPG != 1) at Qwen35.swift:1542. Reopen only if the cliff itself moves or a kernel change removes the register pressure."
+    "width_table": "CLOSED by proof, ledger 350.8, LAW 354. G_min(M) = ceil(M/5). The shipped activeInputGroups table at Qwen35.swift:1715-1729 is exactly LAW-354-optimal at every width 2-8, and among G_min configurations it also takes the lowest NA. At width 6, G = 1 needs IPG >= 6 hence NA >= 6, which crosses the register occupancy cliff between NA = 5 and NA = 6, and M = 6 / IPG = 5 is illegal under static_assert(M % IPG != 1) at Qwen35.swift:1542. Reopen only if the cliff itself moves or a kernel change removes the register pressure.",
+    "narrowOutputGemmDeficit": "RETRACTED, not closed: FINDING 395 had no measured basis (FINDING 404)",
+    "splitKAsABitExactLever": "CLOSED: split-K reassociates FP addition, never bit-exact (FINDING 404)",
+    "gdnRecurrenceAsADecodeTarget": "CLOSED: recurrence is 2.29 % of the marginal row (FINDING 404 H1)",
+    "lmHeadReadoutAsADecodeTarget": "CLOSED: lm_head 4.09 %, top-2 +0.07 % (FINDING 404 H2)",
+    "depthCapSevenToEight": "DEAD: M=9 makes a third weight pass (FINDING 407)",
+    "depthControllerAdaptivity": "CLOSED: the optimal depth is a constant, so no acceptance signal is needed; FINDING 393 AUC~0.5 is irrelevant (FINDING 407)",
+    "marginClampCalibration": "CLOSED: clamps tune a controller whose optimal policy is constant (FINDING 407)"
   },
   "compositionPlanForFreeSlot": {
     "bar": "0.6 % predicted published gain",
@@ -410,24 +368,26 @@
     "solver": "newjordan"
   },
   "crownAttemptArithmetic": {
-    "composition": {
-      "afterMechanism": 3.727925,
-      "afterRevert": 3.712098,
-      "crown": 3.72911,
-      "from": 3.70465399,
-      "pBeatCrown": 0.45,
-      "shortfallPct": 0.032
+    "lastReceipt": {
+      "id": "180db842",
+      "score": 3.70465399491642
     },
-    "harness": "ranked",
-    "ledgerEntry": 358,
-    "thorfinnRanked": {
-      "beaglePctLeg": -0.4472,
-      "channel": 0.34,
-      "essaysPctLeg": -0.4072,
-      "localPerRoundUs": -654.8,
-      "publishedPct": 0.4263,
-      "rankedPerRoundUs": -222.6
-    }
+    "revertAlone": {
+      "multiplier": 1.00201,
+      "score": 3.712098,
+      "id": "fda590bb",
+      "status": "validating"
+    },
+    "composed": "3.712098 * (1 + 0.010322 * tau)",
+    "crown": {
+      "id": "ec24d591",
+      "solver": "newjordan",
+      "score": 3.7291100105909,
+      "promotedSourceRef": "0863b06ac16e26e48fc06e97444095b00feb66d4"
+    },
+    "crownThreshold": "tau > 0.444",
+    "probabilityAtTau034": 0.35,
+    "officialScoreSdPct": 0.271
   },
   "crownGapDecomposition": {
     "campaignTarget": "1.0 % of candidate MTP time takes the crown with near certainty",
@@ -478,16 +438,9 @@
     "whyOnDeviceIsImpossible": "The verify tensor shape must be host-known, so the width decision cannot stay on device, and there is no existing host transfer before the verify forward to ride on."
   },
   "depthCapEightOpenLever": {
-    "assignedTo": "qwen-edward, E167 F3",
-    "boardMaxEdl": "botany 6.846; no receipt anywhere exceeds cap 7, empty cell for the whole competition",
-    "chunkCodedRange": "attentionWithCacheUpdate splits a 6..9-row causal decode attention (comment :1045)",
-    "constant": "segmentedVerifyDepthCap = 7 at Qwen36MTPBlockSession.swift:1060",
-    "dispatchCheck": "G_min(M)=ceil(M/5) puts M=8 and M=9 both in G=2, no new weight-stream pass expected; confirm from dispatch",
-    "exactnessRisk": "comment :1031 warns drifted K/V rows from one wide forward contaminate every later round and stay invisible to an argmax-only check; 512-token gate required",
-    "expectedLegGainPct": "0.7 to 0.8 at a 50-60 % at-cap fraction",
-    "measuredRange": "widths 6..8 bit-exact per position (comment :1049); width 9 coded and UNMEASURED",
-    "parentOffers": 8,
-    "perRoundSizing": "depth 7 -> 8.298 ms/token at M=8; depth 8 -> 8.183 ms/token at M=9; -1.39 %"
+    "status": "DEAD",
+    "reason": "M = 9 makes a THIRD backbone weight pass; the break-even is far above 1",
+    "withdrawnPreRegistration": "p_7 > 0.93369"
   },
   "depthControllerHasNoSignal": {
     "aucPosition0": {
@@ -580,15 +533,9 @@
     "scope": "english only, 5 of 18 census legs, provisional until the 9-prompt pool lands"
   },
   "depthPriceIdentity": {
-    "doesNotJustifyShipping": "see FINDING 386; the controller is non-stationary so the identity alone does not price a price change",
-    "finding": 385,
-    "historicalRankedArms": "0.18 -> 2.92000, 0.32 -> 2.84585, 0.14 -> 2.76600, 0.15 -> 2.66700",
-    "identity": "c* = h/(s+h) makes the shipped myopic threshold equal the true marginal rule under R(M)=s+h*M",
-    "localCStar": 0.15329,
-    "orderingCheck": "score order matches distance-to-ranked-c* order except the 0.14/0.15 pair which differ by 0.01 in c",
-    "rankedCStar": 0.24821,
-    "shippedC": 0.18,
-    "standingWarning": "the local optimum 0.15329 sits inside the losing pair; a local price sweep would have selected it and lost about 8 % on rank"
+    "status": "WITHDRAWN by FINDING 407",
+    "wasFinding": 385,
+    "reason": "c* = h/(s+h) assumed a linear marginal row cost; b = 5.3350 is a mixture-smoothed slope, not a physical marginal row"
   },
   "designatedCandidate": {
     "armAEvidence": "local seed_prefill_seconds -1.9471 % over 8 gated ABBA legs, p = 0.0286, W&B o2hditxg, about 78 ms local, 10.3 ms ranked at the 7.593x prefill transfer factor",
@@ -753,11 +700,15 @@
     "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance."
   },
   "latestOfficialReceipt": {
-    "id": "180db842",
-    "note": "Rejected at -0.0861 % below our own best 5a9f130a 3.70784519415395. Cause identified as the software-pipelined qmm prefill regression, FINDING 389.",
-    "officialScore": 3.70465399491642,
+    "submissionId": "fda590bb",
+    "commit": "080d4cd318c273c5dd34d8ad4429d86096e19258",
+    "officialScore": 3.667847308,
     "status": "rejected",
-    "validatedAt": "2026-08-24T03:54:42Z"
+    "rejectionReason": "score did not improve current best",
+    "createdAt": "2026-08-24T05:00:39Z",
+    "tree": "campaign base with quantized{,_nax}.{h,cpp} reverted to organizer main; no E165",
+    "predicted": 3.712098,
+    "predictionErrorPct": -1.19
   },
   "liveSubmittedSurface": {
     "afterRevert": "organizer main plus exactly two files, 30 and 88 changed lines",
@@ -821,8 +772,16 @@
     "sourceComment": "Qwen35.swift:1700-1704 \u2014 \"M=1 stays on MLX (serial and the candidate share it, so speeding it does not move the ratio).\""
   },
   "maintainedBaseChanges": {
-    "censusCounters": "kept: qwen35XSumsSidecarHits, qwen35XSumsStandaloneFills, qwen35DerivedCluster* (E160 needs them)",
-    "derivedClusterRowsPerLeaf": "reverted 16 -> 8 on FINDING 323"
+    "baseSha": "b51f893ad2414c7ea819aa10b0981957c8bb2e1c",
+    "submittedSurfaceVsUpstreamMain": [
+      "Sources/MLXFastModel/Qwen36MTPBlockSession.swift  30 pre-existing lines + E165 (+319/-124)",
+      "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift  88",
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp  138  REVERT TARGET",
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp  80  REVERT TARGET",
+      "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h  138  REVERT TARGET",
+      "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h  80  REVERT TARGET"
+    ],
+    "afterRevertTheSurfaceIs": "organizer main plus exactly two files, 30+E165 and 88 lines"
   },
   "marginalRowShare": {
     "beagle": {
@@ -861,70 +820,9 @@
     "source": "Edward E164, ledger 350.6"
   },
   "narrowOutputGemmDeficit": {
-    "axisStatus": "reopened on ranked-only grounds, see rankedRowThroughputGap",
-    "blockingPrecondition": "Prove from source whether qwen35RoutedQuantizedMM sends every width in 2...9 to Qwen35CustomQMV unconditionally, or whether M >= 6 can fall through to MLX qmm and therefore qmm_nax on the M5. Same question for the 512-row prefill. If widths 6..9 fall through, the 52.4 % of beagle rounds that saturate at cap 7 are unscreenable on any host we own.",
-    "channel": "b, the only channel that transfers at better than 1x (1.31x, LAW 377)",
-    "deficitMsPerRow": 0.783,
-    "deficitShareOfRow": 0.115,
-    "exactnessArgument": "Remapping output rows to threadgroups does not change any per-output-row K reduction, so an exact route exists in principle.",
-    "finding": 395,
-    "foundBy": "qwen-alphonse",
-    "ledgerEntry": 355,
-    "observation": "Every n = 5120 output shape runs at 5.6 to 6.5 TFLOP/s while every n >= 14336 shape runs at 7.1 to 9.1, in the same kernel.",
-    "rank": "Largest priced mechanism in the campaign. The crown gap is 0.575 %; a 20 % recovery is 2.4x that gap.",
-    "rankedPricing": {
-      "beagle": {
-        "M": 5.3818,
-        "msPerTokenSaved": 0.7094,
-        "mtpAfter": 9.984,
-        "mtpBefore": 10.693,
-        "rawAfter": 3.805,
-        "rawBefore": 3.552,
-        "tokensPerRound": 4.6545
-      },
-      "deficitMsPerRankedRow": 0.6135,
-      "essays": {
-        "M": 6.087,
-        "msPerTokenSaved": 0.6711,
-        "mtpAfter": 9.15,
-        "mtpBefore": 9.821,
-        "rawAfter": 4.152,
-        "rawBefore": 3.868,
-        "tokensPerRound": 5.5652
-      },
-      "publishedFullRecovery": "+7.25 %",
-      "publishedTwentyPercentRecovery": "+1.45 %"
-    },
-    "refusedMechanism": "Instantiating NA=6 so M=6 takes one group is the E163 arm killed by FINDING 375 (24fb4012 WIDTH-6 +0.395 +/- 0.107). The whole c column is priced at zero officially.",
-    "shapes": {
-      "full_attn.o_proj": {
-        "calls": 16,
-        "deficitMs": 0.066,
-        "k": 6144,
-        "msPerRow": 0.1767,
-        "n": 5120,
-        "tflops": 5.696
-      },
-      "linear_attn.out_proj": {
-        "calls": 48,
-        "deficitMs": 0.205,
-        "k": 6144,
-        "msPerRow": 0.5362,
-        "n": 5120,
-        "tflops": 5.632
-      },
-      "mlp.down": {
-        "calls": 64,
-        "deficitMs": 0.512,
-        "k": 17408,
-        "msPerRow": 1.7641,
-        "n": 5120,
-        "tflops": 6.467
-      }
-    },
-    "status": "WITHDRAWN as a novel finding",
-    "withdrawalReason": "campaign-ledger.md:50661 already records the same structure: at M=6 the one-pass plan launches one column of 640 threadgroups on the N=5120 shapes, and 640 is at the occupancy floor of a 20-core part. Rule 83 then applies: a g16s occupancy closure is not M5 evidence because the M5 has second-generation Dynamic Caching and a redesigned occupancy unit. The +7.25 % published figure was built on the g16s throughput table and is withdrawn with it.",
-    "withdrawnBy": "qwen-alphonse, self-correction"
+    "status": "RETRACTED by FINDING 404",
+    "wasFinding": 395,
+    "reason": "matched-weight-byte cells with n and k transposed differ <= 3.2 %; a byte law fitted on the synthetic grid predicts all 7 scored shapes out of sample within -0.97 %/+0.75 %, including lm_head at 715 MB, 14x outside the fitted range, at +0.10 %"
   },
   "naxUnmeasurableLocally": {
     "consequence": "any edit confined to *_nax.h or its generated twin is structurally unscreenable locally; only an official receipt can measure it; never bundle such an edit with a measured one",
@@ -959,13 +857,9 @@
     ],
     "supersedes": "E167 F4 item 5"
   },
-  "observedAt": "2026-08-24T05:05:00Z",
-  "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
-  "officialSlot": {
-    "observedAt": "2026-08-24T04:23:48Z",
-    "plan": "composed F5 revert plus E165 per-round fixed cost",
-    "state": "free"
-  },
+  "observedAt": "2026-08-24T05:50:00Z",
+  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
+  "officialSlot": "free",
   "onlyExactRoundCostOnBoard": {
     "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
     "optimised": {
@@ -1001,11 +895,10 @@
     ]
   },
   "openQueue": [
-    "PR 165 thorfinn e165 prefetch ABBA running, targets 790.3 us/round gpu_idle_window, transfers at 0.34x to about 267 us/ranked round against our +0.2883 ms/round deficit",
-    "PR 166 edward 180db842 validating, holds the official slot, watcher 023eaee4",
-    "PR 168 askeladd e168 margin-clamp calibration, break-even acceptance 0.72, beagle upside up to -11.0 %",
-    "PR 169 alphonse e169 marginal verified row decomposition, 63.8 % of the ranked beagle round",
-    "UNOWNED: FINDING E dispersion lever, +0.500 % published at zero mean speedup; mechanism must stay prompt-agnostic"
+    "E171 r1 (Thorfinn): strip the instrumentation tax from the submitted surface, keep the E165 default flip. Projected 3.7388 (2s low) to 3.7520 (central) against crown 3.7291. One gated 512-token ABBA, then freeze and fire. HIGHEST PRIORITY, shortest path.",
+    "E168 (Askeladd): gated adapt/d4/d3/d5 ladder; ship min(adaptive,4) as a literal cap. Modelled 4.16-4.31 published under flat h; larger ceiling, longer path.",
+    "E167 (Edward): hot-path audit of the 473-line E165 delta on the submitted surface, classifying every construct as mechanism / inert / hot-path instrumentation. Gates the crown submission. Plus a search for an earlier instrumentation-only receipt pair to replicate FINDING 413.",
+    "E170 (Alphonse): register accounting and occupancy threshold; verdict source-fixed vs hardware-fixed. Then decompose F (6.90 ms/round, 20.2 % of a depth-4 round)."
   ],
   "organizer": {
     "branch": "main",
@@ -1417,7 +1310,10 @@
       "4d1123ce 0.325 %"
     ],
     "source": "zero-draft receipts, identical work on all 8 prompts",
-    "typicalCvPercent": "0.12 to 0.19"
+    "typicalCvPercent": "0.12 to 0.19",
+    "thorfinnHostPerLegPct": 0.12,
+    "retired_0039_floor": "the 0.039 % per-leg floor quoted in several assignments is RETIRED; Thorfinn measured 0.120 % on his host across 16 gated legs, about 3x",
+    "gpuIdle433Artefact": "the earlier 4.33 % GPU-idle figure was a six-second sampling artefact; full legs give 0.87 % and 0.66 %; the intra-queue bubble it implied does not exist"
   },
   "rankedPrefill": {
     "kPrefill": 0.372,
@@ -1646,67 +1542,11 @@
     "rankedAffineLaw": "R = 16.1585 + 5.3350*M   SSE 0.8188   worst residual 0.511 ms"
   },
   "rowLawTwoTerm": {
-    "activeInputGroups": {
-      "2": 1,
-      "3": 1,
-      "4": 1,
-      "5": 1,
-      "6": 2,
-      "7": 2,
-      "8": 2,
-      "9": 3
-    },
-    "finding": 395,
-    "foundBy": "qwen-alphonse",
-    "h1Closed": "GDN recurrence is not the problem at decode widths: 0.489 % per GDN layer against 0.464 % per attention layer, ratio 1.05; the t-loop is 3.25 us per call per row. Scoped to M <= 9 only; the 512-row prefill case is open and routed to Edward.",
-    "h2Closed": "The 248,320-way vocabulary readout is 4.09 % of the row and the exact top-two readout 0.07 %. Cannot be pruned.",
-    "inputsPerGroupTable": {
-      "2": 2,
-      "3": 3,
-      "4": 4,
-      "5": 5,
-      "6": 3,
-      "7": 4,
-      "8": 4,
-      "9": 3
-    },
-    "law": "T(M) = a + b*M + c*(activeInputGroups(M) - 1), harness=local, g16s, M=1 excluded",
-    "ledgerEntry": 355,
-    "physics": "b is arithmetic and tracks the FLOP budget within 1.5 points per family; c is the weight stream and tracks stored weight bytes within 8 points.",
-    "pricingRule": "Price b at 1.31x and price c at zero. Never sum them. Never quote a local step that crosses a group edge as a cost.",
-    "rowComposition": {
-      "fullAttention": 0.0743,
-      "gdn": 0.2347,
-      "lmHead": 0.0409,
-      "mlp": 0.6494,
-      "topTwoReadout": 0.0007
-    },
-    "staticFlopPerRow": 51.697,
-    "stepLadderMs": {
-      "1->2": 4.975,
-      "2->3": 2.177,
-      "3->4": 7.625,
-      "4->5": 11.609,
-      "5->6": 31.666,
-      "6->7": 7.659,
-      "7->8": 6.532,
-      "8->9": 38.971
-    },
-    "terms": {
-      "a": {
-        "bottomUp": 57.325,
-        "inSitu": 57.384
-      },
-      "b": {
-        "bottomUp": 6.8283,
-        "inSitu": 7.002
-      },
-      "c": {
-        "bottomUp": 29.575,
-        "inSitu": 28.605
-      }
-    },
-    "width9IpgException": "At M=9 the shipped table takes 3 groups where IPG=5 takes 2, and 9 % 5 = 4 satisfies static_assert(M % IPG != 1). LAW 354 optimality covers widths 2..8 only. Worth zero ranked, worth about 29.6 ms of local confound per width-9 round."
+    "status": "DEMOTED to an interpolant",
+    "model": "T(M) = 16.1585 + 5.3350*M",
+    "validRange": "M in 3..8 only, as an interpolant",
+    "notValidAs": "a physical cost model; T(1) is below the weight-stream floor",
+    "warning": "b = 5.3350 ms is NOT a marginal row cost. Never price a saving by multiplying rows by b."
   },
   "schemaVersion": 1,
   "statusVocabulary": {
@@ -1731,74 +1571,20 @@
     "documentedIn": "senpai/experiment-runbook.md"
   },
   "transferLaw": {
-    "consequence": "Compute-bound arms transfer to the ranked host with k below 1. Bandwidth-bound arms transfer with k above 1. Never quote a single campaign-wide k.",
-    "kByArmResource": {
-      "bandwidthBound": 1.355,
-      "bandwidthBoundAgreementPct": 0.6,
-      "bandwidthBoundIndependentCheck": 1.363,
-      "computeBound": 0.388,
-      "computeBoundAgreementPct": 4.0,
-      "computeBoundIndependentCheck": 0.372
+    "name": "LAW 377",
+    "status": "PARTIALLY WITHDRAWN by FINDING 404 on 2026-08-24",
+    "withdrawn": "channels 1 and 2 are NOT disjoint; \"price c at zero, price b at 1.31x\" is withdrawn",
+    "proof": "B_w = 14.41235 GB/forward; at the 614 GB/s M5 roof one weight pass is 23.47 ms, larger than the whole M-independent term a = 16.1585 ms. Fitting a pass inside a needs 891.9 GB/s = 145 % of roof. So >= 7.31 ms of weight stream sits in the 5.3350*M term, >= 1.359 ms/row, >= 25.5 % of the ranked marginal row on beagle.",
+    "rankedRoundModel": "T(M) = 16.1585 + 5.3350 * M  ms",
+    "consequence": "every transfer coefficient derived from that decomposition is unsupported, not refuted",
+    "measuredTransfersStillStanding": {
+      "decodeRoundM5vsM4Pro": 2.947,
+      "specBandwidth": 2.175,
+      "seedPrefill": 1.955
     },
-    "law377": {
-      "channels": [
-        {
-          "channel": "extra whole weight-stream pass",
-          "evidence": "FINDING 375; alphonse six gated 512-token legs; RULE 372 on 24fb4012 vs three parents",
-          "local_m4pro": "+28.605 +/- 0.448 ms/round",
-          "rankedValueOfOneLocalMs": 0.0,
-          "ranked_m5": "about -0.19 ms/round"
-        },
-        {
-          "channel": "marginal verified row",
-          "evidence": "destepped E159 fit 1.621x, chord 1.510x, alphonse isolated B 1.312x; RULE 192 predicts 1.355x",
-          "local_m4pro": "7.00 to 8.65 ms/row",
-          "rankedValueOfOneLocalMs": "0.62 to 0.76 ms",
-          "ranked_m5": "5.3350 +/- 0.1164 ms/row",
-          "transfer": "1.312x to 1.621x"
-        },
-        {
-          "channel": "per-round fixed part, composite",
-          "local_m4pro": "47.756 ms/round",
-          "note": "agrees with RULE 192 decode-round factor 2.947x to 0.3 percent; composite of host and GPU, so pure host work should transfer nearer 1x",
-          "rankedValueOfOneLocalMs": 0.34,
-          "ranked_m5": "16.1585 ms/round",
-          "transfer": "2.955x"
-        },
-        {
-          "channel": "seed prefill",
-          "evidence": "RULE 192, unaffected by FINDING 375",
-          "rankedValueOfOneLocalMs": 0.13,
-          "transfer": "7.593x"
-        }
-      ],
-      "ledgerEntry": 351,
-      "statement": "LAW 377 - a local measurement has no ranked value until its channel is named."
-    },
-    "ledgerEntry": 342,
-    "localRoundLaw": {
-      "crossEstimatorResidualMaxMs": 0.124,
-      "harness": "local, g16s",
-      "identityResidualMs": 0.0,
-      "independentIntercept": "askeladd 57.83 ms, agrees to 0.8 %",
-      "law": "R = 57.384 + 7.002*rows + 28.605*(G-1)",
-      "pooledSdMs": 0.2238
-    },
-    "prefillGapCause": "Almost certainly NAX. The ranked M5 is GPU architecture generation 17 and the advisor M4 Pro is generation 16, so the ranked host can run _nax kernels that this host cannot.",
-    "rankedHostIdentity": {
-      "chip": "M5 Max",
-      "consequence": "590 GB/s is not self-evidently impossible there; FINDING 375 rests on the disproportion test instead",
-      "disproportionTest": "the second weight stream is 22.35 % of the local round; an equal ranked share would be 10.93 ms; the measured ranked effect is -0.20 ms",
-      "metalCacheKey": "mlx-metallib-m5-max-v2",
-      "runner": "m5-max-128gb-3"
-    },
-    "rankedToLocalSpeedups": {
-      "bandwidthSpec": 2.175,
-      "decodeRound": 2.947,
-      "prefill": 7.593
-    },
-    "rule": "RULE 192",
-    "statement": "k = (R_local / R_ranked) divided by the ranked-to-local speedup of the resource the arm saves."
+    "perRoundFixedTau": "UNKNOWN; the fda590bb / E171 receipt pair measures it directly",
+    "rule": "transfer coefficients now travel with their derivation or they do not travel",
+    "tauProbeWithdrawn": "The FINDING 406 probe tau = (composed/3.712098 - 1)/0.010322 is WITHDRAWN. Its anchor 3.712098 was a prediction, not a receipt, and the receipt landed at 3.667847. No ranked measurement of the LAW 377 transfer coefficient exists."
   },
   "twinWaiverRuling": {
     "conditions": [
@@ -1885,7 +1671,23 @@
     "delta_s_as_a_cost": "RULE 370, ledger 350.5. delta_s = +0.2881 +/- 0.0436 ms/round is an intercept at rows = 0, extrapolated 5.4 rows beyond the observed centroid over a span of [3.30, 7.15] rows. Price a per-round mechanism at delta_R evaluated at the rows the mechanism actually operates at: +0.079 ms/round at beagle (5.38 rows) and +0.091 ms/round at essays (6.09 rows). Never at delta_s.",
     "free_ranked_replicate": "WITHDRAWN by Edward E164 Q2, ledger 350.6. No receipt pair on the whole board shares a commit, so the \"free replicate\" I assumed does not exist. The cross-leg slope beta = 1.914 CI95 [-0.37, 4.14] spans zero.",
     "linear_depth_price_law": "REJECTED, RULE 191, ledger 341. R(D) is convex: a quadratic term enters at 27.99 sigma. Never read the zero-draft round off an OLS intercept - it lands below every measured point. Askeladd 43.6 ms = 330.8 GB/s and Edward OLS 50.97 ms = 282.9 GB/s are both above the 273 GB/s M4 Pro spec ceiling and are impossible. Use the MEASURED D=0 point, 65.81 ms = 219.1 GB/s. With it rho over the operating chord 0..7 is 1.387.",
-    "smallest_feasible_N": "WITHDRAWN by Edward E164 A2, ledger 350.6. drama (252 rounds, alpha 0.4491) and travel (213, 0.5301) are not at their smallest feasible N. What pins the ranked round counts is the acceptance-rate consistency check, not a minimal-N rule."
+    "smallest_feasible_N": "WITHDRAWN by Edward E164 A2, ledger 350.6. drama (252 rounds, alpha 0.4491) and travel (213, 0.5301) are not at their smallest feasible N. What pins the ranked round counts is the acceptance-rate consistency check, not a minimal-N rule.",
+    "linearRankedRoundModelAsPhysics": "T(M) = 16.1585 + 5.3350*M is impossible at M=1 (FINDING 407)",
+    "finding403Ladder": "superseded by the step-model break-even ladder (FINDING 407)",
+    "finding385DepthPriceIdentity": "assumed a linear marginal row (FINDING 407)",
+    "capEightPreRegistration": "p_7 > 0.93369 withdrawn (FINDING 407)",
+    "p7GreaterThan093369": {
+      "ledger": 361,
+      "was": "pre-registration that segmentedVerifyDepthCap 7 -> 8 pays if p_7 > 0.93369",
+      "why": "derived from the refuted linear ranked law; M = 9 is a third weight pass, so the lever is dead rather than marginal"
+    },
+    "breakEvenLadderFromB": {
+      "ledger": 361,
+      "was": "the eight-row break-even ladder and the q* table derived from A_fix + B*(1+d)",
+      "why": "B = 5.3350 is an interpolant slope, not a marginal row cost; the linear law predicts a depth-0 round 1.979 ms below the weight-stream floor and misses the measured 30.402 ms by 29 %"
+    },
+    "FINDING 406 tau probe": "Anchor 3.712098 was a prediction, not a receipt, and was wrong by 1.19 %. Actual 3.667847. Probe withdrawn.",
+    "E171 r0 premise": "revert + E165 reaches about 3.678 at any transfer coefficient; the crown at 3.729110 does not fall to it. Redirected to the instrumentation strip."
   },
   "withinReceiptEstimator": {
     "exposure": "Pge6(M) = 0 if M<=5, M-5 if 5<M<6, 1 if M>=6",
@@ -1916,5 +1718,529 @@
       }
     ],
     "rule": "RULE 372"
+  },
+  "marginalRowIsAWeightStream": {
+    "finding": 404,
+    "student": "qwen-alphonse",
+    "pr": 169,
+    "commit": "ab733b4e",
+    "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ak9rx812",
+    "localPassCostModel": "T(M) = 11.792 ms fixed + sum over groups of pass(NA); max residual 2.09 % over 8 routed widths",
+    "passMs": {
+      "NA2": 55.008,
+      "NA3": 53.841,
+      "NA4": 61.336,
+      "NA5": 71.758
+    },
+    "roofFractionOf273GBs": {
+      "NA2": 0.96,
+      "NA3": 0.981,
+      "NA4": 0.861,
+      "NA5": 0.736
+    },
+    "computeRoofFraction": "23-47 % of 7.506 TFLOP/s at every width",
+    "conclusion": "rate tracks NA not M; compute never binds; the stream always nearly binds",
+    "rowIsAStepFunction": {
+      "NA2to3": -1.167,
+      "NA3to4": 7.494,
+      "NA4to5": 10.422,
+      "groupCrossingMs": "53.8 to 71.8"
+    },
+    "mlpShareOfMarginalRow": 0.6408,
+    "mlpShareCorroboration": "bottom-up 63.6 %, static FLOP 66.20 %",
+    "residualIsUninterceptedNotUnattributed": "the fast path calls free routing functions, not callAsFunction; only the mlp arm has an interception point",
+    "bEstimatorsMsPerRow": [
+      7.002,
+      7.1883,
+      6.739
+    ],
+    "headCostInAnotB": "6.88 ms/round; census intercept 50.50 vs E163 57.384",
+    "closedSubHypotheses": {
+      "H1_GDN": "23.47 % over 48 layers vs full-attn 7.43 % over 16; recurrence 2.29 %",
+      "H2_readout": "lm_head 4.09 %, top-2 +0.07 %",
+      "H3_wastedRows": "8.63 %, confirms ADVISOR ERROR 224 that 20 % was wrong"
+    }
+  },
+  "crossRoundHeadChainPrefetch": {
+    "finding": 405,
+    "student": "qwen-thorfinn",
+    "pr": 165,
+    "commit": "471c0b175957e8b11f2618819ad7ce4287b883a4",
+    "wandb": [
+      "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/w6of7408",
+      "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/h98ly6un"
+    ],
+    "pooledEffectPct": -0.2872,
+    "twoSigmaPct": 0.1196,
+    "effectOverSigma": 4.8,
+    "usPerRound": -539.0,
+    "replicates": {
+      "rep1": {
+        "pct": -0.3486,
+        "twoSigma": 0.1644,
+        "usPerRound": -654.8
+      },
+      "rep2": {
+        "pct": -0.2256,
+        "twoSigma": 0.1736,
+        "usPerRound": -423.2
+      }
+    },
+    "legs": 16,
+    "gates": "one accept-ledger tuple (78, 496, 435); edl and accepted_draft_rate single-valued; 513/513 hexfloat rows exact in both replicates with a firing one-ulp positive control; all_tokens_matched true; residual_divergence_count 0; real 40 C gate on every leg; worker digest ed085186 before and after every leg; session commit 5a7e765d",
+    "serialNegativeControlPct": -0.0209,
+    "serialNegativeControlTwoSigmaPct": 0.1095,
+    "thermalBias": "off arm entered 0.59 C hotter, against the mechanism",
+    "idleRecoveredFraction": 0.58,
+    "idleWindowUsAtNaturalEdl": 925,
+    "nextTarget": "commit at 433.1 us, untouched, largest remaining term",
+    "advisorDecision": "MERGED over the student predeclared bar of -0.35 %",
+    "rule": "a student's predeclared bar governs the student's decision to keep spending, not the advisor's decision to compose"
+  },
+  "transferCoefficientInstrument": {
+    "finding": 406,
+    "design": "fda590bb is the revert ALONE; the E171 candidate is the revert PLUS E165 and nothing else. The pair is a matched ranked A/B of one mechanism on the official runner.",
+    "publishedGainFormula": "published gain = 1.0322 % * tau",
+    "derivation": "beagle 539.0*tau/44983 = 1.1982 %*tau of round x 0.9035 decode share = 1.0826 %*tau of leg; essays 539.0*tau/48932 = 1.1015 %*tau x 0.8951 = 0.9860 %*tau; published = 0.4781*1.0826 + 0.5219*0.9860",
+    "composedScore": "3.712098 * (1 + 0.010322 * tau)",
+    "table": {
+      "tau_0.34": 3.725128,
+      "tau_0.444": 3.72911,
+      "tau_0.50": 3.731259,
+      "tau_1.00": 3.750408
+    },
+    "preRegistered": "the composed candidate takes the crown if and only if tau > 0.444",
+    "inversion": "tau_measured = (composed published score / 3.712098 - 1) / 0.010322",
+    "sigmaTau": 0.371,
+    "separation": "separates tau = 0.34 from tau = 1.0 at about 1.8 sigma",
+    "readingA": "host-serial, tau near 1: the 539 us came out of measured hardware GPU idle; host CPU and protocol time do not accelerate with the GPU; on M5 the round is shorter so a fixed host cost is a LARGER share and less likely hidden",
+    "readingB": "overlapped, tau near 0: a = 16.1585 ms is almost exactly the 16.16 ms of the 23.47 ms weight pass not carried by the slope, leaving no room for exposed host cost",
+    "localAdjudicator": "one powermetrics residency leg with the mechanism ON vs the 925 us measured OFF at the same edl; E171 item 2",
+    "commitTermValueUnderReadingA": "433.1/539.0 * 1.0322 = 0.829 % published"
+  },
+  "splitKBitExactPrior": {
+    "status": "DROPPED",
+    "reason": "acc[r] is lane-private with a sequential ascending-block chain and one simd_sum after the loop, so any split reassociates FP addition; split-K is NOT bit-exact",
+    "source": "FINDING 404, Alphonse E169"
+  },
+  "rowsPerSimdMechanism": {
+    "assignedAs": "E170, qwen-alphonse, PR 170",
+    "anchor": "Qwen35.swift:1442 constexpr int rows_per_simd = 4, inside qwen_e120_qmv_wide at :1427",
+    "state": "VF acc[rows_per_simd] :1449, VF partial[rows_per_simd] :1483; ~60 vector floats/thread at NA=5",
+    "bitExactByConstruction": "per-row k chain unchanged, simd_sum width unchanged",
+    "localUpperBounds": {
+      "T4": -0.092,
+      "T5": -0.214,
+      "T7": -0.064,
+      "T8": -0.112
+    },
+    "note": "NA=5 is beagle modal width; shipped inputsPerGroup optimal at every reachable width, LAW 354 confirmed",
+    "gridHazard": "out_row = tid.y*8 + simd_gid*rows_per_simd has a hard-coded 8; needs a static_assert tying tile/simdgroup/rows_per_simd"
+  },
+  "rankedRoundIsAStepFunction": {
+    "finding": 407,
+    "status": "the single largest structural result of the campaign",
+    "refutation": "the linear model T(M) = 16.1585 + 5.3350*M gives T(1) = 21.494 ms, which is 1.979 ms BELOW the 23.473 ms physical weight-stream floor. A decode round must read every backbone weight once. The linear model is impossible, not imprecise.",
+    "plutarchDiscriminator": {
+      "observed": 30.522,
+      "linear": 22.326,
+      "linearErrPct": -26.85,
+      "step": 30.522,
+      "stepErrPct": 0.0,
+      "why": "plutarch runs 449/488 rounds non-drafting, so it is nearly a bare M=1 measurement"
+    },
+    "mechanism": "inputsPerGroup at Qwen35.swift:1567 is a STATIC candidate-side table, so groups(M) is host-independent. groups counts full passes over the 14.41235 GB backbone.",
+    "groupsByM": {
+      "2": 1,
+      "3": 1,
+      "4": 1,
+      "5": 1,
+      "6": 2,
+      "7": 2,
+      "8": 2,
+      "9": 3
+    },
+    "ipgByM": {
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 3,
+      "7": 4,
+      "8": 4,
+      "9": 3
+    },
+    "passMsM5": 23.473,
+    "stepModel": "cost(round) = 23.473*groups(M) + 0.96*edl + F,  F = 6.899 ms calibrated on plutarch",
+    "mixtureFit": {
+      "plutarch": {
+        "M": 1.156,
+        "obs": 30.522,
+        "fAtCap7": 0.0,
+        "shallowD": 0.156
+      },
+      "drama": {
+        "M": 3.297,
+        "obs": 34.241,
+        "fAtCap7": 0.071,
+        "shallowD": 1.938
+      },
+      "travel": {
+        "M": 3.648,
+        "obs": 35.109,
+        "fAtCap7": 0.093,
+        "shallowD": 2.199
+      },
+      "beagle": {
+        "M": 5.382,
+        "obs": 44.983,
+        "fAtCap7": 0.443,
+        "shallowD": 2.298
+      },
+      "republic": {
+        "M": 5.989,
+        "obs": 47.723,
+        "fAtCap7": 0.535,
+        "shallowD": 2.674
+      },
+      "essays": {
+        "M": 6.087,
+        "obs": 48.932,
+        "fAtCap7": 0.583,
+        "shallowD": 2.416
+      },
+      "medicine": {
+        "M": 6.255,
+        "obs": 49.35,
+        "fAtCap7": 0.594,
+        "shallowD": 2.706
+      },
+      "botany": {
+        "M": 7.148,
+        "obs": 54.474,
+        "fAtCap7": 0.775,
+        "shallowD": 3.207
+      }
+    },
+    "mixtureFitTest": "f monotone in mean M, every implied shallow depth <= 4 as the model requires; 16 derived quantities all inside the permitted region from ONE fitted constant",
+    "independentConfirmation": "Askeladd E159 local step M=5->M=6 measured 35.451 ms; Alphonse E169 pass(NA) predicts 2*53.841 - 71.758 = 35.924 ms; agreement 1.33 %",
+    "twoBasins": {
+      "depth4": {
+        "ms": 34.212,
+        "maxTokens": 5,
+        "msPerTokenBest": 6.842
+      },
+      "depth7": {
+        "ms": 60.565,
+        "maxTokens": 8,
+        "msPerTokenBest": 7.571
+      },
+      "deepBasinPenaltyAtPerfectAcceptancePct": 10.6,
+      "deepBasinPenaltyAt093AcceptancePct": 18.2
+    },
+    "conclusion": "the optimal draft depth is 4, for every prompt, at every acceptance rate",
+    "disposesOf": "FINDING 393: the controller has no acceptance signal and does not need one, because the optimal policy is a constant. FINDING 386 two-state behaviour is not adaptation, it is waste: 44-78 % of rounds on the weighted prompts buy a second 23.5 ms weight pass that can never repay itself.",
+    "sensitivity": "the 10.6 % margin assumes M5 runs NA=5 near roof. Transferring the g16s NA curve (73.6 % of roof at NA=5, 98.1 % at NA=3) makes the basins tie at perfect acceptance, but depth 4 still wins by 9.5 % at 0.93 acceptance. Ranked per-prompt data prefers roof efficiency: the g16s curve over-predicts beagle.",
+    "modelledPublishedGainPct": 6.42,
+    "perPromptModelledPct": {
+      "beagle": -6.84,
+      "botany": -11.64,
+      "medicine": -7.41,
+      "essays": -6.49,
+      "republic": -6.04,
+      "travel": -20.01,
+      "drama": -26.7,
+      "plutarch": 0.0
+    },
+    "alreadyMeasuredLocally": "Askeladd E159: shipped adaptive 21.037 ms/token vs fixed M=5 19.530, -7.16 % harness=local. A depth-schedule change is confined to the candidate MTP leg so program.md makes the local ratio direct evidence.",
+    "knob": "MLX_E159_FIXED_DRAFT_DEPTH at Qwen36MTPBlockSession.swift:200-202; ship literal is segmentedVerifyDepthCap at :1060",
+    "assignedTo": "qwen-askeladd, PR 168, F5",
+    "falsificationTest": "a smooth curve through fixed depths 3, 4, 5 falsifies the step model; the model demands a sharp minimum at 4",
+    "sourceVerification": {
+      "activeInputGroups": "Qwen35.swift:1709-1728, return (m + inputsPerGroup - 1) / inputsPerGroup",
+      "launchSites": "Qwen35.swift:1834 and :1883, grid: (activeInputGroups(cell.m) * 32, (cell.n/8)*2, 1)",
+      "kernelBody": "tid.y indexes output rows, tid.x indexes input groups; first_m = group_x * IPG at :1543",
+      "therefore": "G groups perform G complete reads of the weight matrix; a dispatch geometry, not a cache effect",
+      "routableGate": "Qwen35CustomQMV.routable :1770-1794 needs bits==4, groupSize==64, affine, bf16, k%512==0, n%8==0, n>=4096",
+      "routed": "q_proj 6144, o_proj 5120, gate_proj 17408, up_proj 17408, down_proj 5120, lm_head 248320",
+      "notRouted": "k_proj 1024, v_proj 1024; about 84 MB of 14.41235 GB, roughly 0.6 %",
+      "coverage": "better than 99 % of backbone bytes are subject to groups(M)",
+      "M1": "widths = 2...9 at :1704, so M=1 stays on MLX and makes one pass, as the plutarch calibration assumes"
+    }
+  },
+  "breakEvenLadderStepModel": {
+    "harness": "ranked",
+    "basis": "FINDING 407 step model at roof",
+    "q_star": {
+      "row1": 0.0316,
+      "row2": 0.0591,
+      "row3": 0.0831,
+      "row4": 0.1039,
+      "row5": "IMPOSSIBLE 3.10",
+      "row6": 0.0826,
+      "row7": 0.0916
+    },
+    "reading": "rows 1-4 share one weight pass at 0.96 ms each and break even at 3-11 % acceptance; row 5 buys a second full backbone pass and needs acceptance above 1",
+    "supersedes": "FINDING 403 q*(d) ladder, which assumed a linear marginal row"
+  },
+  "stepLawConfirmed": {
+    "ledger": 361,
+    "claim": "the ranked round is a step function in M; the linear interpolant is refuted by measurement",
+    "measuredRankedDepth0RoundMs": 30.402,
+    "stepLawPredictionMs": 30.372,
+    "linearLawPredictionMs": 21.494,
+    "modelFreeUpperBoundMs": 30.781,
+    "modelFreeBoundSource": "plutarch mean round; 449/488 rounds do not draft; a drafting round cannot cost less than a depth-0 round",
+    "weightStreamFloorMs": 23.473,
+    "weightStreamGB": 14.41235,
+    "groupsTable": {
+      "2": 1,
+      "3": 1,
+      "4": 1,
+      "5": 1,
+      "6": 2,
+      "7": 2,
+      "8": 2,
+      "9": 3
+    },
+    "sourceAnchors": [
+      "Qwen35.swift:1709-1728 activeInputGroups",
+      "Qwen35.swift:1834 and :1883 launch grid",
+      "Qwen35.swift:1543 first_m = group_x*IPG",
+      "Qwen35.swift:1770-1794 routable n >= 4096"
+    ],
+    "bIsNotARowCost": "B = 5.3350 is a regression slope of an interpolant over M in 3..8; never price a saving by multiplying rows by B",
+    "directMeasurementAskeladd": "Round-cost table recovered from per-round block_request_seconds paired with effective_draft_lengths in 04-mtp-timed.json, eight untimed ABBA legs, g16s host. median ms by M: 2=69.27, 3=70.71, 4=77.65, 5=90.83, 6=125.79, 7=136.28, 8=145.44. M=5->6 increment 34.97 ms is 2.65x any other, then increments FALL BACK to 10.48 and 9.17. Doubling identities recover the fixed term as 16.58 and 10.81 ms.",
+    "withinGroupCostIsNotFlat": "g16s draft increments 2->3, 3->4, 4->5 are 1.43, 6.94, 13.18 ms, so the one-pass optimum is prompt-dependent: 2, 3 or 4, never >=5. Steepness does not transfer to M5 (FINDING 410).",
+    "shipSurfaceDecision": "Ship min(adaptive, 4) as a literal CAP on segmentedVerifyDepthCap and the costModelDepth entry point. Do NOT pin, and do NOT ship MLX_E159_FIXED_DRAFT_DEPTH.",
+    "rankedMeanWidth": "M = 1 + edl: plutarch 1.156, drama 3.298, travel 3.648, beagle 5.382, republic 5.989, essays 6.087, medicine 6.256, botany 7.148. Five of eight above the boundary, including both median-pair prompts (beagle, essays). The ranked pool behaves like Askeladd's longcopy fixture (multi-pass 87.2 %), not his english fixture (0.0 %).",
+    "thorfinnLocalHistogram": "512-token local fixture, 77 rounds: d histogram {2:1,3:2,4:6,5:5,6:7,7:56}; M>=6 88.31 %, M>=7 81.82 %, M=8 72.73 %. Independent host, independent fixture."
+  },
+  "depthFourLever": {
+    "ledger": 361,
+    "finding": 408,
+    "mechanism": "a fixed draft depth of 4 pins M = 5 in every drafting round, and groups(5) = 1, so every drafting round performs exactly one read of the weight matrix",
+    "publishedRoof": 4.3058,
+    "publishedWorstFeasible": 4.1637,
+    "vsCrownPercent": [
+      11.7,
+      15.5
+    ],
+    "crown": 3.7291100105909,
+    "roundIdentity": "round(depth 4) = 30.402 + 4h ms, invariant to how the measured depth-0 round splits between pass and F",
+    "softParameter": "h, the head step per draft; 0.96 ms from FINDING 399 on a local host; never measured on the ranked path",
+    "failingCell": "h = 2.50 ms/draft gives published 3.716, below the crown; that is 2.6x the measured head step",
+    "acceptanceBreakEven": "depth 4 ties the crown only if per-position acceptance drops to 81-85 % of today; shallower offers accept better, so the wrong direction",
+    "localConfirmation": "E159 fixed-depth ms/token 35.205, 24.723, 20.510, 19.530, 23.831, 22.271, 20.899 at depths 1..7 vs adaptive 21.037; minimum at 4, worst interior point at 5 = M 6 = first group crossing",
+    "owner": "qwen-askeladd, PR 168",
+    "shipSurface": "segmentedVerifyDepthCap Qwen36MTPBlockSession.swift:1060 and the costModelDepth entry point; ship the literal, not MLX_E159_FIXED_DRAFT_DEPTH"
+  },
+  "cheapPromptsAreFree": {
+    "ledger": 361,
+    "finding": 409,
+    "claim": "plutarch, drama and travel cannot rise into the median pair, so their regression under any depth policy is free",
+    "rawsAt180db842": {
+      "plutarch": 1.2612,
+      "drama": 2.1242,
+      "travel": 2.4233,
+      "beagle": 3.5634,
+      "essays": 3.8459,
+      "medicine": 3.8963,
+      "republic": 3.9086,
+      "botany": 3.9182
+    },
+    "plutarchWorstCase": "all four drafts always rejected: 34.2 ms per token vs about 30.4 today, raw 1.26 -> about 1.16, published unchanged",
+    "corollary": "if the optimal depth is constant, a signal predicting the optimal depth is worth nothing; FINDING 393 disposed of, FINDING 386 reframed as waste"
+  },
+  "widthEfficiencyDoesNotTransfer": {
+    "ledger": 361,
+    "finding": 410,
+    "g16sPassEfficiency": {
+      "NA2": 0.96,
+      "NA3": 0.981,
+      "NA4": 0.861,
+      "NA5": 0.736
+    },
+    "refutation": "under the full g16s curve six of eight ranked prompts require a mean pass cost below the lower convex envelope of the cost curve at their own measured mean width; no depth distribution can produce that",
+    "botanyInfeasibleEvenAtZeroHead": true,
+    "maxPermittedNA5DeficitOnM5": {
+      "h0.50": 0.154,
+      "h0.96": 0.053,
+      "h1.50": 0.0,
+      "g16s": 0.264
+    },
+    "consequenceForE170": "the T(5) -21.4 % local upper bound is not a ranked prize; honest ranked value conditional on depth 4 is about 3 % published at h = 0.96 and about 11 % at h = 0.50",
+    "e170Redirect": "decide whether the deficit is source-fixed or hardware-fixed by register accounting and the occupancy threshold, at the cost of no timed legs",
+    "rule195Status": "holding; second local width result that failed to transfer while a source-fixed structure transferred exactly"
+  },
+  "fIsTheLastUnattackedTerm": {
+    "ledger": 361,
+    "depthFourRoundShares": {
+      "passMs": 23.47,
+      "passPct": 68.6,
+      "headMs": 3.84,
+      "headPct": 11.2,
+      "fMs": 6.9,
+      "fPct": 20.2
+    },
+    "accountedFor": "FINDING 363 host inventory covers about 1.1 ms of F",
+    "remainder": "real non-routed GPU work: k_proj and v_proj at width 1024 fall below the n >= 4096 routing gate, plus norms, GDN recurrent state, KV cache traffic and the small matmuls",
+    "whyItMatters": "F does not depend on M, so it survives every depth and width decision",
+    "queuedTo": "qwen-alphonse, after the E170 transfer verdict"
+  },
+  "prefillExplainsTheWholeLegRegression": {
+    "ledger": 361,
+    "source": "Edward, research/e167_receipt_report.py, validated against 180db842 to the published digit",
+    "meanResidualPP": -0.0128,
+    "sdResidualPP": 0.1052,
+    "zeroAtSigma": 0.12,
+    "claim": "no candidate-leg regression remains on 180db842 once prefill is accounted for; the entire loss against 5a9f130a is the pipelined qmm_nax",
+    "supersedes": "FINDING 389 as previously recorded",
+    "prefillIsABuildConstant": "1.0493 to 1.0506 ms/token across eight prompts, spread 0.13 %; the cheapest ranked A/B probe the campaign owns"
+  },
+  "perPromptReceiptTable180db842": {
+    "ledger": 361,
+    "officialScore": 3.70465399491642,
+    "medianPair": [
+      "beagle",
+      "essays"
+    ],
+    "columns": [
+      "raw",
+      "serial_s_per_tok",
+      "mtp_s_per_tok",
+      "edl_offered_depth",
+      "alpha",
+      "nodraft_rounds"
+    ],
+    "rows": {
+      "plutarch": [
+        1.2612,
+        0.0379924,
+        0.0301243,
+        0.1557,
+        0.3158,
+        449
+      ],
+      "drama": [
+        2.1242,
+        0.0379682,
+        0.0178742,
+        2.2976,
+        0.4491,
+        0
+      ],
+      "travel": [
+        2.4233,
+        0.0379964,
+        0.0156798,
+        2.6479,
+        0.5301,
+        0
+      ],
+      "beagle": [
+        3.5634,
+        0.0381484,
+        0.0107056,
+        4.3818,
+        0.834,
+        0
+      ],
+      "essays": [
+        3.8459,
+        0.0378613,
+        0.0098446,
+        5.087,
+        0.8974,
+        0
+      ],
+      "medicine": [
+        3.8963,
+        0.0379159,
+        0.0097312,
+        5.2556,
+        0.8922,
+        0
+      ],
+      "republic": [
+        3.9086,
+        0.0380346,
+        0.0097309,
+        4.9892,
+        0.903,
+        0
+      ],
+      "botany": [
+        3.9182,
+        0.0378928,
+        0.009671,
+        6.1481,
+        0.8655,
+        0
+      ]
+    }
+  },
+  "rule196": {
+    "ledger": 361,
+    "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
+  },
+  "submissionQueue": {
+    "ledger": 361,
+    "inFlight": {
+      "id": "fda590bb-e1c7-4b2b-b65b-1de67aa15e52",
+      "content": "revert alone",
+      "status": "validating",
+      "predicted": 3.712098,
+      "owner": "qwen-edward"
+    },
+    "frozenNext": {
+      "name": "E171",
+      "content": "revert + E165",
+      "owner": "qwen-thorfinn",
+      "formula": "3.712098*(1+0.010322*tau)",
+      "crownIff": "tau > 0.444"
+    },
+    "priority": {
+      "name": "depth-4",
+      "owner": "qwen-askeladd",
+      "modelled": [
+        4.1637,
+        4.3058
+      ],
+      "note": "jumps the queue ahead of E171 if the gated 512-token ABBA confirms at better than 3 %"
+    }
+  },
+  "lastAdvisorUpdate": "2026-08-24T06:35Z",
+  "ledgerEntry": 362,
+  "threeReceiptFactorial": {
+    "A": {
+      "id": "5a9f130a",
+      "commit": "8ba6e73837f525553cc99a5b71ec1a5e479ca7b0",
+      "score": 3.707845194,
+      "tree": "organizer main byte for byte"
+    },
+    "B": {
+      "id": "180db842",
+      "commit": "b566c594da5a32a4d23f7ff955644950509a1eca",
+      "score": 3.704653995,
+      "tree": "campaign kernels + instrumentation, no E165"
+    },
+    "C": {
+      "id": "fda590bb",
+      "commit": "080d4cd318c273c5dd34d8ad4429d86096e19258",
+      "score": 3.667847308,
+      "tree": "organizer kernels + instrumentation, no E165"
+    },
+    "contrastAminusC": "instrumentation only; 108 insertions, 10 deletions, two files; ledger identical 0/8",
+    "contrastBminusC": "campaign quantized kernels only"
+  },
+  "findings": {
+    "412": "fda590bb revert bought prefill (+2.1262 %) and sold decode (-0.8359 %); full leg -0.5755 %; runner serial drifted +0.2889 %. Edward prediction 1 (prefill 1.0294 +- 0.0021) HELD at 1.0276. Ledger 0/8 moved, parity_ok all true.",
+    "413": "INSTRUMENTATION TAX. Campaign research instrumentation, inert by source inspection, costs +1.0929 % of the candidate decode leg (sd 0.5564, se 0.197, 5.5 sigma) after removing a 0.2414 % common mode measured by two independent identical-work probes (candidate prefill -0.2315 %, runner serial -0.2513 %). Internal control: plutarch, 92 % non-drafting, +0.131 %; seven drafting prompts +1.230 %. MECHANISM UNIDENTIFIED. n=1 receipt pair.",
+    "414": "Receipt-to-receipt drift is about 0.24 %, roughly twice Askeladd FINDING A's 0.125 % serial sd. No duplicate submissionCommitSha exists in 834 scored board rows, so no within-tree replicate is available. Widen every error bar that used 0.125 %.",
+    "415": "Askeladd measured the round-cost step law directly from per-round block_request_seconds paired with effective_draft_lengths in 04-mtp-timed.json (untimed legs, admissible). M=5->6 increment 34.97 ms is 2.65x any other and increments then FALL BACK to 10.48 and 9.17; a convex smooth curve cannot fall after rising. Doubling identities recover the fixed term as 16.58 and 10.81 ms with no free parameter. Within-group cost is NOT flat on g16s (1.43, 6.94, 13.18 ms for drafts 2..5), so the one-pass optimum is prompt-dependent and is 2, 3 or 4, never >=5. SHIP min(adaptive,4) AS A CAP, NOT A PIN. Steepness does not transfer: FINDING 410. Ranked mean M=1+edl: plutarch 1.156, drama 3.298, travel 3.648, beagle 5.382, republic 5.989, essays 6.087, medicine 6.256, botany 7.148 -- five of eight above the boundary, including both median-pair prompts."
+  },
+  "rules": {
+    "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions."
   }
 }

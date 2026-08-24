@@ -123,11 +123,32 @@ Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | absent | qmv_fast_cro
 # PRESERVED is unmeasured as of ledger 175. If an experiment establishes that
 # reassociation here is safe, retire these two rows WITH the receipt. Until
 # then, red is the correct colour for this edit.
+#
+# NEEDLE CORRECTION, ledger 361. The two rows below read `xm[0] + xm[1] + ...`
+# until ledger 361. That needle never matched any tree the organizer published:
+# the four-term sum is written over the loaded vector `xv`, not over the device
+# pointer `xm`. The rows were therefore RED on every campaign base, including
+# `c07e8cda`, and RED on organizer `upstream/main` itself. This was a defective
+# guard, not a defective tree. Do not read the earlier red as evidence that a
+# revert or an overlay removed a carried change; nothing was ever removed.
+#
+# The corrected pair below guards both arms of the current cell, which is
+# strictly stronger than the single row it replaces:
+#   DIRECT_NIBBLES arm -> the BF16 four-term tree over `xv`, unchanged intent.
+#   else arm           -> `load_vector<T, float, 4, 4>(xm, xc)`, which is the
+#                         SAME helper the serial leg calls. Guarding the call
+#                         makes the mirroring structural instead of textual, so
+#                         the two legs cannot drift apart by an edit to one
+#                         copy of a duplicated expression.
 # ---------------------------------------------------------------------------
 
-Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | present | sums\[m\] \+= xm\[0\] \+ xm\[1\] \+ xm\[2\] \+ xm\[3\]; | The BF16 affine-bias expression tree in the wide cross-row cell. Must stay BF16 and must stay in this association, because it mirrors `load_vector`'s bits==4 branch on the serial leg exactly and that mirroring is what makes the MTP and serial legs bit-identical on affine-4. Promoting it to the already-materialised `xc[0..3]` floats is fewer instructions and more accurate and is exactly the edit that must not happen silently. See ledger 175(A).
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | present | sums\[m\] \+= xv\[0\] \+ xv\[1\] \+ xv\[2\] \+ xv\[3\]; | The BF16 affine-bias expression tree in the DIRECT_NIBBLES arm of the wide cross-row cell. Must stay BF16 and must stay in this association, because it mirrors `load_vector`'s bits==4 branch on the serial leg exactly and that mirroring is what makes the MTP and serial legs bit-identical on affine-4. Promoting it to the already-materialised `xc[0..3]` floats is fewer instructions and more accurate and is exactly the edit that must not happen silently. See ledger 175(A) and ledger 361.
 
-Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | sums\[m\] \+= xm\[0\] \+ xm\[1\] \+ xm\[2\] \+ xm\[3\]; | Twin of the quantized.h entry above; this is the copy that is actually compiled into the metallib. Same receipts.
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | sums\[m\] \+= xv\[0\] \+ xv\[1\] \+ xv\[2\] \+ xv\[3\]; | Twin of the quantized.h entry above; this is the copy that is actually compiled into the metallib. Same receipts.
+
+Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | present | sums\[m\] \+= load_vector<T, float, 4, 4>\(xm, xc\); | The non-DIRECT_NIBBLES arm of the same cell. It reaches bit-exactness with the serial leg by CALLING `load_vector`, not by copying its expression tree. Replacing this call with an inlined sum would recreate the ledger 175(A) trap from the other side. Added at ledger 361.
+
+Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp | present | sums\[m\] \+= load_vector<T, float, 4, 4>\(xm, xc\); | Twin of the quantized.h entry above. Same receipts.
 
 Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h | present | sum \+= x\[i\] \+ x\[i \+ 1\] \+ x\[i \+ 2\] \+ x\[i \+ 3\]; | The OTHER half of the same identity: `load_vector`'s BF16 four-term tree, which is what the wide cell is mirroring. Guarding only the wide cell would let someone "fix" the serial leg instead and break the pair from the far side. Six occurrences across the bits==2 and bits==4 branches of `load_vector` and `load_vector_safe`; this is an existence check, so it cannot tell you which one changed -- `research/twin_audit.py` and the diff do that.
 
