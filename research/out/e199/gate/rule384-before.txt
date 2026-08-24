@@ -3,9 +3,53 @@
 [0/1] Planning build
 Building for production...
 [0/2] Write swift-version--58304C5D6DBC2206.txt
-[1/3] Write sources
-[3/4] Compiling MLXFastModel DenseTensorStore.swift
-[4/6] Compiling MLXFastRuntimeWorkerSupport BenchmarkSupport.swift
+[1/4] Write sources
+[4/5] Compiling MLXLLM DFlashTarget.swift
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/DeepseekV4.swift:758:27: warning: immutable value 'D' was never used; consider replacing with '_' or removing it [#no-usage]
+ 756 | 
+ 757 |     func callAsFunction(_ x: MLXArray, poolCache: PoolingCache?, offset: Int) -> MLXArray {
+ 758 |         let B = x.dim(0), D = x.dim(2)
+     |                           `- warning: immutable value 'D' was never used; consider replacing with '_' or removing it [#no-usage]
+ 759 |         let kv = wkv(x)    // [B, S, out_dim]
+ 760 |         let gate = wgate(x) // [B, S, out_dim]
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/DeepseekV4.swift:1401:9: warning: switch must be exhaustive
+1399 |         // Local scores: [B, H, L, localLen]
+1400 |         let localScores: MLXArray
+1401 |         switch localMask {
+     |         |- warning: switch must be exhaustive
+     |         `- note: add missing case: '.arrays(_)'
+1402 |         case .none, .causal:
+1403 |             localScores = qScaled.matmul(localKV.transposed(0, 1, 3, 2))
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/DeepseekV4.swift:1513:13: warning: variable 'h' was never mutated; consider changing to 'let' constant
+1511 |         }
+1512 | 
+1513 |         var h = hcPost(x: attnOut, residual: residual, post: postAttn, comb: combAttn)
+     |             `- warning: variable 'h' was never mutated; consider changing to 'let' constant
+1514 | 
+1515 |         // FFN sub-block
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift:2089:19: warning: 'strides' is deprecated: Do not use -- see asData(access:) [#DeprecatedDeclaration]
+2087 |     /// `row * rowStride + col` indexing reads the buffer as it stands.
+2088 |     public static func rowContiguous(_ a: MLXArray, rowStride: Int) -> Bool {
+2089 |         let s = a.strides
+     |                   `- warning: 'strides' is deprecated: Do not use -- see asData(access:) [#DeprecatedDeclaration]
+2090 |         return s.count >= 2 && s[s.count - 1] == 1 && s[s.count - 2] == rowStride
+2091 |     }
+
+/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35MTP.swift:156:25: warning: 'strides' is deprecated: Do not use -- see asData(access:) [#DeprecatedDeclaration]
+154 |            nextTokenIds.dtype == .int32,
+155 |            nextTokenIds.ndim == 2, nextTokenIds.dim(0) == 1,
+156 |            nextTokenIds.strides.last == 1,
+    |                         `- warning: 'strides' is deprecated: Do not use -- see asData(access:) [#DeprecatedDeclaration]
+157 |            nextTokenIds.dim(1) * hidden.dim(-1) == hidden.size,
+158 |            preFcNormEmbedding.eps == preFcNormHidden.eps
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[5/6] Compiling MLXSpeculative DFlashBatchedEngine.swift
+[6/7] Compiling MLXFastModel DenseTensorStore.swift
+[7/9] Compiling MLXFastRuntimeWorkerSupport BenchmarkSupport.swift
 /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-thorfinn/workspace/target/Sources/MLXFastHarness/QwenRuntimeDFlashWorker.swift:607:5: warning: 'nonisolated(unsafe)' is unnecessary for a constant with 'Sendable' type 'ExperimentalDFlashAsyncResultBox<T>', consider removing it
 605 |     let box = ExperimentalDFlashAsyncResultBox<T>()
 606 |     nonisolated(unsafe) let unsafeOperation = operation
@@ -71,45 +115,19 @@ macro expansion #adaptHuggingFaceTokenizer:8:9: warning: 'nonisolated(unsafe)' i
     +-------------------------------------------------------------------
 159 |                 )
 160 |             }
-[5/7] Compiling MLXFastRuntimeWorkerCLI main.swift
-[5/7] Write Objects.LinkFileList
-[6/7] Linking mlxfast-runtime-worker
-Build of product 'mlxfast-runtime-worker' complete! (31.68s)
+[8/10] Compiling MLXFastRuntimeWorkerCLI main.swift
+[8/10] Write Objects.LinkFileList
+[9/10] Linking mlxfast-runtime-worker
+Build of product 'mlxfast-runtime-worker' complete! (55.24s)
 == building CLI (content-addressed no-op for kernel edits) ==
-[0/3] Write swift-version--58304C5D6DBC2206.txt
-[2/4] Compiling ArgumentParserToolInfo ToolInfo.swift
-[3/5] Compiling ArgumentParser BashCompletionsGenerator.swift
-[4/6] Compiling encuda encuda-compile.swift
-[4/6] Write Objects.LinkFileList
-[5/6] Linking encuda-tool
+[0/2] Write swift-version--58304C5D6DBC2206.txt
 [0/1] Planning build
 Building for production...
-[0/3] Write swift-version--58304C5D6DBC2206.txt
-[2/10] Compiling _NIOBase64 Base64.swift
-[3/10] Compiling Crypto AES-GCM.swift
-[4/10] Compiling _NIODataStructures Heap.swift
-[5/10] Compiling InternalCollectionsUtilities Debugging.swift
-[6/10] Compiling NIOConcurrencyHelpers NIOAtomic.swift
-[7/12] Compiling ContainersPreview OutputSpan+Extras.swift
-[8/13] Compiling Atomics OptionalRawRepresentable.swift
-[9/13] Compiling DequeModule Deque+Codable.swift
-[10/14] Compiling OrderedCollections _HashTable+Bucket.swift
-[11/15] Compiling MLXFastCore AcceptanceBand.swift
-[12/16] Compiling NIOCore AddressedEnvelope.swift
-[13/17] Compiling MLXFastTransform AffineMetadataCoding.swift
-[14/17] Compiling EventSource AsyncEventsSequence.swift
-[15/18] Compiling Jinja AST.swift
-[16/18] Compiling HuggingFace AccessRequest.swift
-[17/19] Compiling Hub BinaryDistinct.swift
-[18/20] Compiling Tokenizers BPETokenizer.swift
-[19/21] Compiling MLXFastHarness BenchmarkSupport.swift
-[20/22] Compiling MLXFastCLI main.swift
-[20/22] Write Objects.LinkFileList
-[21/22] Linking mlxfast-swift
-Build of product 'mlxfast-swift' complete! (52.65s)
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+Build of product 'mlxfast-swift' complete! (9.91s)
 worker      .build-worker/release/mlxfast-runtime-worker
-worker_mtime 2026-08-24T19:09:02Z
-worker_sha256 2a85c32697a69057bc33d41cde1df84aeea85c2227a23ded82ad4d0773aeb51e
+worker_mtime 2026-08-24T23:34:29Z
+worker_sha256 9caac1c7c704fb57afadf2ad98a1c9fe8e8474137820242059802b7b4ee20209
 ok   require-symbol 'snapshotScheduleSignal': 2
-ok   extraction: 576674 symbols
+ok   extraction: 576738 symbols
 rebuild-and-assert-worker: PASS
