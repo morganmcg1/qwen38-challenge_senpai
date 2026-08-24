@@ -153,6 +153,14 @@ struct E163QMVIsolatedTimingTests {
                 let ipg = try #require(
                     plan[m],
                     Comment(rawValue: "the live plan has no entry for width \(m)"))
+                // Affine 4-bit group-64: packed nibbles, plus one bf16 scale
+                // and one bf16 bias per group of 64 input elements.
+                let packedBytes = shape.n * shape.k / 2
+                let metaBytes = 2 * shape.n * (shape.k / 64) * 2
+                let activationBytes = m * shape.k * 2
+                let outputBytes = m * shape.n * 2
+                let bytesPerCall =
+                    packedBytes + metaBytes + activationBytes + outputBytes
                 cells.append([
                     "shape": shape.name,
                     "k": shape.k,
@@ -162,6 +170,11 @@ struct E163QMVIsolatedTimingTests {
                     "inputs_per_group": ipg,
                     "accumulator_lanes_na": ipg,
                     "active_groups": (m + ipg - 1) / ipg,
+                    "weight_packed_bytes": packedBytes,
+                    "weight_scale_bias_bytes": metaBytes,
+                    "activation_bytes": activationBytes,
+                    "output_bytes": outputBytes,
+                    "bytes_per_call": bytesPerCall,
                     "per_call_us_min": sorted.first!,
                     "per_call_us_median": sorted[sorted.count / 2],
                     "per_call_us_max": sorted.last!,

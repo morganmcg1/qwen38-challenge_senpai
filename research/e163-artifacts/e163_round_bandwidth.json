@@ -1,0 +1,63 @@
+{
+  "compact_draft_rows": 98336,
+  "compact_draft_stream_bytes": 283207680,
+  "full_attn_kv_bytes_per_token": 65536,
+  "gdn_state_bytes": 150994944,
+  "harness": "local",
+  "head_stream_bytes": 849398784,
+  "measured_peak_gb_per_s": null,
+  "nominal_peak_gb_per_s": 273.0,
+  "official_or_ranked_score": false,
+  "rounds": [
+    {
+      "achieved_gb_s": 205.07747275596086,
+      "arm": "shipped@d4",
+      "draft_share_bytes": 4530425856,
+      "drafts": 4,
+      "edl": 4.0,
+      "groups": 1,
+      "round_ms": 92.3946743119266,
+      "round_weight_bytes": 18948066304,
+      "target_share_bytes": 14417640448,
+      "verify_ms": 88.35309633027524,
+      "width": 5
+    },
+    {
+      "achieved_gb_s": 275.75133610025205,
+      "arm": "minna5@d4",
+      "draft_share_bytes": 4530425856,
+      "drafts": 4,
+      "edl": 4.0,
+      "groups": 2,
+      "round_ms": 120.99925688073395,
+      "round_weight_bytes": 33365706752,
+      "target_share_bytes": 28835280896,
+      "verify_ms": 116.55313302752293,
+      "width": 5
+    },
+    {
+      "achieved_gb_s": 270.298336276957,
+      "arm": "shipped@d5",
+      "draft_share_bytes": 5663032320,
+      "drafts": 5,
+      "edl": 4.989583333333333,
+      "groups": 2,
+      "round_ms": 127.63050520833335,
+      "round_weight_bytes": 34498313216,
+      "target_share_bytes": 28835280896,
+      "verify_ms": 122.40513020833333,
+      "width": 6
+    }
+  ],
+  "target_by_role_bytes": {
+    "embed_gather": 715161600,
+    "layer_full_attn": 943734784,
+    "layer_gdn": 3131495424,
+    "layer_mlp": 9625927680,
+    "layer_norm_misc": 1310720,
+    "top_level": 10240,
+    "vocab_readout": 715161600
+  },
+  "target_stream_bytes": 14417640448,
+  "target_total_bytes": 15132802048
+}
