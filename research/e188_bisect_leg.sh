@@ -30,9 +30,16 @@ tokens="${3:?usage: e188_bisect_leg.sh REV TAG TOKENS}"
 
 FILE="Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
 
+# `git checkout REV -- FILE` writes the historical blob to the index as well as
+# the worktree, so the restore must name HEAD as the source for both. A plain
+# `git checkout -- FILE` only refills the worktree from the index and would
+# leave the scored file staged.
 restore() {
-  git checkout -- "${FILE}" 2>/dev/null
+  git restore --source=HEAD --staged --worktree -- "${FILE}"
   echo "e188_bisect_leg: restored ${FILE} to HEAD content"
+  if [[ "$(git rev-parse ":${FILE}")" != "$(git rev-parse "HEAD:${FILE}")" ]]; then
+    echo "e188_bisect_leg: FATAL restore failed, ${FILE} still differs from HEAD" >&2
+  fi
   git status --short -- "${FILE}"
 }
 trap restore EXIT
