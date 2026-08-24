@@ -63,6 +63,11 @@ def main() -> int:
         "session_order": "base cap cap base",
         "cool_gate_passed_real_gate": True,
         "gate_qualified_for_timing": True,
+        # `gpu_temp_entry` is sampled by the stager BEFORE the benchmark runs
+        # its own 40 C gate, so a 56 C entry is a pre-gate reading, not the
+        # temperature at which the timed phase started. Every phase in every
+        # leg still logged "GPU cool-down gate passed (<= 40C)".
+        "gpu_temp_entry_is_pre_gate": True,
         "trace_perturbs_timing": False,
         "official_score": False,
         "candidate_head": git("rev-parse", "HEAD"),
@@ -102,6 +107,22 @@ def main() -> int:
             leg["public_drift_tripwire_passed"], leg["gpu_temp_entry"],
             leg["gpu_temp_exit"], leg["worker_digest_stable"],
             json.dumps(leg["histogram"]),
+        )
+        run.log(
+            {
+                "leg/ms_per_token": leg["mtp_seconds_per_token"] * 1000.0,
+                "leg/serial_ms_per_token": leg["serial_seconds_per_token"]
+                * 1000.0,
+                "leg/mtp_decode_speedup": leg["mtp_decode_speedup"],
+                "leg/mean_m": leg["mean_m"],
+                "leg/multi_pass_fraction": leg["multi_pass_fraction"],
+                "leg/accepted_draft_rate": leg["accepted_draft_rate"],
+                "leg/rounds": leg["rounds"],
+                "leg/gpu_temp_entry_pre_gate": leg["gpu_temp_entry"],
+                "leg/gpu_temp_exit": leg["gpu_temp_exit"],
+                "leg/is_cap_arm": 1 if leg["arm"] == "cap" else 0,
+            },
+            step=leg["leg"],
         )
 
     arm_columns = [
