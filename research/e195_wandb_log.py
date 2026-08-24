@@ -47,7 +47,7 @@ def git(*args: str) -> str:
 
 def read_legs(root: pathlib.Path) -> list[dict]:
     legs = []
-    for meta_path in sorted(root.glob("*/leg*/meta.txt")):
+    for meta_path in sorted(root.glob("**/leg*/meta.txt")):
         meta = dict(
             line.split("=", 1)
             for line in meta_path.read_text().splitlines()
@@ -87,6 +87,7 @@ def read_legs(root: pathlib.Path) -> list[dict]:
         body = drafting[1:] if len(drafting) > 2 else drafting
         legs.append(
             {
+                "session": meta_path.parent.parent.parent.name,
                 "leg": int(meta["e195_leg"]),
                 "arm": meta["e195_arm"],
                 "plan": meta["width_plan"],
@@ -113,7 +114,7 @@ def read_legs(root: pathlib.Path) -> list[dict]:
                 "head_sha": meta["head_sha"],
             }
         )
-    return sorted(legs, key=lambda leg: leg["leg"])
+    return sorted(legs, key=lambda leg: (leg["session"], leg["leg"]))
 
 
 def main() -> int:
@@ -231,7 +232,8 @@ def main() -> int:
 
     leg_table = wandb.Table(
         columns=[
-            "leg", "arm", "plan", "traced_plan", "qmv_single_pass_dispatches",
+            "session", "leg", "arm", "plan", "traced_plan",
+            "qmv_single_pass_dispatches",
             "m", "rounds", "round_ms_p50", "serial_round_ms_p50",
             "proposed_total", "accepted_total", "accepted_mean",
             "mtp_s_per_token", "serial_s_per_token", "local_ratio",
@@ -242,7 +244,8 @@ def main() -> int:
     )
     for leg in legs:
         leg_table.add_data(
-            leg["leg"], leg["arm"], leg["plan"], leg["traced_plan"],
+            leg["session"], leg["leg"], leg["arm"], leg["plan"],
+            leg["traced_plan"],
             leg["qmv_single_pass_dispatches"], leg["m"], leg["rounds"],
             leg["round_ms_p50"], leg["serial_round_ms_p50"],
             leg["proposed_total"], leg["accepted_total"],
