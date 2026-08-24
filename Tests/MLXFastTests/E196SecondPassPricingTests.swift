@@ -185,6 +185,16 @@ private enum E196Probe {
     static func queries(rows length: Int) -> MLXArray { rows(length, heads: heads) }
     static func newKV(rows length: Int) -> MLXArray { rows(length, heads: kvHeads) }
 
+    /// A KV window with cache-like strides: a padded buffer sliced on axis 2,
+    /// so `k_head_stride` is the CAPACITY stride exactly as a `KVCacheSimple`
+    /// slice presents it.
+    static func paddedWindow(keys count: Int, heads headCount: Int) -> MLXArray {
+        let capacity = ((count + 255) / 256) * 256
+        let buffer = rows(capacity, heads: headCount)
+        eval(buffer)
+        return buffer[0..., 0..., 0 ..< count, 0...]
+    }
+
     /// A `KVCacheSimple` holding `length` rows with headroom for the widest
     /// probe width, so no timed call pays a reallocation and every timed
     /// slice carries the production strides (`k_head_stride` is the CAPACITY
@@ -448,6 +458,9 @@ struct E196ChainSlopePricingTests {
         let widths = e196IntList("MLX_E196_M", [6, 7, 8, 9])
         let ladderChains = e196IntList("MLX_E196_CHAINS", [1, 2, 4, 8, 16])
         let armChains = e196IntList("MLX_E196_ARM_CHAINS", [1, 8])
+        let occupancyHeads = e196IntList("MLX_E196_OCC_HEADS", [6, 12, 24, 48])
+        let occupancyKeys = e196IntList("MLX_E196_OCC_KEYS", [517, 1029])
+        let occupancyRows = e196IntList("MLX_E196_OCC_ROWS", [1, 5])
 
         var temperatures: [String: Double] = [:]
         func recordTemperature(_ label: String) {
@@ -463,6 +476,8 @@ struct E196ChainSlopePricingTests {
             var m: Int  // 0 for the ladder
             var rows: Int
             var keys: Int
+            var heads: Int = E196Probe.heads
+            var kvHeads: Int = E196Probe.kvHeads
             var run: () -> Void
         }
 
@@ -600,6 +615,39 @@ struct E196ChainSlopePricingTests {
             }
         }
 
+        // Occupancy cells: the same `sdpa_vector` kernel at the scored GQA
+        // factor but with the query-head count scaled, which scales the
+        // threadgroup count without changing per-threadgroup work. Flat time
+        // means the dispatch is latency bound, so a fused kernel that loops
+        // rows inside one threadgroup can amortize the KV traversal. Time
+        // proportional to head count means the dispatch is bandwidth bound and
+        // only the per-call fixed cost is recoverable.
+        for headCount in occupancyHeads {
+            let kvHeadCount = headCount / E196Probe.gqa
+            for keyCount in occupancyKeys {
+                let keys = E196Probe.paddedWindow(keys: keyCount, heads: kvHeadCount)
+                let values = E196Probe.paddedWindow(keys: keyCount, heads: kvHeadCount)
+                for rowCount in occupancyRows {
+                    let pool = (0 ..< queryPoolSize).map { _ in
+                        E196Probe.rows(rowCount, heads: headCount)
+                    }
+                    eval(pool)
+                    for mode in [E196Mode.indep, .serial] {
+                        for chain in armChains {
+                            cells.append(
+                                Cell(
+                                    arm: "occupancy", mode: mode, chain: chain, kv: keyCount,
+                                    m: 0, rows: rowCount, keys: keyCount, heads: headCount,
+                                    kvHeads: kvHeadCount,
+                                    run: makeRunner(
+                                        mode: mode, chain: chain, queryPool: pool, keys: keys,
+                                        values: values)))
+                        }
+                    }
+                }
+            }
+        }
+
         // Bridge cells: the whole shipped `today` form and the m = 5
         // production control, one call per eval -- FINDING 497's instrument,
         // so this probe can be checked against the published step.
@@ -664,6 +712,7 @@ struct E196ChainSlopePricingTests {
                 samples.append([
                     "arm": cell.arm, "mode": cell.mode.rawValue, "chain": cell.chain,
                     "kv": cell.kv, "m": cell.m, "rows": cell.rows, "keys": cell.keys,
+                    "heads": cell.heads, "kv_heads": cell.kvHeads,
                     "block": block, "ascending": ascending, "position": position,
                     "microseconds": elapsed / 1e3 / Double(reps), "reps": reps,
                 ])
