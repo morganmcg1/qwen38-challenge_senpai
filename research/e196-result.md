@@ -313,6 +313,32 @@ register count per thread is a free static answer before any timing.
   `weighted[*].interpolated_cells` and `weighted[*].extrapolated_cells`.
 - No fidelity claim is made or needed: no token was generated.
 
+## Regression test run
+
+`swift test --force-resolved-versions` at branch head `957c4dad`:
+751 tests in 78 suites, 41 issues, exit code 1.
+
+Both new suites pass and skip their bodies, because the probe is opt-in:
+
+```text
+✔ Suite E196KernelIdentityCensusTests passed after 10.310 seconds.
+✔ Suite E196ChainSlopePricingTests passed after 10.310 seconds.
+➜ Test namesTheKernelsOfCallAAndCallB() skipped: set MLX_E196_CENSUS=1 ...
+➜ Test pricesTheSecondSdpaCall() skipped: set MLX_E196_TIMING=1 ...
+```
+
+The 41 issues sit in `QwenMTPTrackNamingTests`, `QwenMTPHeadDeclarationTests`,
+`QwenMTPScoringSemanticsTests`, `Qwen35ArtifactContractTests`,
+`RuntimeStartupMemoryPolicyTests`, `E130WiredResidencySlackTests`,
+`BenchmarkScriptTests`, and `SetupScriptTests`. They check pinned artifact
+digests, head declaration provenance, campaign document text, calibration
+provenance, and the startup memory profile. This branch changes no source
+file at all: `git diff a31e48e2..957c4dad --stat` lists only
+`Tests/MLXFastTests/E196SecondPassPricingTests.swift` and `research/`, and
+zero `editablePaths`. The failures are therefore pre-existing on the
+assignment base `a31e48e2` and are not caused by this experiment. I did not
+repair them, because they are outside the assigned question.
+
 ## W&B
 
 - Run of record: <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0xkga2ov>
