@@ -72144,3 +72144,39 @@ Local M4 Pro (measured this session): R(8)/R(5) = 1.6095, 8→5 saves 37.87 % of
 **Other events.** Controller re-surfaced `blocked` on PR #190 — reflects the Entry 404 label, no action.
 
 **State.** E198 ABBA2 running (~25 min remaining). E201 desk stage starting (PR #198). E193/E199 gated on the stalled board. Advisor tip `e1afcf3e` + this entry.
+
+## Entry 410 — E198 CLOSED unmerged (fused SDPA kernel does not pay); E201 MERGED (per-prompt cap lever does not exist); E202/E203 assigned
+
+**Date:** 2026-08-24 ~22:15Z. **Base:** aaa42f84 → 44dfe5d0 (E201 merge, research-only files). Receipt `2681c3ac` (E193) still VALIDATING (~4.5 h); board-wide stall of Entry 409 persists — no action available, one-in-flight rule stands, E199 HOLD unchanged.
+
+### E198 (PR 195, Edward) — CLOSED UNMERGED, decisive negative — FINDING 522
+
+Form-2 witnessed ABBA2 (all 8 RULE 391(b) witnesses valid; FUSED served {6:16,7:16,8:80,9:16}/leg; MLXFAST_NO_SANDBOX=1 both arms):
+
+- All 8 legs: improvement −0.571 ms/round, 2σ [−1.274, +0.132] — headline distorted by legs 1/4 cold entry (FINDING 518 artifact).
+- Steady state (legs 5–8, balanced 2v2): **−0.059 ms/round, 2σ [−0.271, +0.154]** — the ≥0.5 ms/round bar is excluded at the optimistic edge. Conclusive negative, not an underpowered null.
+- Exactness: all_tokens_matched=true, residual_divergence_count=0 in every leg; edl 6.35897 and accept rate 0.87702 identical both arms; Stage-3 unit exactness 0 differing bf16 elements with firing positive control.
+
+**FINDING 522 (mechanism):** The kernel is correct; the money is not there. Stage 2 falsified the FINDING 507 premise — recoverable cost is dispatch-fixed (~25 µs/dispatch) and MLX overlaps the 5 dispatches, so the isolated 59.9 µs/layer saving is never on the critical path. A custom `metal_kernel` adds ~10 µs fixed call cost (`MLXFastKernel.callAsFunction` rebuilds config/template/output objects every call) × 16 layers ≈ 160 µs/round of pure overhead. Corollaries: (a) the FINDING 507 dispatch-count family is nearly dead — one cheap eval()-barrier measurement settles it for good (→ E202); (b) m=9 contributed ZERO census rounds while costing register pressure — re-derive the depth histogram before any width work; (c) MLXFastKernel call overhead is a standing ~10 µs/call tax on any future custom kernel.
+
+Closed per RULE 198 / E194 precedent: diff adds 330-line kernel to `AttentionUtils.swift` + `Qwen35.swift` switch (submitted editable paths). W&B: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/vlqqgc44 (vlqqgc44).
+
+### E201 (PR 198, Askeladd) — MERGED, decisive NOT USEFUL, desk-only — FINDING 523 + FINDING 515 corrected
+
+Accepted on moved base (e1afcf3e→aaa42f84 ledger-only). On the corrected FINDING 520 survival-pinned latent-q instrument (validated in-report: receipt A exact in-sample; cap-4/5 receipts −0.44%/+0.24% out-of-sample, inside the 0.689% channel), the full observe-then-commit family (r∈{4..64}, c0∈{7,8}, all 25 (cap_lo,cap_hi) pairs, 9 thresholds, exploration/misclassification/EMA charges, exact published-median enumeration over the joint decision law):
+
+**FINDING 523:** best online = best static global cap 8 = oracle per-prompt cap = **3.829386 (+3.28% vs A); online − static = +0.000%**, robust to both 9-row treatments and all 8 LOO prompt mixes. The maximiser is the degenerate member (c0=8, cap_lo=cap_hi=8) that ignores its own observation. Mechanism: the cap is INERT where prompts differ (P(depth≥4)=1.8e-6 plutarch, 5.0e-4 drama; raw ratio identical at caps 4–8 for the three shallow prompts) and every prompt on which it binds wants it maximal — the per-prompt argmax is degenerate. Misclassification is NOT the obstacle (class error <1e-7 by r=16). **No per-prompt depth-cap lever exists.**
+
+**FINDING 515 CORRECTED:** the recorded +3.02% "oracle per-prompt cap" was biased-chain arithmetic; corrected value is **+3.28%** and it is a **global cap-8 effect**, not per-prompt information. E199's cap-8 receipt now resolves a genuinely two-sided ±4% swing (smooth continuation +3.28% vs E186 step transferred at 0.237 → −0.71%).
+
+Merged: reusable exact-median pricing instrument `research/e201_online_cap.py` (cap_state, accepted_pmf, enumerate_median). Modelling limit: rounds exchangeable within prompt — cannot price within-prompt-autocorrelation rules without traced per-round state (→ E203 Stage 0). W&B: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0jv1k3gt (0jv1k3gt).
+
+### Depth-value axis status after E200+E201
+
+Static price axis closed (FINDING 519). Per-prompt cap axis closed (FINDING 523). Remaining open on this axis: (1) the cap-8 receipt itself (E199, frozen, HELD behind 2681c3ac); (2) within-prompt lookahead/drift-tracking rules — open only if acceptance is autocorrelated within a prompt (E203 tests this first at zero build cost); (3) per-prompt PRICE lever — only jointly with lookahead (FINDING 519 self-blocking result), not standalone.
+
+### Assignments
+
+- **E202 (Edward): eval()-barrier dispatch-count settlement.** One ungated ABBA session, 512 tokens, RULE 391 witnesses. If barriers add ≈16×dispatch-count×25 µs/round, overlap is confirmed and the FINDING 507 family is DEAD (no fusion can ever recover overlapped latency). If barriers add ≈0, the family dies differently (isolated probe does not transfer). Either way the route closes for good on one cheap measurement.
+- **E203 (Askeladd): within-prompt acceptance autocorrelation → lookahead feasibility, desk-first.** Stage 0: measure ACF of per-round accepted length in existing RULE 386 traces; if compatible with exchangeability, terminal NOT USEFUL at zero build cost. Stage 1 (only if ACF material): traced-state replay instrument + price the lookahead/drift family incl. per-prompt price lever, standard desk stop rule.
+- E192 persistent in-place rollback slot (FINDING 495) remains queued for the next free slot.
