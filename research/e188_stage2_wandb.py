@@ -262,9 +262,57 @@ def rank_test(table: dict) -> dict:
             "stepUs": st.median(post) - st.median(pre), "z": z}
 
 
+def clear_probe(legs: list[dict], tag: str) -> dict:
+    """Split the release-timer leg into pre-first-rejection and steady-state
+    full-acceptance rounds. Rejection rounds never reach the clear."""
+    leg = next((x for x in legs if x["tag"] == tag), None)
+    if leg is None:
+        return {}
+    rows = [{**r, **{k: float(r[k]) for k in
+                     ("d", "acc", "commit_us", "clear_release_us",
+                      "clear_release_count")}}
+            for r in leg["rounds"] if "clear_release_us" in r]
+    if not rows:
+        return {}
+    first_reject = min((r["round"] for r in rows if r["acc"] < r["d"]),
+                       default=None)
+    kept = [r for r in rows if r["acc"] == r["d"] and r["d"] > 1]
+    pre = [r for r in kept if r["round"] < first_reject]
+    post = [r for r in kept if r["round"] > first_reject]
+    if not pre or not post:
+        return {}
+
+    def med(rs, k):
+        return st.median([r[k] for r in rs])
+
+    out = {"tag": tag, "firstRejectRound": first_reject,
+           "nPre": len(pre), "nPost": len(post),
+           "preCommitUs": med(pre, "commit_us"),
+           "preClearUs": med(pre, "clear_release_us"),
+           "postCommitUs": med(post, "commit_us"),
+           "postClearUs": med(post, "clear_release_us"),
+           "clearCountPre": med(pre, "clear_release_count"),
+           "clearCountPost": med(post, "clear_release_count"),
+           "clearCountOnReject": st.median(
+               [r["clear_release_count"] for r in rows
+                if r["acc"] < r["d"]] or [float("nan")])}
+    out["preResidualUs"] = out["preCommitUs"] - out["preClearUs"]
+    out["postResidualUs"] = out["postCommitUs"] - out["postClearUs"]
+    out["commitStepUs"] = out["postCommitUs"] - out["preCommitUs"]
+    out["clearStepUs"] = out["postClearUs"] - out["preClearUs"]
+    out["clearShareOfStep"] = out["clearStepUs"] / out["commitStepUs"]
+    out["clearShareOfCommit"] = out["postClearUs"] / out["postCommitUs"]
+    out["usPerRefPre"] = out["preClearUs"] / out["clearCountPre"]
+    out["usPerRefPost"] = out["postClearUs"] / out["clearCountPost"]
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--legs", nargs="+", required=True)
+    ap.add_argument("--ladder-legs", nargs="+",
+                    help="counterbalanced subset used for the arm table, rank "
+                         "test and depth profile; defaults to --legs")
     ap.add_argument("--group", default="qwen38-r1-e188-commit-phase-bisection")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
@@ -273,8 +321,10 @@ def main() -> None:
                               text=True, check=True).stdout.strip()
 
     legs = [summarise(t) for t in args.legs]
-    table = arm_table(legs)
-    depth = depth_profile(legs)
+    ladder = args.ladder_legs or args.legs
+    stat_legs = [leg for leg in legs if leg["tag"] in set(ladder)]
+    table = arm_table(stat_legs)
+    depth = depth_profile(stat_legs)
 
     print(f"{'leg':22s} {'arm':18s} {'rev':10s} {'n':>3s} " +
           " ".join(f"{p.replace('_us',''):>11s}" for p in PHASES))
@@ -304,7 +354,7 @@ def main() -> None:
 
     print("\nE90 reference (harness=local, 512 tokens, depth 8, Edward host):")
     for ph, v in E90.items():
-        here = st.mean([leg[ph] for leg in legs if ph in leg])
+        here = st.mean([leg[ph] for leg in stat_legs if ph in leg])
         print(f"  {ph:16s} E90={v:10.1f}  E188={here:10.1f}  ratio={here / v:5.2f}")
 
     print("\nhost phases against realized draft depth d (spike-free rounds, "
@@ -322,7 +372,31 @@ def main() -> None:
     print(f"  excluded {depth['nSpikes']} spike rounds >= {SPIKE_US:.0f} us: "
           f"{[(t, rd) for t, rd, _ in depth['spikeRounds']]}")
 
+    probe = clear_probe(legs, "e188-clear-timer")
+    if probe:
+        print("\nclearRecurrentRollback release probe (harness=local, "
+              "full-acceptance rounds, d>1):")
+        print(f"  first rejection round: {probe['firstRejectRound']}")
+        print(f"  pre  n={probe['nPre']:2d} commit={probe['preCommitUs']:6.1f} "
+              f"clear={probe['preClearUs']:6.1f} "
+              f"residual={probe['preResidualUs']:5.1f} "
+              f"count={probe['clearCountPre']:.0f} "
+              f"({probe['usPerRefPre']:.2f} us/ref)")
+        print(f"  post n={probe['nPost']:2d} commit={probe['postCommitUs']:6.1f} "
+              f"clear={probe['postClearUs']:6.1f} "
+              f"residual={probe['postResidualUs']:5.1f} "
+              f"count={probe['clearCountPost']:.0f} "
+              f"({probe['usPerRefPost']:.2f} us/ref)")
+        print(f"  step: commit +{probe['commitStepUs']:.1f} us, "
+              f"clear +{probe['clearStepUs']:.1f} us "
+              f"({probe['clearShareOfStep'] * 100:.1f} % of the step); "
+              f"clear is {probe['clearShareOfCommit'] * 100:.1f} % of the "
+              f"steady-state commit phase")
+        print(f"  clear_release_count on rejection rounds: "
+              f"{probe['clearCountOnReject']:.0f}")
+
     out = {"baseSha": base_sha, "arms": table, "depth": depth, "rankTest": rank,
+           "clearProbe": probe,
            "legs": [{k: v for k, v in leg.items() if k != "rounds"} for leg in legs],
            "e90Reference": E90}
     pathlib.Path("/tmp/e188").mkdir(exist_ok=True)
@@ -361,7 +435,9 @@ def main() -> None:
                               "baseSha": base_sha,
                               "bisectedFile":
                               "Sources/MLXFastModel/Qwen36MTPBlockSession.swift",
-                              "armOrder": [leg["arm"] for leg in legs]})
+                              "armOrder": [leg["arm"] for leg in legs],
+                              "ladderLegs": [leg["tag"] for leg in stat_legs],
+                              "publishedLegs": [leg["tag"] for leg in legs]})
     roll.summary.update(
         {f"arm/{arm}/{k}": v for arm, rec in table.items()
          for k, v in rec.items() if not isinstance(v, list)} |
@@ -370,6 +446,7 @@ def main() -> None:
          for k, v in r.items()} |
         {f"depthFit/{k}": v for k, v in depth["fit"].items()} |
         {f"rankTest/{k}": v for k, v in rank.items()} |
+        {f"clearProbe/{k}": v for k, v in probe.items()} |
         {"depth/nSpikesExcluded": depth["nSpikes"]})
     urls.append(("rollup", roll.id, roll.url))
     roll.finish()
