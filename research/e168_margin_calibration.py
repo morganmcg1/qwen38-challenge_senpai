@@ -33,39 +33,87 @@ MAX_DEPTH = 8
 WIDTH_CAP = 7
 CLAMP_T = {0: 2.0, 1: 3.0}
 
-ROUND_RE = re.compile(
-    r"^mtp-trace: round=(\d+) d=(\d+) acc=(\d+).*? m=(\S+) streak=(\d+) "
-    r"(?:offer=(\d+) wcap=(\d+) )?cap=(\d+) ema=(\S+)"
+ROUND_RE = re.compile(r"^mtp-trace: round=(\d+) d=(\d+) acc=(\d+)")
+# The schedule snapshot is written only when the round consulted the schedule.
+# A leg built before the pinned-depth path snapshotted it reports the round
+# bookkeeping without it; that leg still answers every counts question and
+# answers no calibration question.
+SCHEDULE_RE = re.compile(
+    r" m=(\S+) streak=(\d+) (?:offer=(\d+) wcap=(\d+) )?cap=(\d+) ema=(\S+)"
 )
+ROW_RE = re.compile(r"^mtp-row: pos=(\d+) ids=(\d+),(\d+) v=(\S+)")
 
 
 def sigmoid(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-x))
 
 
-def parse_rounds(path: str) -> list[dict]:
-    rounds = []
+def parse_rounds(path: str) -> tuple[list[dict], dict[int, dict]]:
+    """Round records, plus the absolute-position row evidence they emitted.
+
+    Each round writes its accepted-trajectory rows (`mtp-row`) before its own
+    summary line, so the rows seen since the previous summary belong to the
+    round that follows them. Those rows carry the ABSOLUTE token position, which
+    is the only key that survives a change of draft depth: two arms partition
+    the same serial token stream into different rounds, but position `p` is the
+    same token in both.
+    """
+    rounds: list[dict] = []
+    rows: dict[int, dict] = {}
+    pending: list[int] = []
     with open(path, "r", errors="replace") as handle:
         for line in handle:
+            row = ROW_RE.match(line)
+            if row:
+                position = int(row.group(1))
+                # A census leg writes rows for the reference pass before the
+                # MTP pass, and both start at the same absolute position. Row
+                # positions run contiguously inside one pass, so a position
+                # that does not continue the previous one starts a new pass and
+                # cannot belong to the round that follows.
+                if pending and position != pending[-1] + 1:
+                    pending = []
+                pending.append(position)
+                rows[position] = {
+                    "ids": (int(row.group(2)), int(row.group(3))),
+                    "v": row.group(4),
+                }
+                continue
             match = ROUND_RE.match(line)
             if not match:
                 continue
-            margin = float(match.group(4))
-            offer = int(match.group(6)) if match.group(6) else None
-            rounds.append(
-                {
-                    "round": int(match.group(1)),
-                    "d": int(match.group(2)),
-                    "acc": int(match.group(3)),
-                    "margin": margin,
-                    "streak": int(match.group(5)),
-                    "offer": offer,
-                    "wcap": int(match.group(7)) if match.group(7) else WIDTH_CAP,
-                    "cap": int(match.group(8)),
-                    "ema": [float(v) for v in match.group(9).split(",")],
-                }
-            )
-    return rounds
+            record = {
+                "round": int(match.group(1)),
+                "d": int(match.group(2)),
+                "acc": int(match.group(3)),
+                "margin": float("nan"),
+                "streak": None,
+                "offer": None,
+                "wcap": WIDTH_CAP,
+                "cap": None,
+                "ema": None,
+                "start": pending[0] if pending else None,
+                "rows": len(pending),
+            }
+            schedule = SCHEDULE_RE.search(line)
+            if schedule:
+                record.update(
+                    margin=float(schedule.group(1)),
+                    streak=int(schedule.group(2)),
+                    offer=(
+                        int(schedule.group(3)) if schedule.group(3) else None
+                    ),
+                    wcap=(
+                        int(schedule.group(4))
+                        if schedule.group(4)
+                        else WIDTH_CAP
+                    ),
+                    cap=int(schedule.group(5)),
+                    ema=[float(v) for v in schedule.group(6).split(",")],
+                )
+            rounds.append(record)
+            pending = []
+    return rounds, rows
 
 
 def load_legs(dirs: list[str], kind: str) -> list[dict]:
@@ -81,7 +129,7 @@ def load_legs(dirs: list[str], kind: str) -> list[dict]:
                 if "=" in line:
                     key, _, value = line.partition("=")
                     meta[key.strip()] = value.strip()
-        rounds = parse_rounds(trace)
+        rounds, rows = parse_rounds(trace)
         legs.append(
             {
                 "dir": directory,
@@ -89,6 +137,7 @@ def load_legs(dirs: list[str], kind: str) -> list[dict]:
                 "label": meta.get("prompt_id", os.path.basename(directory)),
                 "meta": meta,
                 "rounds": rounds,
+                "rows": rows,
             }
         )
     return legs
@@ -453,6 +502,99 @@ def analyse_adapt(legs: list[dict], offered_default: int) -> dict:
     return result
 
 
+def splice_arms(adapt_legs: list[dict], pinned_legs: list[dict]) -> dict:
+    """Answer the counterfactual DIRECTLY instead of by proxy.
+
+    The two arms decode the same prompt to the same serial tokens, so absolute
+    token position `p` names the same token in both. A round is spliceable when
+    both arms began a round at the same position: the pinned arm then drafted
+    positions the shipped clamp refused, and its accept walk says outright
+    whether the refused position was acceptable.
+
+    Two invariants are checked before any splice is believed:
+      rows     the target's top-2 ids and raw logit bits at every shared
+               position must be identical. They are produced by the fixed
+               target on the same prefix, so a difference means the arms are
+               not decoding the same stream and no splice is valid.
+      margins  a matched round's pending-primary margin must agree, which
+               confirms the round-start alignment is real and not a coincidence
+               of cumulative sums.
+    """
+    pinned_by_label = {leg["label"]: leg for leg in pinned_legs}
+    totals = {
+        "legs_matched": 0,
+        "rows_compared": 0,
+        "rows_differing": 0,
+        "rounds_matched": 0,
+        "margin_mismatch": 0,
+        "accept_inconsistent": 0,
+        "clamp_removed_rounds": 0,
+        "removed_resolved": 0,
+        "removed_accepted": 0,
+        "extra_tokens_available": 0,
+    }
+    per_leg = []
+    for leg in adapt_legs:
+        pinned = pinned_by_label.get(leg["label"])
+        if pinned is None:
+            continue
+        totals["legs_matched"] += 1
+        shared = set(leg["rows"]) & set(pinned["rows"])
+        differing = [
+            p for p in sorted(shared) if leg["rows"][p] != pinned["rows"][p]
+        ]
+        index = {r["start"]: r for r in pinned["rounds"] if r["start"] is not None}
+        entry = {
+            "label": leg["label"],
+            "rows_compared": len(shared),
+            "rows_differing": len(differing),
+            "first_differing_row": differing[0] if differing else None,
+            "rounds_matched": 0,
+            "margin_mismatch": 0,
+            "accept_inconsistent": 0,
+            "clamp_removed_rounds": 0,
+            "removed_resolved": 0,
+            "removed_accepted": 0,
+            "extra_tokens_available": 0,
+        }
+        for record in leg["rounds"]:
+            twin = index.get(record["start"])
+            if twin is None or math.isnan(record["margin"]):
+                continue
+            entry["rounds_matched"] += 1
+            if abs(record["margin"] - twin["margin"]) > 1e-3:
+                entry["margin_mismatch"] += 1
+            depth = min(record["d"], twin["d"])
+            reject_a = record["acc"] if record["acc"] < record["d"] else None
+            reject_p = twin["acc"] if twin["acc"] < twin["d"] else None
+            first_a = reject_a if reject_a is not None and reject_a < depth else None
+            first_p = reject_p if reject_p is not None and reject_p < depth else None
+            if first_a != first_p:
+                entry["accept_inconsistent"] += 1
+                continue
+            offered = record["offer"] if record["offer"] is not None else MAX_DEPTH
+            unclamped = walk(record["margin"], record["ema"], offered, clamped=False)
+            if unclamped <= record["d"]:
+                continue
+            entry["clamp_removed_rounds"] += 1
+            # The clamp refused positions d .. unclamped-1. The pinned twin
+            # drafted them if it went deeper, and its accept count says whether
+            # the first refused position was acceptable.
+            if twin["d"] <= record["d"]:
+                continue
+            entry["removed_resolved"] += 1
+            if twin["acc"] > record["d"]:
+                entry["removed_accepted"] += 1
+                entry["extra_tokens_available"] += (
+                    min(twin["acc"], unclamped, twin["d"]) - record["d"]
+                )
+        per_leg.append(entry)
+        for key in totals:
+            if key != "legs_matched" and key in entry:
+                totals[key] += entry[key]
+    return {"pooled": totals, "legs": per_leg}
+
+
 def print_profile(title: str, profile: list[dict]) -> None:
     print(f"  per-position conditional acceptance, {title}:")
     for row in profile:
@@ -472,10 +614,14 @@ def main() -> int:
     args = parser.parse_args()
 
     report: dict = {"offered_depth": args.offered}
-    if args.pinned:
-        report["pinned"] = analyse_pinned(load_legs(args.pinned, "pinned"))
-    if args.adapt:
-        report["adapt"] = analyse_adapt(load_legs(args.adapt, "adapt"), args.offered)
+    pinned_legs = load_legs(args.pinned, "pinned") if args.pinned else []
+    adapt_legs = load_legs(args.adapt, "adapt") if args.adapt else []
+    if pinned_legs:
+        report["pinned"] = analyse_pinned(pinned_legs)
+    if adapt_legs:
+        report["adapt"] = analyse_adapt(adapt_legs, args.offered)
+    if pinned_legs and adapt_legs:
+        report["splice"] = splice_arms(adapt_legs, pinned_legs)
 
     if "adapt" in report:
         pooled = report["adapt"]["pooled"]
@@ -554,6 +700,35 @@ def main() -> int:
                         f"{name:<20}{scores['log_loss']:>11.5f}"
                         f"{scores['brier']:>10.5f}{scores['mean_prediction']:>10.4f}"
                     )
+
+    if "splice" in report:
+        pooled = report["splice"]["pooled"]
+        print("\n=== arm splice: the counterfactual measured, not modelled ===")
+        print(
+            f"target rows compared across arms {pooled['rows_compared']}, "
+            f"differing {pooled['rows_differing']}"
+        )
+        print(
+            f"rounds that began at the same absolute token in both arms "
+            f"{pooled['rounds_matched']} "
+            f"(margin mismatches {pooled['margin_mismatch']}, "
+            f"accept inconsistencies {pooled['accept_inconsistent']})"
+        )
+        print(
+            f"of those, clamp removed depth in {pooled['clamp_removed_rounds']}; "
+            f"the pinned twin resolved the first removed position in "
+            f"{pooled['removed_resolved']}; it was ACCEPTED in "
+            f"{pooled['removed_accepted']}"
+        )
+        if pooled["removed_resolved"]:
+            low, high = wilson(
+                pooled["removed_accepted"], pooled["removed_resolved"]
+            )
+            print(
+                f"pure-loss rate {pooled['removed_accepted'] / pooled['removed_resolved']:.4f} "
+                f"[{low:.4f},{high:.4f}]  "
+                f"tokens the clamp gave up {pooled['extra_tokens_available']}"
+            )
 
     if args.json:
         with open(args.json, "w") as handle:
