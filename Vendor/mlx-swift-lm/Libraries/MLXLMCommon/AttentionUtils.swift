@@ -173,7 +173,7 @@ public func attentionWithCacheUpdate(
 /// rebuilds its environment from an allowlist that excludes `MLXFAST_*`, so
 /// only a `DARKBLOOM_`-prefixed model-side opt-in survives (RULE 391(a)).
 public enum Qwen35SplitCellBarrier {
-    public enum Arm: Int {
+    public enum Arm: Int, Sendable {
         /// The unmodified shipped branch: no barrier.
         case shipped = 0
         /// One barrier after the final dispatch of the group. Prices the
