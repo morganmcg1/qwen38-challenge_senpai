@@ -317,8 +317,25 @@ fi
 # --- MTP head ----------------------------------------------------------------
 # setup-qwen-mtp.sh owns the head cache layout and prints the env name the CLI
 # reads, so the path is never duplicated here.
+# HEAD-IDENTITY-GUARD (HARNESS DEFECT 44): when the tracked manifest declares a
+# candidate head, setup's pinned-cache default silently measures the WRONG head
+# for any caller that did not export MLXFAST_QWEN_MTP_HEAD_DIR (e.g. a clean
+# run_job environment). The wrapper cannot resolve which local cache holds the
+# declared head, so it must refuse to guess instead of defaulting.
+caller_set_head_dir="${MLXFAST_QWEN_MTP_HEAD_DIR:-}"
 eval "$(./setup-qwen-mtp.sh --print-paths)"
 : "${MLXFAST_QWEN_MTP_HEAD_DIR:?setup-qwen-mtp.sh did not provide the MTP head path}"
+if [[ -s "mtp-head.manifest.json" && -z "${caller_set_head_dir}" ]]; then
+  echo "benchmark-qwen-mtp.sh: HEAD IDENTITY UNRESOLVED (HARNESS DEFECT 44 guard)" >&2
+  echo "  This checkout tracks mtp-head.manifest.json, which declares the candidate's" >&2
+  echo "  proposal head, but MLXFAST_QWEN_MTP_HEAD_DIR was not set by the caller, so" >&2
+  echo "  the run would silently use the organizer-pinned cache instead." >&2
+  echo "  Export MLXFAST_QWEN_MTP_HEAD_DIR explicitly:" >&2
+  echo "    - the declared-head run directory for any candidate evidence, or" >&2
+  echo "    - the pinned cache only for clearly labeled non-candidate probes." >&2
+  echo "  Record head_provenance_sha256 in every report (RULE 389)." >&2
+  exit 1
+fi
 if [[ ! -s "${MLXFAST_QWEN_MTP_HEAD_DIR}/config.json" ]]; then
   echo "benchmark-qwen-mtp.sh: MTP head is missing at ${MLXFAST_QWEN_MTP_HEAD_DIR}; run ./setup-qwen-mtp.sh" >&2
   exit 1
