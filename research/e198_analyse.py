@@ -107,24 +107,29 @@ def thermal_record(timing):
 
 
 def price(reduced, mode):
-    """Per-cell fused-vs-pair pricing against the FINDING 507 floor."""
+    """Per-cell fused-vs-shipped pricing against the FINDING 507 floor."""
     cells = []
     keys = {(m, kv) for (arm, md, m, kv) in reduced if md == mode}
     for m, kv in sorted(keys):
         pair = reduced.get(("today_pair", mode, m, kv))
+        shipped = reduced.get(("today_shipped", mode, m, kv))
         fused = reduced.get(("fused", mode, m, kv))
         one_row = reduced.get(("one_row_floor", mode, m, kv))
-        if not (pair and fused and one_row):
+        if not (pair and shipped and fused and one_row):
             continue
         # Every arm divides its elapsed time by the chain length, and one chain
         # step of the pair arm already issues BOTH split dispatches. So every
         # arm below is one full layer's SDPA work for this cell.
+        # `today_pair` is the two SDPA calls alone; `today_shipped` adds the
+        # query slicing and the output concatenation the branch also issues,
+        # so it is the arm the kernel actually replaces and the gate baseline.
         pair_us = pair["median_us"]
+        shipped_us = shipped["median_us"]
         fused_us = fused["median_us"]
         one_row_us = one_row["median_us"]
         floor_us = one_row_us + (m - 1) * FLOOR_B0_US
-        head_room = pair_us - floor_us
-        recovered = pair_us - fused_us
+        head_room = shipped_us - floor_us
+        recovered = shipped_us - fused_us
         # 1/m means the m rows rode along on one set of KV loads; 1.0 means
         # they cost the same as m separate one-row calls.
         serialized_us = m * one_row_us
@@ -133,6 +138,8 @@ def price(reduced, mode):
                 "m": m,
                 "kv": kv,
                 "pair_us": pair_us,
+                "shipped_us": shipped_us,
+                "slice_concat_us": shipped_us - pair_us,
                 "fused_us": fused_us,
                 "one_row_us": one_row_us,
                 "serialized_us": serialized_us,
@@ -314,6 +321,8 @@ def main():
             for cell in payload["cells"]:
                 tag = f"{mode}/m{cell['m']}/kv{cell['kv']}"
                 summary[f"{tag}/pair_us"] = cell["pair_us"]
+                summary[f"{tag}/shipped_us"] = cell["shipped_us"]
+                summary[f"{tag}/slice_concat_us"] = cell["slice_concat_us"]
                 summary[f"{tag}/fused_us"] = cell["fused_us"]
                 summary[f"{tag}/floor_us"] = cell["floor_us"]
                 summary[f"{tag}/recovered_us"] = cell["recovered_us"]
