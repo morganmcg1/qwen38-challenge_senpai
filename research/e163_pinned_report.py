@@ -114,6 +114,40 @@ def read_trace(path: pathlib.Path) -> dict:
     }
 
 
+GATE_RE = re.compile(
+    r"GPU cool-down gate passed \(current ([0-9.]+)C, target <=([0-9.]+)C, waited ([0-9]+)s\)"
+)
+
+
+def read_cool_gates(path: pathlib.Path) -> dict:
+    """Real 40 C gate readings, and the one that guards the timed MTP decode.
+
+    `meta.txt` records `gpu_temp_entry_c` before the wrapper runs, so it is the
+    temperature on arrival and not the temperature the gate admitted.  The
+    wrapper then runs its own gate three times; the last one before the
+    native-MTP decode is the reading that actually bounds the timed phase.
+    """
+    passes: list[dict] = []
+    guard: dict | None = None
+    for line in path.read_text(errors="replace").splitlines():
+        found = GATE_RE.search(line)
+        if found:
+            passes.append(
+                {
+                    "current_c": float(found.group(1)),
+                    "target_c": float(found.group(2)),
+                    "waited_s": int(found.group(3)),
+                }
+            )
+        elif "measuring native-MTP decode" in line and passes:
+            guard = passes[-1]
+    return {
+        "cool_gate_passes": passes,
+        "gate_temp_before_mtp_decode_c": None if guard is None else guard["current_c"],
+        "gate_waited_s_before_mtp_decode": None if guard is None else guard["waited_s"],
+    }
+
+
 def load_leg(path: pathlib.Path) -> dict:
     meta = read_meta(path / "meta.txt")
     score = json.loads((path / "score.json").read_text())["metrics"]
@@ -170,6 +204,21 @@ def load_leg(path: pathlib.Path) -> dict:
         "metallib_source_fingerprint": meta.get("metallib_source_fingerprint"),
     }
     leg.update({f"trace_{k}": v for k, v in trace.items()})
+    leg.update(read_cool_gates(path / "wrapper.err"))
+    if trace:
+        evl = trace["eval_wall_us_mean"] / 1e3
+        vbd = trace["verify_build_us_mean"] / 1e3
+        dbd = trace["draft_build_us_mean"] / 1e3
+        leg.update(
+            {
+                "ch_round_ms": trace["round_us_mean"] / 1e3,
+                "ch_gpu_eval_ms": evl,
+                "ch_cpu_verify_build_ms": vbd,
+                "ch_cpu_draft_build_ms": dbd,
+                "ch_cpu_build_ms": vbd + dbd,
+                "ch_unattributed_ms": trace["round_us_mean"] / 1e3 - evl - vbd - dbd,
+            }
+        )
     return leg
 
 
@@ -219,6 +268,111 @@ def contrast(name: str, base: list[dict], arm: list[dict], key: str) -> dict:
         "separated": gain - half > 0.0,
         "gain_minus_half_range_percent": gain - half,
     }
+
+
+def pooled_sd(cells: dict[str, list[float]]) -> tuple[float, int]:
+    """Within-cell sd pooled over every cell, and its degrees of freedom.
+
+    Each cell holds two replicates placed symmetrically in the palindrome, so a
+    per-cell sd carries one degree of freedom and is useless on its own.
+    Pooling the three cells of the F3 decomposition gives three degrees of
+    freedom over the same instrument.  The two replicates of a cell sit far
+    apart in leg order, so their spread also absorbs session drift that the
+    counterbalanced contrast itself cancels: the interval is conservative.
+    """
+    total, df = 0.0, 0
+    for values in cells.values():
+        if len(values) < 2:
+            continue
+        mean = statistics.fmean(values)
+        total += sum((value - mean) ** 2 for value in values)
+        df += len(values) - 1
+    return (math.sqrt(total / df), df) if df else (0.0, 0)
+
+
+def diff_stat(
+    name: str, meaning: str, low: list[dict], high: list[dict], key: str, sd: float, df: int
+) -> dict:
+    """`high` minus `low` on `key`. Positive means `high` is the slower cell."""
+    lo = [leg[key] for leg in low]
+    hi = [leg[key] for leg in high]
+    lo_mean, hi_mean = statistics.fmean(lo), statistics.fmean(hi)
+    two_se = 2 * sd * math.sqrt(1 / len(lo) + 1 / len(hi))
+    delta = hi_mean - lo_mean
+    return {
+        "name": name,
+        "meaning": meaning,
+        "metric": key,
+        "low_cell": low[0]["arm_key"],
+        "low_values_ms": lo,
+        "low_mean_ms": lo_mean,
+        "high_cell": high[0]["arm_key"],
+        "high_values_ms": hi,
+        "high_mean_ms": hi_mean,
+        "delta_ms": delta,
+        "two_se_ms": two_se,
+        "pooled_sd_ms": sd,
+        "pooled_sd_df": df,
+        "delta_percent_of_low": delta / lo_mean * 100.0,
+        "two_se_percent_of_low": two_se / lo_mean * 100.0,
+        "separated_from_zero": abs(delta) > two_se,
+    }
+
+
+def decompose(ship_lo: list[dict], arm_lo: list[dict], ship_hi: list[dict], key: str) -> dict:
+    """The F3 decomposition on one metric, in milliseconds per round.
+
+    A  = arm at the low width  - shipped at the low width   kernel config alone
+    B  = shipped at the high width - arm at the low width   one row alone
+    A + B must equal shipped high - shipped low, which is an identity over
+    three cell means rather than an independent measurement.  It is reported
+    so the identity is visible, and the informative agreement check is the
+    same decomposition read from the other estimator.
+    """
+    cells = {
+        "shipped_low": [leg[key] for leg in ship_lo],
+        "arm_low": [leg[key] for leg in arm_lo],
+        "shipped_high": [leg[key] for leg in ship_hi],
+    }
+    sd, df = pooled_sd(cells)
+    width_lo = ship_lo[0]["verify_width"]
+    width_hi = ship_hi[0]["verify_width"]
+    arm = arm_lo[0]["plan"]
+    a = diff_stat(
+        "A",
+        f"kernel config alone at {width_lo} rows: {arm} against shipped, NA 5->3, G 1->2",
+        ship_lo,
+        arm_lo,
+        key,
+        sd,
+        df,
+    )
+    b = diff_stat(
+        "B",
+        f"one extra verified row alone, {width_lo} -> {width_hi} rows at a fixed NA=3, G=2 kernel",
+        arm_lo,
+        ship_hi,
+        key,
+        sd,
+        df,
+    )
+    ab = diff_stat(
+        "A+B",
+        f"shipped plan across the width boundary, R({width_hi}) - R({width_lo})",
+        ship_lo,
+        ship_hi,
+        key,
+        sd,
+        df,
+    )
+    ab["identity_residual_ms"] = ab["delta_ms"] - (a["delta_ms"] + b["delta_ms"])
+    ab["identity_note"] = (
+        "zero by construction: all three contrasts are differences of the same "
+        "three cell means, so the sum is an algebraic identity and not a third "
+        "independent measurement. The real agreement check is "
+        "cross_estimator_residual_ms."
+    )
+    return {"metric": key, "pooled_sd_ms": sd, "pooled_sd_df": df, "A": a, "B": b, "A_plus_B": ab}
 
 
 def main() -> int:
@@ -402,6 +556,93 @@ def main() -> int:
                 ),
             }
 
+    # F3 asks for the three-cell decomposition as four first-class numbers.
+    decomposition = None
+    if variant is not None and len(depths) == 2:
+        ship_lo = by_arm.get(f"shipped@d{depths[0]}")
+        arm_lo = by_arm.get(f"{variant}@d{depths[0]}")
+        ship_hi = by_arm.get(f"shipped@d{depths[1]}")
+        cells = [ship_lo, arm_lo, ship_hi]
+        if all(cells) and all(
+            leg.get("R_ms_from_leg") is not None and leg.get("ch_round_ms") is not None
+            for group in cells
+            for leg in group
+        ):
+            primary = decompose(ship_lo, arm_lo, ship_hi, "R_ms_from_leg")
+            traced = decompose(ship_lo, arm_lo, ship_hi, "R_ms_from_trace")
+            channels = {
+                name: decompose(ship_lo, arm_lo, ship_hi, name)
+                for name in (
+                    "ch_gpu_eval_ms",
+                    "ch_cpu_build_ms",
+                    "ch_cpu_verify_build_ms",
+                    "ch_cpu_draft_build_ms",
+                    "ch_unattributed_ms",
+                )
+            }
+            split = {}
+            for term in ("A", "B", "A_plus_B"):
+                whole = traced[term]["delta_ms"]
+                split[term] = {
+                    "traced_delta_ms": whole,
+                    "gpu_eval_ms": channels["ch_gpu_eval_ms"][term]["delta_ms"],
+                    "cpu_build_ms": channels["ch_cpu_build_ms"][term]["delta_ms"],
+                    "unattributed_ms": channels["ch_unattributed_ms"][term]["delta_ms"],
+                    "gpu_eval_share": (
+                        channels["ch_gpu_eval_ms"][term]["delta_ms"] / whole if whole else None
+                    ),
+                    "cpu_build_share": (
+                        channels["ch_cpu_build_ms"][term]["delta_ms"] / whole if whole else None
+                    ),
+                }
+            decomposition = {
+                "cells": {
+                    "shipped_low": {
+                        "arm_key": ship_lo[0]["arm_key"],
+                        "rows": ship_lo[0]["verify_width"],
+                        "ipg": 5,
+                        "NA": 5,
+                        "weight_streams_G": 1,
+                    },
+                    "arm_low": {
+                        "arm_key": arm_lo[0]["arm_key"],
+                        "rows": arm_lo[0]["verify_width"],
+                        "ipg": 3,
+                        "NA": 3,
+                        "weight_streams_G": 2,
+                    },
+                    "shipped_high": {
+                        "arm_key": ship_hi[0]["arm_key"],
+                        "rows": ship_hi[0]["verify_width"],
+                        "ipg": 3,
+                        "NA": 3,
+                        "weight_streams_G": 2,
+                    },
+                },
+                "primary_estimator": primary,
+                "trace_estimator": traced,
+                "cross_estimator_residual_ms": {
+                    term: primary[term]["delta_ms"] - traced[term]["delta_ms"]
+                    for term in ("A", "B", "A_plus_B")
+                },
+                "channels": channels,
+                "channel_split": split,
+                "reference_points": {
+                    "advisor_F3_predicted_A_ms": 13.9,
+                    "advisor_F3_predicted_A_percent": 12.0,
+                    "ranked_5a9f130a_per_row_h_ms": 5.3351,
+                    "ranked_5a9f130a_intercept_ms": 16.158,
+                    "askeladd_band_local_h_ms": 12.47,
+                    "e68_rung1_step_into_width_6_ms": 27.308,
+                    "e68_rung1_step_into_width_5_ms": 13.405,
+                    "note": (
+                        "harness=local for every measured value here. The ranked "
+                        "figures are quoted for comparison only and were produced "
+                        "by a different harness on a different chip."
+                    ),
+                },
+            }
+
     shares = [
         {
             "arm_key": key,
@@ -444,6 +685,7 @@ def main() -> int:
         "order": [leg["arm_key"] for leg in legs],
         "legs": legs,
         "contrasts": contrasts,
+        "decomposition": decomposition,
         "boundary": boundary,
         "round_cost_shares": shares,
         "noise_channel": noise,
@@ -461,16 +703,41 @@ def main() -> int:
         print(f"note: {commit_note}")
     print(
         f"{'pos':>3} {'arm':>16} {'W':>2} {'mtp s/tok':>11} {'R ms':>8} "
-        f"{'rounds':>6} {'edl':>7} {'Tin':>6} {'Tout':>6}"
+        f"{'rounds':>6} {'edl':>7} {'Tgate':>6} {'Tin':>6} {'Tout':>6}"
     )
     for leg in legs:
         r = leg["R_ms_from_leg"]
+        gate = leg["gate_temp_before_mtp_decode_c"]
         print(
             f"{leg['position']:>3} {leg['arm_key']:>16} {leg['verify_width']:>2} "
             f"{leg['mtp_seconds_per_token']:>11.7f} "
             f"{(math.nan if r is None else r):>8.2f} {leg['rounds']:>6} "
             f"{leg['effective_mean_draft_len']:>7.4f} "
+            f"{(math.nan if gate is None else gate):>6.1f} "
             f"{leg['gpu_temp_entry_c']:>6.2f} {leg['gpu_temp_exit_c']:>6.2f}"
+        )
+    if decomposition:
+        print("F3 decomposition, ms per round, positive = the second cell is slower:")
+        for term in ("A", "B", "A_plus_B"):
+            item = decomposition["primary_estimator"][term]
+            traced = decomposition["trace_estimator"][term]
+            split = decomposition["channel_split"][term]
+            print(
+                f"  {item['name']:>4} {item['low_cell']:>14} -> {item['high_cell']:<14} "
+                f"{item['delta_ms']:+8.3f} +/- {item['two_se_ms']:.3f} ms "
+                f"({item['delta_percent_of_low']:+.3f} % +/- "
+                f"{item['two_se_percent_of_low']:.3f})  "
+                f"trace {traced['delta_ms']:+8.3f} ms  "
+                f"GPU eval {split['gpu_eval_ms']:+7.3f}  CPU build {split['cpu_build_ms']:+7.3f}"
+            )
+        print(
+            "  identity residual "
+            f"{decomposition['primary_estimator']['A_plus_B']['identity_residual_ms']:+.6f} ms "
+            "(zero by construction); cross-estimator residual "
+            + ", ".join(
+                f"{k} {v:+.3f} ms"
+                for k, v in decomposition["cross_estimator_residual_ms"].items()
+            )
         )
     for item in contrasts:
         print(

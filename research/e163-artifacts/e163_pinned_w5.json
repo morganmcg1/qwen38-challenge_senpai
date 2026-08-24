@@ -1,0 +1,259 @@
+{
+  "boundary": null,
+  "contrasts": [
+    {
+      "base_arm": "shipped@d4",
+      "base_mean": 0.027339,
+      "base_values": [
+        0.027339
+      ],
+      "contrast": "arm",
+      "gain_minus_half_range_percent": -22.04908738432277,
+      "gain_percent": -22.04908738432277,
+      "half_range_percent": 0.0,
+      "metric": "mtp_seconds_per_token",
+      "separated": false,
+      "test_arm": "minna5@d4",
+      "test_mean": 0.033367,
+      "test_values": [
+        0.033367
+      ]
+    },
+    {
+      "base_arm": "shipped@d4",
+      "base_mean": 92.44942201834861,
+      "base_values": [
+        92.44942201834861
+      ],
+      "contrast": "arm",
+      "gain_minus_half_range_percent": -30.633094991588276,
+      "gain_percent": -30.633094991588276,
+      "half_range_percent": 0.0,
+      "metric": "R_ms_from_leg",
+      "separated": false,
+      "test_arm": "minna5@d4",
+      "test_mean": 120.76954128440367,
+      "test_values": [
+        120.76954128440367
+      ]
+    },
+    {
+      "contrast": "arm-adjacent-pairs",
+      "gain_minus_half_range_percent": -22.04908738432277,
+      "gain_percent": -22.04908738432277,
+      "gain_percent_each": [
+        -22.04908738432277
+      ],
+      "half_range_percent": 0.0,
+      "metric": "mtp_seconds_per_token"
+    }
+  ],
+  "decomposition": null,
+  "harness": "local",
+  "identity": {
+    "base_sha": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+    "chip": "Apple M4 Pro",
+    "decode_tokens": 512,
+    "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "host": "ip-10-231-2-22.ec2.internal",
+    "leg_commit_note": "legs recorded 2 commits ['63ce572ca0f0a163facb237dc39faca7351e9c62', '9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22'], and no file under Sources, Vendor or Package.swift differs between them. The worker digest is identical on every leg, so the timed bytes did not move.",
+    "leg_commits": [
+      "63ce572ca0f0a163facb237dc39faca7351e9c62",
+      "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22"
+    ],
+    "local_mode": "--local-iterate",
+    "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+    "sandbox": "off",
+    "session_commit": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+    "worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7"
+  },
+  "label": "w5",
+  "legs": [
+    {
+      "R_ms_from_leg": 92.44942201834861,
+      "R_ms_from_trace": 91.96600917431192,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "arm_key": "shipped@d4",
+      "base_sha": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+      "ch_cpu_build_ms": 49.51891743119266,
+      "ch_cpu_draft_build_ms": 2.7361467889908258,
+      "ch_cpu_verify_build_ms": 46.78277064220184,
+      "ch_gpu_eval_ms": 41.50247706422019,
+      "ch_round_ms": 91.96600917431192,
+      "ch_unattributed_ms": 0.9446146788990686,
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "true",
+      "cool_gate_passes": [
+        {
+          "current_c": 39.9,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.9,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 40.0,
+          "target_c": 40.0,
+          "waited_s": 50
+        }
+      ],
+      "decode_tokens": 512,
+      "dirty_candidate_paths": 0,
+      "effective_mean_draft_len": 4,
+      "exit": 0,
+      "gate_qualified_for_timing": "true",
+      "gate_temp_before_mtp_decode_c": 40.0,
+      "gate_waited_s_before_mtp_decode": 50,
+      "gpu_temp_entry_c": 58.07280349731445,
+      "gpu_temp_exit_c": 59.092891693115234,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg_seconds": 13.997568,
+      "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+      "mtp_decode_speedup": 2.6980392044980577,
+      "mtp_seconds_per_token": 0.027339,
+      "pinned_depth": 4,
+      "plan": "shipped",
+      "position": 1,
+      "post_run_worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7",
+      "reference_checked_rows": "545/545",
+      "residual_divergence_count": 0,
+      "rounds": 109,
+      "sandbox": "off",
+      "seed_prefill_seconds": 3.920581,
+      "serial_seconds_per_token": 0.073762,
+      "session_commit": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+      "tag": "e163w5p1shippedd4",
+      "trace": "1",
+      "trace_accepted_mean": 3.697247706422018,
+      "trace_draft_build_us_mean": 2736.146788990826,
+      "trace_eval_wall_us_mean": 41502.477064220184,
+      "trace_pinned_width_share": 1.0,
+      "trace_prefill_seconds": 3.920581,
+      "trace_round_us_mean": 91966.00917431193,
+      "trace_round_us_sd": 7073.366054609902,
+      "trace_rounds": 109,
+      "trace_verify_build_us_mean": 46782.77064220184,
+      "trace_width_histogram": {
+        "5": 109
+      },
+      "verify_width": 5,
+      "worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7"
+    },
+    {
+      "R_ms_from_leg": 120.76954128440367,
+      "R_ms_from_trace": 120.2316513761468,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "arm_key": "minna5@d4",
+      "base_sha": "63ce572ca0f0a163facb237dc39faca7351e9c62",
+      "ch_cpu_build_ms": 62.76140366972477,
+      "ch_cpu_draft_build_ms": 2.806908256880734,
+      "ch_cpu_verify_build_ms": 59.95449541284404,
+      "ch_gpu_eval_ms": 56.43535779816514,
+      "ch_round_ms": 120.2316513761468,
+      "ch_unattributed_ms": 1.034889908256884,
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "true",
+      "cool_gate_passes": [
+        {
+          "current_c": 39.9,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.9,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.9,
+          "target_c": 40.0,
+          "waited_s": 50
+        }
+      ],
+      "decode_tokens": 512,
+      "dirty_candidate_paths": 0,
+      "effective_mean_draft_len": 4,
+      "exit": 0,
+      "gate_qualified_for_timing": "true",
+      "gate_temp_before_mtp_decode_c": 39.9,
+      "gate_waited_s_before_mtp_decode": 50,
+      "gpu_temp_entry_c": 55.65084457397461,
+      "gpu_temp_exit_c": 58.233543395996094,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg_seconds": 17.083904,
+      "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+      "mtp_decode_speedup": 2.2081685945836376,
+      "mtp_seconds_per_token": 0.033367,
+      "pinned_depth": 4,
+      "plan": "minna5",
+      "position": 2,
+      "post_run_worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7",
+      "reference_checked_rows": "545/545",
+      "residual_divergence_count": 0,
+      "rounds": 109,
+      "sandbox": "off",
+      "seed_prefill_seconds": 3.920024,
+      "serial_seconds_per_token": 0.073679,
+      "session_commit": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+      "tag": "e163w5p2minna5d4",
+      "trace": "1",
+      "trace_accepted_mean": 3.697247706422018,
+      "trace_draft_build_us_mean": 2806.908256880734,
+      "trace_eval_wall_us_mean": 56435.35779816514,
+      "trace_pinned_width_share": 1.0,
+      "trace_prefill_seconds": 3.920024,
+      "trace_round_us_mean": 120231.6513761468,
+      "trace_round_us_sd": 2326.3444475071105,
+      "trace_rounds": 109,
+      "trace_verify_build_us_mean": 59954.49541284404,
+      "trace_width_histogram": {
+        "5": 109
+      },
+      "verify_width": 5,
+      "worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7"
+    }
+  ],
+  "min_useful_percent": 0.06,
+  "noise_channel": {
+    "channel": "true serial control, depth 0, no routed QMV launched",
+    "half_range_percent": 0.056293703922246696,
+    "mean": 0.0737205,
+    "predeclared_floor_percent": 0.039,
+    "sd_percent": 0.07961131956305677,
+    "values": [
+      0.073762,
+      0.073679
+    ]
+  },
+  "official_or_ranked_score": false,
+  "order": [
+    "shipped@d4",
+    "minna5@d4"
+  ],
+  "problems": [],
+  "round_cost_shares": [
+    {
+      "R_ms": 120.76954128440367,
+      "arm_key": "minna5@d4",
+      "cpu_verify_build_share_of_round": 0.4986581713435455,
+      "draft_build_share_of_round": 0.023345834684572974,
+      "gpu_eval_share_of_round": 0.46938852749852156,
+      "verify_width": 5
+    },
+    {
+      "R_ms": 92.44942201834861,
+      "arm_key": "shipped@d4",
+      "cpu_verify_build_share_of_round": 0.5086963222850086,
+      "draft_build_share_of_round": 0.029751718200631567,
+      "gpu_eval_share_of_round": 0.45128061374889705,
+      "verify_width": 5
+    }
+  ]
+}
