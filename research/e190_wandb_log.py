@@ -114,12 +114,14 @@ def verdict(score, means):
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--receipt", default="/tmp/e190_receipt.json")
+    parser.add_argument("--inversion", default="research/out/e190/inversion.json")
     args = parser.parse_args()
 
     receipt = json.loads(pathlib.Path(args.receipt).read_text())
     status = receipt.get("status")
     score = receipt.get("officialScore")
     metrics = receipt.get("officialMetrics") or {}
+    inversion = json.loads(pathlib.Path(args.inversion).read_text())
 
     quad, stairs, shape, means = predictions()
     pq = means["quadratic"]
@@ -192,6 +194,26 @@ def main() -> int:
                 key, mean, score, score - mean,
                 abs(score - mean) / (e190.SIGMA_PUBLISHED * mean), "ranked")
 
+    dr6_cols = ["law", "predicted_dr6_ms", "measured_dr6_ms", "error_ms",
+                "error_mue", "c_anchored_score", "harness"]
+    dr6_table = wandb.Table(columns=dr6_cols)
+    for key, law in inversion["laws"].items():
+        dr6_table.add_data(
+            key, law["dr6_ms"], inversion["dr6_ms"], law["err_ms"],
+            law["err_mue"], law["c_anchored_score"], "ranked")
+
+    pp_cols = ["prompt", "raw_ratio", "effective_mean_draft_len",
+               "mtp_seconds_per_token_mean", "serial_seconds_per_token_mean",
+               "non_drafting_round_count", "parity_ok", "harness"]
+    pp_table = wandb.Table(columns=pp_cols)
+    for i, p in enumerate(metrics.get("per_prompt", [])):
+        pp_table.add_data(
+            p.get("prompt_sha256", "")[:12], p.get("raw_ratio_of_means"),
+            p.get("effective_mean_draft_len"),
+            p.get("mtp_seconds_per_token_mean"),
+            p.get("serial_seconds_per_token_mean"),
+            p.get("non_drafting_round_count"), p.get("parity_ok"), "ranked")
+
     summary = {
         "receipt/status": status,
         "receipt/official_score": score,
@@ -207,7 +229,15 @@ def main() -> int:
         "fit/quadratic_aic": quad["aic"],
         "fit/staircase_refit_wrmse_ms": stairs["staircase-ranked-refit"]["wrmse_ms"],
         "fit/staircase_refit_aic": stairs["staircase-ranked-refit"]["aic"],
+        "inversion/dr6_ms": inversion["dr6_ms"],
+        "inversion/dr6_ms_sigma_lo": inversion["dr6_ms_sigma_band"][0],
+        "inversion/dr6_ms_sigma_hi": inversion["dr6_ms_sigma_band"][1],
+        "inversion/dr6_mue": inversion["dr6_mue"],
+        "inversion/bisection_closure": inversion["bisection_closure"],
     }
+    for key, law in inversion["laws"].items():
+        summary[f"dr6_error_mue/{key}"] = law["err_mue"]
+        summary[f"dr6_predicted_ms/{key}"] = law["dr6_ms"]
     if score is not None:
         for key, mean in means.items():
             summary[f"residual/{key}"] = score - mean
@@ -221,6 +251,8 @@ def main() -> int:
         "predictions": pred_table,
         "round_cost_laws": law_table,
         "residuals": res_table,
+        "six_row_cell_price": dr6_table,
+        "receipt_per_prompt": pp_table,
     })
     run.summary.update(summary)
     print("run:", run.url)
