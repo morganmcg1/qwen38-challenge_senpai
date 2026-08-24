@@ -1,0 +1,413 @@
+{
+ "experiment": "e163-r1-minimum-accumulator-width-plans",
+ "harness": "static_compile",
+ "gpu_seconds": 0,
+ "official_or_ranked_score": false,
+ "source": "Qwen35.swift qwen35E120QMVHeader, read live",
+ "template_signature": "template <int NA, bool USE_TABLE> qwen_e120_qmv_wide",
+ "arms": {
+  "shipped": {},
+  "minna5": {
+   "5": 3
+  },
+  "minna456": {
+   "4": 2,
+   "5": 3,
+   "6": 2
+  }
+ },
+ "shipped_table": {
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 3,
+  "7": 4,
+  "8": 4,
+  "9": 3
+ },
+ "cells": {
+  "use_table_True": {
+   "m4_ipg4": {
+    "M": 4,
+    "IPG": 4,
+    "NA": 4,
+    "role": "shipped_w4",
+    "active_groups": 1,
+    "tail_lanes": 4,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 6508,
+     "text_sha8": "5ed2e3eb"
+    },
+    "g17s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 6748,
+     "text_sha8": "abe4d6f4"
+    }
+   },
+   "m4_ipg2": {
+    "M": 4,
+    "IPG": 2,
+    "NA": 2,
+    "role": "minna_w4",
+    "active_groups": 2,
+    "tail_lanes": 2,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 74,
+     "spill_bytes": 0,
+     "text_bytes": 4242,
+     "text_sha8": "5634ed1d"
+    },
+    "g17s": {
+     "registers": 87,
+     "spill_bytes": 0,
+     "text_bytes": 4464,
+     "text_sha8": "40b2c0c1"
+    }
+   },
+   "m5_ipg5": {
+    "M": 5,
+    "IPG": 5,
+    "NA": 5,
+    "role": "shipped_w5",
+    "active_groups": 1,
+    "tail_lanes": 5,
+    "shipped_ipg_for_this_m": 5,
+    "g16s": {
+     "registers": 96,
+     "spill_bytes": 0,
+     "text_bytes": 7682,
+     "text_sha8": "ab989e21"
+    },
+    "g17s": {
+     "registers": 102,
+     "spill_bytes": 0,
+     "text_bytes": 7882,
+     "text_sha8": "da33d06d"
+    }
+   },
+   "m5_ipg3": {
+    "M": 5,
+    "IPG": 3,
+    "NA": 3,
+    "role": "minna_w5",
+    "active_groups": 2,
+    "tail_lanes": 2,
+    "shipped_ipg_for_this_m": 5,
+    "g16s": {
+     "registers": 84,
+     "spill_bytes": 0,
+     "text_bytes": 9434,
+     "text_sha8": "e7b11a5c"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 9896,
+     "text_sha8": "1a1ceed3"
+    }
+   },
+   "m6_ipg3": {
+    "M": 6,
+    "IPG": 3,
+    "NA": 3,
+    "role": "shipped_w6",
+    "active_groups": 2,
+    "tail_lanes": 3,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 84,
+     "spill_bytes": 0,
+     "text_bytes": 5348,
+     "text_sha8": "37c00942"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 5596,
+     "text_sha8": "f7126412"
+    }
+   },
+   "m6_ipg2": {
+    "M": 6,
+    "IPG": 2,
+    "NA": 2,
+    "role": "minna_w6",
+    "active_groups": 3,
+    "tail_lanes": 2,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 74,
+     "spill_bytes": 0,
+     "text_bytes": 4242,
+     "text_sha8": "5227f915"
+    },
+    "g17s": {
+     "registers": 87,
+     "spill_bytes": 0,
+     "text_bytes": 4464,
+     "text_sha8": "5237331a"
+    }
+   },
+   "m7_ipg4": {
+    "M": 7,
+    "IPG": 4,
+    "NA": 4,
+    "role": "untouched_w7",
+    "active_groups": 2,
+    "tail_lanes": 3,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 11704,
+     "text_sha8": "b2515bb6"
+    },
+    "g17s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 12184,
+     "text_sha8": "a7864ed4"
+    }
+   },
+   "m8_ipg4": {
+    "M": 8,
+    "IPG": 4,
+    "NA": 4,
+    "role": "untouched_w8",
+    "active_groups": 2,
+    "tail_lanes": 4,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 6508,
+     "text_sha8": "f04e5445"
+    },
+    "g17s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 6748,
+     "text_sha8": "20062eb4"
+    }
+   },
+   "m9_ipg3": {
+    "M": 9,
+    "IPG": 3,
+    "NA": 3,
+    "role": "untouched_w9",
+    "active_groups": 3,
+    "tail_lanes": 3,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 84,
+     "spill_bytes": 0,
+     "text_bytes": 5348,
+     "text_sha8": "bf7ac976"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 5596,
+     "text_sha8": "e2c12d69"
+    }
+   }
+  },
+  "use_table_False": {
+   "m4_ipg4": {
+    "M": 4,
+    "IPG": 4,
+    "NA": 4,
+    "role": "shipped_w4",
+    "active_groups": 1,
+    "tail_lanes": 4,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 6934,
+     "text_sha8": "239c419e"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 7218,
+     "text_sha8": "9213432d"
+    }
+   },
+   "m4_ipg2": {
+    "M": 4,
+    "IPG": 2,
+    "NA": 2,
+    "role": "minna_w4",
+    "active_groups": 2,
+    "tail_lanes": 2,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 66,
+     "spill_bytes": 0,
+     "text_bytes": 4430,
+     "text_sha8": "b57be286"
+    },
+    "g17s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 4670,
+     "text_sha8": "b0624dff"
+    }
+   },
+   "m5_ipg5": {
+    "M": 5,
+    "IPG": 5,
+    "NA": 5,
+    "role": "shipped_w5",
+    "active_groups": 1,
+    "tail_lanes": 5,
+    "shipped_ipg_for_this_m": 5,
+    "g16s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 8234,
+     "text_sha8": "b23a42ec"
+    },
+    "g17s": {
+     "registers": 101,
+     "spill_bytes": 0,
+     "text_bytes": 8452,
+     "text_sha8": "92bd05e7"
+    }
+   },
+   "m5_ipg3": {
+    "M": 5,
+    "IPG": 3,
+    "NA": 3,
+    "role": "minna_w5",
+    "active_groups": 2,
+    "tail_lanes": 2,
+    "shipped_ipg_for_this_m": 5,
+    "g16s": {
+     "registers": 82,
+     "spill_bytes": 0,
+     "text_bytes": 9944,
+     "text_sha8": "2d4dc6e8"
+    },
+    "g17s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 10406,
+     "text_sha8": "91abf7cc"
+    }
+   },
+   "m6_ipg3": {
+    "M": 6,
+    "IPG": 3,
+    "NA": 3,
+    "role": "shipped_w6",
+    "active_groups": 2,
+    "tail_lanes": 3,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 82,
+     "spill_bytes": 0,
+     "text_bytes": 5670,
+     "text_sha8": "90ae3663"
+    },
+    "g17s": {
+     "registers": 89,
+     "spill_bytes": 0,
+     "text_bytes": 5900,
+     "text_sha8": "525f65cd"
+    }
+   },
+   "m6_ipg2": {
+    "M": 6,
+    "IPG": 2,
+    "NA": 2,
+    "role": "minna_w6",
+    "active_groups": 3,
+    "tail_lanes": 2,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 66,
+     "spill_bytes": 0,
+     "text_bytes": 4430,
+     "text_sha8": "a800fdfd"
+    },
+    "g17s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 4670,
+     "text_sha8": "a6302ea2"
+    }
+   },
+   "m7_ipg4": {
+    "M": 7,
+    "IPG": 4,
+    "NA": 4,
+    "role": "untouched_w7",
+    "active_groups": 2,
+    "tail_lanes": 3,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 12452,
+     "text_sha8": "91bbc140"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 12958,
+     "text_sha8": "1359528c"
+    }
+   },
+   "m8_ipg4": {
+    "M": 8,
+    "IPG": 4,
+    "NA": 4,
+    "role": "untouched_w8",
+    "active_groups": 2,
+    "tail_lanes": 4,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 6934,
+     "text_sha8": "0e812090"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 7218,
+     "text_sha8": "ab51b6af"
+    }
+   },
+   "m9_ipg3": {
+    "M": 9,
+    "IPG": 3,
+    "NA": 3,
+    "role": "untouched_w9",
+    "active_groups": 3,
+    "tail_lanes": 3,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 82,
+     "spill_bytes": 0,
+     "text_bytes": 5670,
+     "text_sha8": "8b344670"
+    },
+    "g17s": {
+     "registers": 89,
+     "spill_bytes": 0,
+     "text_bytes": 5900,
+     "text_sha8": "cdd18539"
+    }
+   }
+  }
+ }
+}

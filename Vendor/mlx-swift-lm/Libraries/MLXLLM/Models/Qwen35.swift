@@ -1564,11 +1564,11 @@ private let qwen35E120QMVHeader = """
 private func qwen35E120QMVSource(table: Bool) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
-    let cases = [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
-        .map { m, ipg in
+    let cases = Qwen35CustomQMV.widths
+        .map { m in
             """
                     case \(m):
-                        qwen_e120_qmv_m<\(m), \(ipg), \(flag)>(
+                        qwen_e120_qmv_m<\(m), \(Qwen35CustomQMV.inputsPerGroup(m)), \(flag)>(
                             w, scales, biases, x, \(sums), y,
                             qmv_k, qmv_n, qmv_stride,
                             qmv_gx, qmv_out_row, qmv_lid);
@@ -1706,26 +1706,65 @@ public enum Qwen35CustomQMV {
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
+    /// Input rows one threadgroup of the wide QMV serves, per verify width.
+    /// One dispatch covers width `m` with `ceil(m / ipg)` X-groups, and each
+    /// group carries `NA = ipg` accumulator lanes.
+    ///
+    /// The two costs move in opposite directions. More groups re-read the same
+    /// weight rows, which FINDING 279 measured at 0.64 % of a genuine second
+    /// DRAM pass because concurrent groups march over those rows in lockstep
+    /// and hit cache. A wider accumulator raises the register count of the
+    /// body, which lowers resident simdgroups. This selector exists to price
+    /// the second cost against the first at a fixed verify width.
+    ///
+    /// `m % ipg == 1` is illegal: `qwen_e120_qmv_m` asserts that no tail group
+    /// carries a single input row.
+    ///
+    /// The arm is read once at process start and never varies with the request,
+    /// the prompt or the benchmark phase, and a ranked host sets no `MLX_`
+    /// variable, so a ranked leg always takes the shipped table. The `MLX_`
+    /// prefix is load-bearing: `sanitizedRuntimeWorkerEnvironment` drops every
+    /// `MLXFAST_*` name. The name is over Swift's 15-byte inline-string limit,
+    /// so it reaches the binary's string table and a session can witness it.
+    public static let inputsPerGroupPlan: [Int: Int] = {
+        let shipped = [2: 2, 3: 3, 4: 4, 5: 5, 6: 3, 7: 4, 8: 4, 9: 3]
+        guard let raw = ProcessInfo.processInfo.environment["MLX_E163_IPG_PLAN"],
+            !raw.isEmpty, raw != "shipped"
+        else { return shipped }
+        let arms: [String: [Int: Int]] = [
+            "minna5": [5: 3],
+            "minna456": [4: 2, 5: 3, 6: 2],
+        ]
+        guard let override = arms[raw] else {
+            fatalError(
+                "MLX_E163_IPG_PLAN must be shipped or one of "
+                    + "\(arms.keys.sorted()); got \(raw)")
+        }
+        let plan = shipped.merging(override) { _, new in new }
+        for (m, ipg) in plan where !(ipg >= 2 && ipg <= m && m % ipg != 1) {
+            fatalError(
+                "MLX_E163_IPG_PLAN=\(raw) gives width \(m) the illegal group "
+                    + "size \(ipg)")
+        }
+        return plan
+    }()
+
+    static func inputsPerGroup(_ m: Int) -> Int {
+        guard let ipg = inputsPerGroupPlan[m] else {
+            preconditionFailure("Qwen wide QMV has no width plan for \(m)")
+        }
+        return ipg
+    }
+
     /// Number of input-row threadgroups that can execute real work for the
     /// current shared QMV width table. The Metal body maps group `g` to
     /// `first_m = g * IPG` and returns before any read or write when
     /// `first_m >= M`; launching `M` groups therefore submitted 67--80 %
-    /// no-op groups at every routed width. Keep the table explicit so a future
-    /// width-plan edit must update this launch witness deliberately.
+    /// no-op groups at every routed width. This launch witness and the Metal
+    /// `cases` witness read the same table, so no arm can move one alone.
     static func activeInputGroups(_ m: Int) -> Int {
-        let inputsPerGroup: Int
-        switch m {
-        case 2: inputsPerGroup = 2
-        case 3: inputsPerGroup = 3
-        case 4: inputsPerGroup = 4
-        case 5: inputsPerGroup = 5
-        case 6: inputsPerGroup = 3
-        case 7: inputsPerGroup = 4
-        case 8: inputsPerGroup = 4
-        case 9: inputsPerGroup = 3
-        default: preconditionFailure("Qwen wide QMV has no width plan for \(m)")
-        }
-        return (m + inputsPerGroup - 1) / inputsPerGroup
+        let ipg = inputsPerGroup(m)
+        return (m + ipg - 1) / ipg
     }
 
     /// The chunk-sum table costs one fill dispatch, measured at 4 to 6 us and
