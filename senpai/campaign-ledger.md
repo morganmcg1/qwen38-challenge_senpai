@@ -70093,3 +70093,120 @@ cancelled for a moved comparison point; no revision requests owed.
   running. Alphonse: E173 fixed-cost decomposition, starting with the free
   `tablePays` m=3-to-m=4 natural experiment against askeladd's trace.
 
+
+## Entry 367 — 2026-08-24T08:05Z — the 07:30Z fleet reprovision, the typed-result publication of the frozen tree, and the three-regime localization of the instrumentation tax
+
+### FINDING 426 — the 07:30Z reprovision was fleet-wide, and only durable channels survived it
+
+At ~07:30Z the launcher recycled at least three role environments
+simultaneously:
+
+- **thorfinn's Mac**: the workspace regenerated to a new generation. The
+  frozen candidate `4ba44f82` vanished from the live checkout; he rescued it
+  byte-identical from the old generation's object store on the same disk into
+  a local ref. His receipt watcher died (`4a1ccf84`) and was relaunched
+  (`3c66ec90`).
+- **edward's Mac**: the 16-leg four-arm ABBA died ~22 minutes in with no
+  surviving timing. Lost: the pinned checkpoint cache, all four arm worker
+  binaries (B0 `e6015c90`, B1 `55662323`, B2 `3ee791a7`, B3 `ce9d8d51`), the
+  shared metallib `5de2569e4494`, and the out-of-checkout analysis directory.
+  Survived: the clean branch at `a69e3de1`, every finding already posted as a
+  PR comment, and W&B `cqfa2d6n`.
+- **the advisor checkout**: the `upstream` remote and all organizer objects
+  were wiped; HEAD `f6b1f199` survived because every record was committed and
+  published. Recovery: `senpai/bootstrap-checkout.sh` restored `upstream`
+  (push `DISABLED`) and the Yukon link; `upstream/main` re-verified unchanged
+  at `0863b06a`.
+
+The lesson is uniform: PR comments, W&B, and pushed commits survived; every
+disk-only artifact died. Hence RULE 374.
+
+### RULE 374 — per-leg W&B logging for any timed session over one hour
+
+Any timed session longer than one hour logs each leg to W&B as the leg
+completes, not at session end. A reprovision then costs the remaining legs,
+not all of them. Proposed by edward (PR 166 comment 39 §6), adopted as
+campaign practice, recorded in the runbook.
+
+### The frozen tree is published; FINDING 425's gap is resolved
+
+Thorfinn's only publication channel is the typed `submit_experiment_result`
+(his role forbids shell pushes). Per advisor F6 he fired it at 07:43:44Z with
+`commit_sha = 4ba44f82`, status `inconclusive`, explicitly labelled as a
+publication vehicle with no score claim while `2c885d64` validates. PR 171
+flipped to review at head `4ba44f82`.
+
+Advisor verification from an independent fetch:
+
+- `origin/qwen-thorfinn/e171-compose-and-fire-the-crown-attempt` =
+  `4ba44f8251960eaf79ec4f05135485442438f5ef`.
+- Fast-forward: the assignment commit `59378248` is an ancestor of
+  `4ba44f82`; no amend, rebase, squash, or added commit.
+- Submitted surface vs organizer main `0863b06a`: exactly five files —
+  `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`,
+  `Vendor/.../mlx-generated/quantized.cpp`, `quantized_nax.cpp`,
+  `kernels/quantized.h`, `kernels/quantized_nax.h`.
+- `Qwen35.swift` diff vs `0863b06a`: empty. The byte-identical restore claim
+  holds.
+
+A promotion of `2c885d64` now records a `promotedSourceRef` that resolves in
+`origin`. Askeladd's composition base is no longer blocked on publication; it
+waits only on the receipt decision.
+
+### FINDING 427 — the instrumentation tax lives on the routed call path, not in any global mechanism
+
+From thorfinn's terminal result (receipts `5a9f130a` vs `fda590bb`,
+ledger-equal prompt by prompt, common mode −0.2414 % removed): the decode leg
+moves +0.985 % (se 0.190, t = 5.2), split by regime:
+
+| regime | m | routed | measured |
+|---|---|---|---|
+| prefill | 512 | no | −0.23 % (= drift) |
+| non-drafting round | 1 | no | +0.131 % |
+| drafting round | 2..9 | yes | +1.230 % |
+
+The two counters sit behind the `routable` guard; the tax concentrates where
+the counters are reachable. This kills global explanations — allocator
+pressure, code layout in unrelated modules, anything that would tax the m=1
+rounds and prefill equally — and constrains edward's B1-vs-B2 decomposition
+and alphonse's (a)-vs-(b) fork: the mechanism must act on the routed call
+path itself. Forwarded to edward as F17 §2 and usable by alphonse in E173.
+
+Same result, local side: the four-leg gated ABBA on the strip measures
+−0.2074 % ± 0.3611 (2σ) — the right sign at about a fifth of the ranked
+magnitude, unresolvable in four legs against the 0.120 % local floor.
+Consistent with LAW 377 attenuation of per-round fixed work; no local rerun
+is owed.
+
+### Advisor decision — edward drops B3; three arms, 12 legs (F17)
+
+The reset moved the four-arm session from ~100 minutes marginal to ~4 hours
+total. Setup (2–2.5 h) is common to every future on that host, including the
+prefill programme, so the characterisation's marginal price stays roughly
+100 minutes. Approved his own recommendation: B0/B1/B2 at four legs each —
+the F13 §5 design; B3 conflated linkage with the dead-read removal, and at
+n=2 legs per arm a flat arm cannot be called. The prefill programme is the
+leading candidate for his next assignment. The typed terminal E167 result
+follows the session.
+
+### Operational notes
+
+- `send_assignment_feedback` requires `status:wip`; PR 171 in review rejected
+  advisor F7. The verification content travels in the r2 revision request
+  after the receipt instead. Recorded in the runbook.
+- `2c885d64` still validating at 08:00Z (~50 minutes in). About six solvers
+  validating concurrently; slow receipts expected.
+
+### Standing
+
+- Crown unchanged: `ec24d591` newjordan `3.7291100106`; organizer main
+  unchanged at `0863b06a` (re-verified after re-bootstrap).
+- Official slot **occupied**: `2c885d64` validating; reading rule unchanged
+  (near 3.72 is inside the draw; only well below 3.70 counts against Q).
+- Queue: askeladd depth-cap `min(adaptive, 4)` second — census and the
+  pre-registered adapt-vs-p2 ABBA running; the composition base is the
+  `4ba44f82` tree pending the receipt decision, composed by the advisor onto
+  `senpai/qwen38-mtp-r1` (students cannot branch from student branches).
+- Edward: recovery chain running (job `4f05eae8`), then the three-arm 12-leg
+  ABBA with per-leg W&B logging.
+- Alphonse: E173 running; FINDING 427 forwarded as a constraint.

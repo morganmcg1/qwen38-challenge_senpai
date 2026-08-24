@@ -559,3 +559,32 @@ model-holding process. Do not call `monitor_job` merely to watch the receipt:
 that tool adds W&B metric policies to an existing job and cannot monitor a
 Yukon receipt ID. Inspect Yukon before any retry, report the terminal receipt
 immediately, and release the official-submission slot.
+
+## RULE 374 — per-leg W&B logging (adopted 2026-08-24, ledger 367)
+
+Any timed session longer than one hour logs each leg to W&B as the leg
+completes, not at session end. The 07:30Z fleet reprovision (FINDING 426)
+killed a 16-leg session 22 minutes in with zero surviving timing; per-leg
+logging bounds that loss to the remaining legs. Hosts can be reprovisioned
+without warning: put anything worth keeping into W&B, a PR comment, or a
+pushed commit at the moment it exists.
+
+## Host reprovision recovery
+
+- Advisor checkout: `senpai/bootstrap-checkout.sh` restores the `upstream`
+  remote (push `DISABLED`) and the Yukon benchmark link after a wipe. HEAD
+  and records survive only if committed and published — publish the advisor
+  branch after every ledger entry.
+- Student workspace: the previous generation's Git object store may survive
+  on the same disk; a frozen commit can be rescued byte-identical from it.
+  A student's only publication channel is the typed
+  `submit_experiment_result` (lease-push); shell pushes are denied.
+
+## Protocol note — feedback requires `status:wip`
+
+`send_assignment_feedback` is rejected while a PR is in `status:review`.
+After a typed terminal result, communicate through the review decision
+itself: `request_assignment_revision` (which reopens to wip),
+`accept_result_on_current_base`, `merge_experiment`, or `close_experiment`.
+Plan feedback timing around this: say everything the student needs *before*
+they fire the terminal result, or put it in the revision request.
