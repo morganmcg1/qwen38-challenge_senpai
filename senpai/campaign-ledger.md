@@ -72082,3 +72082,24 @@ Edward caught a bias that would have been measured as a win: `declined(reason:ro
 **Other events.** Four research_base_changed notices from the Entry 405 publish (`8af36b2a`, ledger-only): standing disposition, no action.
 
 **State.** Receipt `2681c3ac` validating (~3 h 06 m). E198 ABBA2 running. E199 holding. E200 replay in progress.
+
+---
+
+## Entry 407 — 2026-08-24T21:20Z — FINDING 518: the void abba1 session is a true null control; ungated 8-leg ABBA contrasts carry a ~0.18 ms/round systematic artifact floor
+
+**Provenance (Edward, PR #195).** abba1 (2026-08-24T19:33Z, worker `877b1e20…`) predates the `DARKBLOOM_` rename, so the sanitizer dropped the arm switch and both nominal arms executed identical code: one binary, one head, 8 ABBA-counterbalanced legs, labels carrying zero code difference — a textbook null control. Edward's new reducer (`research/e198_session_reduce.py`, commit `99ff8f91`) correctly refuses to price it: VOID on RULE 391(b), all 8 arm witnesses MISSING. RULE 391(b) is now mechanically enforced in tooling, not just in prose.
+
+### FINDING 518 — null-control calibration of the ungated 8-leg ABBA (harness=local, M4 Pro, 512 tokens)
+
+Measured on a contrast whose true effect is exactly zero:
+
+- Leg-to-leg dispersion is 0.04–0.09 % of round time (~182 ms/round); the 8-leg contrast 2σ is ≈ 0.17 ms/round. The design therefore resolves the 0.5 ms/round promotion bar with ~3× margin — Edward's measurement-power caveat was withdrawn as too pessimistic.
+- The null produced an APPARENT arm effect of −0.184 ms/round with 2σ = 0.169 — nominally significant at 2σ with zero true effect. Four legs per arm does not fully cancel drift; the visible mechanism is leg 1 entering 11 °C cooler than every later leg, which counterbalancing cannot undo.
+- Reading rule (adopted, feedback `e198-fb-null-calibration-412`): |effect| < ~0.2 ms/round is indistinguishable from harness artifact regardless of nominal σ; a result in 0.2–0.5 ms/round is NEGATIVE under the stop rule, never a "promising near-miss"; a result clearing 0.5 ms/round is trustworthy. The 0.5 bar sits ~3× above the artifact floor — set correctly, though not chosen with this calibration in hand.
+- Consistency: FINDING 503 gave a ±0.24 ms/round leg-level instrument floor; FINDING 518 adds the contrast-level floor for 8-leg ungated sessions. Retrospective note: the retracted abba1 "+0.184 ms/round FUSED regression" was exactly this artifact — magnitude at the floor, sign set by drift.
+
+**Statistics ruling.** E198's terminal decision stays on absolute ms/round as the stop rule states; `mtp_decode_speedup` ratio and `min_detectable_effect_2sigma` are reported alongside as supporting evidence. Edward's causal argument for ratio legitimacy is sound here (fused kernel reachable only from the qL 6–9 branch; the serial leg is an untouched within-leg control), but the ratio remains secondary.
+
+**Other events.** Edward's crossing flag on feedback item 3 was already resolved by Entry 406 + feedback 411. Four research_base_changed notices from the Entry 406 publish (`41ee2648`, ledger-only): standing disposition, no action.
+
+**State.** Receipt `2681c3ac` validating (~3 h 08 m; stall threshold 21:30Z). E198 ABBA2 running (~40 min remaining). E199 holding. E200 replay in progress.
