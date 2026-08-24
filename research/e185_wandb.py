@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Publish the E185 decode-round GPU idle measurement to W&B.
 
-    usage: research/e185_wandb.py --residency research/e185-residency.json \
-                                  [--intervals research/e185-intervals.json] \
+    usage: research/e185_wandb.py --residency RESIDENCY.json [MORE.json ...] \
+                                  [--gaps GAPS.json ...] \
+                                  [--reconcile RECONCILE.json] \
                                   [--name NAME] [--notes TEXT]
 
-One run per session. The residency document is the stage 1 hardware-counter
-screen and the intervals document is the stage 2 phase attribution from the
-E90 command-buffer ledger. Both are `harness=local` observation legs and
-neither is a timed contrast, so nothing here is a score.
+One run per session. A residency document is the `powermetrics` hardware-idle
+counter view of one leg, a gaps document is the E90 command-buffer ledger view
+of one leg, and the reconcile document pairs the two instruments on the one
+leg that carried both. All are `harness=local` observation legs and none is a
+timed contrast, so nothing here is a score.
 """
 
 from __future__ import annotations
@@ -32,37 +34,27 @@ def table(rows: list[dict]) -> wandb.Table:
     )
 
 
-PHASES = [
-    "d_pre", "d_flush", "d_head1", "d_submit1", "d_chain", "d_submit2",
-    "snapshot", "verify_graph", "eval_wall", "readout", "commit", "upkeep",
-    "inter_round_gap",
-]
-
-
-def phase_rows(agg: dict) -> list[dict]:
-    rows = []
-    for phase in PHASES:
-        span = agg.get(f"{phase}_us", {}).get("median")
-        busy = agg.get(f"{phase}_gpu_busy_us", {}).get("median")
-        idle = agg.get(f"{phase}_gpu_idle_us", {}).get("median")
-        if span is None:
-            continue
-        rows.append({
-            "phase": phase,
-            "median_us": span,
-            "gpu_busy_us": busy,
-            "gpu_idle_us": idle,
-            "idle_pct": (100.0 * idle / span) if span and idle is not None else None,
-        })
-    round_us = agg.get("round_us", {}).get("median")
-    round_idle = agg.get("gpu_idle_us_total", {}).get("median")
+def phase_rows(doc: dict) -> list[dict]:
+    rows = [
+        {
+            "phase": p["phase"],
+            "median_us": p["span_us_median"],
+            "gpu_busy_us": p["gpu_busy_us_median"],
+            "gpu_idle_us": p["gpu_idle_us_median"],
+            "idle_pct": p["idle_pct"],
+            "instrument_only": p["instrument_only"],
+        }
+        for p in doc.get("phases", [])
+    ]
+    round_us = doc.get("round_us", {}).get("median")
     if round_us:
         rows.append({
             "phase": "ROUND",
             "median_us": round_us,
-            "gpu_busy_us": agg.get("gpu_busy_us_total", {}).get("median"),
-            "gpu_idle_us": round_idle,
-            "idle_pct": 100.0 * round_idle / round_us if round_idle is not None else None,
+            "gpu_busy_us": doc["round_gpu_busy_us"]["median"],
+            "gpu_idle_us": doc["round_gpu_idle_us"]["median"],
+            "idle_pct": 100.0 * doc["round_gpu_idle_us"]["median"] / round_us,
+            "instrument_only": False,
         })
     return rows
 
@@ -76,14 +68,19 @@ def log_scalars(run, prefix: str, doc: dict) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--residency", required=True)
-    ap.add_argument("--intervals")
+    ap.add_argument("--residency", required=True, nargs="+")
+    ap.add_argument("--gaps", nargs="*", default=[])
+    ap.add_argument("--reconcile")
+    ap.add_argument("--biggaps")
     ap.add_argument("--name", default="e185-decode-gpu-idle-gaps")
     ap.add_argument("--notes", default="")
     args = ap.parse_args()
 
-    residency = json.loads(Path(args.residency).read_text())
-    intervals = json.loads(Path(args.intervals).read_text()) if args.intervals else None
+    residencies = [json.loads(Path(p).read_text()) for p in args.residency]
+    residency = residencies[0]
+    gaps = [json.loads(Path(p).read_text()) for p in args.gaps]
+    reconcile = json.loads(Path(args.reconcile).read_text()) if args.reconcile else None
+    biggaps = json.loads(Path(args.biggaps).read_text()) if args.biggaps else None
 
     run = wandb.init(
         entity=ENTITY,
@@ -114,27 +111,35 @@ def main() -> None:
         },
     )
 
-    log_scalars(run, "stage1", residency)
-    run.log({"stage1/phase_profile": table(residency["phase_profile"])})
-    run.log({"stage1/alignment_sensitivity": table(residency["alignment_sensitivity"])})
+    for doc in residencies:
+        tag = doc.get("tag", "leg")
+        log_scalars(run, f"hardware/{tag}", doc)
+        run.log({f"hardware/{tag}/phase_profile": table(doc["phase_profile"])})
+        run.log(
+            {f"hardware/{tag}/alignment_sensitivity": table(doc["alignment_sensitivity"])}
+        )
 
-    if intervals:
-        docs = intervals if isinstance(intervals, list) else [intervals]
-        for doc in docs:
-            tag = doc.get("tag", "leg")
-            for stratum in ("aggregate", "aggregate_clean"):
-                agg = doc.get(stratum) or {}
-                if not agg:
-                    continue
-                run.log({f"stage2/{tag}/{stratum}": table(phase_rows(agg))})
-                for key, stats in agg.items():
-                    if isinstance(stats, dict) and "median" in stats:
-                        run.summary[f"stage2/{tag}/{stratum}/{key}_median"] = (
-                            stats["median"]
-                        )
-            log_scalars(run, f"stage2/{tag}", {
-                k: v for k, v in doc.items() if not isinstance(v, (list, dict))
-            })
+    for doc in gaps:
+        tag = doc.get("tag", "leg")
+        run.log({f"ledger/{tag}/phases": table(phase_rows(doc))})
+        run.log({f"ledger/{tag}/gap_size_by_start_phase": table(
+            [{"phase": k, **v} for k, v in doc.get("gap_size_by_start_phase", {}).items()]
+        )})
+        for key, stats in doc.items():
+            if isinstance(stats, dict) and "median" in stats:
+                run.summary[f"ledger/{tag}/{key}_median"] = stats["median"]
+        log_scalars(run, f"ledger/{tag}", {
+            k: v for k, v in doc.items() if not isinstance(v, (list, dict))
+        })
+
+    if biggaps:
+        run.log({"ledger/gaps_at_least_1ms_by_start_phase": table(biggaps)})
+
+    if reconcile:
+        log_scalars(run, "reconcile", reconcile)
+        for key, stats in reconcile.get("per_sample_regression", {}).items():
+            run.summary[f"reconcile/per_sample_regression/{key}"] = stats
+        run.log({"reconcile/gap_size_buckets": table(reconcile["gap_size_buckets"])})
 
     print(run.url)
     run.finish()

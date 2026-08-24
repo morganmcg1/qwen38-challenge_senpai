@@ -1,0 +1,159 @@
+{
+  "tag": "e185s3",
+  "harness": "local",
+  "official_or_ranked_score": false,
+  "gate_qualified_for_timing": "false",
+  "leg_role": "gpu-residency-observation",
+  "base_sha": "e02ef0ea78711cfc67d03bab181ffd39854095e5",
+  "worker_sha256": "9246a0b5cd457ffd29aaca6d3cfefbc4d881361e3393ea83751d9b2f8768193b",
+  "host": "ip-10-231-2-22.ec2.internal",
+  "chip": "Apple M4 Pro",
+  "tokens": "512",
+  "sampler_interval_ms": "20",
+  "sample_period_ms_median": 27.711375,
+  "clock_offset_drift_ns": 1697476,
+  "axis_residual_span_s": 1.0001227855682373,
+  "rounds_total": 78,
+  "rounds_skipped": 8,
+  "rounds_analysed": 70,
+  "decode_block_seconds": 9.743159083,
+  "round_us_median": 145826.583,
+  "round_us_mean": 138625.28577142858,
+  "samples_in_window": 343,
+  "sampled_seconds_in_window": 9.702965305,
+  "window_coverage_pct": 99.58746667628438,
+  "gpu_idle_pct": 0.7888067368494007,
+  "gpu_busy_pct": 99.2111932631506,
+  "gpu_idle_us_per_round": 1093.3949142857143,
+  "trace_emit_us_per_round": 248.40602857142858,
+  "gpu_idle_us_per_round_minus_trace_emit": 844.9888857142856,
+  "alignment_sensitivity": [
+    {
+      "shift_ms": -500.0,
+      "idle_pct": 4.77614832620059,
+      "idle_us_per_round": 6631.172842857143
+    },
+    {
+      "shift_ms": -27.711375,
+      "idle_pct": 0.8019077460170115,
+      "idle_us_per_round": 1111.5484857142856
+    },
+    {
+      "shift_ms": 0.0,
+      "idle_pct": 0.7888067368494007,
+      "idle_us_per_round": 1093.3949142857143
+    },
+    {
+      "shift_ms": 27.711375,
+      "idle_pct": 0.7911140299732384,
+      "idle_us_per_round": 1096.3597857142856
+    },
+    {
+      "shift_ms": 500.0,
+      "idle_pct": 0.7828099210556416,
+      "idle_us_per_round": 1087.9163285714285
+    }
+  ],
+  "gpu_idle_pct_alignment_band": [
+    0.7828099210556416,
+    4.77614832620059
+  ],
+  "phase_profile": [
+    {
+      "bin": 0,
+      "position_lo": 0.0,
+      "position_hi": 0.1,
+      "elapsed_ms": 850.515321,
+      "idle_ms": 16.685364,
+      "idle_pct": 1.9617946423801107,
+      "samples": 30
+    },
+    {
+      "bin": 1,
+      "position_lo": 0.1,
+      "position_hi": 0.2,
+      "elapsed_ms": 1126.672531,
+      "idle_ms": 2.823416,
+      "idle_pct": 0.25059774888574077,
+      "samples": 39
+    },
+    {
+      "bin": 2,
+      "position_lo": 0.2,
+      "position_hi": 0.3,
+      "elapsed_ms": 856.028905,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 30
+    },
+    {
+      "bin": 3,
+      "position_lo": 0.3,
+      "position_hi": 0.4,
+      "elapsed_ms": 1018.512241,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 36
+    },
+    {
+      "bin": 4,
+      "position_lo": 0.4,
+      "position_hi": 0.5,
+      "elapsed_ms": 960.606947,
+      "idle_ms": 15.238708,
+      "idle_pct": 1.586362460483018,
+      "samples": 34
+    },
+    {
+      "bin": 5,
+      "position_lo": 0.5,
+      "position_hi": 0.6,
+      "elapsed_ms": 985.829613,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 35
+    },
+    {
+      "bin": 6,
+      "position_lo": 0.6,
+      "position_hi": 0.7,
+      "elapsed_ms": 982.94228,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 35
+    },
+    {
+      "bin": 7,
+      "position_lo": 0.7,
+      "position_hi": 0.8,
+      "elapsed_ms": 980.785489,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 35
+    },
+    {
+      "bin": 8,
+      "position_lo": 0.8,
+      "position_hi": 0.9,
+      "elapsed_ms": 925.472075,
+      "idle_ms": 4.588999,
+      "idle_pct": 0.49585493976141853,
+      "samples": 33
+    },
+    {
+      "bin": 9,
+      "position_lo": 0.9,
+      "position_hi": 1.0,
+      "elapsed_ms": 1042.891028,
+      "idle_ms": 38.431948,
+      "idle_pct": 3.685135548025829,
+      "samples": 37
+    }
+  ],
+  "mtp_seconds_per_token": 0.0288236562628299,
+  "serial_seconds_per_token": 0.07430969551205635,
+  "effective_mean_draft_len": 6.358974358974359,
+  "accepted_draft_rate": 0.8770161290322581,
+  "all_tokens_matched": true,
+  "decode_tokens": 512
+}
