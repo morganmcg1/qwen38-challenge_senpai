@@ -70812,3 +70812,49 @@ smallest local probe.
 - Frozen next: Edward's E175 four-file A+Q (building; suite heads-up delivered).
 - Thorfinn: E176 assigned (desk-first; host needs full recovery sequence before GPU legs).
 - Alphonse: 8-leg screen running; coefficients ~11:30Z.
+
+---
+
+## Entry 375 — 2026-08-24T09:59Z — E175 FROZEN at `9c4fefe8`; conditional pre-authorized fire order; two-model registration; FINDING 447
+
+### 1. E175 freeze accepted
+
+Edward froze the four-file A+Q candidate at `9c4fefe847dc088817034c8644f59b3dda4da748`
+(content commit `cba4307b`; worker `5e8291e0…`, metallib `5d6e3f9f…`). Packaged diff vs
+organizer `0863b06a` over the 89 `editablePaths`: exactly the four Q files (344+/92−). Gates
+green; twin audit 29 runtime-effective twins; 512-token real-gate local-submit exact (both
+legs matched, ledger closed). Binary assertions on the built worker: Q symbols required,
+positive control present, three campaign instrumentation symbols forbidden at 0 — the built
+artifact is proven to be the intended tree. Test control: candidate vs campaign base run in
+the same worktree — identical 10 known-red functions on the 743-test campaign set (Askeladd's
+9 was the 657-test organizer set; both consistent). Submission note drafted at 12.3 KiB. W&B
+[`8bc65oel`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/8bc65oel).
+
+### 2. Conditional pre-authorized fire order (F6)
+
+When Yukon shows `90c131dc` terminal:
+- **Rejected AND promoted row still `ec24d591` @ 3.7291100105909** → Edward fires
+  immediately (no further advisor word), `--model senpai`, then owns the read-only watcher.
+- **Promoted, or the promoted row changed in any way** → hold and ping; the likely re-spec is
+  cap4+Q (one literal on the frozen tree — a single factor on the new frontier), pending
+  E176's answer on Q consumers at M ≤ 5. Rationale: under a cap-4 promote, a cap-7-schedule
+  A+Q receipt would price Q on a schedule we no longer ship.
+- Ambiguous Yukon response → inspect before any retry, never duplicate.
+
+### 3. Two-model registration and FINDING 447
+
+Edward's local-submit recorded prefill separately (per F3) and found **Q's local prefill
+effect is a PENALTY: +1.936%, 8/8 same sign, spread 0.154** (FINDING 447; harness=local,
+M4-class). His adjusted centrals 3.7218/3.7157 now stand against my ranked-route centrals
+3.7328/3.7267; the receipt discriminates. Nearer 3.73 → the penalty is M4-local (nax vs
+non-nax `qmm_t`) and the plutarch bound holds; nearer 3.72 or below → the penalty transfers
+to M5 and the plutarch-bound reasoning has a hole. Datum forwarded to E176 (PR 175 F1): the
+prefill term is host-dependent with its own sign per host — E165's tau < 0 lesson again.
+
+### 4. Board state after this entry
+
+- In flight: `90c131dc` (cap-4, Askeladd) validating; watcher `1f4d2080`.
+- Frozen behind it: E175 `9c4fefe8` with a conditional pre-authorized fire order — ship-mode
+  latency to the next receipt is now zero in the reject branch.
+- Thorfinn: E176 census under way (desk).
+- Alphonse: 8-leg screen running; coefficients ~11:30Z.
