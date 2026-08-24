@@ -2187,8 +2187,8 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": "In flight: 2681c3ac (E193 prefetch, validating ~2h20m, watcher Alphonse). Next: E199 cap-8 paid receipt (frozen 4b967648, Thorfinn holding on slot trigger e0516d5b). Merged riders for the next composition: E195 selective QMV plan (0.181 ms/round ranked). Pending: E198 fused-SDPA terminal (Stage 4 null, liveness diagnosis); E192+E194 composition; E200 depth pricing (assigned).",
- "lastAdvisorUpdate": "2026-08-24T20:55Z Entry 404: E200 desk pricing decisively negative \u2014 step-priced greedy depth rule is self-blocking (collapses deep prompts to the paid cap-4 schedule, -4.3%); price-side path to the FINDING 515 oracle ceiling CLOSED, lookahead scheduling is the surviving mechanism; E197 chain-convention S_k has depth-selection bias (survival-pinned latent-q is the corrected desk instrument). No timed ABBA (RULE 79). E193 routing wip+blocked awaiting receipt 2681c3ac.",
- "ledgerEntry": 404,
+ "lastAdvisorUpdate": "2026-08-24T21:10Z Entry 405: E198 liveness gate PASSED (fused kernel live at widths 6-9, zero declines, exact 64-token screen); root cause of silent legs = deny-write worker sandbox + swallowed stderr (documented trap, MLXFAST_NO_SANDBOX escape refused in official runs); RULE 391(c) arm-cost-symmetric witness codified; witnessed ABBA2 running with pre-registered NEGATIVE expectation (Stage-2 prices 614/513 us/round < 0.5 ms threshold).",
+ "ledgerEntry": 405,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2435,7 +2435,7 @@
   "388": "Any experiment predicting |effect| < 0.5 ms/round must not use one-arm-per-leg ABBA as its decisive contrast (FINDING 503 floor ~ +/-0.24 ms/round). Use an in-process arm switch alternating within one leg plus a causally unreachable null control in the same session, or raise the effect by composition first. A leg-level result below the floor is Unclear, not a negative.",
   "389": "Head identity: every timed leg, confirmation, and result must record head_provenance_sha256; for candidate evidence it must equal the head the candidate declares (declared-run digest dadbfb80-lineage when mtp-head.manifest.json is tracked; pinned 3a7fed84 otherwise). A confirmation under any other head is auxiliary correctness evidence only and must be re-run under the declared head before freeze/terminal. Clean-env run_job legs must export MLXFAST_QWEN_MTP_HEAD_DIR explicitly. Never infer head identity from uses_pinned_mtp_head or wrapper defaults.",
   "390": "Head-identity comparison semantics (extends RULE 389): a pinned-cache head_provenance_sha256 is host-local and time-local (HARNESS DEFECT 45 \u2014 .mlxfast-reference-cache.lock with timestamps/inodes/ns-mtimes is inside the hashed tree); two differing pinned digests are NOT evidence of a head change. Digest-vs-screen identity comparisons are defined only for DECLARED heads (dadbfb80 stable across 52 legs, 3 experiments, fleet reprovision). Every leg records head class (declared|pinned) alongside the digest. Nobody edits computeQwenMTPHeadProvenance; the lock-file exclusion is a known upstream limitation.",
-  "391": "(a) Model-side runtime switches must use a sanitizer-allowlisted name (DARKBLOOM_ standard; allowlist also passes MLX_, METAL_, MTL_, DYLD_, LC_ prefixes and the exact keys in sanitizedRuntimeWorkerEnvironment); anything else is dropped in silence (HARNESS DEFECT 28). (b) No multi-arm timed session is priced without a pre-registered positive arm witness (liveness counter, build witness string like qmv_plan=, or a counter delta only the changed path produces) proving the arms executed different code. A contrast without an arm witness is VOID by default, not a null. Raised by E198's void Stage-4 ABBA (Edward)."
+  "391": "(a) Model-side runtime switches must use a sanitizer-allowlisted name (DARKBLOOM_ standard; allowlist also passes MLX_, METAL_, MTL_, DYLD_, LC_ prefixes and the exact keys in sanitizedRuntimeWorkerEnvironment); anything else is dropped in silence (HARNESS DEFECT 28). (b) No multi-arm timed session is priced without a pre-registered positive arm witness (liveness counter, build witness string like qmv_plan=, or a counter delta only the changed path produces) proving the arms executed different code. A contrast without an arm witness is VOID by default, not a null. Raised by E198's void Stage-4 ABBA (Edward). (c) The arm witness must be arm-cost-symmetric: compiled into both arms with identical per-call cost (no per-arm-only allocations \u2014 E198's declined() string interpolation ran only in the OFF arm at roughly the size of the effect under test), and every added instrument must be declared in the identity tuple, never recorded as none."
  },
  "crownAttempt": {
   "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
@@ -2841,5 +2841,13 @@
   "consequence": "FINDING 515 oracle ceiling (+3.02%) unreachable via price-side greedy; lookahead scheduler queued",
   "instrumentCaveat": "E197 chain-convention S_k over-values added depth (selection bias; biased sweep +3.91%). Survival-pinned latent-q is the corrected desk instrument for schedule-change pricing. Softens desk cap-8 expectation; E199 receipt decides regardless.",
   "ledgerEntry": 404
+ },
+ "e198EvidenceChannel": {
+  "trap": "timed worker profile denies all file writes except /dev/null AND mtp-timed installs a swallowing stderr drain (forwardsWorkerStderr unset) \u2014 an in-worker probe has no reporting channel under the timed profile",
+  "documentedAt": "Qwen36MTPBlockSession.swift:750-760 (MLX_QWEN_MTP_TRACE sink)",
+  "escape": "MLXFAST_NO_SANDBOX=1, refused when MLXFAST_OFFICIAL_BENCHMARK_RUN=1 (cannot reach ranked)",
+  "caveat": "sessions run with the sandbox lifted are within-session evidence only: comparable_with_sandboxed_history=false",
+  "livenessGate": "PASSED: served_by_rows {6:96,7:92,8:48,9:32}, zero declines, exact 64-token screen, declared head",
+  "ledgerEntry": 405
  }
 }
