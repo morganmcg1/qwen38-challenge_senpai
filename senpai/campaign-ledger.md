@@ -70858,3 +70858,76 @@ prefill term is host-dependent with its own sign per host — E165's tau < 0 les
   latency to the next receipt is now zero in the reject branch.
 - Thorfinn: E176 census under way (desk).
 - Alphonse: 8-leg screen running; coefficients ~11:30Z.
+
+## Entry 376 — 2026-08-24T10:25Z — Receipt E REJECTED 3.54742901 (cap-4, single-factor −4.33 % vs A); step law does not transfer to ranked; PR 168 merged; E175 FIRED as `15017ddf`
+
+### Receipt E terminal
+
+`90c131dc-c3e4-4022-b00c-038cf928bbb7` (qwen-askeladd, E168 r1): **REJECTED, published
+3.54742900664627**, scored commit `4937373`, frozen `99959d49`, surface `e044a583`,
+43-minute validation. Yukon's delta column (−0.181681) prices rejects against the promoted
+crown: 3.54742900664627 + 0.181681 = 3.729110 = `ec24d591`. All three briefed bands read
+negative; the outcome fell 0.0026 below the lowest band's floor. Registered central 3.9847
+missed by −11 %. Execution was clean end to end (one-literal packaged diff, gates green,
+exact 512-token confirmation, honest typed result within minutes of the receipt).
+
+### FINDING 448 — cap-4 single-factor ranked cost
+
+Receipt A (`5a9f130a`, 3.70784519415395) is itself organizer-pure, so receipt E vs A is a
+SINGLE-FACTOR contrast: exactly the literal `segmentedVerifyDepthCap 7→4`. The −4.33 %
+published (≈ +4.5 % candidate-leg) is cleanly and completely attributed to the cap, at ~23×
+the 0.189 % candidate-leg 1σ. The student's stated extras-removal confound does not exist —
+corrected at accept time (his verdict is unchanged and strengthened; the extras-removal
+framing belongs to the B/C/D lineage, not A). The same frozen tree measured **−3.97 %
+candidate time locally** (a clear win): the depth axis inverts between hosts.
+
+### FINDING 449 — step-law ranked transfer falsified
+
+FINDING 407's step model priced cap-4 at worst-feasible 4.1637 published (roof 4.3058,
+already assuming h = 2.5 ms). The controlled outcome 3.5474 sits **15 % below
+worst-feasible**. The groups(M) weight-pass step is directly measured on local M4 (per-round
+medians: M5 = 90.83 ms → M6 = 125.79 ms) and does **not** price ranked M5 rounds. Rough
+implied ranked ratio: an M≈7 round costs ~1.3–1.4× an M≤5 round, not 1.77× (two-pass) and
+not 1.0×. Consequences recorded in frontier-state:
+
+- `depthFourLever` → FALSIFIED-BY-RECEIPT.
+- `depthCapEightOpenLever` → REOPENED-UNPRICED (its DEAD verdict was priced by the falsified
+  law; between 4 and 7 ranked prefers deeper — sign only; beyond 7 unknown).
+- `rankedRoundIsAStepFunction` / `stepLawConfirmed` → annotated: local measurement stands,
+  ranked pricing forbidden.
+- `marginalRowShare` → interpolant-derived rowShare numbers unreliable on ranked.
+- New key `rankedDepthTwoPointLaw`: cap-7 → 3.70784519, cap-4 → 3.54742901, single-factor.
+
+### RULE 378
+
+No depth-axis change is promoted on local timing evidence alone; the depth axis inverts
+between local M4 and ranked M5. Adopted from the student's E168 r1 follow-up (3). Ranked
+depth moves are priced only from controlled ranked receipts.
+
+### PR 168 merged
+
+Merged as a high-value negative at `3b7cfee9` (true merge, ancestry preserved). Merge
+hygiene verified before accepting: `git diff 5cf5a255..c9f01088` excluding `research/` is
+empty, so the merge adds research files only (watcher fix `43995554` with the 7-char Yukon
+truncation handling, rebuild/confirm scripts, organizer-pure suite baseline). Base had moved
+only by advisor record commits; validity recorded via accept-on-current-base with the
+FINDING 448 correction embedded.
+
+### E175 FIRED — submission `15017ddf-cfba-4f07-adb1-8c67e6e79a95`
+
+Edward fired at 10:11Z under F6 branch 1 (90c131dc REJECTED, crown unmoved at
+`ec24d591`/3.7291100105909), six minutes after the slot freed. Frozen `9c4fefe8`, content
+commit `cba4307b`, four-file A+Q candidate, note 12.5 KiB, guard line-383 clean
+(`770a3ff2` submitted snapshot == origin/main). Read-only watcher: Edward's job `95233da4`.
+Two-model registration on the record: advisor ranked-route 3.7328/3.7267 vs Edward
+local-prefill-adjusted 3.7218/3.7157 — the receipt discriminates whether the +1.936 % M4
+prefill penalty (FINDING 447) transfers to M5.
+
+### Board
+
+- Thorfinn E176 (PR 175): desk census in progress; F2 queued — extend the census M-range to
+  9, receipt-E implications, cap4+Q composition framing dead.
+- Alphonse E174 (PR 173): 8-leg palindrome screen running; coefficients ~11:30Z; pivot
+  ruling follows.
+- Askeladd: E177 next — ranked depth-law recovery from the two paid controlled receipts
+  (desk-first, organizer-pure workspace already built).

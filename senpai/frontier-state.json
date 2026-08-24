@@ -430,9 +430,10 @@
   "whyOnDeviceIsImpossible": "The verify tensor shape must be host-known, so the width decision cannot stay on device, and there is no existing host transfer before the verify forward to ride on."
  },
  "depthCapEightOpenLever": {
-  "status": "DEAD",
-  "reason": "M = 9 makes a THIRD backbone weight pass; the break-even is far above 1",
-  "withdrawnPreRegistration": "p_7 > 0.93369"
+  "status": "REOPENED-UNPRICED",
+  "reason": "the DEAD verdict (M=9 third weight pass, break-even far above 1) was priced by the step law, whose ranked transfer is falsified (FINDING 449). Between depths 4 and 7 ranked prefers deeper (sign only). Beyond 7: unknown, and no local measurement can price it (RULE 378).",
+  "formerVerdict": "DEAD via groups(9)=3",
+  "pricingBlockedUntil": "E177 ranked depth-law recovery"
  },
  "depthControllerHasNoSignal": {
   "aucPosition0": {
@@ -692,17 +693,19 @@
   "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance."
  },
  "latestOfficialReceipt": {
-  "submissionId": "2c885d64",
-  "frozenSha": "4ba44f8251960eaf79ec4f05135485442438f5ef",
-  "officialScore": 3.65820901018537,
+  "submissionId": "90c131dc-c3e4-4022-b00c-038cf928bbb7",
+  "frozenSha": "99959d49a388cf77f5cd6d30d63b5159fde805b4",
+  "candidateSurfaceCommit": "e044a583",
+  "yukonCommitShown": "4937373",
+  "officialScore": 3.54742900664627,
   "status": "rejected",
   "rejectionReason": "score did not improve current best",
-  "firedAt": "2026-08-24T07:11Z",
-  "terminalAt": "2026-08-24T08:47Z",
-  "tree": "organizer main + Q (4 quantized kernel files) + E165 head-prefetch default + instrumentation strip",
-  "predicted": 3.7527,
-  "predictionErrorPct": -2.52,
-  "reading": "three-factor confound (Q-without-instr, E165, strip); ~10 sigma below projection; ~5x receipt noise below A"
+  "firedAt": "2026-08-24T09:24Z",
+  "terminalAt": "2026-08-24T10:07Z (43 min validation)",
+  "tree": "organizer main 0863b06a + segmentedVerifyDepthCap 7->4 (one literal + 7 doc lines)",
+  "predicted": 3.9847,
+  "predictionErrorPct": -11.0,
+  "reading": "SINGLE-FACTOR vs receipt A (A is itself organizer-pure): cap-4 ranked penalty -4.33 % published, ~+4.5 % candidate-leg, ~23x the 0.189 % candidate-leg 1 sigma. Outcome sits 15 % below the step model worst-feasible cell 4.1637 -> step law does not transfer to ranked (FINDING 449). Yukon prices rejects against the promoted crown: 3.54742900664627 + 0.181681 = 3.729110."
  },
  "liveSubmittedSurface": {
   "afterRevert": "organizer main plus exactly two files, 30 and 88 changed lines",
@@ -800,7 +803,8 @@
   "note": "our per-row cost is the lowest on the entire board",
   "ourRowPrice": 5.3408,
   "ownedBy": "PR 169 alphonse e169-marginal-verified-row-decomposition",
-  "transfer": "1.31x, the only LAW 377 channel worth more on the ranked host than locally"
+  "transfer": "1.31x, the only LAW 377 channel worth more on the ranked host than locally",
+  "lawStatus": "R = 16.1585 + 5.3350*M is an interpolant, refuted as a ranked law by FINDING 449 context; rowShare numbers derived from it are unreliable on ranked until E177 recovers the law"
  },
  "medianRuleLever": {
   "finding365Linearity": "linear to four digits over 0-25 ms",
@@ -854,7 +858,7 @@
  },
  "observedAt": "2026-08-24T05:50:00Z",
  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
- "officialSlot": "OCCUPIED since 2026-08-24T09:24Z: receipt 90c131dc-c3e4-4022-b00c-038cf928bbb7 (qwen-askeladd E168 r1 cap-4 on organizer-pure) status validating. Frozen 99959d49, candidate surface e044a583, packaged diff = one literal (segmentedVerifyDepthCap 7->4) + 7 doc lines vs upstream/main 0863b06a. Askeladd owns the read-only receipt watcher.",
+ "officialSlot": "OCCUPIED since 2026-08-24T10:11Z: receipt 15017ddf-cfba-4f07-adb1-8c67e6e79a95 (qwen-edward E175 A+Q four-file single factor, frozen 9c4fefe8) status validating. Edward owns the read-only receipt watcher (job 95233da4).",
  "onlyExactRoundCostOnBoard": {
   "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
   "optimised": {
@@ -1258,7 +1262,7 @@
   "looDesign": "leave-one-out common-build control flips the sign to deeper-is-faster on all five high-q prompts with implied h=5.57 vs between-prompt 5.335",
   "looRefutation": "6 of 7 wrong-prompt negative controls fire, up to |t|=15.5, same signs; the design identifies schedule generation not depth",
   "naiveDesign": "within-prompt slope of decode s/tok on edl is the A-to-B build gap re-signed by whichever cluster drafts deeper on that prompt",
-  "status": "empty cell, not tested and rejected; only a controlled ranked submission can measure it"
+  "status": "superseded in part: two controlled ranked depth points now exist \u2014 cap-7 (A) 3.70784519415395 and cap-4 (90c131dc) 3.54742900664627, single-factor. Board-only inference remains unidentifiable; law recovery from the paid receipts is E177 (qwen-askeladd)."
  },
  "rankedDepthOptimum": {
   "boardFalsificationAttempt": "among the 30 fastest receipts per prompt the edl is the shipped default and nothing else. Within-solver on edl>=3 deeper measures slower on beagle/essays but the estimator is confounded and our own receipts disagree with fkiene's. Of 190 distinct schedules across 948 receipts, not one is both deep and fast.",
@@ -1839,7 +1843,7 @@
  },
  "rankedRoundIsAStepFunction": {
   "finding": 407,
-  "status": "the single largest structural result of the campaign",
+  "status": "measured directly on local M4 (per-round medians); RANKED TRANSFER FALSIFIED by controlled receipt 90c131dc (FINDING 449) \u2014 do not price ranked rounds with groups(M) steps",
   "refutation": "the linear model T(M) = 16.1585 + 5.3350*M gives T(1) = 21.494 ms, which is 1.979 ms BELOW the 23.473 ms physical weight-stream floor. A decode round must read every backbone weight once. The linear model is impossible, not imprecise.",
   "plutarchDiscriminator": {
    "observed": 30.522,
@@ -1981,6 +1985,12 @@
    "d5VsD4Pct": 14.1,
    "predictedPct": 17,
    "note": "complete 10-leg gated palindrome unit; 3/3 pre-registered signs; ladder picks 4"
+  },
+  "contradictedByControlledReceipt": {
+   "finding": 449,
+   "receipt": "90c131dc cap-4 organizer-pure, 3.54742900664627",
+   "gap": "outcome is 15 % below the model worst-feasible cell 4.1637 (which already assumed h=2.5 ms)",
+   "impliedRankedRatio": "an M~7 round costs roughly 1.3-1.4x an M<=5 round on ranked, not 1.77x (two-pass) and not 1.0x"
   }
  },
  "breakEvenLadderStepModel": {
@@ -2030,7 +2040,8 @@
   "shipSurfaceDecision": "Ship min(adaptive, 4) as a literal CAP on segmentedVerifyDepthCap and the costModelDepth entry point. Do NOT pin, and do NOT ship MLX_E159_FIXED_DRAFT_DEPTH.",
   "rankedMeanWidth": "M = 1 + edl: plutarch 1.156, drama 3.298, travel 3.648, beagle 5.382, republic 5.989, essays 6.087, medicine 6.256, botany 7.148. Five of eight above the boundary, including both median-pair prompts (beagle, essays). The ranked pool behaves like Askeladd's longcopy fixture (multi-pass 87.2 %), not his english fixture (0.0 %).",
   "thorfinnLocalHistogram": "512-token local fixture, 77 rounds: d histogram {2:1,3:2,4:6,5:5,6:7,7:56}; M>=6 88.31 %, M>=7 81.82 %, M=8 72.73 %. Independent host, independent fixture.",
-  "scope": "confirmed at the ranked M=1 anchor and locally per-round/per-arm (FINDING 429); the ranked M>=6 crossing is OPEN (FINDING 428), discriminated by the cap-4 receipt."
+  "scope": "confirmed at the ranked M=1 anchor and locally per-round/per-arm (FINDING 429); the ranked M>=6 crossing is OPEN (FINDING 428), discriminated by the cap-4 receipt.",
+  "rankedTransferStatus": "FALSIFIED as a ranked pricing tool by receipt 90c131dc (FINDING 449). The M=1/plutarch anchor (30.402 vs 30.372 predicted) still holds; the groups=2 step at M in 6..8 does not price ranked rounds."
  },
  "depthFourLever": {
   "ledger": 361,
@@ -2050,7 +2061,14 @@
   "localConfirmation": "E159 fixed-depth ms/token 35.205, 24.723, 20.510, 19.530, 23.831, 22.271, 20.899 at depths 1..7 vs adaptive 21.037; minimum at 4, worst interior point at 5 = M 6 = first group crossing",
   "owner": "qwen-askeladd, PR 168",
   "shipSurface": "segmentedVerifyDepthCap Qwen36MTPBlockSession.swift:1060 and the costModelDepth entry point; ship the literal, not MLX_E159_FIXED_DRAFT_DEPTH",
-  "contingency": "the priced gain assumes the ranked M>=6 step, which is OPEN (FINDING 428). Cap-4 receipt predictions: step transfers -> published ~4.16-4.31 (new crown); step absent -> ~3.55-3.65 (rejection, pivot to declamp-deeper per E168 s4)."
+  "contingency": "the priced gain assumes the ranked M>=6 step, which is OPEN (FINDING 428). Cap-4 receipt predictions: step transfers -> published ~4.16-4.31 (new crown); step absent -> ~3.55-3.65 (rejection, pivot to declamp-deeper per E168 s4).",
+  "status": "FALSIFIED-BY-RECEIPT",
+  "receiptOutcome": {
+   "receipt": "90c131dc",
+   "published": 3.54742900664627,
+   "vsA": "-4.33 %",
+   "verdict": "publishedRoof 4.3058 and worstFeasible 4.1637 were artifacts of the non-transferring step law (FINDING 449)"
+  }
  },
  "cheapPromptsAreFree": {
   "ledger": 361,
@@ -2203,47 +2221,32 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": {
-  "ledger": 373,
+  "ledger": 376,
   "inFlight": {
-   "receipt": "90c131dc-c3e4-4022-b00c-038cf928bbb7",
+   "receipt": "15017ddf-cfba-4f07-adb1-8c67e6e79a95",
    "benchmark": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
-   "owner": "qwen-askeladd",
-   "assignment": "E168 r1 (PR 168)",
-   "frozenHead": "99959d49a388cf77f5cd6d30d63b5159fde805b4",
-   "candidateSurfaceCommit": "e044a583",
-   "submittedAt": "2026-08-24T09:24:24Z",
-   "candidate": "upstream/main 0863b06a + segmentedVerifyDepthCap 7->4 (one literal + doc comment)",
-   "confirmation": "512-token real-gate --local-submit on exact submitted tree: 30.283 ms/token, all_tokens_matched, row ledger closes at 548, schedule digit-identical to r0 cap arm (111 rounds, {2:1,4:4,5:106}, acc 0.9199, edl 3.9369). W&B u2g6yfjx.",
-   "prediction": "central 3.9847, band +4..+8 % vs A 3.70784519",
-   "readingRule": "bands vs A 3.70784519: >=3.9 step transfers/crown; 3.65-3.9 partial -> within-group-slope model; 3.55-3.65 step absent -> pivot declamp-deeper. Candidate-leg pairwise null 0.189 % 1sd; published adds ~0.271 % serial draw. Promote line 3.7291100106.",
-   "note": "11.5 KiB (first note rejected under the 5 KiB minimum; safe failure, nothing submitted)"
-  },
-  "preparing": null,
-  "frozenNext": {
-   "name": "A + Q four-file single factor",
    "owner": "qwen-edward",
-   "assignment": "E175 r0 (PR 174), F3 build ruling 09:25Z",
-   "candidate": "upstream/main 0863b06a + exactly quantized{,_nax}.{h,cpp} at campaign versions; sidecar question dissolved (FINDING 441)",
-   "predictions": "published 3.7328 (mean7) / 3.7267 (score-setting); coin flip at crown 3.72911; receipt sd ~0.010",
-   "decisionRule": ">=3.7291 promote/crown; 3.71-3.729 Q real, compose with cap-4 outcome; ~3.708 Q null on ranked -> A-replay contingency fires; <=3.69 channel broken -> A-replay immediately",
-   "holdRule": "fires after the cap-4 receipt 90c131dc is terminal and read; Edward builds/gates/freezes now and holds the SHA (F4 09:33Z)",
+   "assignment": "E175 r0 (PR 174)",
    "frozenSha": "9c4fefe847dc088817034c8644f59b3dda4da748",
    "contentCommit": "cba4307b",
+   "submittedAt": "2026-08-24T10:11Z",
+   "candidate": "upstream/main 0863b06a + exactly the four Q kernel files (quantized{,_nax}.{h,cpp}); organizer-pinned head",
    "artifacts": {
     "worker": "5e8291e02163bd3103cb993f1b783496550ff40f24065066f6eefc7be146c09d",
     "metallib": "5d6e3f9f1438dc5d6e99423b720d66676b08a3c92a204c1e3fd8b6b0ecaef91d"
    },
-   "status": "FROZEN 09:52Z; gated (512-token real-gate exact, binary assertions, scope/budget/boundary green, twin audit 29, campaign-base test control identical 10 known-red); note drafted 12.3 KiB; W&B 8bc65oel",
-   "conditionalFireOrder": {
-    "issuedAt": "2026-08-24T09:58Z (F6, pre-authorized)",
-    "fire": "when yukon shows 90c131dc terminal REJECTED and the live promoted row is still ec24d591 at 3.7291100105909: fire immediately, --model senpai, then own the read-only receipt watcher via run_job",
-    "hold": "if 90c131dc PROMOTED or the promoted row differs in any way: hold and ping the advisor; likely re-spec is cap4+Q (one literal on the frozen tree, a single factor on the new frontier), pending the E176 census of Q consumers at M <= 5",
-    "ambiguous": "inspect Yukon before any retry; never duplicate"
-   }
-  }
+   "confirmation": "512-token real-gate --local-submit exact both legs, residual_divergence 0, mtp-verify rows=513 self-consistent; W&B 8bc65oel",
+   "twoModelRegistration": "advisor ranked-route 3.7328 (mean7) / 3.7267 (score-setting) vs Edward local-prefill-adjusted 3.7218 / 3.7157; receipt discriminates whether the +1.936 % M4 prefill penalty transfers to M5",
+   "readingRule": ">=3.7291 promote/crown; 3.71-3.729 Q real, compose; ~3.708 Q null -> A-replay contingency; <=3.69 channel broken -> A-replay immediately",
+   "firedUnder": "F6 branch 1 (90c131dc REJECTED, crown unmoved at ec24d591/3.7291100105909); fired 6 min after slot free; guard line-383 clean (770a3ff2 submitted snapshot == origin/main)",
+   "watcher": "Edward's read-only run_job 95233da4, 60 s polls, 150-poll cap, output outside checkout",
+   "note": "12.5 KiB, above the 5 KiB Yukon minimum"
+  },
+  "preparing": null,
+  "frozenNext": null
  },
- "lastAdvisorUpdate": "2026-08-24T09:59Z ledger entry 375: E175 frozen 9c4fefe8, conditional pre-authorized fire order, two-model registration, FINDING 447",
- "ledgerEntry": 375,
+ "lastAdvisorUpdate": "2026-08-24T10:25Z ledger entry 376: receipt 90c131dc REJECTED 3.5474 (cap-4 single-factor, FINDINGs 448-449, RULE 378), PR 168 merged, E175 FIRED as 15017ddf",
+ "ledgerEntry": 376,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2402,7 +2405,9 @@
   "444": "CROSS-HOST Q CORROBORATION. Askeladd's r1-vs-r0-cap composite (+0.67 % local cost of organizer-pure vs campaign tree at digit-identical cap-4 schedule) decomposes with local instrumentation tax ~+0.21 % (E167 B3) to local Q ~= -0.88 %, vs ranked Q = -0.6691 % (FINDING 440). Same sign, ~0.76 transfer ratio; first independent cross-host confirmation that Q is real. Sign flip vs ranked B-A +0.20 % explained by instrumentation taxing ranked ~4x harder. W&B u2g6yfjx + f4np59rg. QUALIFIER (askeladd, accepted): local Q ~= -0.88% is a DERIVED quantity (measured composite +0.67% at 3.5 sigma vs the 0.189% null, plus E167's ~+0.21% local instrumentation tax, plus the assumption the inert deltas contribute ~0). Treat as sign-and-rough-magnitude corroboration, not a calibrated cross-host transfer coefficient.",
   "445": "CAP-4 SCHEDULE INVARIANCE ACROSS TREES. The cap-4 depth schedule is digit-identical between the campaign tree (E168 r0 cap arm) and organizer-pure (r1): 111 rounds, width histogram {2:1,4:4,5:106}, acceptance 0.919908466819222, edl 3.936936936936937. Depth policy is fully decoupled from kernel/instrumentation state; the reverted campaign work did not interact with the depth controller. Makes tree-swap timing contrasts schedule-clean by construction.",
   "446": "ORGANIZER-PURE SUITE BASELINE. swift test does not compile on organizer 0863b06a with this toolchain (QwenMTPVerbTests.swift:755 concatenated string literals cannot convert to Comment; campaign one-hunk fix applies, Tests/ is outside editablePaths). With the fix: 657 tests, 37 suites, 9 failing test functions, ALL pre-existing organizer state (8 already red on the campaign base; the 9th, theQwenMTPTrackIsArmedOnQwen38, is stale organizer test code expecting the QWEN38-PENDING-RELEASE placeholder in a fixture organizer main now ships armed). Cap-4 frozen tree 99959d49: no regression from the literal. Any failure OUTSIDE this set on an organizer-based tree is signal.",
-  "447": "Q LOCAL PREFILL PENALTY. On Edward's M4-class host, the four-file Q edit makes the 512-token seed prefill SLOWER by +1.936% (8/8 same sign, spread 0.154) - the opposite sign of the naive 'Q serves prefill' prior. Plausible mechanism: doubled threadgroup allocations (Ws[2*BN*BK_padded]) hurting occupancy at large M on the smaller GPU. Ranked plutarch bounds the M5 prefill effect near zero, so the prefill term is host-dependent with its own sign per host, like E165's tau < 0. Feeds the E176 model. harness=local. W&B 8bc65oel."
+  "447": "Q LOCAL PREFILL PENALTY. On Edward's M4-class host, the four-file Q edit makes the 512-token seed prefill SLOWER by +1.936% (8/8 same sign, spread 0.154) - the opposite sign of the naive 'Q serves prefill' prior. Plausible mechanism: doubled threadgroup allocations (Ws[2*BN*BK_padded]) hurting occupancy at large M on the smaller GPU. Ranked plutarch bounds the M5 prefill effect near zero, so the prefill term is host-dependent with its own sign per host, like E165's tau < 0. Feeds the E176 model. harness=local. W&B 8bc65oel.",
+  "448": "CAP-4 SINGLE-FACTOR RANKED COST. Receipt 90c131dc (organizer-pure 0863b06a + segmentedVerifyDepthCap 7->4, frozen 99959d49, surface e044a583) REJECTED at 3.54742900664627 = -4.33 % published vs receipt A 3.70784519415395. A is itself organizer-pure, so the contrast is SINGLE-FACTOR: exactly one literal. ~23x the candidate-leg 1 sigma 0.189 %. The student-stated extras-removal confound does not exist (corrected in the accept record). The same frozen tree measured -3.97 % candidate time locally: the depth axis inverts between local M4 and ranked M5. Registered central 3.9847 missed by -11 %.",
+  "449": "STEP-LAW RANKED TRANSFER FALSIFIED. FINDING 407's step model priced cap-4 at worst-feasible 4.1637 published (roof 4.3058, already assuming h=2.5 ms); the controlled outcome 3.5474 is 15 % below worst-feasible. groups(M) weight-pass steps are directly measured on local M4 but do NOT price ranked M5 rounds; rough implied ranked ratio M~7/M<=5 = 1.3-1.4x, not 1.77x and not 1.0x. Every step-law-derived ranked verdict is unsupported, including the depth-cap-8 DEAD verdict (reopened, unpriced). The ranked depth law is UNKNOWN with exactly two controlled points; recovery is E177."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2413,7 +2418,8 @@
   "202": "Never leave the official slot empty. Keep one distinct frozen candidate queued behind the one in flight. Duplicate submissions are forbidden, so cadence is answered by a pipeline of distinct justified candidates, not by re-rolling.",
   "374": "per-leg W&B logging for any timed session over one hour; a reprovision then costs only the remaining legs",
   "376": "Before assigning an implementation experiment, grep the campaign ledger for the mechanism axis. A merged null on the same mechanism closes the axis absent a recorded reopening reason (program.md already requires the recorded reason). Raised by ADVISOR ERROR 237 (E174 assigned onto the E160-closed epilogue axis).",
-  "377": "Mechanism presence is decided by file CONTENT, not by whether a file appears in a diff. Organizer code carries mechanisms too: a file absent from candidate-vs-organizer diff means ORGANIZER content, which may include the mechanism. Raised by the FINDING 438 'sidecar ABSENT' misreading (file-level diff inference)."
+  "377": "Mechanism presence is decided by file CONTENT, not by whether a file appears in a diff. Organizer code carries mechanisms too: a file absent from candidate-vs-organizer diff means ORGANIZER content, which may include the mechanism. Raised by the FINDING 438 'sidecar ABSENT' misreading (file-level diff inference).",
+  "378": "No depth-axis change is promoted on local timing evidence alone. The depth axis inverts between local M4 and ranked M5 (cap-4: local -3.97 %, ranked ~+4.5 % candidate-leg). Adopted from the qwen-askeladd E168 r1 follow-up. Ranked depth moves are priced only from controlled ranked receipts."
  },
  "crownAttempt": {
   "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
@@ -2613,5 +2619,23 @@
    "basis": "edward: local prefill penalty +1.936% (8/8 same sign, spread 0.154) models published Q effect -0.296% below the ranked route; W&B 8bc65oel"
   },
   "discriminator": "the E175 receipt: nearer 3.73 => prefill penalty is M4-local (nax vs non-nax qmm_t) and the plutarch bound holds; nearer 3.72 or below => the penalty transfers to M5 and the plutarch-bound reasoning has a hole"
+ },
+ "rankedDepthTwoPointLaw": {
+  "harness": "ranked",
+  "points": {
+   "cap7": {
+    "receipt": "5a9f130a (A)",
+    "published": 3.70784519415395
+   },
+   "cap4": {
+    "receipt": "90c131dc",
+    "published": 3.54742900664627
+   }
+  },
+  "singleFactor": "one literal segmentedVerifyDepthCap 7->4; both trees organizer-pure at 0863b06a",
+  "sign": "deeper wins between depths 4 and 7 on ranked M5",
+  "magnitude": "-4.33 % published for 7->4, ~+4.5 % candidate-leg, ~23 sigma",
+  "localInversion": "same frozen tree was -3.97 % candidate time locally (a win) \u2014 the depth axis inverts between hosts",
+  "recovery": "E177 (qwen-askeladd): recover the ranked round-cost law from per-prompt structure of the two receipts"
  }
 }
