@@ -1593,10 +1593,15 @@ public enum Qwen35QMVWidthPlan: String, Sendable {
     /// prompt or the benchmark phase. `sanitizedRuntimeWorkerEnvironment` drops
     /// every `MLXFAST_*` name, so the switch carries the `MLX_` prefix, and the
     /// name is long enough for `strings` to witness it in the built worker.
+    ///
+    /// The default stays `staged`. E189 measured `singlePass` end to end: it
+    /// takes 3.92 ms/round off an m = 6 round but adds 53.96 ms/round at m = 8,
+    /// where the shipped cap-7 schedule drafts, so shipping it by default would
+    /// be a large regression.
     public static let active: Qwen35QMVWidthPlan = {
         let raw = ProcessInfo.processInfo.environment["MLX_E189_QMV_WIDTH_PLAN"]
-        guard let raw, !raw.isEmpty else { return .singlePass }
-        return Qwen35QMVWidthPlan(rawValue: raw) ?? .singlePass
+        guard let raw, !raw.isEmpty else { return .staged }
+        return Qwen35QMVWidthPlan(rawValue: raw) ?? .staged
     }()
 }
 
