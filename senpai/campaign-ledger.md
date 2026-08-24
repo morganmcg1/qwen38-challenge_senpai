@@ -68184,3 +68184,262 @@ of a `44.98 ms` round, 63.8 %, scales with `M`. He must return one of:
 
 If the answer is (b) with a structural limit, the axis closes and the ledger records
 it. The F3 split-K prior sent to him is conditional on (a).
+
+## Entry 358 — 2026-08-24T05:05:00Z — there was never a sign inversion, and the depth axis now has a ranked-priced ladder
+
+### ADVISOR ERROR 226 — I handed Edward a false per-receipt file attribution
+
+In F5 I told Edward that `7226dc9a` edited `quantized.h` only, non-`_nax`. That is wrong.
+`7226dc9a` was alphonse's E147 **rung A plus rung B**. The campaign had already settled the
+attribution at `campaign-ledger.md:55278` and `:56583`:
+
+```
+e147_rungA_prefill_pct            local -1.0489 %   ranked 0 by dispatch
+e147_rungB_marginal_prefill_pct   ranked +2.1451 %  local 0 by dispatch
+```
+
+Edward built a correct falsifier on that premise and reached a wrong conclusion, that local
+screening of the affine 4-bit GEMM is sign-unreliable. The fault is mine.
+
+**Rule: never hand a student a per-receipt file attribution without quoting the ledger line
+that established it.**
+
+### FINDING 401 — the local and ranked prefill arms measure two different kernel families
+
+Edward's structural objection was valid and I confirmed it at the source:
+
+- `quantized_nax.h:575` **defines its own** `QuantizedBlockLoader`. It imports none.
+- `quantized_nax.metal` includes `utils.h`, `steel/gemm/gemm.h`, `steel/gemm/nax.h`,
+  `steel/gemm/loader.h` and `quantized_nax.h`. It **does not include `quantized.h`**.
+
+The two families are source-independent, so editing `quantized.h` alone cannot change a
+`_nax` kernel. With the corrected premise the paradox dissolves:
+
+| host | `is_nax_available()` | prefill GEMM reached | rung the revert removes | measured |
+|---|---|---|---|---|
+| M4 Pro, gen 16 | false | `qmm_t_impl`, `quantized.h` | rung A | local −2.1379 %, t = −47.5 |
+| ranked M5, gen 17 | true | `qmm_nax`, `quantized_nax.h` | rung B | ranked +1.99 %, +10.0 sigma |
+
+Dispatch gate `quantized.cpp:697`: `is_nax_available() && transpose && (K % 64 == 0) &&
+(enable_tf32() || x.dtype() != float32)`. Every scored prefill GEMM is transposed, has
+`K` in `{5120, 6144, 17408}`, and runs bf16.
+
+**Each host measured the only rung it executes. Software pipelining helps `qmm_t_impl` on
+gen 16 and hurts `qmm_nax` on gen 17. Different kernels, different loaders, different tile
+geometry. There is no sign inversion of a single mechanism.**
+
+FINDING 397 stands, corroborated by the earlier dispatch census `ranked_all_nax = true` and
+`local_all_qmm_t_impl = true`.
+
+Corrected rule, replacing the one in E167 F4 item 5: **local screening of the affine 4-bit
+GEMM is not sign-unreliable, it is family-blind.** A gen-16 host is a valid instrument for
+the non-`_nax` family and a null instrument for `_nax`.
+
+Evidence: Edward's 8-leg ABBA, `P C C P P C C P`, 512 tokens, depth 8, commit `0621a760`,
+`git_dirty=0`, all eight legs `cool_gate_passed_real_gate=true` and
+`gate_qualified_for_timing=true`, zero witness violations, `all_tokens_matched=true` against
+reference rows generated once from the reverted arm, schedule class identical on all legs
+(`edl=6.3766233766233764`, `accepted=435`, `rounds=77`), arm-mean entry temperature gap 0.1 C.
+
+Decode moved +0.3034 % at t = +1.59, not significant. **The mechanism is prefill-only in
+measurement as well as in dispatch**, which independently reproduces the F4 decomposition on
+a second host.
+
+### FINDING 402 — LAW 377's seed-prefill transfer factor was wall-contaminated
+
+Local `seed_prefill_seconds` spans the whole of `begin()`, including lazy graph construction
+and cold JIT, and every ABBA leg is a fresh process that pays it. Edward's trace:
+`build_us` about 2.90 s, `eval_wall_us` about 1.03 s, `wall_us` about 3.92 s, `cpu_us` 8.8 ms.
+
+```
+local GPU prefill 1.03 s / 512 = 2.012 ms/tok
+ranked anchor                    1.0294 ms/tok
+GPU-side transfer                1.955x     (LAW 377 recorded 7.593x, wall-contaminated)
+```
+
+E83 corroborates independently and on a different day: `target_forward_eval` was 24.5 % of a
+4046.1 ms seed prefill, which is 991 ms, within 4 % of 1.03 s.
+
+Corrected transfer table:
+
+```
+seed prefill, GPU-side   M5 about 1.96x faster
+decode round             M5 about 2.95x faster
+```
+
+The M5's advantage over a gen-16 host is substantially smaller on prefill than on decode.
+This makes the F7 prefill programme materially cheaper to screen than assumed.
+
+Standing hygiene rule: local absolute prefill is never a proxy for ranked
+`prefill_seconds_per_token`. Only arm-to-arm deltas are meaningful, and only within one
+kernel family.
+
+### Board semantics, confirmed from the receipt fields
+
+Status vocabulary is `accepted`, `rejected`, `failed`, `cancelled`, `validating`. There is no
+`promoted` status; promotion appears as `promotionStatus`. Acceptance is **global**:
+`rejectionReason` on both of our recent receipts is literally `score did not improve current
+best`. The bar is the crown `ec24d591` at **3.7291100105909**, `promotedSourceRef`
+`0863b06ac16e`, promoted 2026-08-23T11:43Z.
+
+At 04:52Z the official slot was free. Five submissions in flight, none ours: `7511978b` ofou,
+`662e272e` newjordan, `10f3a0d1` vibecodooor, `8886ec88` jungjipdo, `144b5048` scarletbright.
+`c7a418c3` igneous-prose went terminal at 3.71007853205938, rejected.
+
+### Our live surface is organizer main plus two files
+
+`origin/senpai/qwen38-mtp-r1` against `upstream/main` on the submitted surface:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift        30
+Vendor/.../MLXLLM/Models/Qwen35.swift                   88
+Vendor/.../mlx-generated/quantized.cpp                 138   <- revert target
+Vendor/.../mlx-generated/quantized_nax.cpp              80   <- revert target
+Vendor/.../kernels/quantized.h                         138   <- revert target
+Vendor/.../kernels/quantized_nax.h                      80   <- revert target
+```
+
+`upstream/main` contains zero `shift_dst`. FINDING 389's four-file inventory is confirmed
+against the live tip. **After the revert our candidate is organizer main plus exactly two
+files, 30 and 88 changed lines.**
+
+Predicted receipt, from `180db842` at 3.70465399:
+
+```
+beagle   prefill share 9.65 %  -> 0.0965 * 1.992 = 0.1922 %
+essays   prefill share 10.49 % -> 0.1049 * 1.992 = 0.2090 %
+published = 0.4781*0.1922 + 0.5219*0.2090          = 0.2010 %
+3.70465399 * 1.002010                              = 3.71209
+```
+
+That is 0.46 % under the crown, so it will be rejected on score. It is submitted anyway: it
+is the first isolated, unbundled, 10-sigma measurement of this mechanism, and at 3.7121 it
+would be our best receipt ever and the first time a Senpai tree beat unmodified organizer
+main (`5a9f130a`, 3.70784519). It prices our two surviving deltas at about +0.11 % together.
+
+### Advisor ruling — re-pin the twin-audit waiver
+
+Reverting the four files de-pins a `KNOWN_COMMENT_DIVERGENCES` row that is digest-pinned to
+the pipelined body, so `twin_audit.py` reports `STALE quantized: section drift`. Ruling:
+**re-pin to the organizer-clean body.** The divergence is pre-existing in `upstream/main`,
+comment-only and inert to the Metal compiler; pinning to the upstream text is strictly
+stricter than pinning to the pipelined text; and `research/twin_audit.py` is not in
+`editablePaths`, so it cannot reach the submitted archive. Conditions: change only the two
+digest fields and the descriptive text, never the audit logic, and require a clean self-test
+and negative control before freezing.
+
+### FINDING 403 — the ranked-priced break-even acceptance ladder
+
+The shipped cost model at `Qwen36MTPBlockSession.swift:919-930` is flat:
+`marginal[d] = h = 0.18`, `cumulative[d] = 1 + d*h`, with the rule at `:1152` extending when
+`reach > h*(1 + expected)/(1 + d*h)`.
+
+The true ranked price follows from `R(M) = 16.1585 + 5.3350*M`, `M = 1 + d`:
+
+```
+R(d)/R(0) = (21.4935 + 5.3350*d)/21.4935 = 1 + 0.248215*d
+```
+
+**True ranked `h` is 0.248215. The shipped 0.18 underprices a draft step by 37.9 %.** This
+reproduces FINDING 385's `c* = 0.24821` from a second direction.
+
+Break-even homogeneous acceptance for taking step `d -> d+1`, priced by the ranked law:
+
+```
+ 0 -> 1   0.50000        4 -> 5   0.86039
+ 1 -> 2   0.55631        5 -> 6   0.89441
+ 2 -> 3   0.71829        6 -> 7   0.91742
+ 3 -> 4   0.80727        7 -> 8   0.93369
+```
+
+`harness=ranked`. Depends only on `A` and `B`. The shipped greedy rule with `h = 0.248215`
+reproduces this ladder exactly under homogeneous `q`, so **the rule is structurally correct
+and every defect is in its inputs**.
+
+**Immediate use: the cap `7 -> 8` at `:1060` pays if and only if `p_7 > 0.93369.`** Saturated-round
+sensitivity: 0.920 gives −0.580 %, 0.934 is break-even, 0.950 gives +0.723 %, 0.967 gives
++1.512 %, 0.980 gives +2.140 %. Pre-registered before Askeladd's census is read.
+
+### The 2.6-step gap, and the two explanations it admits
+
+Homogeneous fits to the board give beagle `q = 0.932` and essays `q = 0.967`, both above
+`q*(6 -> 7) = 0.91742`, so a homogeneous model says both should draft to depth 7. The board
+says they do not:
+
+```
+ prompt     tok/round   mean depth   implied M   ms/tok
+ beagle       4.6545      4.382        5.382      9.6643
+ essays       5.5652      5.087        6.087      8.7925
+ botany       6.3210      6.148        7.148      8.6180
+ medicine     5.6889      5.255        6.255      8.6748
+ republic     5.5054      4.989        5.989      8.6684
+ drama        2.0317      2.297        3.297     16.8530
+ travel       2.4038      2.648        3.648     14.6059
+ plutarch     1.0492      0.156        1.156     29.0913
+```
+
+**(a) Acceptance decays with position.** The pooled `q` is a blend that overstates deep
+positions, the controller sees the decay through `positionAcceptEMA`, and the axis is nearly
+closed.
+
+**(b) The controller is held shallow by its inputs.** Moving beagle from 4.382 to depth 7 at
+`q = 0.932` is 9.6643 to 9.2892 ms/token, +4.04 % of decode; essays is +6.6 %. Weighted
+through the published formula that is roughly **+4.8 %**, several times the crown gap.
+
+Askeladd's per-position census discriminates them and nothing else does. Mechanism to check
+under (b): `positionAcceptEMA` seeds at `0.85*pow(0.98,i)` at `:856-857`, giving 0.768, 0.754
+and 0.739 at positions 5, 6 and 7 — every one below its ladder threshold. `recordAcceptOutcome`
+at `:1194-1223` counters this with an optimism transfer toward 0.95 on fully accepted rounds,
+but **the 0.95 cap sits only 0.016 above `q*(7 -> 8) = 0.93369`**, and `reach` is a product of
+these estimates.
+
+### Closed sub-axis — `headStepCostRatio` alone
+
+Do not correct 0.18 to 0.248215 on its own. FINDING 394's ranked arms are 0.14 (2.766),
+0.15 (2.667), 0.18 (2.920), 0.32 (2.846). The underpriced `h` pushes deeper and the two margin
+clamps pull shallower; they were fitted jointly and partly cancel. Changing one alone is a
+guaranteed loss. Reopen only with a joint (price, clamp) arm.
+
+### Composition arithmetic for the crown attempt
+
+Thorfinn's per-round fixed-cost mechanism, priced against the ranked law rather than the
+local leg:
+
+```
+local -654.8 us/round, LAW 377 fixed channel 0.34x -> ranked -222.6 us/round
+beagle  -0.2226/44.983 = -0.4949 % of round, x 0.9035 decode share = -0.4472 % of leg
+essays  -0.2226/48.932 = -0.4549 % of round, x 0.8951 decode share = -0.4072 % of leg
+published = 0.4781*0.4472 + 0.5219*0.4072 = +0.4263 %
+
+revert          3.70465399 x 1.002010 -> 3.712098
+plus mechanism             x 1.004263 -> 3.727925
+crown                                    3.729110
+shortfall                                0.032 %
+```
+
+A dead heat. At 0.271 % sigma on `officialScore` that is roughly a 45 % chance of taking the
+crown outright. The shot is worth firing, and it is also why the ladder in FINDING 403
+matters more than the composition does.
+
+### Dispatch note recorded for reuse
+
+The reverted mechanism cannot touch the decode round at our widths. Decode runs `M` in 2 to 9,
+so `Qwen35CustomQMV.routable` takes it or MLX falls back to the `qmv`/`qvm` vector path;
+`get_qmv_batch_limit` returns 10 on both gen 16 and gen 17, so `quantized.cpp:1418
+if (M >= vector_limit)` is false at every decode width and the `qmm` family is never entered.
+Thorfinn's contrast is therefore additive with the revert and needs no replay. Pre-authorised.
+
+### Assignments issued
+
+- **edward, PR #166, F9.** Error 226 recorded, FINDING 401 and 402 delivered, waiver re-pin
+  ruled, traced-leg experiment declined, submit the revert alone with an honest predicted
+  3.7121 and an expected rejection on score.
+- **thorfinn, PR #165, I7.** Base change is prefill-only and additive, pre-authorised without
+  replay; warned that local full-leg numbers become incomparable across the revert boundary
+  because local prefill gets 2.14 % slower; cherry-pick the revert now and prepare the
+  composed crown attempt; cap 7 to 8 stays queued behind it.
+- **askeladd, PR #168, F4.** FINDING 403 delivered; census reframed from pooled statistics to
+  a per-position `p_d` table set beside the ladder; `p_7 > 0.93369` pre-registered as the
+  decision rule for another student's lever; optimism-transfer firing rate and 0.95-cap cost
+  added.
+- **alphonse, PR #169.** Unchanged. FINDING 400 (a)/(b)/(c) arithmetic remains priority 1.
