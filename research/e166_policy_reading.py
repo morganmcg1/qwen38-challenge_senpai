@@ -142,37 +142,163 @@ def parse_trace(path):
     return rounds, anchors
 
 
+def parse_sched(field):
+    """`sched=i:p/reach/threshold;...` — one entry per step the walk evaluated.
+
+    `p` is the post-clamp per-position accept probability, `reach` is the
+    running product `prod_{k<=i} p_k`, and `threshold` is the value `reach` must
+    exceed for the walk to add draft `i`. The walk stops at the first entry
+    whose `reach` fails its `threshold`, so the field records the decision, not
+    just its outcome."""
+    steps = []
+    for chunk in field.strip(";").split(";"):
+        if not chunk:
+            continue
+        index, values = chunk.split(":", 1)
+        p, reach, threshold = (float(v) for v in values.split("/"))
+        steps.append({"i": int(index), "p": p, "reach": reach,
+                      "threshold": threshold})
+    return steps
+
+
+def verify_sched(rounds, ratio=None):
+    """Positive control: rebuild every field of the traced walk from the model.
+
+    A match proves the replay uses the shipped objective, the shipped price and
+    the shipped clamp, not a paraphrase of them. `worst_*` are absolute
+    deviations over every step of every traced round."""
+    h = SHIP_H if ratio is None else ratio
+    worst_p = worst_reach = worst_threshold = 0.0
+    steps_checked = depth_matches = 0
+    for entry in rounds:
+        steps = parse_sched(entry["walk"])
+        clamped = clamp_margin(entry["ema"], entry["margin"])
+        reach = 1.0
+        accepted = 0.0
+        added = 0
+        for step in steps:
+            i = step["i"]
+            reach *= clamped[i]
+            threshold = h * (1.0 + accepted) / (1.0 + h * i)
+            worst_p = max(worst_p, abs(step["p"] - clamped[i]))
+            worst_reach = max(worst_reach, abs(step["reach"] - reach))
+            worst_threshold = max(worst_threshold, abs(step["threshold"] - threshold))
+            steps_checked += 1
+            if step["reach"] <= step["threshold"]:
+                break
+            accepted += reach
+            added += 1
+        if added == min(added, entry["cap"], SEGMENTED_VERIFY_DEPTH_CAP):
+            depth_matches += 1
+    return {
+        "steps_checked": steps_checked,
+        "worst_abs_error_p": worst_p,
+        "worst_abs_error_reach": worst_reach,
+        "worst_abs_error_threshold": worst_threshold,
+        "model_reproduces_trace_fields": max(
+            worst_p, worst_reach, worst_threshold) < 5e-6,
+        "rounds_within_cap": depth_matches,
+    }
+
+
+VARIANTS = {
+    # name: (price ratio, apply the two top-2 margin clamps)
+    "ship": (SHIP_H, True),
+    "ranked_price": (price_ratio(RANKED_S, RANKED_H), True),
+    "no_margin_clamp": (SHIP_H, False),
+    "no_clamp_ranked_price": (price_ratio(RANKED_S, RANKED_H), False),
+}
+
+
 def replay(rounds, anchors):
     """Open-loop counterfactual: hold every EMA at its shipped value and swap
-    only the price constant. The EMAs are a closed loop in a real run, so this
-    is a first-order reading, not a prediction of a live arm."""
-    ranked_ratio = price_ratio(RANKED_S, RANKED_H)
-    ship, ranked = Counter(), Counter()
-    per_round = []
+    one policy term. The EMAs are a closed loop in a real run, so this is a
+    first-order reading, not a prediction of a live arm."""
+    depths = {name: [] for name in VARIANTS}
+    clamp_bound = 0
     for entry in rounds:
-        p_vector = clamp_margin(entry["ema"], entry["margin"])
         cap = min(entry["cap"], SEGMENTED_VERIFY_DEPTH_CAP)
-        d_ship = choose_depth(p_vector, SHIP_H, cap)
-        d_ranked = choose_depth(p_vector, ranked_ratio, cap)
-        ship[d_ship] += 1
-        ranked[d_ranked] += 1
-        per_round.append((d_ship, d_ranked))
-    realised = Counter(a[1] for a in anchors)
-    n = max(len(per_round), 1)
-    return {
-        "rounds_traced": len(per_round),
-        "ranked_price_ratio": ranked_ratio,
-        "ship_price_ratio": SHIP_H,
-        "hist_ship_replayed": dict(sorted(ship.items())),
-        "hist_ranked_replayed": dict(sorted(ranked.items())),
-        "hist_realised_from_anchor": dict(sorted(realised.items())),
-        "mean_depth_ship_replayed": sum(d for d, _ in per_round) / n,
-        "mean_depth_ranked_replayed": sum(d for _, d in per_round) / n,
-        "mean_depth_realised": (sum(a[1] for a in anchors) / len(anchors)) if anchors else None,
-        "replay_reproduces_shipped_walk": all(
-            d == r for (d, _), r in zip(per_round, [a[1] for a in anchors])
-        ) if len(anchors) == len(per_round) else None,
+        clamped = clamp_margin(entry["ema"], entry["margin"])
+        if clamped[0] < entry["ema"][0] or clamped[1] < entry["ema"][1]:
+            clamp_bound += 1
+        for name, (ratio, use_clamp) in VARIANTS.items():
+            p_vector = clamped if use_clamp else entry["ema"]
+            depths[name].append(choose_depth(p_vector, ratio, cap))
+    n = max(len(rounds), 1)
+    realised = [a[1] for a in anchors]
+    out = {
+        "rounds_traced": len(rounds),
+        "rounds_where_margin_clamp_binds": clamp_bound,
+        "hist_realised_from_anchor": dict(sorted(Counter(realised).items())),
+        "mean_depth_realised": (sum(realised) / len(realised)) if realised else None,
+        "sched_positive_control": verify_sched(rounds),
+        "variants": {},
     }
+    for name in VARIANTS:
+        series = depths[name]
+        out["variants"][name] = {
+            "price_ratio": VARIANTS[name][0],
+            "margin_clamp": VARIANTS[name][1],
+            "hist": dict(sorted(Counter(series).items())),
+            "mean_depth": sum(series) / n,
+        }
+    out["walk_control"] = walk_control(depths["ship"], realised)
+    out["break_even"] = break_even_table(depths, "ship")
+    return out
+
+
+def walk_control(replayed, realised):
+    """Compare the replayed shipped depth with the depth the leg actually used.
+
+    The parent stops the leg at the configured decode length, so the final round
+    can offer fewer drafts than the policy asked for. That truncation is a
+    window boundary, not a policy disagreement, so it is reported separately
+    instead of being folded into the match rate."""
+    if len(replayed) != len(realised):
+        return {"comparable": False}
+    mismatches = [{"round": i + 1, "replayed": r, "realised": a}
+                  for i, (r, a) in enumerate(zip(replayed, realised)) if r != a]
+    interior = [m for m in mismatches if m["round"] != len(realised)]
+    return {
+        "comparable": True,
+        "rounds": len(realised),
+        "mismatches": mismatches,
+        "reproduces_every_round": not mismatches,
+        "reproduces_every_interior_round": not interior,
+        "interior_match_rate": 1.0 - len(interior) / max(len(realised) - 1, 1),
+    }
+
+
+def break_even_table(depths, reference):
+    """Assumption-free cost side of every counterfactual.
+
+    A depth change moves offered rows from `M_ref` to `M_var`. Under the ranked
+    round law the leg must gain `R(M_var)/R(M_ref) - 1` in emitted tokens to
+    break even. The measured E159 accepted counts on the same fixture supply
+    the gain the extra drafts would actually deliver at leg-average acceptance.
+    """
+    accepted = {0: 0.0}
+    for d, rate in E159_ACCEPT_RATE.items():
+        accepted[d] = rate * d
+    base = depths[reference]
+    rows = {}
+    for name, series in depths.items():
+        m_ref = sum(1 + d for d in base) / len(base)
+        m_var = sum(1 + d for d in series) / len(series)
+        t_ref = sum(1 + accepted[d] for d in base) / len(base)
+        t_var = sum(1 + accepted[d] for d in series) / len(series)
+        r_ref = RANKED_S + RANKED_H * m_ref
+        r_var = RANKED_S + RANKED_H * m_var
+        rows[name] = {
+            "mean_offered_rows": m_var,
+            "ranked_round_ms": r_var,
+            "tokens_per_round_at_e159_acceptance": t_var,
+            "ranked_spt_ms": r_var / t_var,
+            "ranked_spt_pct_vs_ship": 100.0 * ((r_var / t_var) / (r_ref / t_ref) - 1.0),
+            "break_even_token_gain_pct": 100.0 * (r_var / r_ref - 1.0),
+            "modelled_token_gain_pct": 100.0 * (t_var / t_ref - 1.0),
+        }
+    return rows
 
 
 # harness=ranked, E166 brief: per-token accept probability solved from the

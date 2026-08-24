@@ -185,6 +185,129 @@
       "shipped_edl": 1.16
     }
   ],
+  "step1_replay": {
+    "break_even": {
+      "no_clamp_ranked_price": {
+        "break_even_token_gain_pct": -0.9800988044310066,
+        "mean_offered_rows": 7.333333333333333,
+        "modelled_token_gain_pct": -1.1014757955875254,
+        "ranked_round_ms": 55.28183333333334,
+        "ranked_spt_ms": 8.476793604792318,
+        "ranked_spt_pct_vs_ship": 0.12272881939638935,
+        "tokens_per_round_at_e159_acceptance": 6.5215499999999995
+      },
+      "no_margin_clamp": {
+        "break_even_token_gain_pct": 2.205222309969823,
+        "mean_offered_rows": 7.666666666666667,
+        "modelled_token_gain_pct": 2.8258198804968826,
+        "ranked_round_ms": 57.060166666666674,
+        "ranked_spt_ms": 8.415304544993882,
+        "ranked_spt_pct_vs_ship": -0.6035425452948551,
+        "tokens_per_round_at_e159_acceptance": 6.780523076923077
+      },
+      "ranked_price": {
+        "break_even_token_gain_pct": -5.880592826586117,
+        "mean_offered_rows": 6.82051282051282,
+        "modelled_token_gain_pct": -7.697304325898713,
+        "ranked_round_ms": 52.545935897435896,
+        "ranked_spt_ms": 8.63303953298066,
+        "ranked_spt_pct_vs_ship": 1.9682106638867491,
+        "tokens_per_round_at_e159_acceptance": 6.086608974358974
+      },
+      "ship": {
+        "break_even_token_gain_pct": 0.0,
+        "mean_offered_rows": 7.435897435897436,
+        "modelled_token_gain_pct": 0.0,
+        "ranked_round_ms": 55.829012820512816,
+        "ranked_spt_ms": 8.466402888481943,
+        "ranked_spt_pct_vs_ship": 0.0,
+        "tokens_per_round_at_e159_acceptance": 6.594183333333333
+      }
+    },
+    "hist_realised_from_anchor": {
+      "1": 1,
+      "3": 4,
+      "4": 5,
+      "5": 5,
+      "6": 3,
+      "7": 60
+    },
+    "mean_depth_realised": 6.358974358974359,
+    "rounds_traced": 78,
+    "rounds_where_margin_clamp_binds": 38,
+    "sched_positive_control": {
+      "model_reproduces_trace_fields": true,
+      "rounds_within_cap": 78,
+      "steps_checked": 513,
+      "worst_abs_error_p": 4.991142019683537e-07,
+      "worst_abs_error_reach": 1.759772053744335e-06,
+      "worst_abs_error_threshold": 8.564787856712996e-07
+    },
+    "variants": {
+      "no_clamp_ranked_price": {
+        "hist": {
+          "3": 1,
+          "4": 13,
+          "5": 2,
+          "6": 5,
+          "7": 57
+        },
+        "margin_clamp": false,
+        "mean_depth": 6.333333333333333,
+        "price_ratio": 0.24821457649987205
+      },
+      "no_margin_clamp": {
+        "hist": {
+          "4": 5,
+          "5": 4,
+          "6": 3,
+          "7": 66
+        },
+        "margin_clamp": false,
+        "mean_depth": 6.666666666666667,
+        "price_ratio": 0.18
+      },
+      "ranked_price": {
+        "hist": {
+          "1": 3,
+          "2": 7,
+          "4": 10,
+          "5": 2,
+          "6": 5,
+          "7": 51
+        },
+        "margin_clamp": true,
+        "mean_depth": 5.82051282051282,
+        "price_ratio": 0.24821457649987205
+      },
+      "ship": {
+        "hist": {
+          "3": 4,
+          "4": 5,
+          "5": 5,
+          "6": 3,
+          "7": 61
+        },
+        "margin_clamp": true,
+        "mean_depth": 6.435897435897436,
+        "price_ratio": 0.18
+      }
+    },
+    "walk_control": {
+      "comparable": true,
+      "interior_match_rate": 1.0,
+      "mismatches": [
+        {
+          "realised": 1,
+          "replayed": 7,
+          "round": 78
+        }
+      ],
+      "reproduces_every_interior_round": true,
+      "reproduces_every_round": false,
+      "rounds": 78
+    }
+  },
   "step2": {
     "chain_reach_increments": [
       0.9807,
