@@ -7,6 +7,31 @@
 - Host: AWS Mac, Apple M4 Pro, `harness=local` for every measured leg.
 - Every timed leg in this report is **ungated**: `cool_gate_passed_real_gate=false`,
   `gate_qualified_for_timing=false`. Nothing here is an official or ranked score.
+- W&B: <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ob750vyt>
+  (run `ob750vyt`, 10 legs, tables `legs`, `price`, `policy_per_prompt`,
+  `flat_q_map`, `acceptance`, `replay`, `break_even`).
+- Built artifacts for every leg: `cli_sha256=c81b0779…`,
+  `worker_sha256=70ebae60…`.
+
+## 0. Reproduction
+
+```bash
+# step 0  island prelude, 4 legs, 128 tokens, pinned depth 4
+research/e166_step0_session.sh
+
+# step 0b witness repeat plus the traced 512-token adaptive leg
+research/e166_step0b_session.sh
+
+# the reading itself, from the traced leg
+python3 research/e166_policy_reading.py \
+  --trace research/out/e166trace/b0-adapt/trace.txt \
+  --json  research/e166-artifacts/e166_policy_reading.json
+
+# publish
+python3 research/e166_wandb_log.py --run-name e166-r0-depth-policy-reading
+```
+
+Run times on this host: step 0 `307 s`, step 0b `467 s`.
 
 ## 1. Question and answer
 
@@ -193,16 +218,22 @@ digit-identical ledger (rounds 27, EDL 3.814815, accepted 102, rejected 1, rows
 The harness reports the contrast **relative to the control arm `S`**, so a
 positive effect means the *islands-off* arm is slower.
 
-| session | effect on `P` (islands off) | percent | bar | significant at 95 % |
-|---|---|---|---|---|
-| `e166s0` | `+385.4 us / round` | `+0.427 %` | 180.5 us | no (1 block, CI undefined) |
-| `e166s0w` | `+283.6 us / round` | `+0.314 %` | 180.6 us | no (1 block, CI undefined) |
+Each session runs one conditioning block (`b0`) and one estimate block (`b1`);
+only `b1` enters the contrast.
+
+| session | effect on `P` (islands off) | percent | bar | `b1` entry temps `P` / `S` | significant at 95 % |
+|---|---|---|---|---|---|
+| `e166s0` | `+385.4 us / round` | `+0.427 %` | 180.5 us | 58.73 / 59.37 C (spread 0.64) | no (1 block, CI undefined) |
+| `e166s0w` | `+283.6 us / round` | `+0.314 %` | 180.6 us | 56.75 / 58.21 C (spread 1.46) | no (1 block, CI undefined) |
 
 Read plainly: **turning islands off costs `0.31-0.43 %` per round**, so the
 island transform is the faster arm. Two independent sessions agree on the sign
 and both exceed the 0.2 % bar, but each has a single estimate block, so
 `significant_at_95=false` and `clears_bar=false` in both reports. This is
 directional evidence only, and it is not part of the E166 hypothesis test.
+
+The one cold leg in the whole set, `e166s0w/b0-S` at `34.65 C`, sits in the
+conditioning block and does not enter either estimate.
 
 My step 0 note recorded the raw number `+385.4 us` without resolving which arm
 carried the islands. The witness resolves it; the sign above supersedes that
@@ -214,9 +245,14 @@ Session `e166trace`: 512 decode tokens, offered depth 8, arm `adapt`
 (`MLX_QWEN_MTP_TRACE=1`) against an untraced control arm `adaptc`.
 
 Both legs: `matched=true`, 78 rounds, EDL `6.3589743589743586` — **identical to
-the last digit**. Seconds per token `0.02869482` traced against `0.02865331`
-untraced, so tracing costs `+0.145 %` and does not move the decision walk. The
-trace is therefore a faithful record of the shipped policy.
+the last digit**. Tracing therefore does not move the decision walk, and the
+trace is a faithful record of the shipped policy. This identity is the control
+that matters here, and it is immune to thermal state.
+
+I make **no timing claim** from this pair. The traced leg entered at `79.20 C`
+and the untraced leg at `59.21 C`, a `20 C` spread, so the seconds-per-token
+difference between them (`0.02869482` against `0.02865331`) is confounded by
+temperature and cannot price the tracing overhead. Both legs are ungated.
 
 ### 5.1 The trace records the decision, not only its outcome
 
