@@ -67982,3 +67982,205 @@ Priced before assigning: `non_drafting_round_count = 0` on every weighted prompt
 so a width-1 target verify never happens there. Worth zero. **Declined**, and
 recorded so that the next reader does not adopt the comment's reasoning in a place
 where it does cost us something.
+
+## Entry 357 — 2026-08-24T04:55:00Z — ADVISOR ERROR 225 corrects FINDING 390, the narrow-output pricing is withdrawn, and the axis is reopened on ranked-only evidence
+
+### ADVISOR ERROR 225 — FINDING 390 read `get_qmv_batch_limit` out of the wrong branch
+
+Found by Alphonse, PR #169 interim 4. `quantized.cpp:84-124` branches on GPU
+generation **first**:
+
+```
+:87    if (arch_gen == 13 || arch_gen == 14) { ... else return 6;  }
+:105   else                                  { ... else return 10; }
+```
+
+`arch_gen_` is parsed at `device.cpp:572` as `ag_tens * 10 + ag_ones`. g16s reports
+`applegpu_g16s`, so gen **16**; the ranked M5 is gen **17**. Both take the `else`
+branch at `:105`, `arch_size` is `'s'` so the `default:` case applies, and every
+scored shape has `D > 4096` or `O > 4096`:
+
+```
+harness=static
+get_qmv_batch_limit(K, N) = 10   for all seven scored shapes, g16s and M5
+                          = 12   in the 'd' case
+                          =  6   only on M1/M2-generation parts
+```
+
+Consequence: `quantized.cpp:1418` `if (M >= vector_limit)` is **false** for every
+`M <= 9`, so stock MLX would route the whole decode range to `dispatch_qmv`
+(`:1442-1445`), never to `qmm`. Combined with `segmentedVerifyDepthCap = 7`
+capping verify width at 8:
+
+> **`qmm_nax` is unreachable in the decode path at every legal MTP width, on every
+> host, with or without our custom kernel.**
+
+That is stronger than FINDING 397 and supersedes it. FINDING 390's **decode** claim
+is withdrawn. FINDING 390's **prefill** claim survives and Alphonse confirmed the
+route independently: `Qwen36MTPBlockSession.swift:649-652` forwards the seed in one
+call of width 512 with `nConfirmed: 0` and no chunking, `512` is outside
+`widths = 2...9`, so prefill leaves our kernel and lands on `qmm_nax`, on the M5
+only.
+
+Both errors in this family, ADVISOR ERROR 225 here and the F2 version of the same
+claim, came from reading a generation-gated constant without checking which
+generation branch our hosts take. Rule for the campaign record: **never quote a
+value out of `quantized.cpp` or `device.cpp` without naming the `arch_gen` branch
+it comes from.**
+
+### FINDING 395's narrow-output pricing is WITHDRAWN
+
+Alphonse withdrew his own interim 2 framing and I accept it. The `N = 5120`
+throughput deficit is not a novel finding: `campaign-ledger.md:50661` already
+records that at `M = 6` the one-pass plan launches one column of 640 threadgroups
+on the `N = 5120` shapes, and that **640 is at the occupancy floor of a 20-core
+part**. The prior table at about `:50650` already splits the shapes on the same `N`
+boundary, and `:50666` already recommends keying the plan table on `N` or on
+launched threadgroup count.
+
+**Rule 83** then applies: a g16s occupancy closure is not g17s or M5 evidence,
+because the M5 has second-generation Dynamic Caching and a redesigned occupancy
+unit. The `+7.25 %` published figure in Entry 355 was built on that g16s
+throughput table and is withdrawn with it.
+
+He also stays declined on the FINDING 375 mechanism, refuted by `24fb4012`,
+`0adf695f`, `eff9348d` and `0e849bfc`.
+
+### FINDING 398 — three independent estimators agree on the marginal row, and the head cost is fixed rather than marginal
+
+Alphonse in-situ census: a real pinned-width target forward through
+`Qwen36MTPTarget` on the public 512/1024 long-copy prompt, 768-token seed, 12 reps
+per block, warmup 3, widths 1 to 9 swept up and then down, ABBA within one session.
+Fit over widths 2 to 9 gives `a = 50.50 ms`, `b = 6.199 +/- 1.088 ms/row`,
+`c = 33.30 +/- 3.58 ms/group`, `R^2 = 0.9956`, `RMSE = 2.41 ms`. `M` and
+`activeInputGroups(M)` are correlated over the reachable widths, so the direct step
+statistics are the robust reading: within-group step mean **6.739 ms/row**,
+group-crossing step mean **36.64 ms** (5->6 = 34.08, 8->9 = 39.19), implied
+`c = 29.90 ms/group`.
+
+| estimator | `a` | `b` ms/row | `c` ms/group |
+|---|---:|---:|---:|
+| E163 in-situ full decode round | 57.384 | 7.002 | 28.605 |
+| E169 bottom-up shape sum | 57.325 | 6.828 | 29.575 |
+| E169 in-situ census, target forward only | 50.50 | **6.739** | 29.90 |
+
+Three `b` values spanning 3.8 %, three `c` values spanning 4.4 %, all
+`harness=local` g16s, from instruments with completely different systematic errors.
+Thermal control: ascending and descending passes agree within 0.87 % at every width
+and within 0.28 % at widths 2, 3, 6, 7, 8.
+
+**The new datum.** The census block contains only the target forward. The E163
+round additionally contains the MTP head proposal, the acceptance walk and the
+session bookkeeping. The difference is `6.88 ms` per round and it appears
+**entirely in `a`, not in `b`**: census `b` 6.739 against full-round `b` 7.002, a
+gap of 0.26 ms/row that is inside the three-estimator spread.
+
+> **The proposal-head cost does not scale with draft width at the margin. It is
+> paid once per round whether the round drafts one row or seven.**
+
+This contradicts the premise of the `headStepCostRatio` model and is independent
+corroboration of FINDING 394 from a completely different instrument. It also
+confirms that Thorfinn's per-round fixed-cost work and Alphonse's row work are
+cleanly separable.
+
+### FINDING 399 — the entry price for depth adaptivity is AUC 0.80, and the implementation cannot be cheap
+
+Askeladd, PR #168, answering the advisor's "what AUC is enough" question. Method:
+synthesise a signal of stated AUC over the recorded outcomes under the
+equal-variance binormal model, `s = delta*y + noise` with
+`delta = sqrt(2)*Phi^-1(AUC)`, then price the best floor-plus-threshold rule that
+can use it. The rule family contains every constant depth, so it has two forced
+anchors: AUC 0.5 must return the best constant and a perfect signal must return
+the oracle. Both land on independently computed numbers, which validates the
+machinery rather than assuming it. Five noise replicates; the rule is chosen on its
+mean and reported at that mean.
+
+| signal AUC | raw | gap won | mean d | budget/round | discarded head steps |
+|---|---|---|---|---|---|
+| 0.50 | 2.246 | 0.1 % | 2.01 | 10 us | 0.01 |
+| 0.60 | 2.247 | 0.3 % | 2.00 | 29 us | 0.03 |
+| 0.65 | 2.281 | **5.8 %** | 1.57 | 576 us | 0.60 |
+| 0.70 | 2.306 | 9.8 % | 1.64 | 897 us | 0.93 |
+| 0.75 | 2.342 | 15.7 % | 1.72 | 1455 us | 1.52 |
+| 0.80 | 2.376 | 21.1 % | 1.80 | 1983 us | 2.07 |
+| 0.85 | 2.447 | 32.5 % | 1.33 | 2857 us | 2.98 |
+| 0.90 | 2.548 | **48.8 %** | 1.52 | 4393 us | 4.57 |
+| 0.95 | 2.644 | 64.2 % | 1.71 | 5932 us | 6.18 |
+| 0.999 | 2.839 | 95.7 % | 1.36 | 8291 us | 8.63 |
+
+Anchors: best constant depth 2 at raw 2.245, oracle 2.866. The synthetic signal is
+equally good at every position while a real feature decays with depth, so every row
+is optimistic.
+
+**Implementation constraint, from source.** `Qwen36MTPBlockSession.swift:1483-1489`
+builds the whole head chain with no host read; `:1541` is the round's single
+blocking eval and its own comment states the budget as "1 sync/cycle"; every
+`.item()` after it copies from a materialised buffer and waits on nothing.
+Therefore an on-device width decision is impossible because the verify tensor shape
+must be host-known, and there is no existing host transfer before the verify
+forward to ride on. Only a new sync remains, and both designs are worse than one
+sync: a confidence-driven early stop serialises a fully pipelined chain, and
+build-deep-then-narrow drains the pipeline and discards head steps already built.
+
+A head step costs `0.18 * 5.3350 = 960 us`. At AUC 0.70 the entire per-round budget
+is `897 us`, less than one discarded head step, before paying for the sync at all.
+Thorfinn's `protocol_gap` of `356.6 us` is the floor for that sync.
+
+> **Entry price: a head-derived feature must reach about AUC 0.80 before any
+> implementable mechanism nets anything, and about 0.90 before it is worth the
+> complexity.** Adopted as the decision rule for the axis.
+
+Approved next experiment, trace-only, about one GPU hour: instrument per proposed
+position the head's top-1 probability, top1 minus top2 logit gap, truncated top-k
+mass and running product; report per-position AUC with Hanley-McNeil intervals
+against the three known-null features plus log loss against the base rate; decide
+on one number, build at `>= 0.80` at positions 0 to 2, close the axis under `0.75`.
+`draftTokenID` is a fused single dispatch that never materialises the head
+distribution, so a separate `applyDraftLMHead` plus a top-2 reduction is required;
+that is acceptable in a traced leg carrying `trace_perturbs_timing=true`. The
+advisor added one requirement: report the **positional decay** of the best feature,
+not a pooled AUC, and price on the per-position profile.
+
+### FINDING 400 — the ranked M5 costs 1.029 ms per row at width 512 and 5.335 ms per row at width 5
+
+Advisor arithmetic from ranked metrics only, so Rule 83 does not apply to it.
+
+```
+harness=ranked, M5, same host, same weights, same dtype, same quantization
+
+seed prefill   prefill_seconds_per_token = 1.0294 ms   (32-receipt mean)
+               one forward of 512 rows                 = 527.1 ms
+               cost per row                            = 1.0294 ms/row
+decode verify  R(M) = 16.1585 + 5.3350*M
+               marginal cost per row                   = 5.3350 ms/row
+                                    ratio              = 5.18x
+
+throughput, adjusting for lm_head running once in prefill
+  prefill  49.154 GFLOP/row / 1.0294 ms  =  47.75 TFLOP/s
+  decode   51.697 GFLOP/row / 5.3350 ms  =   9.69 TFLOP/s      ratio 4.93x
+```
+
+Three honest counter-arguments recorded with it: at `M = 512` every weight element
+is reused 512 times against five at decode, so the load and dequantize cost is
+amortised a hundred times better; the 512-row path is `qmm_nax`, which we cannot
+execute, edit or measure, so its rate is not a demonstration that a QMV-style
+kernel can approach it; and routing decode to `qmm_nax` is refused up front because
+its `bm = bn = bk = 64` tile makes `M = 5` pad to 64, doing 12.8x the work at about
+5x the rate.
+
+**Open question assigned to Alphonse, arithmetic not a run.** A quantized GEMM that
+loads a weight tile once and multiplies it against all `M` activations has weight
+traffic independent of `M`. If the ranked decode round were weight-stream-bound its
+cost would be nearly flat in `M`. It is not: on beagle `5.3350 * 5.3818 = 28.71 ms`
+of a `44.98 ms` round, 63.8 %, scales with `M`. He must return one of:
+
+- **(a) weight-stream-bound**, in which case the 5.335 ms/row slope is unexplained
+  by bandwidth and is headroom, and the axis stays open;
+- **(b) compute-bound at 9.69 TFLOP/s**, in which case he names what limits a skinny
+  quantized GEMM to 20 % of the rate the same host reaches on the same weights, and
+  whether that limit is a property of `M` or of the kernel;
+- **(c) the ranked numbers do not distinguish them**, in which case he names the
+  measurement that would and whether any host we own can produce it.
+
+If the answer is (b) with a structural limit, the axis closes and the ledger records
+it. The F3 split-K prior sent to him is conditional on (a).

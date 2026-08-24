@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-24T04:52:00Z",
+  "observedAt": "2026-08-24T04:58:00Z",
   "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
@@ -859,6 +859,15 @@
         "edl*(1-alpha)",
         "N*M - 512 = 80 rows over 110 rounds"
       ]
+    },
+    {
+      "id": "ADVISOR-ERROR-225",
+      "ledgerEntry": 357,
+      "claim": "FINDING 390 quoted get_qmv_batch_limit(K=5120, N>4096) = 6, implying MLX sends every decode width M >= 6 to qmm and therefore qmm_nax on the M5.",
+      "correction": "That 6 is the arch_gen 13/14 branch at quantized.cpp:87, which only M1/M2-generation parts take. g16s is gen 16 and the ranked M5 is gen 17; both take the else branch at :105 and get 10 (12 in the d case). quantized.cpp:1418 if (M >= vector_limit) is false for every M <= 9, so stock MLX routes the whole decode range to dispatch_qmv. qmm_nax is unreachable in the decode path at every legal MTP width on every host.",
+      "foundBy": "qwen-alphonse",
+      "rule": "Never quote a value out of quantized.cpp or device.cpp without naming the arch_gen branch our hosts take.",
+      "survives": "FINDING 390 prefill claim. Qwen36MTPBlockSession.swift:649-652 forwards the seed in one call of width 512 with no chunking, 512 is outside widths 2...9, so prefill lands on qmm_nax on the M5 only."
     }
   ],
   "boardBuildClusters": {
@@ -1508,7 +1517,11 @@
     "rank": "Largest priced mechanism in the campaign. The crown gap is 0.575 %; a 20 % recovery is 2.4x that gap.",
     "blockingPrecondition": "Prove from source whether qwen35RoutedQuantizedMM sends every width in 2...9 to Qwen35CustomQMV unconditionally, or whether M >= 6 can fall through to MLX qmm and therefore qmm_nax on the M5. Same question for the 512-row prefill. If widths 6..9 fall through, the 52.4 % of beagle rounds that saturate at cap 7 are unscreenable on any host we own.",
     "exactnessArgument": "Remapping output rows to threadgroups does not change any per-output-row K reduction, so an exact route exists in principle.",
-    "refusedMechanism": "Instantiating NA=6 so M=6 takes one group is the E163 arm killed by FINDING 375 (24fb4012 WIDTH-6 +0.395 +/- 0.107). The whole c column is priced at zero officially."
+    "refusedMechanism": "Instantiating NA=6 so M=6 takes one group is the E163 arm killed by FINDING 375 (24fb4012 WIDTH-6 +0.395 +/- 0.107). The whole c column is priced at zero officially.",
+    "status": "WITHDRAWN as a novel finding",
+    "withdrawnBy": "qwen-alphonse, self-correction",
+    "withdrawalReason": "campaign-ledger.md:50661 already records the same structure: at M=6 the one-pass plan launches one column of 640 threadgroups on the N=5120 shapes, and 640 is at the occupancy floor of a 20-core part. Rule 83 then applies: a g16s occupancy closure is not M5 evidence because the M5 has second-generation Dynamic Caching and a redesigned occupancy unit. The +7.25 % published figure was built on the g16s throughput table and is withdrawn with it.",
+    "axisStatus": "reopened on ranked-only grounds, see rankedRowThroughputGap"
   },
   "width9BitExact": {
     "finding": 396,
@@ -1583,7 +1596,9 @@
     "boardConfirmation": "non_drafting_round_count on 5a9f130a is 0 for beagle, essays, medicine, republic, botany, drama, travel; 449 of 488 for plutarch only. Every weighted-prompt round has M >= 2, and segmentedVerifyDepthCap = 7 gives M <= 8.",
     "narrowOutputShapesRouted": "mlp.down k=17408, linear_attn.out_proj k=6144, full_attn.o_proj k=6144, all n=5120, all k%512==0, all >= 4096. All routed to us.",
     "consequence": "FINDING 395 narrow-output deficit is a normal locally screenable experiment, not a receipt-only gamble.",
-    "refused": "Widening widths to reach m = 512. Qwen35CustomQMV is a wide-QMV design for M <= 9 and would lose to a tensor-core path at M = 512, and we cannot measure _nax on any host we own."
+    "refused": "Widening widths to reach m = 512. Qwen35CustomQMV is a wide-QMV design for M <= 9 and would lose to a tensor-core path at M = 512, and we cannot measure _nax on any host we own.",
+    "correction": "ADVISOR-ERROR-225: qmm_nax is unreachable in the decode path on every host, not merely bypassed by our kernel. get_qmv_batch_limit returns 10 on gen 16 and gen 17, so even stock MLX would use dispatch_qmv at M <= 9.",
+    "prefillRouteConfirmed": "Qwen36MTPBlockSession.swift:649-652 \u2014 one call of width 512, nConfirmed 0, no chunking."
   },
   "m1LocalHarnessFallacy": {
     "finding": 397,
@@ -1606,5 +1621,80 @@
       "call-count reduction that changes no reduction order"
     ],
     "instrumentationConstraint": "E83 splits local seed prefill 4046.1 ms as target_forward_build 75.0 %, target_forward_eval 24.5 %, tail 0.5 %, against about 527 ms ranked, ratio 7.67x. Build is host graph construction and barely exists on the ranked host. Only GPU time transfers. Report the gated-delta scan separately from the quantized GEMM because one is ours and one is not."
+  },
+  "headCostIsFixedNotMarginal": {
+    "finding": 398,
+    "ledgerEntry": 357,
+    "foundBy": "qwen-alphonse",
+    "estimators": {
+      "e163FullRound": {
+        "a": 57.384,
+        "b": 7.002,
+        "c": 28.605
+      },
+      "e169BottomUp": {
+        "a": 57.325,
+        "b": 6.828,
+        "c": 29.575
+      },
+      "e169InSituTargetForwardOnly": {
+        "a": 50.5,
+        "b": 6.739,
+        "c": 29.9
+      }
+    },
+    "spread": "b spans 3.8 %, c spans 4.4 %, across three instruments with different systematic errors",
+    "newDatum": "The 6.88 ms difference between the target-forward intercept 50.50 and the full-round intercept 57.384 appears entirely in a, not in b (b gap 0.26 ms/row, inside the spread).",
+    "claim": "Proposal-head cost does not scale with draft width at the margin. It is paid once per round whether the round drafts one row or seven.",
+    "corroborates": "FINDING 394 from a completely different instrument. Also confirms Thorfinn per-round fixed-cost work and Alphonse row work are cleanly separable.",
+    "thermalControl": "ascending and descending passes agree within 0.87 % at every width, 0.28 % at widths 2, 3, 6, 7, 8"
+  },
+  "depthAdaptivityEntryPrice": {
+    "finding": 399,
+    "ledgerEntry": 357,
+    "foundBy": "qwen-askeladd",
+    "method": "Synthesise a signal of stated AUC over recorded outcomes under the equal-variance binormal model, then price the best floor-plus-threshold rule. Two forced anchors both land on independently computed numbers.",
+    "curve": {
+      "0.50": 0.001,
+      "0.60": 0.003,
+      "0.65": 0.058,
+      "0.70": 0.098,
+      "0.75": 0.157,
+      "0.80": 0.211,
+      "0.85": 0.325,
+      "0.90": 0.488,
+      "0.95": 0.642,
+      "0.999": 0.957
+    },
+    "anchors": {
+      "bestConstant": 2.245,
+      "oracle": 2.866
+    },
+    "optimism": "The synthetic signal is equally good at every position; a real feature decays with depth, so every row is optimistic.",
+    "syncBudget": "Qwen36MTPBlockSession.swift:1483-1489 builds the whole head chain with no host read; :1541 is the single blocking eval, comment says 1 sync/cycle; every .item() after it waits on nothing.",
+    "whyOnDeviceIsImpossible": "The verify tensor shape must be host-known, so the width decision cannot stay on device, and there is no existing host transfer before the verify forward to ride on.",
+    "headStepCost": "0.18 * 5.3350 = 960 us. At AUC 0.70 the entire per-round budget is 897 us, less than one discarded head step, before the sync.",
+    "entryPrice": "A head-derived feature must reach about AUC 0.80 before any implementable mechanism nets anything, and about 0.90 before it is worth the complexity.",
+    "approvedExperiment": "Trace-only, about one GPU hour, nine prompts. Record head top-1 probability, top1-top2 logit gap, truncated top-k mass and running product per proposed position. Build at AUC >= 0.80 at positions 0..2; close the axis under 0.75. Report positional decay, not a pooled AUC.",
+    "instrumentationNote": "draftTokenID is a fused single dispatch that never materialises the head distribution, so a separate applyDraftLMHead plus a top-2 reduction is required. Acceptable in a traced leg with trace_perturbs_timing=true."
+  },
+  "rankedRowThroughputGap": {
+    "finding": 400,
+    "ledgerEntry": 357,
+    "foundBy": "advisor",
+    "harness": "ranked, M5 only. Rule 83 does not apply.",
+    "prefillMsPerRow": 1.0294,
+    "decodeMarginalMsPerRow": 5.335,
+    "ratio": 5.18,
+    "prefillTflops": 47.75,
+    "decodeTflops": 9.69,
+    "throughputRatio": 4.93,
+    "counterArguments": [
+      "At M=512 every weight element is reused 512 times against five at decode, so load and dequantize cost is amortised a hundred times better.",
+      "The 512-row path is qmm_nax, which we cannot execute, edit or measure, so its rate is not a demonstration that a QMV-style kernel can approach it.",
+      "Routing decode to qmm_nax is refused: its bm=bn=bk=64 tile makes M=5 pad to 64, doing 12.8x the work at about 5x the rate."
+    ],
+    "openQuestion": "A quantized GEMM that loads a weight tile once and multiplies it against all M activations has weight traffic independent of M. If the ranked decode round were weight-stream-bound its cost would be nearly flat in M. It is not: on beagle 5.3350*5.3818 = 28.71 ms of a 44.98 ms round, 63.8 %, scales with M. Alphonse must return (a) weight-stream-bound so the slope is headroom, (b) compute-bound at 9.69 TFLOP/s with a named limit, or (c) the ranked numbers do not distinguish them plus the measurement that would.",
+    "consequence": "If (b) with a structural limit, the axis closes. The split-K prior is conditional on (a)."
   }
 }
