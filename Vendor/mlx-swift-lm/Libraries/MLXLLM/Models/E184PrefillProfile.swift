@@ -121,6 +121,7 @@ public enum E184Prefill {
                     + "\"calls\":\(counts[label] ?? 0)}")
         }
         let line = "{\"e184_prefill_profile\":1,"
+            + "\"pid\":\(ProcessInfo.processInfo.processIdentifier),"
             + "\"forward_index\":\(forwardIndex),"
             + "\"sequence_length\":\(sequenceLength),"
             + "\"granularity\":\"\(granularity.rawValue)\","
