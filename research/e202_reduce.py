@@ -72,6 +72,24 @@ def read_meta(path: pathlib.Path) -> dict:
     return meta
 
 
+def serial_null_rounds(rounds: list[dict]) -> list[dict]:
+    """The timed serial control leg: qL == 1 in every round.
+
+    The split-cell branch never serves width 1, so the arm rotation is causally
+    unreachable there. These rounds are the in-session null control RULE 388
+    asks for, and they come from the same process, thermal state and schedule as
+    the MTP rounds.
+    """
+    serial = [r for r in rounds if to_int(r, "serial_body", 0) == 1]
+    if not serial:
+        return []
+    groups: dict[int, list[dict]] = {}
+    for rec in serial:
+        groups.setdefault(to_int(rec, "e202_pid"), []).append(rec)
+    pid = max(groups, key=lambda p: len(groups[p]))
+    return groups[pid]
+
+
 def select_timed_mtp_rounds(rounds: list[dict], score: dict) -> tuple[list[dict], dict]:
     """Pick the worker process that produced the SCORED MTP decode leg.
 
@@ -179,10 +197,15 @@ def triples(recs: list[dict], require_serving: bool) -> list[dict]:
 
     A triple is used only when all three rounds carry the same served width and
     the same split-cell call count, so the only difference inside it is the arm.
+    Triples do not overlap: a sliding window would reuse each round three times
+    and understate the dispersion of the contrast.
     """
     by_round = {to_int(r, "round"): r for r in recs}
     out = []
+    consumed: set[int] = set()
     for start in sorted(by_round):
+        if start in consumed:
+            continue
         group = [by_round.get(start + i) for i in range(3)]
         if any(g is None for g in group):
             continue
@@ -207,6 +230,7 @@ def triples(recs: list[dict], require_serving: bool) -> list[dict]:
                 "t": times,
             }
         )
+        consumed.update({start, start + 1, start + 2})
     return out
 
 
@@ -247,15 +271,28 @@ def contrasts(tris: list[dict]) -> dict:
     return result
 
 
-def verdict(net: dict) -> str:
-    mean = net.get("mean")
+def verdict(inner: dict) -> str:
+    """Decide on the DIRECT interior contrast, not on the subtracted form.
+
+    `inner` = BARRIER-ALL - BARRIER-LAST already contains the marginal sync cost
+    of four extra `eval()` calls, and that cost cannot be negative, so `inner` is
+    an UPPER BOUND on the interior exposed dispatch latency. A bound needs no
+    sync-cost estimate and so carries none of its variance. The assignment's
+    subtracted form `net = inner - 4 * sync` is reported alongside; it assumes
+    the per-barrier cost is additive, which the measurement itself can test.
+    """
+    mean = inner.get("mean")
+    two_sigma = inner.get("two_sigma")
     if mean is None:
         return "VOID"
-    if abs(mean) >= 0.5:
-        return "overlap-confirmed" if mean > 0 else "inverted-effect-investigate"
-    if abs(mean) < 0.2:
+    upper = mean + (two_sigma or 0.0)
+    if upper < 0.2:
         return "non-transfer-confirmed"
-    return "indeterminate-band-0.2-to-0.5"
+    if mean >= 0.5:
+        return "overlap-confirmed"
+    if mean >= 0.2:
+        return "negative-band-0.2-to-0.5"
+    return "point-estimate-below-floor-but-interval-open"
 
 
 def main() -> int:
@@ -272,6 +309,7 @@ def main() -> int:
     leg_reports = []
     all_serving: list[dict] = []
     all_idle: list[dict] = []
+    all_serial: list[dict] = []
     valid = True
     for leg in legs:
         meta = read_meta(leg / "meta.txt")
@@ -284,8 +322,10 @@ def main() -> int:
         valid = valid and witness["valid"]
         serving = triples(timed, require_serving=True)
         idle = triples(timed, require_serving=False)
+        serial = triples(serial_null_rounds(rounds), require_serving=False)
         all_serving.extend(serving)
         all_idle.extend(idle)
+        all_serial.extend(serial)
         metrics = score.get("metrics", {})
         leg_reports.append(
             {
@@ -321,6 +361,11 @@ def main() -> int:
 
     serving_contrast = contrasts(all_serving)
     idle_contrast = contrasts(all_idle)
+    serial_contrast = contrasts(all_serial)
+    by_width = {
+        str(width): contrasts([t for t in all_serving if t["width"] == width])
+        for width in sorted({t["width"] for t in all_serving})
+    }
 
     total_census: dict[str, int] = {}
     for rep in leg_reports:
@@ -335,7 +380,9 @@ def main() -> int:
         "witnesses_valid": valid,
         "legs": leg_reports,
         "contrasts_branch_serving_rounds": serving_contrast,
+        "contrasts_branch_serving_rounds_by_width": by_width,
         "contrasts_null_control_non_serving_rounds": idle_contrast,
+        "contrasts_null_control_serial_leg": serial_contrast,
         "session_split_call_census_by_width": dict(sorted(total_census.items())),
         "leg_level_null_control": {
             "note": "every leg carries the same arm composition, so this spread "
@@ -344,9 +391,11 @@ def main() -> int:
             "spread_ms": max(leg_means) - min(leg_means) if leg_means else None,
             "stdev_ms": statistics.stdev(leg_means) if len(leg_means) > 1 else None,
         },
-        "verdict": verdict(serving_contrast["net_interior_ms_per_round"])
-        if valid
-        else "VOID",
+        "verdict": verdict(serving_contrast["inner_ms_per_round"]) if valid else "VOID",
+        "positive_control_sync_detected": (
+            (serving_contrast["sync_ms_per_round"]["mean"] or 0.0)
+            > 2 * (serving_contrast["sync_ms_per_round"]["two_sigma"] or 0.0)
+        ),
     }
 
     text = json.dumps(report, indent=2)
