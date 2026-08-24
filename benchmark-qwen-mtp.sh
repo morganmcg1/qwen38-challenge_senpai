@@ -264,6 +264,46 @@ if metallib_rebuild_required; then
   fi
 fi
 
+# The metallib guard above closes the kernel half of the freshness hole. The
+# SAME hole exists for Swift edits: this wrapper drives mtp-verify and
+# mtp-timed directly and never reaches benchmark.sh's swift_build_required()
+# gate, so a Sources/ or Vendor/ Swift edit made after the last build was
+# timed against the PREVIOUS worker binary, silently (caught live in E190: a
+# depth-cap edit ran at the old cap and reported cap-7 numbers). Reuse
+# benchmark.sh's own predicate and rebuild commands under the same
+# extract-verbatim, check-BY-NAME, fail-closed doctrine as the metallib guard.
+#
+# SWIFT-GUARD-BEGIN
+swift_reuse_definitions="$(
+  awk '/^swift_build_required\(\) \{/,/^\}/' benchmark.sh
+  awk '/^assert_frozen_dependency_graph\(\) \{/,/^\}/' benchmark.sh
+)"
+if ! eval "${swift_reuse_definitions}"; then
+  echo "benchmark-qwen-mtp.sh: could not evaluate benchmark.sh's swift-freshness definitions;" >&2
+  echo "benchmark-qwen-mtp.sh: benchmark.sh has been refactored -- refusing to time a possibly stale worker" >&2
+  exit 1
+fi
+for swift_guard_fn in swift_build_required assert_frozen_dependency_graph; do
+  if ! declare -F "${swift_guard_fn}" >/dev/null 2>&1; then
+    echo "benchmark-qwen-mtp.sh: could not reuse benchmark.sh's ${swift_guard_fn}();" >&2
+    echo "benchmark-qwen-mtp.sh: benchmark.sh has been refactored -- refusing to time a possibly stale worker" >&2
+    exit 1
+  fi
+done
+# RUNTIME_WORKER_BIN comes from the metallib-guard extraction above. If that
+# arm was skipped (caller owns MLXFAST_MLX_METALLIB) the empty value makes the
+# reused predicate return "stale", which fails in the safe direction: rebuild.
+if SWIFT_BIN="${swift_bin}" USE_RUNTIME_WORKER=1 swift_build_required; then
+  echo "benchmark-qwen-mtp.sh: trusted CLI or runtime worker is stale (Package/Sources/Vendor changed after it was built); rebuilding both products"
+  assert_frozen_dependency_graph
+  mkdir -p .build/clang-module-cache .build-worker/clang-module-cache
+  CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-${PWD}/.build/clang-module-cache}" \
+    swift build -c release --force-resolved-versions --product mlxfast-swift
+  CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-${PWD}/.build-worker/clang-module-cache}" \
+    swift build -c release --force-resolved-versions --scratch-path .build-worker --product mlxfast-runtime-worker
+fi
+# SWIFT-GUARD-END
+
 if [[ ! -s "${public_golden_path}" ]]; then
   echo "benchmark-qwen-mtp.sh: missing public correctness fixture ${public_golden_path}" >&2
   echo "benchmark-qwen-mtp.sh: re-sync the repository (public fixtures live in correctness_prompts/)" >&2

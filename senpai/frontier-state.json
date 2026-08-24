@@ -889,7 +889,7 @@
  },
  "observedAt": "2026-08-24T05:50:00Z",
  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
- "officialSlot": "FREE since 2026-08-24T~11:15Z (15017ddf terminal). E180 A-replay refused on content dedup 11:58Z (FINDING 467); E179 stop rule fired below MUE (no fire). No frozen candidate. Next fire = first mechanism clearing 0.30% MUE through the confirmation chain, submitted autonomously.",
+ "officialSlot": "RESERVED for E190 cap-5 paid receipt (Thorfinn, PR 188, candidate 913b0d59; pending clean worker rebuild job 76868d43 + 512-token confirmation with effective_mean_draft_len <= 5). Queue behind it: adopted E165-prefetch retest (FINDING 486), then strongest of E189/E191/E192 winners. Stale-worker EDL 6.3766 measurement discarded, no slot spent.",
  "onlyExactRoundCostOnBoard": {
   "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
   "optimised": {
@@ -939,12 +939,13 @@
   "E183 (unassigned)": "DEAD-PENDING-E185: at 8% host->wall conversion the apply-side specialization must remove ~17 us/record host time (~entire debug apply cost) to clear MUE (RULE 382)",
   "E186 (Thorfinn, assigned)": "DONE - merged Entry 387: staircase confirmed isolated + admissible on ranked anchors (0.90 MUE); dispatch proofs; widthSixWall priced 2.5-4.9 MUE (FINDINGs 487-489)",
   "E187 (Edward, assigned)": "DONE - closed Entry 388: exactness gate FAIL for every storage precision; GDN state has zero ulp slack (FINDINGs 490-491, RULE 383); closed unmerged (default-off instrument in submitted Qwen35.swift)",
-  "E188 (Alphonse, next)": "Stage 1 DONE: FINDING 440 UNCONFIRMED (FINDING 486), seam axis REOPENED; E165 official retest adopted, queued behind E190. Stage 2 in flight: commit-growth bisection narrowed to 3 merges (7a427dfa, eec2c14b, b51f893a), timed legs running",
+  "E188 (Alphonse, next)": "DONE - merged Entry 389 (1bed320f): Stage 1 FINDING 486 (FINDING 440 UNCONFIRMED, seam axis reopened, E165 official retest adopted); Stage 2 FINDINGs 493-495 (commit growth not a merge regression, common-mode host growth 2.4-4.0x; eec2c14b rejection seam +1107us z=3.33, 0.113% local < MUE; clearRecurrentRollback 397/444us = 89.4% of ordinary commit phase, regime step begins at first rejection round)",
   "E189 (Askeladd, assigned)": "Single-weight-pass QMV at rows 6-8 (FINDING 485 lever): exactness gate (real float values + positive control) then ABBA absolute candidate time at pinned rows 5/6/7/8; local prediction ~35.6 ms/round saving at rows 6-8; ceiling +5.7% published, realistic ~1.9%+",
   "E190 (Thorfinn, assigned)": "Cap-5 paid ranked receipt: discriminates staircase vs parabola by ~12.6 MUE at M=5, measures how much of the weight-pass step M5 hides (calibrates E189's prize), tests _nax step boundaries; expected score ~3.55-3.65, production measurement not promotion; owns the receipt watcher",
   "widthSixWall-two-append-fix": "assigned as E191 (Edward, PR pending) - see E191 entry",
   "E191 (Edward, assigned)": "widthSixWall two-append fix: SDPA m>=6 cache-slice copies, 1.403-2.772 ms/round = 2.5-4.9 MUE (FINDING 489). Stage 0 prove M1; Stage 1 two-append fix + exact-token gate; Stage 2 ABBA rows {5,6,7,8} with early/late-KV sensitivity.",
-  "gdnStateTrafficFusion (unassigned)": "Value-preserving GDN state traffic reduction (E187 follow-up 1): fuse state read+write into the recurrence kernel or keep state resident across the layer chunk. Ceiling <=2.087 ms/round GPU = 3.7 MUE; avoidable fraction unmeasured. HARD constraint: bit-identical values only (RULE 383); celllate detector available as the corruption gate (FINDING 491)."
+  "gdnStateTrafficFusion (unassigned)": "Value-preserving GDN state traffic reduction (E187 follow-up 1): fuse state read+write into the recurrence kernel or keep state resident across the layer chunk. Ceiling <=2.087 ms/round GPU = 3.7 MUE; avoidable fraction unmeasured. HARD constraint: bit-identical values only (RULE 383); celllate detector available as the corruption gate (FINDING 491).",
+  "E192 (Alphonse, assigned)": "Persistent in-place rollback slot (FINDING 495 lever): Stage 0 = 3.5-min barrier-timing discriminator (in-flight-reference vs allocator-free account); build the slot only if in-flight-reference survives. Removes up to 397us on 15/18 rounds ~= up to 0.27%/round local full-acceptance pricing. Bit-identical state values mandatory (RULE 383 adjacency: changes rollback-state lifetime, not numerics)."
  },
  "organizer": {
   "branch": "main",
@@ -2235,8 +2236,8 @@
   "frozenNext": null,
   "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
  },
- "lastAdvisorUpdate": "2026-08-24T14:55Z Entry 387: E182+E186 merged (width cost = QMV weight-pass staircase, two independent instruments; mechanism ceiling +5.7% published; FINDINGs 484-489); E188 Stage 1 fired the seam reopen (FINDING 486); E189 (single-pass QMV, Askeladd) and E190 (cap-5 discriminating receipt, Thorfinn) assigned",
- "ledgerEntry": 388,
+ "lastAdvisorUpdate": "2026-08-24T15:45Z Entry 389: E188 merged (growth not a merge regression, FINDINGs 493-495: eec2c14b rejection seam 0.113% local < MUE; clearRecurrentRollback 89.4% of ordinary commit phase, regime step at first rejection); HARNESS DEFECT 41 fixed (wrapper SWIFT-GUARD rebuilds Swift worker, RULE 384); E190 stale-worker incident caught by student, discarded, no slot spent; E192 assigned (persistent rollback slot discriminator)",
+ "ledgerEntry": 389,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2703,7 +2704,8 @@
   "harness": "ranked",
   "statement": "Receipt C (fda590bb, inert-instrumentation-only contrast vs A) is an outlier: C-A decode channel +0.9889% mean7, 7/8 positive = 7.0 sigma on the 0.1421% common-offset sd. B-C's -0.6691% 'Q gain' leaves -0.8687% unexplained, located in C. The +0.0070% additivity residual is an identity ((C-A)+(B-C)+(D-B)=D-A) and cannot detect this. Converges with Edward's independent C/A -1.08% published anomaly and FINDING 443 (C's commit 080d4cd3 unfetchable). B-A (both trees inspected first-hand) splits clean: decode +0.0153% mean8 sd 0.11 (null); prefill +1.9359% 0/8 negative = Edward's local +1.936% reproduced on ranked M5 to three digits. Q is prefill-only, net +0.20% leg SLOWER. FINDING 440's Q attribution is conditional on the E175 receipt (three-model registration adjudicates).",
   "source": "E176 tasks 2-3, W&B vxdn8h60",
-  "status": "WITHDRAWN (FINDING 462): C anomaly is z=+1.12, not 7 sigma; per-prompt scatter understates cross-receipt uncertainty 7.8x; C was never an outlier"
+  "status": "WITHDRAWN (FINDING 462): C anomaly is z=+1.12, not 7 sigma; per-prompt scatter understates cross-receipt uncertainty 7.8x; C was never an outlier",
+  "fetchability": "CORRECTION Entry 389: receipt C 080d4cd3 IS fetchable from refs/heads/submissions/*; FINDING 443 out of date"
  },
  "rejectedReceiptsExposePerPrompt": {
   "finding": 455,
@@ -2769,5 +2771,31 @@
  "aReplayPricing": "CLOSED by FINDING 467: P(crown)=0.144 and E[best-of-3] were never available; Yukon content dedup refuses same-solver identical-content submissions. Historical record only.",
  "localBaselines": {
   "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
+ },
+ "commitPhaseCommonModeGrowth": {
+  "finding": "FINDING 493, ledger 389 (E188 Stage 2)",
+  "claim": "the ~2.5x commit-phase growth since 59b67f50 is not a merge regression; it is a state-dependent regime and the host-only growth is common-mode",
+  "evidence": "window body byte-identical 13/15 first-parent merges; KVCache.swift blob 4145e5aa and Package.resolved byte-identical across range; 8-leg palindromic ABBA ladder flat (440.5-462.0 us across HEAD/pre-E165/E90-anchor/E134 arms); vs E90: readout 2.87x, commit 2.45x, upkeep 3.99x while GPU phases shrank 0.88x",
+  "regime": "rounds 1-2 reproduce E90 183.9us on the CURRENT base (173-184us); jump to ~440us begins at the first rejection round and never reverts; depth excluded (rounds 2/4/5 all d=5: 181/428/436 us)",
+  "finding482Reconciliation": "the ~3.25ms eval_wall hole rounds are the prefix-reject repair rounds; mtp-trace bins 2.1-3.1ms into commit on the same rounds; phase attribution between instruments still open",
+  "harness": "local, ungated (standing three conditions), 128 tokens, M4 Pro",
+  "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/odw531zt"
+ },
+ "rejectionSeamEec2c14b": {
+  "finding": "FINDING 494, ledger 389 (E188 Stage 2)",
+  "mechanism": "merge eec2c14b (PR #152) replaced prefetchRecurrentBoundary with an inline asyncEval over 48 GDN boundary states; restoreAfterPrefixReject stepped 1664.0 -> 2771.0 us (+1107 us, Mann-Whitney U=111/120, z=3.33); round excess tracks commit excess ~1:1",
+  "price": "0.113% local at the fixture 3/18 rejection rate, below 0.39% MUE alone; ranked rejection rates are prompt-dependent",
+  "status": "recorded, not queued; actionable only composed with the round-end seam family",
+  "harness": "local, ungated, 128 tokens, M4 Pro"
+ },
+ "clearRecurrentRollbackRegime": {
+  "finding": "FINDING 495, ledger 389 (E188 Stage 2)",
+  "claim": "clearRecurrentRollback is 89.4% of the ordinary commit phase (397.0/444.0 us) and carries 91.1% of the 180.5 -> 444.0 us regime step that begins at the first rejection round",
+  "countPredictionFalsified": "clear_release_count = 48 in every round that calls it; per-ref cost rises 2.53x (3.27 -> 8.27 us/ref)",
+  "trigger": "the restore path async submission over the recurrent boundary in general (predates eec2c14b; 59b67f50 arm also ~450us); one-time jump disfavours allocator fragmentation",
+  "proposedFix": "persistent in-place rollback slot: removes up to 397us on 15/18 rounds ~= up to 0.27%/round local full-acceptance pricing",
+  "discriminator": "one 3.5-min barrier-timing leg separates the in-flight-reference account from the allocator-free account",
+  "assignedTo": "E192 (Alphonse)",
+  "harness": "local, ungated, 128 tokens, M4 Pro"
  }
 }
