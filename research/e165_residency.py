@@ -169,7 +169,11 @@ def analyse(tag_dir: Path, threshold: float) -> dict:
 
     meta = read_meta(tag_dir / "meta.txt")
     score_path = tag_dir / "score.json"
-    score = json.loads(score_path.read_text()) if score_path.exists() else {}
+    score = {}
+    if score_path.exists():
+        raw = json.loads(score_path.read_text())
+        score = {k: v for k, v in raw.items() if k != "metrics"}
+        score.update(raw.get("metrics", {}))
 
     window_ms = sum(s["elapsed_ms"] for s in window)
     idle_pct = weighted(window, "idle_pct")

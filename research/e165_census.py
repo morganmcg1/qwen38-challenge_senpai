@@ -85,10 +85,14 @@ def read_meta(tag: str) -> dict:
 
 
 def read_score(tag: str) -> dict:
+    """Leg score, with the nested `metrics` object lifted to the top level."""
     path = OUT / tag / "score.json"
     if not path.exists():
         return {}
-    return json.loads(path.read_text())
+    raw = json.loads(path.read_text())
+    flat = {k: v for k, v in raw.items() if k != "metrics"}
+    flat.update(raw.get("metrics", {}))
+    return flat
 
 
 def anchors(tag: str) -> list[dict]:
@@ -422,10 +426,14 @@ def main() -> None:
             "worker_sha256": meta.get("worker_sha256"),
             "base_sha": meta.get("base_sha"),
             "full_accept_rounds": sum(1 for r in recs if r["full_accept"]),
-            "mtp_seconds_per_token": score.get(
-                "candidate_mtp_seconds_per_token_mean"),
+            "mtp_seconds_per_token": score.get("mtp_seconds_per_token"),
+            "serial_seconds_per_token": score.get("serial_seconds_per_token"),
+            "mtp_decode_speedup": score.get("mtp_decode_speedup"),
             "effective_mean_draft_len": score.get("effective_mean_draft_len"),
             "accepted_draft_rate": score.get("accepted_draft_rate"),
+            "all_tokens_matched": score.get("all_tokens_matched"),
+            "residual_divergence_count": score.get("residual_divergence_count"),
+            "decode_tokens": score.get("decode_tokens"),
             "median": {k: median_of(use, k) for k in FIT_KEYS},
         }
         report["legs"].append(leg)
@@ -436,6 +444,8 @@ def main() -> None:
               f"gate={meta.get('cool_gate')} ===")
         print(f"  s/tok={leg['mtp_seconds_per_token']} "
               f"edl={leg['effective_mean_draft_len']} "
+              f"acc_rate={leg['accepted_draft_rate']} "
+              f"matched={leg['all_tokens_matched']} "
               f"full_accept={leg['full_accept_rounds']}/{len(recs)}")
         for key in FIT_KEYS:
             value = leg["median"][key]
