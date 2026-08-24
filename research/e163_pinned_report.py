@@ -39,6 +39,22 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "research" / "out"
 ARTIFACTS = ROOT / "research" / "e163-artifacts"
 
+# Host encode of the whole 64-layer verify graph, measured by E86 with the
+# decode asyncEval ladder removed. See Qwen36MTPBlockSession.swift:765-790.
+E86_HOST_ENCODE_MS = 2.294
+
+CHANNEL_NOTE = (
+    "Qwen36MTPBlockSession.swift:765-790 forbids reading verify_build_us alone "
+    "as host cost. E86 removed the decode asyncEval ladder and measured host "
+    "encode of the whole 64-layer verify graph at 2.294 ms per round, against "
+    "72.330 ms of verify_build_us under the shipped ladder, so that counter is "
+    "about 97 % GPU wait. verify_build_us and eval_wall_us partition one GPU "
+    "cost at an arbitrary boundary and only their sum is meaningful, which is "
+    "why the split is reported as verify_pipeline_ms. The host encode is also "
+    "an upper bound on any host-channel movement here: this arm changes only "
+    "the Metal grid x-extent, so no host op count differs between the arms."
+)
+
 TIMED = re.compile(
     r"^mtp-timed: tokens=(?P<tokens>\d+) depth=(?P<depth>\d+) "
     r"rounds=(?P<rounds>\d+) accepted_draft_rate=(?P<adr>[\d.]+) "
@@ -212,11 +228,11 @@ def load_leg(path: pathlib.Path) -> dict:
         leg.update(
             {
                 "ch_round_ms": trace["round_us_mean"] / 1e3,
-                "ch_gpu_eval_ms": evl,
-                "ch_cpu_verify_build_ms": vbd,
-                "ch_cpu_draft_build_ms": dbd,
-                "ch_cpu_build_ms": vbd + dbd,
+                "ch_verify_pipeline_ms": vbd + evl,
+                "ch_draft_window_ms": dbd,
                 "ch_unattributed_ms": trace["round_us_mean"] / 1e3 - evl - vbd - dbd,
+                "raw_eval_wall_ms": evl,
+                "raw_verify_build_ms": vbd,
             }
         )
     return leg
@@ -526,10 +542,10 @@ def main() -> int:
             r_lo = statistics.fmean(leg["R_ms_from_leg"] for leg in lo)
             r_hi = statistics.fmean(leg["R_ms_from_leg"] for leg in hi)
             w_lo, w_hi = lo[0]["verify_width"], hi[0]["verify_width"]
-            ev_lo = statistics.fmean(leg["trace_eval_wall_us_mean"] for leg in lo) / 1e3
-            ev_hi = statistics.fmean(leg["trace_eval_wall_us_mean"] for leg in hi) / 1e3
-            vb_lo = statistics.fmean(leg["trace_verify_build_us_mean"] for leg in lo) / 1e3
-            vb_hi = statistics.fmean(leg["trace_verify_build_us_mean"] for leg in hi) / 1e3
+            ev_lo = statistics.fmean(leg["ch_verify_pipeline_ms"] for leg in lo)
+            ev_hi = statistics.fmean(leg["ch_verify_pipeline_ms"] for leg in hi)
+            vb_lo = statistics.fmean(leg["ch_draft_window_ms"] for leg in lo)
+            vb_hi = statistics.fmean(leg["ch_draft_window_ms"] for leg in hi)
             boundary = {
                 "contrast": f"R({w_hi}) - R({w_lo}) on the shipped plan, one session",
                 "width_low": w_lo,
@@ -545,15 +561,16 @@ def main() -> int:
                     min(leg["R_ms_from_leg"] for leg in hi),
                     max(leg["R_ms_from_leg"] for leg in hi),
                 ],
-                "gpu_eval_ms_low": ev_lo,
-                "gpu_eval_ms_high": ev_hi,
-                "delta_gpu_eval_ms_per_row": ev_hi - ev_lo,
-                "cpu_verify_build_ms_low": vb_lo,
-                "cpu_verify_build_ms_high": vb_hi,
-                "delta_cpu_verify_build_ms_per_row": vb_hi - vb_lo,
-                "gpu_share_of_marginal_row": (
+                "verify_pipeline_ms_low": ev_lo,
+                "verify_pipeline_ms_high": ev_hi,
+                "delta_verify_pipeline_ms_per_row": ev_hi - ev_lo,
+                "draft_window_ms_low": vb_lo,
+                "draft_window_ms_high": vb_hi,
+                "delta_draft_window_ms_per_row": vb_hi - vb_lo,
+                "verify_pipeline_share_of_marginal_row": (
                     (ev_hi - ev_lo) / (r_hi - r_lo) if r_hi != r_lo else None
                 ),
+                "channel_note": CHANNEL_NOTE,
             }
 
     # F3 asks for the three-cell decomposition as four first-class numbers.
@@ -573,11 +590,11 @@ def main() -> int:
             channels = {
                 name: decompose(ship_lo, arm_lo, ship_hi, name)
                 for name in (
-                    "ch_gpu_eval_ms",
-                    "ch_cpu_build_ms",
-                    "ch_cpu_verify_build_ms",
-                    "ch_cpu_draft_build_ms",
+                    "ch_verify_pipeline_ms",
+                    "ch_draft_window_ms",
                     "ch_unattributed_ms",
+                    "raw_eval_wall_ms",
+                    "raw_verify_build_ms",
                 )
             }
             split = {}
@@ -585,16 +602,19 @@ def main() -> int:
                 whole = traced[term]["delta_ms"]
                 split[term] = {
                     "traced_delta_ms": whole,
-                    "gpu_eval_ms": channels["ch_gpu_eval_ms"][term]["delta_ms"],
-                    "cpu_build_ms": channels["ch_cpu_build_ms"][term]["delta_ms"],
+                    "verify_pipeline_ms": channels["ch_verify_pipeline_ms"][term]["delta_ms"],
+                    "draft_window_ms": channels["ch_draft_window_ms"][term]["delta_ms"],
                     "unattributed_ms": channels["ch_unattributed_ms"][term]["delta_ms"],
-                    "gpu_eval_share": (
-                        channels["ch_gpu_eval_ms"][term]["delta_ms"] / whole if whole else None
+                    "verify_pipeline_share": (
+                        channels["ch_verify_pipeline_ms"][term]["delta_ms"] / whole
+                        if whole
+                        else None
                     ),
-                    "cpu_build_share": (
-                        channels["ch_cpu_build_ms"][term]["delta_ms"] / whole if whole else None
-                    ),
+                    "host_encode_upper_bound_ms": E86_HOST_ENCODE_MS,
+                    "raw_eval_wall_ms": channels["raw_eval_wall_ms"][term]["delta_ms"],
+                    "raw_verify_build_ms": channels["raw_verify_build_ms"][term]["delta_ms"],
                 }
+            split["channel_note"] = CHANNEL_NOTE
             decomposition = {
                 "cells": {
                     "shipped_low": {
@@ -648,15 +668,17 @@ def main() -> int:
             "arm_key": key,
             "verify_width": group[0]["verify_width"],
             "R_ms": statistics.fmean(leg["R_ms_from_leg"] for leg in group),
-            "gpu_eval_share_of_round": statistics.fmean(
-                leg["trace_eval_wall_us_mean"] / leg["trace_round_us_mean"] for leg in group
+            "verify_pipeline_share_of_round": statistics.fmean(
+                leg["ch_verify_pipeline_ms"] / leg["ch_round_ms"] for leg in group
             ),
-            "cpu_verify_build_share_of_round": statistics.fmean(
-                leg["trace_verify_build_us_mean"] / leg["trace_round_us_mean"]
-                for leg in group
+            "draft_window_share_of_round": statistics.fmean(
+                leg["ch_draft_window_ms"] / leg["ch_round_ms"] for leg in group
             ),
-            "draft_build_share_of_round": statistics.fmean(
-                leg["trace_draft_build_us_mean"] / leg["trace_round_us_mean"]
+            "host_encode_share_of_round_upper_bound": statistics.fmean(
+                E86_HOST_ENCODE_MS / leg["ch_round_ms"] for leg in group
+            ),
+            "routed_matvec_share_of_round_upper_bound": statistics.fmean(
+                (leg["ch_round_ms"] - E86_HOST_ENCODE_MS) / leg["ch_round_ms"]
                 for leg in group
             ),
         }
@@ -728,7 +750,8 @@ def main() -> int:
                 f"({item['delta_percent_of_low']:+.3f} % +/- "
                 f"{item['two_se_percent_of_low']:.3f})  "
                 f"trace {traced['delta_ms']:+8.3f} ms  "
-                f"GPU eval {split['gpu_eval_ms']:+7.3f}  CPU build {split['cpu_build_ms']:+7.3f}"
+                f"verify pipeline {split['verify_pipeline_ms']:+7.3f}  "
+                f"draft window {split['draft_window_ms']:+7.3f}"
             )
         print(
             "  identity residual "
@@ -753,16 +776,17 @@ def main() -> int:
     if boundary:
         print(
             f"boundary {boundary['contrast']}: "
-            f"{boundary['delta_R_ms_per_row']:+.3f} ms/row, of which GPU eval "
-            f"{boundary['delta_gpu_eval_ms_per_row']:+.3f} ms and CPU verify build "
-            f"{boundary['delta_cpu_verify_build_ms_per_row']:+.3f} ms"
+            f"{boundary['delta_R_ms_per_row']:+.3f} ms/row, of which verify pipeline "
+            f"{boundary['delta_verify_pipeline_ms_per_row']:+.3f} ms and draft window "
+            f"{boundary['delta_draft_window_ms_per_row']:+.3f} ms"
         )
     for share in shares:
         print(
             f"round shares {share['arm_key']:>16} W={share['verify_width']}: "
-            f"R {share['R_ms']:.2f} ms, GPU eval {share['gpu_eval_share_of_round']:.3f}, "
-            f"CPU verify build {share['cpu_verify_build_share_of_round']:.3f}, "
-            f"draft build {share['draft_build_share_of_round']:.3f}"
+            f"R {share['R_ms']:.2f} ms, verify pipeline "
+            f"{share['verify_pipeline_share_of_round']:.3f}, draft window "
+            f"{share['draft_window_share_of_round']:.3f}, routed matvec share upper bound "
+            f"{share['routed_matvec_share_of_round_upper_bound']:.3f}"
         )
     if problems:
         print("PROBLEMS:")
