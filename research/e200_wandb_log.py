@@ -180,9 +180,27 @@ def main() -> int:
 
     if replay:
         witness = replay["witness"]
-        run.summary["replay/sched_agreement"] = witness["sched_agreement"]
+        run.summary["replay/depth_agreement"] = witness["depth_agreement"]
+        run.summary["replay/sched_agreement_within_1ulp"] = witness["sched_agreement"]
+        run.summary["replay/sched_byte_identical"] = witness["sched_byte_identical"]
+        run.summary["replay/field_max_ulp"] = witness["field_max_ulp"]
+        run.summary["replay/positive_control_max_ulp"] = witness[
+            "positive_control_max_ulp"]
         run.summary["replay/rounds_checked"] = witness["rounds_checked"]
         run.summary["replay/walk_steps_checked"] = witness["steps_checked"]
+
+        cost_table = wandb.Table(
+            columns=["verify_width_m", "R_ranked_ms", "R_local_ms",
+                     "local_samples", "local_filled"])
+        local = replay["local_cost_table"]
+        for index, ranked_ms in enumerate(replay["ranked_cost_table"]):
+            m = index + 1
+            cost_table.add_data(
+                m, ranked_ms,
+                local["table"][index] if local.get("table") else None,
+                local.get("samples", {}).get(str(m)),
+                m in local.get("filled", []))
+        run.log({"replay/cost_tables": cost_table})
         replay_table = wandb.Table(
             columns=["cost_table", "arm", "ms_per_token", "speedup",
                      "edl_ship", "edl_cand", "shift_down", "shift_same",
