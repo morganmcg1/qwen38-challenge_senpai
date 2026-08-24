@@ -217,6 +217,25 @@ def main() -> int:
                    if decisive["improvement_minus_2sigma"] >= PROMOTION_MS_PER_ROUND
                    else "NEGATIVE")
 
+    # COLD-LEG SENSITIVITY. In every session so far leg 1 enters far cooler
+    # than legs 2..8, which all sit within about 1 C of each other. ABBA
+    # counterbalancing cancels a monotone drift, not a single cold outlier, and
+    # the abba1 null control showed that outlier alone can manufacture an
+    # apparent 0.18 ms/round arm effect. Recomputing without leg 1 unbalances
+    # the design, so this is a robustness check on the sign, never the headline.
+    warm = [x for x in legs if x["leg"] != 1]
+    warm_off = [x for x in warm if x["arm"] == "OFF"]
+    warm_fused = [x for x in warm if x["arm"] == "FUSED"]
+    sensitivity = None
+    if len(warm_off) > 1 and len(warm_fused) > 1:
+        sensitivity = contrast([x["mtp_ms_per_round"] for x in warm_off],
+                               [x["mtp_ms_per_round"] for x in warm_fused],
+                               lower_is_better=True)
+        sensitivity["excluded_leg"] = 1
+        sensitivity["balanced_design"] = len(warm_off) == len(warm_fused)
+        sensitivity["sign_agrees_with_headline"] = (
+            (sensitivity["improvement"] >= 0) == (absolute["improvement"] >= 0))
+
     report = {
         "harness": "local",
         "probe": "e198-route1-row-amortized-kernel",
@@ -234,6 +253,7 @@ def main() -> int:
         "ratio_implied_ms_per_round": ratio_ms_per_round,
         "ratio_implied_improvement_ms_per_round": ratio_implied_improvement,
         "decisive_metric_absolute_mtp_ms_per_round": absolute,
+        "cold_leg_sensitivity_absolute_mtp_ms_per_round": sensitivity,
         "session_serial_seconds_per_token_mean": serial_mean,
         "session_effective_mean_draft_len_mean": edl_mean,
         "legs": legs,
@@ -263,6 +283,11 @@ def main() -> int:
     print(f"  improvement - 2sig {absolute['improvement_minus_2sigma']:+.3f} ms/round "
           f"(bar {PROMOTION_MS_PER_ROUND})")
     print(f"  min detectable 2sig {absolute['min_detectable_effect_2sigma']:.3f} ms/round")
+    if sensitivity:
+        print(f"  drop cold leg 1   {sensitivity['improvement']:+.3f} ms/round "
+              f"(2sig {sensitivity['min_detectable_effect_2sigma']:.3f}, "
+              f"balanced={sensitivity['balanced_design']}, "
+              f"sign_agrees={sensitivity['sign_agrees_with_headline']})")
     print()
     print("ratio mtp_decode_speedup (within-leg serial control, higher is better)")
     print(f"  OFF   {ratio['mean_off']:.4f} +/- {ratio['stdev_off']:.4f}")
