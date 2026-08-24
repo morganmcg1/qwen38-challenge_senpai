@@ -137,6 +137,27 @@ def compare(base: dict, arm: dict, name: str) -> dict:
     max_erosion = max(abs_erosion) if abs_erosion else None
     min_residual = min(residual_ulp) if residual_ulp else None
 
+    # How close did the arm come to a flip, and how large is the top-1 logit
+    # perturbation the storage change produced?
+    top1_delta_ulp: list[float] = []
+    for i in range(window):
+        if not base["top2_logits"][i] or not arm["top2_logits"][i]:
+            continue
+        ulp = bf16_ulp(base["top2_logits"][i][0])
+        if ulp == ulp:
+            top1_delta_ulp.append(
+                abs(arm["top2_logits"][i][0] - base["top2_logits"][i][0]) / ulp
+            )
+    residual_buckets = {
+        f"arm_rows_margin_le_{edge}_ulp": sum(1 for m in residual_ulp if m <= edge)
+        for edge in (0, 1, 2, 4, 8, 16, 32, 64)
+    }
+    rows_erosion_exceeds_margin = sum(
+        1
+        for i in range(len(erosion_ulp))
+        if erosion_ulp[i] >= (base_ulp[i] if base_ulp[i] is not None else 0)
+    )
+
     # Drift versus position: mean absolute erosion over 64-row buckets.
     drift = []
     for start in range(0, window, 64):
@@ -182,6 +203,13 @@ def compare(base: dict, arm: dict, name: str) -> dict:
         "p99_abs_erosion_ulp": percentile(abs_erosion, 0.99),
         "min_residual_margin_ulp": min_residual,
         "headroom_ratio_min_residual_over_max_erosion": headroom,
+        "max_top1_logit_delta_ulp": max(top1_delta_ulp) if top1_delta_ulp else None,
+        "mean_top1_logit_delta_ulp": (
+            sum(top1_delta_ulp) / len(top1_delta_ulp) if top1_delta_ulp else None
+        ),
+        "p99_top1_logit_delta_ulp": percentile(top1_delta_ulp, 0.99),
+        "rows_where_erosion_reaches_baseline_margin": rows_erosion_exceeds_margin,
+        "arm_margin_histogram": residual_buckets,
         "erosion_histogram": histogram,
         "drift_by_position": drift,
     }
@@ -272,10 +300,16 @@ def main() -> None:
                 "p99_abs_erosion_ulp",
                 "min_residual_margin_ulp",
                 "headroom_ratio_min_residual_over_max_erosion",
+                "max_top1_logit_delta_ulp",
+                "mean_top1_logit_delta_ulp",
+                "p99_top1_logit_delta_ulp",
+                "rows_where_erosion_reaches_baseline_margin",
                 "verdict",
             ):
                 summary[f"{name}/{key}"] = result[key]
             for key, value in result["erosion_histogram"].items():
+                summary[f"{name}/hist/{key}"] = value
+            for key, value in result["arm_margin_histogram"].items():
                 summary[f"{name}/hist/{key}"] = value
             for point in result["drift_by_position"]:
                 run.log(
