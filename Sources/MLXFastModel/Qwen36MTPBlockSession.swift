@@ -1206,17 +1206,18 @@ public final class Qwen36MTPBlockSession {
     private var prefetchHitCount = 0
     private var prefetchUndoCount = 0
 
-    /// E165 ARM SWITCH. `MLX_E165_HEAD_PREFETCH=1` runs the prefetch. Every
-    /// other value, including unset, keeps the shipped order in which the head
+    /// E165 ARM SWITCH. The prefetch is the shipped schedule.
+    /// `MLX_E165_HEAD_PREFETCH=0` restores the older order in which the head
     /// flush is built at the top of the round that uses it. Both arms live in
     /// one binary, so an ABBA session needs no rebuild between legs.
     ///
-    /// The switch is opt-in on purpose. No existing leg script sets it, so an
-    /// unset environment has to reproduce the shipped order exactly; otherwise
-    /// rebuilding the worker would silently retime every earlier census leg
-    /// against a different schedule.
+    /// The default was opt-IN while E165 was an unmerged arm, so that an unset
+    /// environment reproduced the then-shipped order for earlier census legs.
+    /// E165 is merged, so that default now means the ranked runner — which
+    /// sets no such variable — would execute the OLD path and the mechanism
+    /// would never reach a scored run. The default is therefore opt-OUT.
     private static let headPrefetchEnabled =
-        ProcessInfo.processInfo.environment["MLX_E165_HEAD_PREFETCH"] == "1"
+        ProcessInfo.processInfo.environment["MLX_E165_HEAD_PREFETCH"] != "0"
 
     /// Flush every committed row the head has not seen, ending on
     /// `(hidden, primary)`, and propose one draft from the final row.
