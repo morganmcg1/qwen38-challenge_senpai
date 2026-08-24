@@ -1,0 +1,186 @@
+[
+  {
+    "busy_segments": [
+      {
+        "index": 0,
+        "seconds": 13.402040000000001,
+        "samples": 127,
+        "idle_pct": 4.662184115254095,
+        "active_freq_mhz": 1575.7011238587559,
+        "power_mw": 23626.79599747501
+      },
+      {
+        "index": 1,
+        "seconds": 57.0523,
+        "samples": 534,
+        "idle_pct": 0.8678722645712793,
+        "active_freq_mhz": 1577.0302287550194,
+        "power_mw": 21050.04496453254
+      },
+      {
+        "index": 2,
+        "seconds": 52.896370000000005,
+        "samples": 495,
+        "idle_pct": 0.7107708109271014,
+        "active_freq_mhz": 1576.8067476085787,
+        "power_mw": 22966.218183213707
+      },
+      {
+        "index": 3,
+        "seconds": 7.792680000000001,
+        "samples": 72,
+        "idle_pct": 0.005338407325849386,
+        "active_freq_mhz": 1577.9719031193376,
+        "power_mw": 17295.43045396449
+      },
+      {
+        "index": 4,
+        "seconds": 37.128769999999996,
+        "samples": 349,
+        "idle_pct": 1.1255280931741074,
+        "active_freq_mhz": 1576.0428096594637,
+        "power_mw": 27634.375374675757
+      },
+      {
+        "index": 5,
+        "seconds": 44.226949999999995,
+        "samples": 413,
+        "idle_pct": 0.7049044892311137,
+        "active_freq_mhz": 1576.4147785456607,
+        "power_mw": 21766.868357641666
+      }
+    ],
+    "tag": "e165r4",
+    "harness": "local",
+    "official_or_ranked_score": false,
+    "gate_qualified_for_timing": "false",
+    "pinned_depth": "4",
+    "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+    "base_sha": "56ebc93de1d1abd0718b080e2924ee8b12f983d4",
+    "samples_total": 2391,
+    "samples_window": 534,
+    "window_seconds": 57.0523,
+    "busy_threshold_pct": 50.0,
+    "idle_baseline_pre_pct": 90.18,
+    "idle_baseline_post_pct": 94.14,
+    "whole_run_idle_pct": 16.53512781957717,
+    "window_idle_pct": 0.8678722645712793,
+    "window_busy_pct": 99.13212773542872,
+    "window_active_freq_mhz": 1577.0302287550194,
+    "window_power_mw": 21050.04496453254,
+    "window_top_freq_mhz": 1578.0,
+    "window_pct_active_time_at_top_freq": 99.91104262018081,
+    "freq_histogram_pct_of_active_time": [
+      [
+        338.0,
+        0.05937364483963694
+      ],
+      [
+        924.0,
+        0.014604628660792781
+      ],
+      [
+        1056.0,
+        0.014979106318761825
+      ],
+      [
+        1578.0,
+        99.91104262018081
+      ]
+    ],
+    "mtp_seconds_per_token": 0.027110509807243943,
+    "serial_seconds_per_token": 0.07349332026205957
+  },
+  {
+    "busy_segments": [
+      {
+        "index": 0,
+        "seconds": 13.40952,
+        "samples": 127,
+        "idle_pct": 5.063321759466408,
+        "active_freq_mhz": 1574.8617116794635,
+        "power_mw": 24089.759771416127
+      },
+      {
+        "index": 1,
+        "seconds": 8.879620000000001,
+        "samples": 84,
+        "idle_pct": 2.0106308152826355,
+        "active_freq_mhz": 1573.3424673578372,
+        "power_mw": 25250.037973471834
+      },
+      {
+        "index": 2,
+        "seconds": 48.1944,
+        "samples": 449,
+        "idle_pct": 0.4446260519894427,
+        "active_freq_mhz": 1577.7778690055277,
+        "power_mw": 20684.900236127018
+      },
+      {
+        "index": 3,
+        "seconds": 60.68631,
+        "samples": 567,
+        "idle_pct": 0.6590106071698872,
+        "active_freq_mhz": 1577.5119812030096,
+        "power_mw": 22384.872943667197
+      },
+      {
+        "index": 4,
+        "seconds": 37.78157,
+        "samples": 355,
+        "idle_pct": 0.862612038091588,
+        "active_freq_mhz": 1577.145988904114,
+        "power_mw": 27523.648129498062
+      },
+      {
+        "index": 5,
+        "seconds": 45.512660000000004,
+        "samples": 425,
+        "idle_pct": 0.9519597206579444,
+        "active_freq_mhz": 1576.6435730190235,
+        "power_mw": 21771.63755974711
+      }
+    ],
+    "tag": "e165r7",
+    "harness": "local",
+    "official_or_ranked_score": false,
+    "gate_qualified_for_timing": "false",
+    "pinned_depth": "7",
+    "worker_sha256": "9998d7e8e676dc67d48ace5ee2ededb0cfec21ea16dfc45205ed04edd3900ca9",
+    "base_sha": "b1bc22165f212c7ec21dd162f8c6704b141c9817",
+    "samples_total": 2402,
+    "samples_window": 567,
+    "window_seconds": 60.68631,
+    "busy_threshold_pct": 50.0,
+    "idle_baseline_pre_pct": 96.58,
+    "idle_baseline_post_pct": 95.45,
+    "whole_run_idle_pct": 16.273022437206222,
+    "window_idle_pct": 0.6590106071698872,
+    "window_busy_pct": 99.34098939283011,
+    "window_active_freq_mhz": 1577.5119812030096,
+    "window_power_mw": 22384.872943667197,
+    "window_top_freq_mhz": 1578.0,
+    "window_pct_active_time_at_top_freq": 99.94968217684158,
+    "freq_histogram_pct_of_active_time": [
+      [
+        338.0,
+        0.023409369226583928
+      ],
+      [
+        924.0,
+        0.012838674098195288
+      ],
+      [
+        1056.0,
+        0.014069779833638673
+      ],
+      [
+        1578.0,
+        99.94968217684158
+      ]
+    ],
+    "mtp_seconds_per_token": 0.028529168106615543,
+    "serial_seconds_per_token": 0.0732052968814969
+  }
+]
