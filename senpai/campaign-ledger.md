@@ -72103,3 +72103,25 @@ Measured on a contrast whose true effect is exactly zero:
 **Other events.** Edward's crossing flag on feedback item 3 was already resolved by Entry 406 + feedback 411. Four research_base_changed notices from the Entry 406 publish (`41ee2648`, ledger-only): standing disposition, no action.
 
 **State.** Receipt `2681c3ac` validating (~3 h 08 m; stall threshold 21:30Z). E198 ABBA2 running (~40 min remaining). E199 holding. E200 replay in progress.
+
+---
+
+## Entry 408 — 2026-08-24T21:30Z — E200 MERGED as a decisive NOT USEFUL (FINDINGs 519–521): the static depth-price axis is closed; per-prompt information is the remaining depth value; E201 assigned
+
+**Review.** E200 (PR #197, Askeladd, head `9cd92d38`) terminal `failed` / verdict NOT USEFUL; W&B `toe1vajv` advisor-validated (desk medians 3.5176/3.7078, shape-sweep max +0.172 %, replay depth agreement 35/35 = 1.0, field max 2 ULP vs positive control 680,783 ULP, live edl 3.942). Diff vs assignment base `fb67c8a7`: exactly 7 research-only files (`research/e200_*`, `research/e200-artifacts/*`), submitted-surface diff EMPTY, budget growth 0/262144, ranked-boundary PASS, swift test at the documented 41-issue floor with zero new issues. Base validity recorded on `1969567f` (moves were ledger-only). **MERGED at `ad8ce73f`** for the durable instruments (corrected desk price, exact trace replay, W&B logger) per the E197 research-only precedent.
+
+### FINDING 519 — the static depth-price axis is CLOSED: honestly pricing the width-6 step into the greedy rule is self-blocking, and even the global optimum is negative
+
+Two independent admissible instruments agree in sign and size. Desk walk (harness=ranked, receipt-A anchored, 8 prompts, survival-pinned latent-q): step table −3.49 % (measured level) / −5.13 % (level held); global argmin instead of the hill climb −0.36 %; shape sweep peaks at +0.17 % (w=0.1), below the +0.2 % floor. Exact per-round replay of a real traced leg (real `ema=`/`m=`/`cap=`, zero up-shifts so acceptance is exact by the prefix rule): rstep 0.93687×, rstepnat 0.97400×, best blend +0.37 % on one prompt. Mechanism: with an honest step price the depth-4 guard's bar depends only on (1+expected), which is LARGER for strong rounds — a one-step hill climb blocks strong rounds hardest and collapses deep prompts to the paid cap-4 schedule (receipt-anchored −4.3 %). Live candidate leg (4-leg palindrome, declared head, exact, ledgers close 261=261/257=257) shows the EMA feedback loop adds only +0.057 edl, so the frozen-state replay is faithful. Consequence: the FINDING 515 oracle ceiling (+3.02 %) is NOT reachable by any static per-round price — the gap is worth exactly the per-prompt information the oracle uses. Depth-value work moves to per-prompt/online adaptation (E201).
+
+### FINDING 520 — the merged E197 `chain` S_k convention has depth-selection bias; the survival-pinned latent-q construction is the corrected desk instrument, validated out-of-sample against paid receipts
+
+S_k was measured on rounds the shipped rule selected for depth k, so it over-values added depth when pricing schedule changes: its uniform-level sweep runs monotone to a false +3.91 %. The corrected construction pins P(q > Q_k) at seven knots from paid per-prompt survival with no family assumed; a different price is a different Q'_k on the same pinned curve. Out-of-sample validation: reprices the paid cap-4 and cap-5 receipts at −0.44 % and +0.24 % error, both inside the 0.689 % receipt channel. Standing caveat on every future desk pricing of a schedule change; softens the desk cap-8 expectation (E199's paid receipt decides regardless).
+
+### FINDING 521 — quantitative proof of RULE 79: the local and ranked cost tables give the SAME depth policy OPPOSITE signs
+
+Local M4 Pro (measured this session): R(8)/R(5) = 1.6095, 8→5 saves 37.87 % of the round, dR6 share 0.3346. Ranked (merged E197 law): 1.4541, 31.23 %, 0.2778. The candidate schedule (26/35 rounds at width 8 → 32/35 at width 5) loses the same accepted tokens on both machines but buys back 6.6 pp more locally — the candidate arm ran FASTER locally while pricing −3.5 % ranked. A student who trusted the local timing leg would have shipped a −5 % ranked regression. This re-measures FINDING 484 ("two-thirds of the step is already hidden on M5") from a real schedule rather than a width ladder, and is recorded as an observation, not a published contrast.
+
+**E201 assigned (Askeladd) — online per-prompt depth-cap adaptation, desk feasibility first.** The oracle ceiling conditions on per-prompt outcomes; within-request adaptation is legal. Stage 1 is desk-only: price an observe-then-commit cap rule on the corrected instrument and per-prompt receipt anchors; GPU only if the desk clears the floor. Brief in PR.
+
+**State.** Receipt `2681c3ac` validating (~3 h 32 m — STALL THRESHOLD 21:30Z reached; advisor watching for Thorfinn/Alphonse reports). E198 ABBA2 running. E199 holding. Feedbacks this cycle: `e198-fb-null-calibration-412` (Entry 407), E200 review actions.
