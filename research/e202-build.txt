@@ -1,0 +1,20 @@
+experiment=e202-eval-barrier-dispatch-settlement
+tree=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-edward/workspace/target
+organizer_sha=0863b06ac16e26e48fc06e97444095b00feb66d4
+assignment_head=2f11870ea8bb8fead1a2f16ca1df7c7074362f5f
+worktree_clean=true
+scored_diff_vs_organizer=7 files +1582 -276
+worker_sha256=4ed41b94a9397617ef142ec15240323b08e979fc8a2ba77d408d578040db2231
+cli_sha256=cf5819008c4c1184edbc3fdc4895e0e497084a0d97bd7ae6c1df3dd1037f470d
+metallib_sha256=5d6e3f9f1438dc5d6e99423b720d66676b08a3c92a204c1e3fd8b6b0ecaef91d
+metallib_fingerprint=ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50
+needle_arm_switch=1
+needle_witness_field=0
+needle_control_trace=3
+twin_audit<<EOF
+OK ternary: 1 vendored section(s), 0 normalized toolchain section(s)
+OK ternary_ops: 1 vendored section(s), 0 normalized toolchain section(s)
+OK unary: 1 vendored section(s), 0 normalized toolchain section(s)
+OK unary_ops: 5 vendored section(s), 0 normalized toolchain section(s)
+TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s) (non-comment lines byte-identical, both comment streams sha256-pinned)
+EOF

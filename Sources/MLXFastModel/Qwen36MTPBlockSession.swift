@@ -1599,6 +1599,7 @@ public final class Qwen36MTPBlockSession {
                         // rounds are the causally unreachable null control the
                         // in-process design needs (RULE 388): the arm rotates
                         // over them and `e202_calls` must stay 0.
+                        + "e202_witness=e202-arm-witness-v1 "
                         + "e202_pid=\(ProcessInfo.processInfo.processIdentifier) "
                         + "e202_sel=\(Qwen35SplitCellBarrier.armSelectionActive ? 1 : 0) "
                         + "e202_arm=\(Qwen35SplitCellBarrier.arm.rawValue) "
@@ -1983,6 +1984,7 @@ public final class Qwen36MTPBlockSession {
                 // barrier `eval()` calls it served. A barrier round with
                 // `e202_barriers=0` is VOID, not null. `e202_census` is the
                 // running served-width histogram of this process.
+                + "e202_witness=e202-arm-witness-v1 "
                 + "e202_pid=\(ProcessInfo.processInfo.processIdentifier) "
                 + "e202_sel=\(Qwen35SplitCellBarrier.armSelectionActive ? 1 : 0) "
                 + "e202_arm=\(Qwen35SplitCellBarrier.arm.rawValue) "

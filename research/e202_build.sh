@@ -24,11 +24,12 @@ tools/build-mlx-metallib.sh || exit 1
 
 count_in_worker() { strings -a "${worker}" | grep -c -F -- "$1" || true; }
 
-# The arm switch name and the witness field names are Swift string literals, so
+# The arm switch name and the witness schema tag are Swift string literals long
+# enough to leave the small-string form and land in __cstring, so
 # they survive into the binary. MLX_QWEN_MTP_TRACE is the positive control that
 # proves the string probe can see into this binary at all.
 arm_needle='DARKBLOOM_E202_BARRIER_OFFSET'
-witness_needle='e202_barriers='
+witness_needle='e202_witness=e202-arm-witness-v1'
 control_needle='MLX_QWEN_MTP_TRACE'
 
 arm_count="$(count_in_worker "${arm_needle}")"
