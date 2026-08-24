@@ -87,6 +87,53 @@ def flat_summary(report: dict) -> dict:
     return out
 
 
+def verdicts(reports: list[dict]) -> dict:
+    """Reduce the two legs to the three competing accounts of FINDING 495.
+
+    in-flight    the release blocks on device work, so a persistent slot
+                 inherits the wait. Falsified when the thread-CPU clock tracks
+                 the wall clock across the same release.
+    allocator    the release is real host work at the clear site.
+    relocation   the work is real but is only deferred, so removing the
+                 references moves it rather than removing it.
+    """
+    by_key = {r["arm_key"]: r for r in reports}
+    out = {}
+
+    barrier = by_key.get("e192_barrier_arm")
+    if barrier:
+        arm0 = barrier["per_arm"]["arm0"]
+        wall = arm0.get("clear_release_us_median")
+        cpu = arm0.get("clear_release_cpu_us_median")
+        if wall:
+            out["verdict/cpuOverWallUnbarriered"] = cpu / wall
+            out["verdict/inFlightAccount"] = (
+                "falsified" if cpu / wall > 0.9 else "supported")
+        rel = barrier["paired"].get("clear_release_us", {})
+        bar = barrier["paired"].get("clear_barrier_us", {})
+        if rel and bar:
+            out["verdict/barrierRecoveredUs"] = -rel["mean_arm1_minus_arm0"]
+            out["verdict/barrierCostUs"] = bar["mean_arm1_minus_arm0"]
+            out["verdict/barrierNetUs"] = (
+                bar["mean_arm1_minus_arm0"] + rel["mean_arm1_minus_arm0"])
+
+    tape = by_key.get("e192_tape_suppressed_arm")
+    if tape:
+        rel = tape["paired"].get("clear_release_us", {})
+        rnd = tape["paired"].get("round_us", {})
+        if rel:
+            out["verdict/clearSiteRemovedUs"] = -rel["mean_arm1_minus_arm0"]
+        if rnd:
+            out["verdict/roundDeltaUs"] = rnd["mean_arm1_minus_arm0"]
+            out["verdict/roundDeltaTwoSigmaUs"] = rnd["two_sigma"]
+            out["verdict/roundDeltaExcludesZero"] = rnd["excludes_zero"]
+            out["verdict/roundLevelCeilingUs"] = -(
+                rnd["mean_arm1_minus_arm0"] - rnd["two_sigma"])
+            out["verdict/relocationAccount"] = (
+                "supported" if not rnd["excludes_zero"] else "rejected")
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--legs", nargs="+", required=True)
@@ -137,6 +184,7 @@ def main() -> None:
     for report in reports:
         for key, value in flat_summary(report).items():
             summary[f"{report['tag']}/{key}"] = value
+    summary.update(verdicts(reports))
     roll.summary.update(summary)
     urls.append(("rollup", roll.id, roll.url))
     roll.finish()
