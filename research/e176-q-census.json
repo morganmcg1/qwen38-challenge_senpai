@@ -243,6 +243,14 @@
    "travel": 0.15460045765648067
   }
  },
+ "provenance": {
+  "contains_scored_path_source_claims": false,
+  "harness": "ranked",
+  "note": "r0 values retained verbatim under r1: the r1 amendment changed only the source census, not any board measurement.",
+  "scored_tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+  "source_census_lives_in": "research/e176-cell-census.json",
+  "table_source": "Yukon board payload, officialMetrics.per_prompt"
+ },
  "q_vector": {
   "chi2_zero": 42.180347297338365,
   "edl": {

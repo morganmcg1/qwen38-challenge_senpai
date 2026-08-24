@@ -22,14 +22,17 @@ def main():
 
     run = wandb.init(
         entity="wandb-applied-ai-team", project="qwen38-mlx-challenge-senpai",
-        name="e176-q-decode-consumer-census",
+        name="e176-q-decode-consumer-census-r1",
         job_type="desk-analysis",
         tags=["e176", "harness=ranked", "harness=source", "census",
-              "null-calibration", "no-gpu"],
+              "null-calibration", "no-gpu", "r1-corrected-tree"],
         config={
             "assignment": "e176-q-decode-consumer-census",
-            "revision": "r0",
-            "base_sha": "6368dc25265bd05461df4f070a18f4d97a18bc12",
+            "revision": "r1",
+            "base_sha": "b13ad3b875546e784a9ebdc7efa25f20dac6712a",
+            "r0_run": "vxdn8h60",
+            "scored_tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+            "r0_census_tree_withdrawn": "Sources/MLXFastModel",
             "receipts": {"A": "5a9f130a", "B": "180db842", "C": "fda590bb",
                          "D": "2c885d64", "crown": "ec24d591",
                          "K_cap4": "90c131dc"},
@@ -44,23 +47,43 @@ def main():
     cc = json.load(open(CELLS))
     branch_names = sorted(cc["branches"])
     consumers = wandb.Table(
-        columns=["cell", "K", "N", "calls_per_round", "source", "transpose",
-                 "M_decode_max", "routed_kernel", "consumes_Q"]
+        columns=["tree", "scored", "cell", "K", "N", "calls_per_round",
+                 "source", "front", "replica_routable_at_M2_9",
+                 "M_decode_max", "kernel_at_M9_gen16", "consumes_Q"]
         + ["limit_" + b.replace(" ", "_") for b in branch_names])
-    for c in cc["cells"]:
-        consumers.add_data(c["cell"], c["K"], c["N"], c["calls_per_round"],
-                           c["source"], c["transpose"], cc["max_decode_M"],
-                           "dispatch_qmv", False,
-                           *[c["limits"][b] for b in branch_names])
+    for c in cc["target_cells"] + cc["target_cell_variants"]:
+        limits = c.get("limits") or {b: 0 for b in branch_names}
+        consumers.add_data(
+            c["tree"], c["scored"], c["cell"], c["K"], c["N"],
+            c["calls_per_round"], c["source"], c["front"],
+            c["replica_routable_at_M2_9"], cc["max_decode_M"],
+            c["kernel_by_M"]["9"], c["kernel_by_M"]["9"].startswith("qmm_t"),
+            *[limits.get(b, 0) for b in branch_names])
+    for c in cc["head_cells"]:
+        consumers.add_data(
+            c["tree"], c["scored"], c["cell"], c["K"], c["N"], 0,
+            c["source"], c["front"], c["front"] == "replica",
+            cc["max_decode_M"], c["kernel_by_M"]["9"],
+            c["kernel_by_M"]["9"].startswith("qmm_t"),
+            *[c["limits"][b] for b in branch_names])
+    pt = cc["parallel_tree_cells"]
+    for c in pt["cells"]:
+        consumers.add_data(
+            pt["tree"], pt["scored"], c["cell"], c["K"], c["N"],
+            c["calls_per_round"], c["source"], "n/a - not the scored path",
+            False, cc["max_decode_M"], "n/a - not the scored path", False,
+            *[0 for _ in branch_names])
 
     arch = wandb.Table(
-        columns=["branch", "arch_gen", "arch_size", "limit_all_cells",
-                 "first_consuming_M", "q_calls_at_M9", "provenance"])
+        columns=["branch", "arch_gen", "arch_size", "limit_all_scored_cells",
+                 "first_consuming_M", "q_target_calls_at_M9", "provenance"])
     for b in branch_names:
         v = cc["branches"][b]
         arch.add_data(b, v["arch_gen"], v["arch_size"],
-                      cc["cells"][0]["limits"][b], v["first_consuming_M"] or 0,
-                      v["q_consuming_calls_by_M"]["9"], v["provenance"])
+                      v["limit_all_scored_cells"][0],
+                      v["first_consuming_M"] or 0,
+                      v["q_consuming_target_calls_by_M"]["9"],
+                      v["provenance"])
 
     signs = wandb.Table(
         columns=["pair", "channel", "mean8_pct", "sd8_pct", "negative_of_8",
@@ -120,12 +143,15 @@ def main():
 
     oc = d["receipt_c_outlier"]
     scalars = {
-        "census/quantized_calls_per_round": cc["total_calls_per_round"],
-        "census/distinct_cells": len(cc["cells"]),
+        "census/quantized_target_calls_per_round":
+            cc["total_target_calls_per_round"],
+        "census/distinct_scored_cells": len(cc["target_cells"]),
         "census/q_consuming_calls_at_M_le_5": 0,
         "census/q_consuming_calls_at_M_le_9": 0,
         "census/vector_limit_this_host": 10,
         "census/vector_limit_ranked_m5": 10,
+        "census/replica_intercepts_target_calls_at_M2_9":
+            cc["total_target_calls_per_round"],
         "outlier/bc_leg_predicted_pct": oc["bc_leg_predicted_pct"],
         "outlier/bc_leg_measured_pct": oc["bc_leg_measured_pct"],
         "outlier/unexplained_in_C_pct": oc["unexplained_pct"],

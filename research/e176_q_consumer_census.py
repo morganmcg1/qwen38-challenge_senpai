@@ -28,6 +28,21 @@ import math
 import statistics as st
 
 CACHE = "/tmp/yukon-board/full.json"
+
+# Every table this file writes is a Yukon board measurement. None of them is a
+# source claim, and none of them describes a code tree. The scored-tree source
+# census lives in research/e176_cell_census.py, which reads the vendored tree
+# Vendor/mlx-swift-lm/Libraries/MLXLLM/Models (Qwen35.swift, Qwen35MTP.swift).
+PROVENANCE = {
+    "table_source": "Yukon board payload, officialMetrics.per_prompt",
+    "harness": "ranked",
+    "contains_scored_path_source_claims": False,
+    "source_census_lives_in": "research/e176-cell-census.json",
+    "scored_tree": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models",
+    "note": "r0 values retained verbatim under r1: the r1 amendment changed "
+            "only the source census, not any board measurement.",
+}
+
 PROMPT_NAMES = {
     "919318e1": "beagle",
     "192fb621": "botany",
@@ -132,7 +147,8 @@ def two_way_residual_sd(rows, field):
 def main():
     scored = load()
     rows = {k: pick(scored, v) for k, v in RECEIPTS.items()}
-    out = {"harness": "ranked", "board_rows_512": len(scored)}
+    out = {"harness": "ranked", "board_rows_512": len(scored),
+           "provenance": PROVENANCE}
 
     print("=" * 78)
     print("0. COHORT -- the four receipts of the factor system")
