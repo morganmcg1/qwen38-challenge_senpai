@@ -158,8 +158,9 @@ def main():
           % len(cluster))
 
     resid_c, row_off_c = two_way_residual_sd(cluster, "mtp_seconds_per_token_mean")
-    resid_s, _ = two_way_residual_sd(scored, "serial_seconds_per_token_mean")
+    resid_s, row_off_s = two_way_residual_sd(scored, "serial_seconds_per_token_mean")
     common_c = mad_sd([o * 100.0 for o in row_off_c])
+    common_s = mad_sd([o * 100.0 for o in row_off_s])
     print()
     print("  (a) candidate leg, %d-receipt same-schedule cluster" % len(cluster))
     print("      per-receipt common offset, robust sd: %.4f %%" % common_c)
@@ -169,6 +170,8 @@ def main():
     print()
     print("  (b) serial leg, all %d board receipts, source identical by"
           % len(scored))
+    print("      per-receipt common offset, robust sd: %.4f %% (pairwise %.4f)"
+          % (common_s, common_s * math.sqrt(2.0)))
     print("      construction (runner-owned prebuilt baseline workspace)")
     for p in ALL8:
         print("        %-9s %.4f %%" % (p, resid_s[p]))
@@ -181,19 +184,31 @@ def main():
     print("      mean over 8: %+.4f %%   sd of the 8: %.4f %%"
           % (st.mean(dpair.values()), st.stdev(dpair.values())))
 
-    sigma = {p: math.sqrt(2.0 * resid_c[p] ** 2 + 2.0 * common_c ** 2)
+    # The 115-receipt cluster shares a token stream but not its kernels, so its
+    # candidate-leg spread contains real mechanism and is an upper bound only.
+    # The serial leg is byte-identical across every board run by construction,
+    # so its dispersion is pure measurement draw on the same host, same
+    # 512-token window, inside the same alternating pair.
+    common_null = common_s * math.sqrt(2.0)
+    sigma = {p: math.sqrt(2.0 * resid_s[p] ** 2 + common_null ** 2)
              for p in ALL8}
+    sigma_ub = {p: math.sqrt(2.0 * resid_c[p] ** 2 + 2.0 * common_c ** 2)
+                for p in ALL8}
     print()
     print("  ADOPTED per-prompt pairwise 1 sigma, candidate leg")
-    print("      sigma_p = sqrt(2*resid_p^2 + 2*common^2)")
+    print("      sigma_p = sqrt(2*serial_resid_p^2 + common_null^2),"
+          " common_null = %.3f %%" % common_null)
+    print("      prompt      adopted   contaminated upper bound")
     for p in ALL8:
-        print("        %-9s %.4f %%" % (p, sigma[p]))
+        print("        %-9s %.4f %%   %.4f %%" % (p, sigma[p], sigma_ub[p]))
     out["null"] = {
         "cluster_n": len(cluster),
-        "common_offset_sd_pct": common_c,
-        "per_prompt_residual_sd_pct": resid_c,
+        "cluster_common_offset_sd_pct": common_c,
+        "cluster_per_prompt_residual_sd_pct": resid_c,
         "serial_per_prompt_residual_sd_pct": resid_s,
+        "common_pairwise_null_pct": common_null,
         "per_prompt_pairwise_sigma_pct": sigma,
+        "per_prompt_pairwise_sigma_upper_bound_pct": sigma_ub,
         "byte_identical_pair_mean_pct": st.mean(dpair.values()),
         "byte_identical_pair_sd_pct": st.stdev(dpair.values()),
     }
@@ -259,6 +274,82 @@ def main():
                      (q_pct[p] - pred[p]) / sigma[p]))
         out["models"][name] = {"beta": beta, "se": se, "chi2": chi2,
                                "pred_pct": pred}
+
+    # Two-parameter fit: does a per-round term survive next to a fixed
+    # per-leg term?  The per-round coefficient is the quantity the cap-4
+    # composition question actually needs.
+    b1 = models["prefill (constant s/leg)"]
+    b2 = models["round (constant s/round)"]
+    s11 = sum(b1[p] ** 2 / sigma[p] ** 2 for p in ALL8)
+    s22 = sum(b2[p] ** 2 / sigma[p] ** 2 for p in ALL8)
+    s12 = sum(b1[p] * b2[p] / sigma[p] ** 2 for p in ALL8)
+    y1 = sum(b1[p] * q_pct[p] / sigma[p] ** 2 for p in ALL8)
+    y2 = sum(b2[p] * q_pct[p] / sigma[p] ** 2 for p in ALL8)
+    det = s11 * s22 - s12 * s12
+    c1 = (s22 * y1 - s12 * y2) / det
+    c2 = (s11 * y2 - s12 * y1) / det
+    se1 = math.sqrt(s22 / det)
+    se2 = math.sqrt(s11 / det)
+    chi2_2p = sum(((q_pct[p] - c1 * b1[p] - c2 * b2[p]) / sigma[p]) ** 2
+                  for p in ALL8)
+    print()
+    print("  MODEL prefill + round (2 parameters), chi2=%.2f (6 dof)" % chi2_2p)
+    print("      per-leg   term: %+.1f +- %.1f ms   (%.1f sigma)"
+          % (c1 * 1000.0, se1 * 1000.0, c1 / se1))
+    print("      per-round term: %+.1f +- %.1f us   (%.1f sigma)"
+          % (c2 * 1e6, se2 * 1e6, c2 / se2))
+    print("      95%% upper bound on |per-round saving|: %.1f us/round"
+          % (abs(c2 * 1e6) + 1.96 * se2 * 1e6))
+    out["two_param"] = {"per_leg_s": c1, "per_leg_se": se1,
+                        "per_round_s": c2, "per_round_se": se2,
+                        "chi2": chi2_2p}
+
+    # ------------------------------------------------- direct channel split
+    # `prefill_seconds_per_token` is a candidate-side per-prompt field on the
+    # receipt, so the leg splits without any model:
+    #     leg      = 512 * mtp_seconds_per_token_mean
+    #     prefill  = 512 * prefill_seconds_per_token
+    #     decode   = leg - prefill
+    print()
+    print("=" * 78)
+    print("3b. DIRECT CHANNEL SPLIT FROM THE RECEIPTS (no model)")
+    print("=" * 78)
+    vB, vC, vA = vec(rows["B"]), vec(rows["C"]), vec(rows["A"])
+    pre = {t: {p: DECODE_TOKENS * v[p]["prefill_seconds_per_token"]
+               for p in ALL8} for t, v in (("B", vB), ("C", vC), ("A", vA))}
+    lg = {t: {p: DECODE_TOKENS * v[p]["mtp_seconds_per_token_mean"]
+              for p in ALL8} for t, v in (("B", vB), ("C", vC), ("A", vA))}
+    dec = {t: {p: lg[t][p] - pre[t][p] for p in ALL8} for t in lg}
+    print("  prefill share of the candidate leg (receipt C):")
+    for p in sorted(ALL8, key=lambda x: edl[x]):
+        print("    %-9s leg %6.3f s  prefill %6.4f s  share %5.2f %%"
+              % (p, lg["C"][p], pre["C"][p], 100.0 * pre["C"][p] / lg["C"][p]))
+    print()
+    print("  Q = B - C, split by channel (negative = Q faster)")
+    print("    prompt     prefill %%   prefill ms    decode %%   decode ms")
+    for p in sorted(ALL8, key=lambda x: edl[x]):
+        print("    %-9s %+8.4f %+10.1f %+11.4f %+10.1f"
+              % (p,
+                 100.0 * (pre["B"][p] - pre["C"][p]) / pre["C"][p],
+                 1000.0 * (pre["B"][p] - pre["C"][p]),
+                 100.0 * (dec["B"][p] - dec["C"][p]) / dec["C"][p],
+                 1000.0 * (dec["B"][p] - dec["C"][p])))
+    pre_pct = st.mean(100.0 * (pre["B"][p] - pre["C"][p]) / pre["C"][p]
+                      for p in ALL8)
+    dec7_pct = st.mean(100.0 * (dec["B"][p] - dec["C"][p]) / dec["C"][p]
+                       for p in DRAFTING)
+    print("    mean8 prefill %+.4f %%   mean7 decode %+.4f %%"
+          % (pre_pct, dec7_pct))
+    out["channel_split"] = {
+        "prefill_share_pct": {p: 100.0 * pre["C"][p] / lg["C"][p]
+                              for p in ALL8},
+        "q_prefill_pct": {p: 100.0 * (pre["B"][p] - pre["C"][p]) / pre["C"][p]
+                          for p in ALL8},
+        "q_decode_pct": {p: 100.0 * (dec["B"][p] - dec["C"][p]) / dec["C"][p]
+                         for p in ALL8},
+        "q_prefill_mean8_pct": pre_pct,
+        "q_decode_mean7_pct": dec7_pct,
+    }
 
     out["q_vector"] = {"pct": q_pct, "ms": q_ms, "leg_s": leg, "edl": edl,
                        "rounds": rounds, "ndrc": ndrc,
