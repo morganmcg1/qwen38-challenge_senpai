@@ -1846,6 +1846,11 @@ public final class Qwen36MTPBlockSession {
             // the device provably owns nothing, and they are therefore the
             // whole budget for any further pipelining work.
             let tTailDone = DispatchTime.now().uptimeNanoseconds
+            // Read the round's dedup census before the line is built, then
+            // clear it after the line is written, so each trace line describes
+            // exactly one round and the census holds one round of activations
+            // at a time.
+            let xsDedupSummary = Qwen35XSumsDedupCensus.roundSummary()
             let line = "mtp-trace: round=\(roundCount) d=\(draftCount) "
                 + "acc=\(acceptedCount) "
                 + "draft_build_us=\((tDraftBuilt - tRound0) / 1000) "
@@ -1888,6 +1893,14 @@ public final class Qwen36MTPBlockSession {
                 // standalone fill.
                 + "xs_hit=\(qwen35XSumsSidecarHits) "
                 + "xs_fill=\(qwen35XSumsStandaloneFills) "
+                // E174 step 1. `xs_uniq` counts DISTINCT activations among
+                // those fills, so `xs_fill - xs_uniq` per round is the number
+                // of fills that rebuilt a table an earlier cell in the same
+                // round had already built. `xs_dedup` carries the per-shape
+                // split and the duplicates-per-activation histogram. Both read
+                // `off`/zero unless MLX_E174_DEDUP_CENSUS=1.
+                + "xs_uniq=\(qwen35XSumsFillDistinct) "
+                + "xs_dedup=\(xsDedupSummary) "
                 // Head-chain prefetch witness. `pf` is the arm this process
                 // compiled for, `pf_hit` says this round consumed a step the
                 // PREVIOUS round submitted, and the running counts show what
@@ -1899,6 +1912,7 @@ public final class Qwen36MTPBlockSession {
                 + "pf_undo=\(prefetchUndoCount) "
                 + scheduleTrace + "\n"
             Self.traceWrite(line)
+            Qwen35XSumsDedupCensus.rollRound()
             // Absolute anchors on the mach uptime clock, so an offline reader
             // can intersect the round's inter-anchor windows with the GPU
             // execution intervals of the research-only command-buffer ledger

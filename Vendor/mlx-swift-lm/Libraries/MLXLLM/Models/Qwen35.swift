@@ -1866,6 +1866,9 @@ public enum Qwen35CustomQMV {
                 ? Qwen35XSumsSidecar.take(x, k: cell.k, m: cell.m) : nil
             if fused == nil {
                 qwen35XSumsStandaloneFills &+= 1
+                if Qwen35XSumsDedupCensus.enabled {
+                    Qwen35XSumsDedupCensus.record(x: x, k: cell.k, m: cell.m)
+                }
             } else {
                 qwen35XSumsSidecarHits &+= 1
             }
@@ -2370,6 +2373,103 @@ func qwen35FusedResidualRMSNorm(
         outputDTypes: [.bfloat16, .bfloat16]
     )
     return (outputs[0], outputs[1])
+}
+
+/// E174 step 1: how many of a round's standalone chunk-sum fills are duplicates.
+///
+/// `Qwen35CustomQMV.matmul` calls `xsumsTable(x)` once per routed table-paying
+/// cell that found no published table. Several routed cells can read the SAME
+/// activation -- a normed activation feeding several projections is the usual
+/// transformer shape -- and each of them then fills an identical table. The
+/// sidecar's `take` already dedupes by activation identity, but only for tables
+/// a producer published; the standalone path has no memo at all.
+///
+/// UNTIMED INSTRUMENT. `MLX_E174_DEDUP_CENSUS=1` turns it on. Unset is the
+/// shipped path: the call site reads one `static let` Bool and does nothing
+/// else. It never changes arithmetic, dispatch, or token output on either arm,
+/// and it is not intended to be present during a timed leg.
+public enum Qwen35XSumsDedupCensus {
+    /// 22 UTF-8 bytes and an `MLX_` prefix, for the two reasons
+    /// `MLX_E120_QMV_ARM` documents: the runtime worker's environment allowlist
+    /// drops every `MLXFAST_*` name, and a literal longer than 15 bytes reaches
+    /// the binary's string table where `strings` can witness the arm.
+    public static let enabled: Bool =
+        ProcessInfo.processInfo.environment["MLX_E174_DEDUP_CENSUS"] == "1"
+
+    /// `rollRound` runs from the per-round trace hook, so a census enabled
+    /// without `MLX_QWEN_MTP_TRACE=1` would never clear and would pin every
+    /// activation of the whole leg. One round touches 257 cells, so this bound
+    /// cannot fire on a rolling census and turns that mistake into a reset.
+    static let heldBound = 4096
+
+    private struct Shape: Hashable {
+        let k: Int
+        let m: Int
+    }
+
+    private struct Key: Hashable {
+        let id: ObjectIdentifier
+        let shape: Shape
+    }
+
+    nonisolated(unsafe) private static var callsPerActivation: [Key: Int] = [:]
+    /// Strong references for the CURRENT round only. A released `MLXArray` can
+    /// have its address reused by a later allocation, which would merge two
+    /// distinct activations into one identity and overstate the duplicate
+    /// fraction. Holding the round's activations makes `ObjectIdentifier`
+    /// unambiguous for as long as the census reads it.
+    nonisolated(unsafe) private static var held: [MLXArray] = []
+    nonisolated(unsafe) private static var shapeCalls: [Shape: Int] = [:]
+    nonisolated(unsafe) private static var shapeUniq: [Shape: Int] = [:]
+    private static let lock = NSLock()
+
+    public static func record(x: MLXArray, k: Int, m: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        if held.count >= heldBound { clearLocked() }
+        let shape = Shape(k: k, m: m)
+        shapeCalls[shape, default: 0] &+= 1
+        let key = Key(id: ObjectIdentifier(x), shape: shape)
+        let previous = callsPerActivation[key] ?? 0
+        callsPerActivation[key] = previous &+ 1
+        if previous == 0 {
+            held.append(x)
+            shapeUniq[shape, default: 0] &+= 1
+            qwen35XSumsFillDistinct &+= 1
+        }
+    }
+
+    /// `calls/distinct;K x M:calls/distinct,...;Nx=<activations>,...` for the
+    /// round: the totals, the per-cell-shape split, and the histogram of how
+    /// many fills share one activation. `off` when the census is disabled.
+    public static func roundSummary() -> String {
+        guard enabled else { return "off" }
+        lock.lock()
+        defer { lock.unlock() }
+        let calls = shapeCalls.values.reduce(0, &+)
+        var histogram: [Int: Int] = [:]
+        for n in callsPerActivation.values { histogram[n, default: 0] &+= 1 }
+        let shapes = shapeCalls.keys
+            .sorted { ($0.k, $0.m) < ($1.k, $1.m) }
+            .map { "\($0.k)x\($0.m):\(shapeCalls[$0] ?? 0)/\(shapeUniq[$0] ?? 0)" }
+        let bars = histogram.keys.sorted().map { "\($0)x=\(histogram[$0] ?? 0)" }
+        return "\(calls)/\(callsPerActivation.count);"
+            + shapes.joined(separator: ",") + ";" + bars.joined(separator: ",")
+    }
+
+    public static func rollRound() {
+        guard enabled else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        clearLocked()
+    }
+
+    private static func clearLocked() {
+        callsPerActivation.removeAll(keepingCapacity: true)
+        held.removeAll(keepingCapacity: true)
+        shapeCalls.removeAll(keepingCapacity: true)
+        shapeUniq.removeAll(keepingCapacity: true)
+    }
 }
 
 /// Chunk-sum tables emitted by a producing kernel's epilogue, keyed by the
@@ -4363,6 +4463,11 @@ public nonisolated(unsafe) var qwen35RowTop32ArgPartitionDrafts: Int = 0
 /// much of the 257-site fill surface the inherited fusion actually covers.
 public nonisolated(unsafe) var qwen35XSumsSidecarHits: Int = 0
 public nonisolated(unsafe) var qwen35XSumsStandaloneFills: Int = 0
+
+/// Distinct activations among those standalone fills, summed over rounds, so a
+/// per-round delta against `qwen35XSumsStandaloneFills` gives the round's
+/// duplicate fill count. Stays zero unless `MLX_E174_DEDUP_CENSUS=1`.
+public nonisolated(unsafe) var qwen35XSumsFillDistinct: Int = 0
 
 /// Derived-index geometry this process built, for the arm witness. Zero until
 /// `buildDerivedClusterIndex` runs, which happens once during the untimed warm.
