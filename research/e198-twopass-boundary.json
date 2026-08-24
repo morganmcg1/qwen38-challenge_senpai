@@ -1,0 +1,91 @@
+{
+  "cells" : [
+    {
+      "control_differing_elements" : 26038,
+      "control_max_absolute_difference" : 0.02490234375,
+      "differing_elements" : 0,
+      "elements" : 36864,
+      "kL" : 518,
+      "kv" : 512,
+      "m" : 6,
+      "max_absolute_difference" : 0
+    },
+    {
+      "control_differing_elements" : 30839,
+      "control_max_absolute_difference" : 0.04276275634765625,
+      "differing_elements" : 0,
+      "elements" : 43008,
+      "kL" : 519,
+      "kv" : 512,
+      "m" : 7,
+      "max_absolute_difference" : 0
+    },
+    {
+      "control_differing_elements" : 36328,
+      "control_max_absolute_difference" : 0.084228515625,
+      "differing_elements" : 0,
+      "elements" : 49152,
+      "kL" : 520,
+      "kv" : 512,
+      "m" : 8,
+      "max_absolute_difference" : 0
+    },
+    {
+      "control_differing_elements" : 41776,
+      "control_max_absolute_difference" : 0.04833984375,
+      "differing_elements" : 0,
+      "elements" : 55296,
+      "kL" : 521,
+      "kv" : 512,
+      "m" : 9,
+      "max_absolute_difference" : 0
+    },
+    {
+      "control_differing_elements" : 28105,
+      "control_max_absolute_difference" : 0.0411376953125,
+      "differing_elements" : 15666,
+      "elements" : 36864,
+      "kL" : 1030,
+      "kv" : 1024,
+      "m" : 6,
+      "max_absolute_difference" : 0.0009765625
+    },
+    {
+      "control_differing_elements" : 32706,
+      "control_max_absolute_difference" : 0.032745361328125,
+      "differing_elements" : 18023,
+      "elements" : 43008,
+      "kL" : 1031,
+      "kv" : 1024,
+      "m" : 7,
+      "max_absolute_difference" : 0.0009765625
+    },
+    {
+      "control_differing_elements" : 37179,
+      "control_max_absolute_difference" : 0.020751953125,
+      "differing_elements" : 20735,
+      "elements" : 49152,
+      "kL" : 1032,
+      "kv" : 1024,
+      "m" : 8,
+      "max_absolute_difference" : 0.0009765625
+    },
+    {
+      "control_differing_elements" : 42535,
+      "control_max_absolute_difference" : 0.03582763671875,
+      "differing_elements" : 23295,
+      "elements" : 55296,
+      "kL" : 1033,
+      "kv" : 1024,
+      "m" : 9,
+      "max_absolute_difference" : 0.0009765625
+    }
+  ],
+  "harness" : "local",
+  "head_dim" : 256,
+  "heads" : 24,
+  "kv_heads" : 4,
+  "probe" : "e198-fused-value-gate",
+  "probe_needle" : "E198-ROUTE1-ROW-AMORTIZED-FUSED-SDPA-LIVE-PATH-2026-08-24",
+  "split_row" : 5
+}

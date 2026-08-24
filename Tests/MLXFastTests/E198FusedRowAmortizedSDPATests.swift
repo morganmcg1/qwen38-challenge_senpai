@@ -292,7 +292,16 @@ struct E198FusedExactnessTests {
                 let reference = E198Probe.today(queries: q, keys: keys, values: values)
                 guard let candidate = E198Probe.fused(queries: q, keys: keys, values: values)
                 else {
-                    Issue.record("fused kernel refused width \(m)")
+                    // A refusal is correct only at the vendored two-pass key
+                    // length, where the split changes reduction order.
+                    let boundary = keys.dim(2) >= FusedRowAmortizedSDPA.twoPassKeyLength
+                    if !boundary {
+                        Issue.record("fused kernel refused served cell m=\(m) kL=\(keys.dim(2))")
+                    }
+                    cells.append([
+                        "m": m, "kv": kvLength, "kL": keys.dim(2), "served": false,
+                        "declined_at_two_pass_boundary": boundary,
+                    ])
                     continue
                 }
                 let controlOut = Self.control(queries: q, keys: keys, values: values)
@@ -312,7 +321,7 @@ struct E198FusedExactnessTests {
                 )
 
                 cells.append([
-                    "m": m, "kv": kvLength, "kL": keys.dim(2),
+                    "m": m, "kv": kvLength, "kL": keys.dim(2), "served": true,
                     "elements": reference.size,
                     "differing_elements": differing,
                     "max_absolute_difference": maxAbsolute,

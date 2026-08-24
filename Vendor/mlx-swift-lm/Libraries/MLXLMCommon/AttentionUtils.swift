@@ -183,6 +183,10 @@ public enum FusedRowAmortizedSDPA {
     public static let bn = 32
     public static let bd = 32
 
+    /// Key length at which the vendored dispatch may switch to
+    /// `sdpa_vector_2pass`. The fused kernel serves only shorter keys.
+    public static let twoPassKeyLength = 1024
+
     /// Query-row counts the fused kernel serves. `MLXFAST_QWEN_FUSED_SDPA_ROWS`
     /// overrides it for measurement arms; an empty value disables the kernel
     /// and restores the two-call split.
@@ -232,6 +236,16 @@ public enum FusedRowAmortizedSDPA {
         // The kernel reads each thread's 8 head-dim elements as one contiguous
         // run, which is what every cache layout in this tree provides.
         guard keys.strides[3] == 1, values.strides[3] == 1 else { return nil }
+
+        // This kernel reproduces `sdpa_vector` arithmetic. At or above
+        // `twoPassKeyLength` the vendored dispatch in
+        // `scaled_dot_product_attention.cpp` can select `sdpa_vector_2pass`,
+        // whose block-partitioned softmax combine rounds differently, so
+        // serving that range would change emitted logits by one bf16 ulp.
+        // Declining is unconditional rather than architecture-gated: the
+        // vendored condition also reads the device architecture string, and a
+        // fallback is always exact.
+        guard keys.dim(2) < twoPassKeyLength else { return nil }
 
         return kernel(
             [queries, keys, values, MLXArray(scale)],
