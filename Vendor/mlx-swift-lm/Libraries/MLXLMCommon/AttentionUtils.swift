@@ -64,6 +64,7 @@ public func attentionWithCacheUpdate(
     scale: Float,
     mask: MLXFast.ScaledDotProductAttentionMaskMode = .none
 ) -> MLXArray {
+    FusedRowAmortizedSDPA.Liveness.reached("awcu_entry")
     // ContinuousBatchingV2 hook — see the LIMITATION notes above.
     if let v2 = cache as? CBv2AttendingLayerCache {
         if let violation = cbv2CustomMaskViolation(mask: mask, layerIndex: v2.layerIndex) {
@@ -119,6 +120,10 @@ public func attentionWithCacheUpdate(
         // are read-only views of that single committed candidate window.
         let qL = queries.dim(2)
         let kL = cachedKeys.dim(2)
+        FusedRowAmortizedSDPA.Liveness.reached("awcu_else_qL\(qL)")
+        if case .causal = mask {
+            FusedRowAmortizedSDPA.Liveness.reached("causal_qL\(qL)")
+        }
         if queries.dim(0) == 1, qL >= 6, qL <= 9, kL >= qL,
            case .causal = mask
         {
@@ -222,15 +227,29 @@ public enum FusedRowAmortizedSDPA {
     enum Liveness {
         nonisolated(unsafe) private static var servedCounts: [Int: Int] = [:]
         nonisolated(unsafe) private static var declinedCounts: [String: Int] = [:]
+        nonisolated(unsafe) private static var reachedCounts: [String: Int] = [:]
 
-        nonisolated(unsafe) private static let path = ProcessInfo.processInfo
+        /// The requested path, or a temporary-directory fallback. The fallback
+        /// exists so that "no file" means "this code did not run" and can never
+        /// also mean "the environment variable did not arrive".
+        nonisolated(unsafe) private static let envPath = ProcessInfo.processInfo
             .environment["DARKBLOOM_E198_LIVENESS_OUT"]
+        nonisolated(unsafe) private static let path =
+            envPath ?? (NSTemporaryDirectory() as NSString)
+            .appendingPathComponent("e198-liveness.json")
 
         private static let armed: Bool = {
-            guard path != nil else { return false }
             atexit { Liveness.dump() }
             return true
         }()
+
+        /// Count a call site upstream of `attend`, so a missing `attend` call
+        /// is distinguishable from a declined one.
+        static func reached(_ key: String) {
+            guard armed else { return }
+            reachedCounts[key, default: 0] += 1
+            flushIfDue()
+        }
 
         // The worker can be killed rather than exited, so `atexit` alone can
         // leave no evidence. Flush on the first call and then periodically.
@@ -255,7 +274,6 @@ public enum FusedRowAmortizedSDPA {
         }
 
         static func dump() {
-            guard let path else { return }
             func object(_ pairs: [(String, Int)]) -> String {
                 "{" + pairs.map { "\"\($0.0)\": \($0.1)" }.joined(separator: ", ") + "}"
             }
@@ -263,9 +281,14 @@ public enum FusedRowAmortizedSDPA {
                 servedCounts.sorted { $0.key < $1.key }.map { ("\($0.key)", $0.value) })
             let declined = object(
                 declinedCounts.sorted { $0.key < $1.key }.map { ($0.key, $0.value) })
+            let reached = object(reachedCounts.sorted { $0.key < $1.key })
+            let rowsEnv = ProcessInfo.processInfo
+                .environment["DARKBLOOM_QWEN_FUSED_SDPA_ROWS"] ?? "<unset>"
             let json = """
                 {"served_by_rows": \(served), "declined_by_reason": \(declined), \
-                "enabled_rows": \(enabledRows.sorted())}
+                "reached": \(reached), "enabled_rows": \(enabledRows.sorted()), \
+                "rows_env": "\(rowsEnv)", "out_env_set": \(envPath != nil), \
+                "pid": \(ProcessInfo.processInfo.processIdentifier)}
                 """
             try? json.write(toFile: path, atomically: true, encoding: .utf8)
         }

@@ -30,7 +30,12 @@ echo "e198_liveness: rows=${rows} tokens=${tokens}"
 ./benchmark-qwen-mtp.sh --local-iterate > "${out}/run.log" 2>&1
 rc=$?
 echo "exit: ${rc}"
-echo "--- counts ---"
-cat "${DARKBLOOM_E198_LIVENESS_OUT}" 2>/dev/null || echo "NO COUNTS FILE WRITTEN"
+echo "--- counts (requested path) ---"
+cat "${DARKBLOOM_E198_LIVENESS_OUT}" 2>/dev/null || echo "NO COUNTS FILE AT REQUESTED PATH"
+echo
+# The probe falls back to the worker's TMPDIR when the requested path did not
+# arrive, so a file here and not above isolates environment delivery.
+echo "--- counts (TMPDIR fallback) ---"
+find "${TMPDIR:-/tmp}" /tmp -maxdepth 2 -name 'e198-liveness.json' -print -exec cat {} \; 2>/dev/null
 echo
 exit "${rc}"
