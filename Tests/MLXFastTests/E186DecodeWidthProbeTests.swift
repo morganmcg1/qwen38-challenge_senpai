@@ -273,32 +273,6 @@ struct E186DecodeWidthProbeTests {
         }
         payload["gdn_branch_witness"] = branches
 
-        // 3. Optional GPU capture: names the kernels directly when the
-        // environment allows a capture.
-        if ProcessInfo.processInfo.environment["MLXFAST_E186_CAPTURE"] == "1",
-           let capturePath = ProcessInfo.processInfo.environment[
-               "MLXFAST_E186_CAPTURE_PATH"]
-        {
-            var captured: [String: Any] = ["requested_path": capturePath]
-            GPU.startCapture(url: URL(fileURLWithPath: capturePath))
-            for m in [2, 5, 8] {
-                let cache = MambaCache()
-                cache[0] = MLXRandom.normal(
-                    [1, config.linearConvKernelDim - 1, convDim]
-                ).asType(.bfloat16)
-                cache[1] = MLXRandom.normal([
-                    1, config.linearNumValueHeads, config.linearValueHeadDim,
-                    config.linearKeyHeadDim,
-                ])
-                let x = e186Activations(width: m, k: config.hiddenSize)
-                eval(gdn(x, mask: MLXArray?.none, cache: cache, nConfirmed: 1))
-            }
-            GPU.stopCapture()
-            captured["exists"] = FileManager.default.fileExists(
-                atPath: capturePath)
-            payload["gpu_capture"] = captured
-        }
-
         try e186Write(payload, to: "MLXFAST_E186_DISPATCH_OUT")
     }
 
