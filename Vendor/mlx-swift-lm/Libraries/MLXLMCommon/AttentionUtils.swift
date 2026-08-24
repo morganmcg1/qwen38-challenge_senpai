@@ -192,13 +192,21 @@ public enum FusedRowAmortizedSDPA {
     /// `sdpa_vector_2pass`. The fused kernel serves only shorter keys.
     public static let twoPassKeyLength = 1024
 
-    /// Query-row counts the fused kernel serves. `MLXFAST_QWEN_FUSED_SDPA_ROWS`
+    /// Query-row counts the fused kernel serves. `DARKBLOOM_QWEN_FUSED_SDPA_ROWS`
     /// selects them for a measurement arm; with the variable unset the kernel
     /// is off and the shipped two-call split runs unchanged. RULE 198 requires
     /// this switch to become a compile-time constant before any submission.
+    ///
+    /// THE PREFIX IS LOAD BEARING (HARNESS DEFECT 28).
+    /// `sanitizedRuntimeWorkerEnvironment` rebuilds
+    /// the runtime worker's environment from empty and copies in only an
+    /// allowlist, to stop submitted code from reading a benchmark-phase oracle.
+    /// `MLXFAST_*` is excluded by design, so an `MLXFAST_`-named model-side arm
+    /// switch is silently dropped and every arm measures the default. Only the
+    /// `DARKBLOOM_` prefix is allowlisted for model-side participant opt-ins.
     public static let enabledRows: Set<Int> = {
         guard let raw = ProcessInfo.processInfo
-            .environment["MLXFAST_QWEN_FUSED_SDPA_ROWS"]
+            .environment["DARKBLOOM_QWEN_FUSED_SDPA_ROWS"]
         else {
             return []
         }
@@ -209,14 +217,14 @@ public enum FusedRowAmortizedSDPA {
     /// result cannot distinguish "the fused kernel ran and did not help" from
     /// "the fused kernel never ran", because `attend` declines silently. This
     /// counts served calls and declines by reason, and writes the totals to
-    /// `MLXFAST_E198_LIVENESS_OUT` when the process exits. It is inert unless
+    /// `DARKBLOOM_E198_LIVENESS_OUT` when the process exits. It is inert unless
     /// that variable is set, and no timed arm sets it.
     enum Liveness {
         nonisolated(unsafe) private static var servedCounts: [Int: Int] = [:]
         nonisolated(unsafe) private static var declinedCounts: [String: Int] = [:]
 
         nonisolated(unsafe) private static let path = ProcessInfo.processInfo
-            .environment["MLXFAST_E198_LIVENESS_OUT"]
+            .environment["DARKBLOOM_E198_LIVENESS_OUT"]
 
         private static let armed: Bool = {
             guard path != nil else { return false }
@@ -224,14 +232,26 @@ public enum FusedRowAmortizedSDPA {
             return true
         }()
 
+        // The worker can be killed rather than exited, so `atexit` alone can
+        // leave no evidence. Flush on the first call and then periodically.
+        nonisolated(unsafe) private static var calls = 0
+        private static let flushEvery = 128
+
         static func served(rows: Int) {
             guard armed else { return }
             servedCounts[rows, default: 0] += 1
+            flushIfDue()
         }
 
         static func declined(reason: String, rows: Int) {
             guard armed else { return }
             declinedCounts["\(reason)_m\(rows)", default: 0] += 1
+            flushIfDue()
+        }
+
+        private static func flushIfDue() {
+            calls += 1
+            if calls == 1 || calls % flushEvery == 0 { dump() }
         }
 
         static func dump() {

@@ -5,7 +5,7 @@
 #   research/e198_build.sh
 #
 # E198 needs ONE built tree, not one tree per arm. The arm is
-# MLXFAST_QWEN_FUSED_SDPA_ROWS, which `FusedRowAmortizedSDPA.enabledRows` reads
+# DARKBLOOM_QWEN_FUSED_SDPA_ROWS, which `FusedRowAmortizedSDPA.enabledRows` reads
 # once per worker process, so every leg runs a byte-identical binary and the
 # session asserts that one worker digest before and after every leg. RULE 384.
 set -uo pipefail
@@ -29,7 +29,7 @@ count_in_worker() { strings -a "${worker}" | grep -c -F -- "$1" || true; }
 # that proves the string probe can see into this binary at all.
 kernel_needle='qwen_mtp_fused_row_amortized_sdpa'
 causal_needle='if (i <= N - M + q_row) {'
-arm_needle='MLXFAST_QWEN_FUSED_SDPA_ROWS'
+arm_needle='DARKBLOOM_QWEN_FUSED_SDPA_ROWS'
 control_needle='MLX_QWEN_MTP_TRACE'
 
 kernel_count="$(count_in_worker "${kernel_needle}")"

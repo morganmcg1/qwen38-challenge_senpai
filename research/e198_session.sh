@@ -94,9 +94,9 @@ for arm in "${legs[@]}"; do
     export MLXFAST_LOCAL_COOL_GATE=0
     unset MLX_QWEN_MTP_TRACE MLX_QWEN_MTP_TRACE_PATH
     if [[ "${arm}" == "FUSED" ]]; then
-      export MLXFAST_QWEN_FUSED_SDPA_ROWS="${rows}"
+      export DARKBLOOM_QWEN_FUSED_SDPA_ROWS="${rows}"
     else
-      unset MLXFAST_QWEN_FUSED_SDPA_ROWS
+      unset DARKBLOOM_QWEN_FUSED_SDPA_ROWS
     fi
     export MLXFAST_SCORE_PATH="${out}/score.json"
     export MLXFAST_CAPTURE_DIR="${out}/reports"
