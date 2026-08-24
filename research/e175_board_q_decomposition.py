@@ -25,10 +25,11 @@ RECEIPTS = {
     "180db842": ("B", "organizer + Q + inert instrumentation"),
     "fda590bb": ("C", "organizer + inert instrumentation"),
     "2c885d64": ("D", "organizer + Q + E165 + strip"),
+    "15017ddf": ("E", "organizer-pure + Q, the E175 single factor"),
 }
 
 # Receipts whose submitted tree carries the software-pipelined qmm_t.
-Q_IN = {"7226dc9a", "180db842", "2c885d64"}
+Q_IN = {"7226dc9a", "180db842", "2c885d64", "15017ddf"}
 
 FIELDS = [
     "mtp_seconds_per_token_mean",
@@ -125,6 +126,7 @@ def main(board_path: str | None = None) -> dict:
         ("5a9f130a", "180db842", "A->B  add Q, else inert"),
         ("5a9f130a", "fda590bb", "A->C  inert only (NULL CONTROL)"),
         ("fda590bb", "180db842", "C->B  add Q given instrumentation"),
+        ("5a9f130a", "15017ddf", "A->E  add Q alone (E175 receipt)"),
     ]
     print("\n== paired per-prompt contrasts, percent change ==")
     for field in FIELDS:
@@ -160,8 +162,18 @@ def main(board_path: str | None = None) -> dict:
             f"      officialScore spread {100 * (max(scores) / min(scores) - 1):+.3f} %"
         )
 
-    print("\n== Q priced on the leg ==")
-    a, b = index["5a9f130a"], index["180db842"]
+    price_q(index, "5a9f130a", "180db842", "A->B", out, prefix="q")
+    if "15017ddf" in index:
+        price_q(index, "5a9f130a", "15017ddf", "A->E", out, prefix="e175")
+        score_models(index["15017ddf"])
+    return out
+
+
+def price_q(
+    index: dict, a_id: str, b_id: str, label: str, out: dict, prefix: str
+) -> None:
+    """Split one contrast into its prefill and decode shares of the leg."""
+    a, b = index[a_id], index[b_id]
     pre = a["officialMetrics"]["prefill_seconds_per_token"]
     dec = a["officialMetrics"]["candidate_mtp_seconds_per_token_mean"]
     share = pre / (pre + dec)
@@ -170,22 +182,44 @@ def main(board_path: str | None = None) -> dict:
     _, d_pub, _, _ = paired(a, b, "raw_ratio_of_means")
     modelled = -(share * d_pre + (1 - share) * d_dec)
     out.update(
-        prefill_share_of_leg=share,
-        q_prefill_pct=d_pre,
-        q_decode_pct=d_dec,
-        q_published_measured_pct=d_pub,
-        q_published_modelled_pct=modelled,
+        {
+            f"{prefix}_prefill_share_of_leg": share,
+            f"{prefix}_prefill_pct": d_pre,
+            f"{prefix}_decode_pct": d_dec,
+            f"{prefix}_published_measured_pct": d_pub,
+            f"{prefix}_published_modelled_pct": modelled,
+        }
     )
+    print(f"\n== Q priced on the leg, {label} ==")
     print(f"  prefill share of the candidate leg  {100 * share:.2f} %")
     print(f"  Q prefill                           {d_pre:+.3f} %")
     print(f"  Q decode                            {d_dec:+.3f} %")
     print(f"  modelled published effect           {modelled:+.3f} %")
-    print(f"  measured published effect (A->B)    {d_pub:+.3f} %")
+    print(f"  measured published effect           {d_pub:+.3f} %")
     print(
-        f"  predicted organizer-pure+Q receipt  "
+        f"  implied score from A                "
         f"{a['officialScore'] * (1 + d_pub / 100):.4f}"
     )
-    return out
+
+
+# Pre-receipt registrations. Each entry is (label, central score, decode-delta
+# prediction in percent). All three were frozen before receipt E landed.
+MODELS = [
+    ("advisor  B-C route      ", 3.7328, -0.67),
+    ("edward   prefill-adjusted", 3.7218, +0.18),
+    ("thorfinn census         ", 3.7020, 0.00),
+]
+
+
+def score_models(e: dict) -> None:
+    observed = e["officialScore"]
+    print("\n== registered models against receipt E ==")
+    print(f"  observed published score            {observed:.6f}")
+    for label, central, decode in MODELS:
+        print(
+            f"  {label}  central {central:.4f}  "
+            f"error {observed - central:+.4f}  predicted decode {decode:+.2f} %"
+        )
 
 
 if __name__ == "__main__":
