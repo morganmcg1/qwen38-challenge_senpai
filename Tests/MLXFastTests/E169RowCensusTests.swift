@@ -571,6 +571,37 @@ private let e169ScoredShapes: [E169Shape] = [
         callsPerVerify: 1, family: "lm_head"),
 ]
 
+/// The seven scored shapes confound `n` with `k`: every shape that reaches
+/// 7.1 TFLOP/s or better has `k = 5120`, and every shape below 6.5 TFLOP/s has
+/// `k > 5120`. "Narrow output is slow" and "large k is slow" fit that set
+/// equally well, and they imply different mechanisms and different transfer
+/// risk. This grid breaks the confound: one arm holds `k` at 5120 and sweeps
+/// `n`, the other holds `n` at 5120 and sweeps `k`, and `k5120_n5120` is the
+/// shared anchor. Every cell satisfies `routable`: `k % 512 == 0`, `n % 8 == 0`
+/// and `n >= 4096` (`Qwen35.swift:1781-1783`).
+private let e169DeconfoundShapes: [E169Shape] = [
+    .init(name: "sweep_n.k5120_n5120", k: 5120, n: 5120,
+        callsPerVerify: 0, family: "sweep_n"),
+    .init(name: "sweep_n.k5120_n8192", k: 5120, n: 8192,
+        callsPerVerify: 0, family: "sweep_n"),
+    .init(name: "sweep_n.k5120_n14336", k: 5120, n: 14336,
+        callsPerVerify: 0, family: "sweep_n"),
+    .init(name: "sweep_n.k5120_n20480", k: 5120, n: 20480,
+        callsPerVerify: 0, family: "sweep_n"),
+    .init(name: "sweep_n.k5120_n34816", k: 5120, n: 34816,
+        callsPerVerify: 0, family: "sweep_n"),
+    .init(name: "sweep_n.k5120_n65536", k: 5120, n: 65536,
+        callsPerVerify: 0, family: "sweep_n"),
+    .init(name: "sweep_k.k6144_n5120", k: 6144, n: 5120,
+        callsPerVerify: 0, family: "sweep_k"),
+    .init(name: "sweep_k.k8192_n5120", k: 8192, n: 5120,
+        callsPerVerify: 0, family: "sweep_k"),
+    .init(name: "sweep_k.k12288_n5120", k: 12288, n: 5120,
+        callsPerVerify: 0, family: "sweep_k"),
+    .init(name: "sweep_k.k17408_n5120", k: 17408, n: 5120,
+        callsPerVerify: 0, family: "sweep_k"),
+]
+
 @Suite(.serialized)
 struct E169BottomUpShapeCurveTests {
     private static var enabled: Bool {
@@ -615,6 +646,17 @@ struct E169BottomUpShapeCurveTests {
             Memory.clearCache()
         }
         payload["shapes"] = shapeRecords
+
+        var deconfoundRecords: [[String: Any]] = []
+        for shape in e169DeconfoundShapes {
+            var record = e169SweepRoutedShape(
+                shape, widths: widths, reps: reps, inner: inner)
+            if let temp = e169GPUTemperature() { record["gpu_temp_exit_c"] = temp }
+            deconfoundRecords.append(record)
+            Memory.clearCache()
+        }
+        payload["deconfound_shapes"] = deconfoundRecords
+
         payload["gated_delta_recurrence"] =
             e169SweepGatedDelta(widths: widths, reps: reps, inner: inner)
         payload["top_two_readout"] =
