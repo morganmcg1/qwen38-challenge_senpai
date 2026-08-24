@@ -57,6 +57,9 @@ public enum E184Prefill {
         ProcessInfo.processInfo.environment["DARKBLOOM_E184_PREFILL_MIN_S"] ?? "")
         ?? 512
 
+    static let outputPath = ProcessInfo.processInfo.environment[
+        "DARKBLOOM_E184_PREFILL_PROFILE_OUT"]
+
     /// True only inside a seed-width forward while profiling is enabled.
     nonisolated(unsafe) public private(set) static var active = false
     /// True only when every sub-phase boundary is wanted.
@@ -139,14 +142,36 @@ public enum E184Prefill {
         fine = false
     }
 
-    /// Stderr is the ONLY channel available. The worker's Seatbelt profile is
-    /// `(deny file-write*)` with a single `(allow file-write* (literal
-    /// "/dev/null"))` exception (benchmark.sh:1288-1296), so a research
-    /// instrument inside the worker cannot open an output file at all. The
-    /// trusted parent drains worker stderr line by line and re-emits each line
-    /// with the prefix `mlxfast-worker: ` (`WorkerStderrDrain.emitLine`), which
-    /// is what the session script parses.
+    /// Getting a line OUT of the runtime worker needs both of the worker's
+    /// output channels to be understood:
+    ///
+    /// 1. A file write needs the worker's Seatbelt profile to be absent. The
+    ///    generated profile is `(deny file-write*)` with a single `(allow
+    ///    file-write* (literal "/dev/null"))` exception
+    ///    (benchmark.sh:1288-1296). `MLXFAST_NO_SANDBOX=1` skips generating it
+    ///    and is rejected only for official runs (benchmark.sh:1256), so it is
+    ///    the local research path.
+    /// 2. Worker stderr is drained by the parent but only FORWARDED when
+    ///    `RuntimeWorkerOptions.forwardsWorkerStderr` is true. It defaults to
+    ///    false (QwenRuntime.swift:306) and the Qwen MTP verbs never set it, so
+    ///    the drain installs a no-op emitter and the line is discarded.
+    ///
+    /// So the file is the real channel and stderr is only a fallback for
+    /// contexts that do forward it.
     private static func write(_ line: String) {
+        if let outputPath {
+            if let handle = FileHandle(forWritingAtPath: outputPath)
+                ?? {
+                    FileManager.default.createFile(atPath: outputPath, contents: nil)
+                    return FileHandle(forWritingAtPath: outputPath)
+                }()
+            {
+                handle.seekToEndOfFile()
+                handle.write(Data(line.utf8))
+                try? handle.close()
+                return
+            }
+        }
         FileHandle.standardError.write(Data(line.utf8))
     }
 

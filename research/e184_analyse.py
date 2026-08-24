@@ -62,18 +62,24 @@ def phase_lines(arm):
     The worker cannot write files, so each line arrives on its stderr and the
     trusted parent re-emits it prefixed with `mlxfast-worker: `.
     """
-    path = os.path.join(ROOT, "research", f"e184-log-{arm}.txt")
-    if not os.path.exists(path):
-        return [], []
     lines, diags = [], []
-    with open(path, errors="replace") as handle:
-        for raw in handle:
-            index = raw.find(PREFIX)
-            if index < 0:
-                continue
-            payload = raw[index + len(PREFIX):].strip()
-            if not payload.startswith("{"):
-                continue
+    sources = [
+        os.path.join(ROOT, "research", f"e184-phases-{arm}.jsonl"),
+        os.path.join(ROOT, "research", f"e184-log-{arm}.txt"),
+    ]
+    for path in sources:
+        if not os.path.exists(path):
+            continue
+        with open(path, errors="replace") as handle:
+            ingest(handle, lines, diags)
+    return lines, diags
+
+
+def ingest(handle, lines, diags):
+    for raw in handle:
+        index = raw.find(PREFIX)
+        payload = raw[index + len(PREFIX):].strip() if index >= 0 else raw.strip()
+        if payload.startswith("{"):
             try:
                 doc = json.loads(payload)
             except json.JSONDecodeError:
@@ -82,7 +88,6 @@ def phase_lines(arm):
                 lines.append(doc)
             elif doc.get("e184_diag"):
                 diags.append(doc)
-    return lines, diags
 
 
 def extra_arms():

@@ -41,6 +41,7 @@ run_profile() {
   local capture="${PWD}/research/capture-e184-${tag}"
   local score="research/score-e184-${tag}.json"
   local arm_log="${PWD}/research/e184-log-${tag}.txt"
+  local profile_out="${PWD}/research/e184-phases-${tag}.jsonl"
 
   export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
   export MLXFAST_SWIFT_BIN="research/capture-cli.sh"
@@ -48,13 +49,23 @@ run_profile() {
   export MLXFAST_CAPTURE_DIR="${capture}"
   export MLXFAST_SCORE_PATH="${score}"
   export MLXFAST_LOCAL_COOL_GATE="${gate}"
+  # The runtime worker's Seatbelt profile denies every file write, so the
+  # instrument has no output channel while it is active. MLXFAST_NO_SANDBOX=1
+  # skips generating that profile; benchmark.sh:1256 rejects it only for
+  # official runs, so it is the sanctioned local research setting. EVERY arm --
+  # including the `off` arms -- uses it, so the session stays internally
+  # consistent, and the `off` arms can be compared against the earlier
+  # sandboxed off-mode `seed_prefill_seconds` to show the setting does not move
+  # the anchor.
+  export MLXFAST_NO_SANDBOX=1
+  export DARKBLOOM_E184_PREFILL_PROFILE_OUT="${profile_out}"
   if [[ "${mode}" == "off" ]]; then
     unset DARKBLOOM_E184_PREFILL_PROFILE
   else
     export DARKBLOOM_E184_PREFILL_PROFILE="${mode}"
   fi
 
-  rm -rf "${capture}" "${score}" "${arm_log}"
+  rm -rf "${capture}" "${score}" "${arm_log}" "${profile_out}"
   echo "e184: HEAD $(git rev-parse HEAD)"
   echo "e184: worker sha256 $(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
   echo "e184: cli sha256 $(shasum -a 256 .build/release/mlxfast-swift | awk '{print $1}')"
