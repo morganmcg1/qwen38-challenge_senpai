@@ -1930,11 +1930,9 @@ public final class Qwen36MTPBlockSession {
                 // standalone fill.
                 + "xs_hit=\(qwen35XSumsSidecarHits) "
                 + "xs_fill=\(qwen35XSumsStandaloneFills) "
-                // Which QMV width plan this process compiled for, and how many
-                // wide QMV dispatches it has actually sent to a single-pass
-                // kernel. `qmv_sp` must stay 0 on every staged leg.
-                + "qmv_plan=\(Qwen35QMVWidthPlan.active.rawValue) "
-                + "qmv_sp=\(qwen35QMVSinglePassDispatches) "
+                // Fixed build witness for the compiled QMV width plan. No
+                // runtime state, no hot-path counter.
+                + "qmv_plan=\(qwen35QMVWidthPlanWitness) "
                 // E174 step 1. `xs_uniq` counts DISTINCT activations among
                 // those fills, so `xs_fill - xs_uniq` per round is the number
                 // of fills that rebuilt a table an earlier cell in the same

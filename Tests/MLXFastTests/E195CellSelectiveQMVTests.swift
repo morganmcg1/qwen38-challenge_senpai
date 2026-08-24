@@ -12,15 +12,13 @@ import Testing
 // E189 proved the `_sp` single-pass kernels bit-exact and measured them end to
 // end: a WIN at m = 6 and a large loss at m = 7 and m = 8. It also measured a
 // per-cell split at m = 6, where six of the seven fused cells win and mlp.down
-// loses. `Qwen35QMVWidthPlan.selective` serves single-pass exactly where it
-// wins.
+// loses. `qwen35QMVVariant` serves single-pass exactly where it wins.
 //
 // Three sections:
 //
 //   * `planTable` is a pure-function test of the plan itself and always runs.
-//     It proves that every width outside m = 6 (and m = 7 under `selective7`)
-//     selects the shipped staged kernel, so those widths keep byte-identical
-//     dispatch behavior;
+//     It proves that every width outside m = 6 selects the shipped staged
+//     kernel, so those widths keep byte-identical dispatch behavior;
 //   * `numericalGate` compares the two compiled variants cell by cell with
 //     ACTUAL bfloat16 activations and packed 4-bit weights, reports per-cell
 //     max ULP, and runs a positive control that proves the comparison can fail;
@@ -238,9 +236,9 @@ struct E195CellSelectiveQMVTests {
 
     // MARK: - plan table
 
-    /// The selective plans must leave every width they do not name on the
-    /// shipped staged kernel. This is the byte-identical-dispatch proof for
-    /// m <= 5 and m = 8, and it needs no GPU.
+    /// The shipped plan must leave every width it does not name on the staged
+    /// kernel. This is the byte-identical-dispatch proof for m != 6, and it
+    /// needs no GPU.
     @Test
     func planTable() {
         let cells: [Qwen35QMVCell] = [
@@ -249,32 +247,29 @@ struct E195CellSelectiveQMVTests {
         ]
         for m in Qwen35CustomQMV.widths {
             for cell in cells {
-                #expect(Qwen35QMVWidthPlan.staged.variant(m: m, cell: cell) == .staged)
-                #expect(
-                    Qwen35QMVWidthPlan.singlePass.variant(m: m, cell: cell)
-                        == .singlePass)
-
-                let selective = Qwen35QMVWidthPlan.selective.variant(
-                    m: m, cell: cell)
-                let selectiveSeven = Qwen35QMVWidthPlan.selectiveSeven.variant(
-                    m: m, cell: cell)
+                let variant = qwen35QMVVariant(m: m, cell: cell)
                 if m == 6 {
                     let expected: Qwen35QMVKernelVariant =
                         (cell == .mlpDown || cell == .unlisted)
                         ? .staged : .singlePass
-                    #expect(selective == expected)
-                    #expect(selectiveSeven == expected)
-                } else if m == 7 {
-                    #expect(selective == .staged)
-                    #expect(
-                        selectiveSeven
-                            == (cell == .lmHead ? .singlePass : .staged))
+                    #expect(variant == expected, "m=6 cell=\(cell)")
                 } else {
-                    #expect(selective == .staged, "m=\(m) cell=\(cell)")
-                    #expect(selectiveSeven == .staged, "m=\(m) cell=\(cell)")
+                    #expect(variant == .staged, "m=\(m) cell=\(cell)")
                 }
             }
         }
+
+        // The dispatch routing must agree with the plan at the one width the
+        // plan names, and stay staged everywhere else.
+        #expect(
+            Qwen35CustomQMV.kernelVariant((m: 6, k: 5120, n: 248_320))
+                == .singlePass)
+        #expect(
+            Qwen35CustomQMV.kernelVariant((m: 6, k: 17408, n: 5120)) == .staged)
+        #expect(
+            Qwen35CustomQMV.kernelVariant((m: 7, k: 5120, n: 248_320))
+                == .staged)
+        #expect(qwen35QMVWidthPlanWitness == "selective-m6")
 
         // The launch witness must follow the compiled variant, not the width
         // alone.
@@ -408,7 +403,7 @@ struct E195CellSelectiveQMVTests {
                 "cool_gate_passed_real_gate": false,
                 "gate_qualified_for_timing": false,
                 "official_or_ranked_score": false,
-                "active_plan": Qwen35QMVWidthPlan.active.rawValue,
+                "active_plan": qwen35QMVWidthPlanWitness,
                 "qmv_arm": Qwen35CustomQMV.arm.rawValue,
                 "worst_max_ulp": worstUlp,
                 "total_differing": totalDiffering,
@@ -528,7 +523,7 @@ struct E195CellSelectiveQMVTests {
                 "cool_gate_passed_real_gate": false,
                 "gate_qualified_for_timing": false,
                 "official_or_ranked_score": false,
-                "active_plan": Qwen35QMVWidthPlan.active.rawValue,
+                "active_plan": qwen35QMVWidthPlanWitness,
                 "blocks": blocks, "warmup": warmup, "reps": reps,
                 "chain": chain, "variants": variants,
                 "samples": samples,

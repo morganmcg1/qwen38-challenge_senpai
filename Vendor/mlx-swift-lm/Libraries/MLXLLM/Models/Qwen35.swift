@@ -1617,52 +1617,34 @@ enum Qwen35QMVCell: String, Sendable {
     }
 }
 
-/// Which kernel variant each `(cell, width)` uses.
+/// The shipped QMV width plan: which kernel variant each `(cell, width)` uses.
 ///
-/// E189 proved the `singlePass` kernels bit-exact and then measured them end to
-/// end: they win at m = 6 and lose heavily at m = 7 and m = 8, where the kernel
-/// leaves the weight-streaming regime and becomes register/occupancy bound. The
-/// win is also not uniform across cells, so the plan is per `(cell, width)`
-/// rather than per width.
-public enum Qwen35QMVWidthPlan: String, Sendable {
-    /// The E120 plan: staged everywhere.
-    case staged
-    /// `singlePass` at every width it compiles for, every cell. Research arm.
-    case singlePass = "singlepass"
-    /// `singlePass` at m = 6 for every cell except `mlp.down`, which loses
-    /// there. Staged at every other width.
-    case selective
-    /// `selective` plus `lm_head`-only `singlePass` at m = 7.
-    case selectiveSeven = "selective7"
-
-    func variant(m: Int, cell: Qwen35QMVCell) -> Qwen35QMVKernelVariant {
-        switch self {
-        case .staged:
-            return .staged
-        case .singlePass:
-            return .singlePass
-        case .selective, .selectiveSeven:
-            switch m {
-            case 6:
-                return cell == .mlpDown || cell == .unlisted ? .staged : .singlePass
-            case 7:
-                return self == .selectiveSeven && cell == .lmHead ? .singlePass : .staged
-            default:
-                return .staged
-            }
-        }
-    }
-
-    /// Read once at process start; it never varies with the request, the prompt
-    /// or the benchmark phase. `sanitizedRuntimeWorkerEnvironment` drops every
-    /// `MLXFAST_*` name, so the switch carries the `MLX_` prefix, and the name
-    /// is long enough for `strings` to witness it in the built worker.
-    public static let active: Qwen35QMVWidthPlan = {
-        let raw = ProcessInfo.processInfo.environment["MLX_E195_QMV_WIDTH_PLAN"]
-        guard let raw, !raw.isEmpty else { return .staged }
-        return Qwen35QMVWidthPlan(rawValue: raw) ?? .staged
-    }()
+/// The `singlePass` kernels are bit-exact against `staged` (E195 gate: 42 cell
+/// configurations, 13,831,104 elements, zero differing, zero ULP), so the plan
+/// changes only how the work is dispatched, never what the model decides.
+///
+/// The plan is per `(cell, width)` because neither dimension alone predicts the
+/// winner. At m = 6 single-pass wins on six of the seven decode cells but loses
+/// on `mlp.down`, and holding that one cell staged nearly doubles the end-to-end
+/// gain (7.31 ms/round against 3.81 ms/round for an all-cells switch). At m = 7
+/// and m = 8 the kernel leaves the weight-streaming regime and becomes
+/// register/occupancy bound, so an all-cells switch costs 23.62 ms/round at
+/// m = 7. An `lm_head`-only switch at m = 7 also failed end to end (+0.60
+/// ms/round) despite winning by 18 % as an isolated cell, so m = 7 stays staged.
+///
+/// `m` is the verified width of the round, not the configured draft depth: tail
+/// rounds propose fewer drafts and land at lower widths, so every row here is
+/// live. The plan is a function of checkpoint geometry and width only. It cannot
+/// depend on the request, the prompt or the benchmark phase.
+@inline(__always)
+func qwen35QMVVariant(m: Int, cell: Qwen35QMVCell) -> Qwen35QMVKernelVariant {
+    guard m == 6, cell != .mlpDown, cell != .unlisted else { return .staged }
+    return .singlePass
 }
+
+/// Compile-time witness that a build carries the plan above. Fixed string, no
+/// runtime state: the trace can prove which dispatch plan shipped.
+public let qwen35QMVWidthPlanWitness = "selective-m6"
 
 /// Geometry and width switch shared by both QMV pipelines. `table` decides
 /// whether the chunk-sum table is a bound buffer at all: the four-input
@@ -2064,15 +2046,13 @@ public enum Qwen35CustomQMV {
         return (m + ipg - 1) / ipg
     }
 
-    /// The compiled kernel form this `(cell, width)` uses under the active
+    /// The compiled kernel form this `(cell, width)` uses under the shipped
     /// width plan.
     static func kernelVariant(_ cell: (m: Int, k: Int, n: Int))
         -> Qwen35QMVKernelVariant
     {
-        let variant = Qwen35QMVWidthPlan.active.variant(
+        qwen35QMVVariant(
             m: cell.m, cell: Qwen35QMVCell.identify(k: cell.k, n: cell.n))
-        if variant == .singlePass { qwen35QMVSinglePassDispatches &+= 1 }
-        return variant
     }
 
     /// The chunk-sum table costs one fill dispatch, measured at 4 to 6 us and
@@ -4931,11 +4911,6 @@ public nonisolated(unsafe) var qwen35XSumsStandaloneFills: Int = 0
 /// per-round delta against `qwen35XSumsStandaloneFills` gives the round's
 /// duplicate fill count. Stays zero unless `MLX_E174_DEDUP_CENSUS=1`.
 public nonisolated(unsafe) var qwen35XSumsFillDistinct: Int = 0
-
-/// Wide QMV dispatches the active width plan sent to a single-pass kernel. The
-/// per-round delta names the cells that left the staged plan, so a leg proves
-/// which plan it really ran instead of which plan it was asked to run.
-public nonisolated(unsafe) var qwen35QMVSinglePassDispatches: Int = 0
 
 /// Launch-config cache census. `Misses` is also the number of distinct launch
 /// geometries the process has seen, because every miss inserts a new key, so
