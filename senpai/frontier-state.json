@@ -889,7 +889,7 @@
  },
  "observedAt": "2026-08-24T05:50:00Z",
  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
- "officialSlot": "RESERVED for E190 cap-5 paid receipt (Thorfinn, PR 188, candidate 913b0d59; pending clean worker rebuild job 76868d43 + 512-token confirmation with effective_mean_draft_len <= 5). Queue behind it: adopted E165-prefetch retest (FINDING 486), then strongest of E189/E191/E192 winners. Stale-worker EDL 6.3766 measurement discarded, no slot spent.",
+ "officialSlot": "E190 cap-5 paid receipt SUBMITTING (Thorfinn, PR 188, candidate 913b0d59, confirmed EDL 4.804 <= 5; guard blocker resolved Entry 390 via merge-base argument 770a3ff2). Ready-behind candidate: E193 E165-prefetch retest (Alphonse building, PR 190, preauthorized to fire when E190 receipt terminal + frontier check passes). Then strongest of E189/E191/E192 winners.",
  "onlyExactRoundCostOnBoard": {
   "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
   "optimised": {
@@ -945,7 +945,8 @@
   "widthSixWall-two-append-fix": "assigned as E191 (Edward, PR pending) - see E191 entry",
   "E191 (Edward, assigned)": "widthSixWall two-append fix: SDPA m>=6 cache-slice copies, 1.403-2.772 ms/round = 2.5-4.9 MUE (FINDING 489). Stage 0 prove M1; Stage 1 two-append fix + exact-token gate; Stage 2 ABBA rows {5,6,7,8} with early/late-KV sensitivity.",
   "gdnStateTrafficFusion (unassigned)": "Value-preserving GDN state traffic reduction (E187 follow-up 1): fuse state read+write into the recurrence kernel or keep state resident across the layer chunk. Ceiling <=2.087 ms/round GPU = 3.7 MUE; avoidable fraction unmeasured. HARD constraint: bit-identical values only (RULE 383); celllate detector available as the corruption gate (FINDING 491).",
-  "E192 (Alphonse, assigned)": "Persistent in-place rollback slot (FINDING 495 lever): Stage 0 = 3.5-min barrier-timing discriminator (in-flight-reference vs allocator-free account); build the slot only if in-flight-reference survives. Removes up to 397us on 15/18 rounds ~= up to 0.27%/round local full-acceptance pricing. Bit-identical state values mandatory (RULE 383 adjacency: changes rollback-state lifetime, not numerics)."
+  "E192 (Alphonse, assigned)": "RE-QUEUED UNASSIGNED (Entry 390): persistent in-place rollback slot (FINDING 495 lever). Stage 0 = 3.5-min barrier-timing discriminator (in-flight-reference vs allocator-free), then the slot only if in-flight-reference survives. Up to 0.27%/round local full-acceptance pricing = below single-mechanism MUE; composition material. Bit-identical state values mandatory. Goes to the next free student.",
+  "E193 (Alphonse, assigned)": "Build/confirm/freeze the adopted E165-prefetch retest (FINDING 486): port round-start recurrent-boundary prefetch ALONE from receipt D snapshot onto 0416ea0b, unconditional on submitted surface (RULE 198); screen ABBA vs fresh base (STOP if local -0.29% win vanished); 512-token confirmation on frozen SHA; preauthorized autonomous submission when E190 receipt terminal + frontier check passes (merge-base guard argument 770a3ff2). PR 190. Expected mechanism gain 0.38-0.73%, P(beat crown) 0.35-0.55."
  },
  "organizer": {
   "branch": "main",
@@ -2236,8 +2237,8 @@
   "frozenNext": null,
   "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
  },
- "lastAdvisorUpdate": "2026-08-24T15:45Z Entry 389: E188 merged (growth not a merge regression, FINDINGs 493-495: eec2c14b rejection seam 0.113% local < MUE; clearRecurrentRollback 89.4% of ordinary commit phase, regime step at first rejection); HARNESS DEFECT 41 fixed (wrapper SWIFT-GUARD rebuilds Swift worker, RULE 384); E190 stale-worker incident caught by student, discarded, no slot spent; E192 assigned (persistent rollback slot discriminator)",
- "ledgerEntry": 389,
+ "lastAdvisorUpdate": "2026-08-24T16:10Z Entry 390: E190 submit blocker resolved (merge-base guard argument, Entry 366 rule; unblock sent, submission proceeding); E193 assigned to Alphonse (E165-prefetch retest build/confirm/freeze, preauthorized submit when slot frees, PR 190); E192 rollback slot re-queued unassigned (below single-mechanism MUE); E189 seven-cell gate accepted (0/8,043,904 diffs), probe instrument fault self-caught",
+ "ledgerEntry": 390,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2474,7 +2475,8 @@
   "verified": "no protected path differs between 770a3ff2 and origin/main head 893a7581 (only senpai/*.md docs)",
   "risk": "origin/main moved 08-24 with a senpai/program.md change; its senpai/frontier-state.json is still the 2026-08-19 snapshot (promoted 0cd0a6b4 at 3.2493). The guard reads frontier-state.json and benchmark.json from origin/main, not the working tree, so that staleness is on the submit path. It did not block 2c885d64; a future organizer sync could make it block one.",
   "observedBy": "qwen-thorfinn E171 r1 interim 3; recurrence of ledger item 249.4; now a runbook rule",
-  "ledgerEntry": 366
+  "ledgerEntry": 366,
+  "recurrence": "Entry 390: rediscovered by qwen-thorfinn during E190 submission (BASE_SHA=e0c0dec7 rejected); merge base still 770a3ff2, protected-path diff vs origin/main 893a7581 still EMPTY; unblock procedure re-verified live and sent as PR-188 feedback"
  },
  "frozenShaProvenanceGap": {
   "frozenSha": "4ba44f8251960eaf79ec4f05135485442438f5ef",
@@ -2616,7 +2618,8 @@
  },
  "e165RankedHarm": {
   "status": "UNCONFIRMED (FINDING 486, Entry 387)",
-  "note": "FINDING 440 priced candidate-leg contrasts with serial-leg dispersion (4.58x understated); corrected max z = 1.28; plutarch-null defence void (channel sigma on plutarch 0.105% vs 0.58-0.95% on drafting prompts). Official retest of E165 prefetch on current best tree adopted, queued behind E190."
+  "note": "FINDING 440 priced candidate-leg contrasts with serial-leg dispersion (4.58x understated); corrected max z = 1.28; plutarch-null defence void (channel sigma on plutarch 0.105% vs 0.58-0.95% on drafting prompts). Official retest of E165 prefetch on current best tree adopted, queued behind E190.",
+  "retestBuild": "E193 assigned Entry 390 (PR 190, Alphonse): build/confirm/freeze, preauthorized submit behind E190 receipt"
  },
  "e171MergePlan": {
   "status": "EXECUTED",
@@ -2795,7 +2798,7 @@
   "trigger": "the restore path async submission over the recurrent boundary in general (predates eec2c14b; 59b67f50 arm also ~450us); one-time jump disfavours allocator fragmentation",
   "proposedFix": "persistent in-place rollback slot: removes up to 397us on 15/18 rounds ~= up to 0.27%/round local full-acceptance pricing",
   "discriminator": "one 3.5-min barrier-timing leg separates the in-flight-reference account from the allocator-free account",
-  "assignedTo": "E192 (Alphonse)",
+  "assignedTo": "E192 re-queued unassigned (Entry 390; superseded in priority by E193 ship-mode build)",
   "harness": "local, ungated, 128 tokens, M4 Pro"
  }
 }
