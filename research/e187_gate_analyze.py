@@ -122,6 +122,7 @@ def compare(base: dict, arm: dict, name: str) -> dict:
     residual_ulp: list[float] = []
     identical_top1 = 0
     identical_rows = 0
+    first_divergence: int | None = None
     for i in range(window):
         if base_ulp[i] is None or arm_ulp[i] is None:
             continue
@@ -132,6 +133,8 @@ def compare(base: dict, arm: dict, name: str) -> dict:
             identical_top1 += 1
         if base["top2_logits"][i] == arm["top2_logits"][i]:
             identical_rows += 1
+        elif first_divergence is None:
+            first_divergence = i
 
     abs_erosion = [abs(e) for e in erosion_ulp]
     max_erosion = max(abs_erosion) if abs_erosion else None
@@ -218,6 +221,7 @@ def compare(base: dict, arm: dict, name: str) -> dict:
         "top2_order_flip_count": len(top2_flips),
         "top2_order_first_flip_index": top2_flips[0] if top2_flips else None,
         "rows_bit_identical": identical_rows,
+        "first_divergence_index": first_divergence,
         "rows_top1_logit_identical": identical_top1,
         "max_abs_erosion_ulp": max_erosion,
         "mean_abs_erosion_ulp": (
@@ -319,8 +323,10 @@ def main() -> None:
                 "flip_count",
                 "first_flip_index",
                 "top2_order_flip_count",
+                "top2_order_first_flip_index",
                 "comparison_window",
                 "rows_bit_identical",
+                "first_divergence_index",
                 "rows_top1_logit_identical",
                 "max_abs_erosion_ulp",
                 "mean_abs_erosion_ulp",

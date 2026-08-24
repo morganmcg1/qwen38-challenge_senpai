@@ -699,6 +699,18 @@ enum Qwen35E187StateStore: String {
     case ulpbf16
     case cell2x
     case cellbig
+    case cellcommit
+    case cellboundary
+}
+
+/// The four places a recurrent state enters the cache. `cellcommit` and
+/// `cellboundary` restrict a one-shot probe to one of them, which is how the
+/// inert one-shot ladder is diagnosed.
+enum Qwen35E187Site {
+    case commit
+    case boundary
+    case width2
+    case rollback
 }
 
 let qwen35E187StateStoreMode: Qwen35E187StateStore = {
@@ -723,7 +735,9 @@ private enum Qwen35E187Probe {
 
 /// Apply the selected storage arm to a recurrent state on its way into the
 /// cache. Returns the argument unchanged in the default fp32 arm.
-func qwen35E187StoreState(_ state: MLXArray) -> MLXArray {
+func qwen35E187StoreState(
+    _ state: MLXArray, site: Qwen35E187Site = .commit
+) -> MLXArray {
     switch qwen35E187StateStoreMode {
     case .fp32:
         return state
@@ -740,6 +754,16 @@ func qwen35E187StoreState(_ state: MLXArray) -> MLXArray {
     case .cellall:
         Qwen35E187Probe.announce(.cellall)
         guard state.ndim == 4 else { return state }
+        let perturbed = state[.ellipsis]
+        perturbed[0, 0, 0, 0] = MLXArray(Float(1e30))
+        return perturbed
+    case .cellcommit, .cellboundary:
+        let wanted: Qwen35E187Site =
+            qwen35E187StateStoreMode == .cellcommit ? .commit : .boundary
+        guard site == wanted, !Qwen35E187Probe.applied, state.ndim == 4
+        else { return state }
+        Qwen35E187Probe.applied = true
+        Qwen35E187Probe.announce(qwen35E187StateStoreMode)
         let perturbed = state[.ellipsis]
         perturbed[0, 0, 0, 0] = MLXArray(Float(1e30))
         return perturbed
@@ -1230,7 +1254,7 @@ final class Qwen35GatedDeltaNet: Module {
             0...,
             committedRows ..< (committedRows + tape.convStateRows),
             0...]
-        cache[1] = qwen35E187StoreState(boundarySsm)
+        cache[1] = qwen35E187StoreState(boundarySsm, site: .boundary)
         cache.prefixReplayTape = nil
         cache.rollbackState = nil
         cache.rollbackCheckpoints = []
@@ -1363,7 +1387,7 @@ final class Qwen35GatedDeltaNet: Module {
             for t in 0 ..< (S - 1) {
                 checkpoints.append((
                     convInput[0..., (t + 1) ..< (t + 1 + nKeep)],
-                    qwen35E187StoreState(outputs[2][0..., t])
+                    qwen35E187StoreState(outputs[2][0..., t], site: .width2)
                 ))
             }
             cache?.rollbackState = checkpoints.first
@@ -1388,7 +1412,7 @@ final class Qwen35GatedDeltaNet: Module {
             )
             // Snapshot (conv_state, ssm_state) after confirmed prefix for rollback.
             // omlx: cache.rollback_state = (conv_c, ssm_c)
-            cache?.rollbackState = (convC, qwen35E187StoreState(ssmC))
+            cache?.rollbackState = (convC, qwen35E187StoreState(ssmC, site: .rollback))
 
             let (outD, convF, ssmF) = processChunk(
                 qkv: qkv[0..., nConfirmed..., 0...],
@@ -1416,7 +1440,7 @@ final class Qwen35GatedDeltaNet: Module {
 
         if let cache {
             cache[0] = finalConvState
-            cache[1] = qwen35E187StoreState(finalSsmState)
+            cache[1] = qwen35E187StoreState(finalSsmState, site: .commit)
             // A forward that did not request replay must erase any prior tape;
             // otherwise a later partial miss could restore a stale frame.
             cache.prefixReplayTape = pendingPrefixTape
