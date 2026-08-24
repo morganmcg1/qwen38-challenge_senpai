@@ -1,8 +1,8 @@
 {
   "cells" : [
     {
-      "control_differing_elements" : 25508,
-      "control_max_absolute_difference" : 0.066650390625,
+      "control_differing_elements" : 26105,
+      "control_max_absolute_difference" : 0.0452880859375,
       "differing_elements" : 0,
       "elements" : 36864,
       "kL" : 518,
@@ -12,8 +12,8 @@
       "served" : true
     },
     {
-      "control_differing_elements" : 31196,
-      "control_max_absolute_difference" : 0.06103515625,
+      "control_differing_elements" : 31725,
+      "control_max_absolute_difference" : 0.02685546875,
       "differing_elements" : 0,
       "elements" : 43008,
       "kL" : 519,
@@ -23,8 +23,8 @@
       "served" : true
     },
     {
-      "control_differing_elements" : 36055,
-      "control_max_absolute_difference" : 0.03363037109375,
+      "control_differing_elements" : 36630,
+      "control_max_absolute_difference" : 0.0498046875,
       "differing_elements" : 0,
       "elements" : 49152,
       "kL" : 520,
@@ -34,8 +34,8 @@
       "served" : true
     },
     {
-      "control_differing_elements" : 41140,
-      "control_max_absolute_difference" : 0.10626220703125,
+      "control_differing_elements" : 41369,
+      "control_max_absolute_difference" : 0.053466796875,
       "differing_elements" : 0,
       "elements" : 55296,
       "kL" : 521,
@@ -45,8 +45,8 @@
       "served" : true
     },
     {
-      "control_differing_elements" : 24399,
-      "control_max_absolute_difference" : 0.01593017578125,
+      "control_differing_elements" : 24702,
+      "control_max_absolute_difference" : 0.0146484375,
       "differing_elements" : 0,
       "elements" : 36864,
       "kL" : 1020,
@@ -56,8 +56,8 @@
       "served" : true
     },
     {
-      "control_differing_elements" : 29947,
-      "control_max_absolute_difference" : 0.0352783203125,
+      "control_differing_elements" : 29828,
+      "control_max_absolute_difference" : 0.02001953125,
       "differing_elements" : 0,
       "elements" : 43008,
       "kL" : 1021,
@@ -67,8 +67,8 @@
       "served" : true
     },
     {
-      "control_differing_elements" : 35167,
-      "control_max_absolute_difference" : 0.0137939453125,
+      "control_differing_elements" : 34683,
+      "control_max_absolute_difference" : 0.040771484375,
       "differing_elements" : 0,
       "elements" : 49152,
       "kL" : 1022,
@@ -78,8 +78,8 @@
       "served" : true
     },
     {
-      "control_differing_elements" : 39711,
-      "control_max_absolute_difference" : 0.02032470703125,
+      "control_differing_elements" : 40257,
+      "control_max_absolute_difference" : 0.02246856689453125,
       "differing_elements" : 0,
       "elements" : 55296,
       "kL" : 1023,
