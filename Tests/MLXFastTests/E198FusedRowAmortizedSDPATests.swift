@@ -365,8 +365,11 @@ private final class E198TemperatureSampler: @unchecked Sendable {
         }
         candidates.append("/opt/homebrew/bin/macmon")
         candidates.append("/usr/local/bin/macmon")
-        candidates.append(
-            NSHomeDirectory() + "/bin/macmon")
+        // The role home, read from the environment: `NSHomeDirectory()`
+        // resolves to the account home, not to `$HOME`, in this test process.
+        if let home = ProcessInfo.processInfo.environment["HOME"] {
+            candidates.append(home + "/bin/macmon")
+        }
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 

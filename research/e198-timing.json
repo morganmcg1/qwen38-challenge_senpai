@@ -21,7 +21,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 127.22499999999999,
+      "microseconds" : 126.39609375000001,
       "mode" : "indep",
       "position" : 0,
       "reps" : 20
@@ -36,7 +36,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 362.41745000000003,
+      "microseconds" : 360.8809875,
       "mode" : "indep",
       "position" : 1,
       "reps" : 20
@@ -51,7 +51,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 41.763281249999999,
+      "microseconds" : 41.962756249999998,
       "mode" : "indep",
       "position" : 2,
       "reps" : 20
@@ -66,7 +66,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 140.20806875,
+      "microseconds" : 136.88541875000001,
       "mode" : "serial",
       "position" : 3,
       "reps" : 20
@@ -81,7 +81,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 460.65181874999996,
+      "microseconds" : 458.80963750000001,
       "mode" : "serial",
       "position" : 4,
       "reps" : 20
@@ -96,7 +96,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 53.0390625,
+      "microseconds" : 52.975000000000001,
       "mode" : "serial",
       "position" : 5,
       "reps" : 20
@@ -111,7 +111,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 137.45078125000001,
+      "microseconds" : 139.30859375,
       "mode" : "indep",
       "position" : 6,
       "reps" : 20
@@ -126,7 +126,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 702.92708749999997,
+      "microseconds" : 703.62864375000004,
       "mode" : "indep",
       "position" : 7,
       "reps" : 20
@@ -141,7 +141,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 42.288799999999995,
+      "microseconds" : 42.4765625,
       "mode" : "indep",
       "position" : 8,
       "reps" : 20
@@ -156,7 +156,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 150.72995,
+      "microseconds" : 147.67343750000001,
       "mode" : "serial",
       "position" : 9,
       "reps" : 20
@@ -171,7 +171,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 742.05442500000004,
+      "microseconds" : 742.31848749999995,
       "mode" : "serial",
       "position" : 10,
       "reps" : 20
@@ -186,7 +186,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 52.679168749999995,
+      "microseconds" : 52.907031250000003,
       "mode" : "serial",
       "position" : 11,
       "reps" : 20
@@ -201,7 +201,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 153.36875000000001,
+      "microseconds" : 151.50156250000001,
       "mode" : "indep",
       "position" : 12,
       "reps" : 20
@@ -216,7 +216,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1086.7533812500001,
+      "microseconds" : 1090.4427062500001,
       "mode" : "indep",
       "position" : 13,
       "reps" : 20
@@ -231,7 +231,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 41.517968750000001,
+      "microseconds" : 41.822918749999999,
       "mode" : "indep",
       "position" : 14,
       "reps" : 20
@@ -246,7 +246,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 159.984375,
+      "microseconds" : 159.38645624999998,
       "mode" : "serial",
       "position" : 15,
       "reps" : 20
@@ -261,7 +261,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1095.6875,
+      "microseconds" : 1096.6518249999999,
       "mode" : "serial",
       "position" : 16,
       "reps" : 20
@@ -276,7 +276,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 52.610418749999994,
+      "microseconds" : 53.304431250000007,
       "mode" : "serial",
       "position" : 17,
       "reps" : 20
@@ -291,7 +291,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 166.55051874999998,
+      "microseconds" : 166.06198125,
       "mode" : "indep",
       "position" : 18,
       "reps" : 20
@@ -306,7 +306,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1060.5177062500002,
+      "microseconds" : 1069.0434875000001,
       "mode" : "indep",
       "position" : 19,
       "reps" : 20
@@ -321,7 +321,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 41.569268749999999,
+      "microseconds" : 41.975781249999997,
       "mode" : "indep",
       "position" : 20,
       "reps" : 20
@@ -336,7 +336,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 172.47942499999999,
+      "microseconds" : 172.12031250000001,
       "mode" : "serial",
       "position" : 21,
       "reps" : 20
@@ -351,7 +351,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1103.04088125,
+      "microseconds" : 1105.39765625,
       "mode" : "serial",
       "position" : 22,
       "reps" : 20
@@ -366,7 +366,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 53.202606249999995,
+      "microseconds" : 53.685937500000001,
       "mode" : "serial",
       "position" : 23,
       "reps" : 20
@@ -381,7 +381,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 180.09323125,
+      "microseconds" : 183.57890624999999,
       "mode" : "indep",
       "position" : 24,
       "reps" : 20
@@ -396,7 +396,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 626.80338749999999,
+      "microseconds" : 630.21380625000006,
       "mode" : "indep",
       "position" : 25,
       "reps" : 20
@@ -411,7 +411,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 52.454687499999999,
+      "microseconds" : 53.127081250000003,
       "mode" : "indep",
       "position" : 26,
       "reps" : 20
@@ -426,7 +426,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 197.54349374999998,
+      "microseconds" : 196.88411249999999,
       "mode" : "serial",
       "position" : 27,
       "reps" : 20
@@ -441,7 +441,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 784.59140624999998,
+      "microseconds" : 781.09505000000001,
       "mode" : "serial",
       "position" : 28,
       "reps" : 20
@@ -456,7 +456,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 68.071093750000003,
+      "microseconds" : 68.2578125,
       "mode" : "serial",
       "position" : 29,
       "reps" : 20
@@ -471,7 +471,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 202.24687499999999,
+      "microseconds" : 204.17916250000002,
       "mode" : "indep",
       "position" : 30,
       "reps" : 20
@@ -486,7 +486,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1343.08229375,
+      "microseconds" : 1331.2361999999998,
       "mode" : "indep",
       "position" : 31,
       "reps" : 20
@@ -501,7 +501,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 52.274743750000006,
+      "microseconds" : 52.613806250000003,
       "mode" : "indep",
       "position" : 32,
       "reps" : 20
@@ -516,7 +516,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 216.79973749999999,
+      "microseconds" : 216.6684875,
       "mode" : "serial",
       "position" : 33,
       "reps" : 20
@@ -531,7 +531,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1325.7419312500001,
+      "microseconds" : 1326.3763000000001,
       "mode" : "serial",
       "position" : 34,
       "reps" : 20
@@ -546,7 +546,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 69.645574999999994,
+      "microseconds" : 69.025525000000002,
       "mode" : "serial",
       "position" : 35,
       "reps" : 20
@@ -561,7 +561,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 224.87708125,
+      "microseconds" : 225.57968750000001,
       "mode" : "indep",
       "position" : 36,
       "reps" : 20
@@ -576,7 +576,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2050.7330750000001,
+      "microseconds" : 2054.9601562500002,
       "mode" : "indep",
       "position" : 37,
       "reps" : 20
@@ -591,7 +591,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 52.451306250000002,
+      "microseconds" : 53.102343750000003,
       "mode" : "indep",
       "position" : 38,
       "reps" : 20
@@ -606,7 +606,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 236.09218749999999,
+      "microseconds" : 236.09010625000002,
       "mode" : "serial",
       "position" : 39,
       "reps" : 20
@@ -621,7 +621,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2005.9463500000002,
+      "microseconds" : 2004.87109375,
       "mode" : "serial",
       "position" : 40,
       "reps" : 20
@@ -636,7 +636,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 68.896612500000003,
+      "microseconds" : 68.294268750000001,
       "mode" : "serial",
       "position" : 41,
       "reps" : 20
@@ -651,7 +651,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 248.61250000000001,
+      "microseconds" : 247.41978749999998,
       "mode" : "indep",
       "position" : 42,
       "reps" : 20
@@ -666,7 +666,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 1998.85051875,
+      "microseconds" : 2005.0606749999999,
       "mode" : "indep",
       "position" : 43,
       "reps" : 20
@@ -681,7 +681,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 52.403125000000003,
+      "microseconds" : 52.604949999999995,
       "mode" : "indep",
       "position" : 44,
       "reps" : 20
@@ -696,7 +696,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 254.89218750000001,
+      "microseconds" : 254.28073125,
       "mode" : "serial",
       "position" : 45,
       "reps" : 20
@@ -711,7 +711,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2004.29375,
+      "microseconds" : 2003.1916687500002,
       "mode" : "serial",
       "position" : 46,
       "reps" : 20
@@ -726,7 +726,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 68.174475000000001,
+      "microseconds" : 68.528125000000003,
       "mode" : "serial",
       "position" : 47,
       "reps" : 20
@@ -741,7 +741,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 68.222400000000007,
+      "microseconds" : 68.057812499999997,
       "mode" : "serial",
       "position" : 0,
       "reps" : 20
@@ -756,7 +756,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2008.4137999999998,
+      "microseconds" : 2007.0546875,
       "mode" : "serial",
       "position" : 1,
       "reps" : 20
@@ -771,7 +771,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 253.67318125000003,
+      "microseconds" : 253.76406249999999,
       "mode" : "serial",
       "position" : 2,
       "reps" : 20
@@ -786,7 +786,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 52.201300000000003,
+      "microseconds" : 51.960675000000002,
       "mode" : "indep",
       "position" : 3,
       "reps" : 20
@@ -801,7 +801,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2004.5494750000003,
+      "microseconds" : 2001.6901062500001,
       "mode" : "indep",
       "position" : 4,
       "reps" : 20
@@ -816,7 +816,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 246.75859374999999,
+      "microseconds" : 247.75885,
       "mode" : "indep",
       "position" : 5,
       "reps" : 20
@@ -831,7 +831,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 68.471612500000006,
+      "microseconds" : 68.636462500000007,
       "mode" : "serial",
       "position" : 6,
       "reps" : 20
@@ -846,7 +846,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2011.6929687500001,
+      "microseconds" : 2003.3026062500001,
       "mode" : "serial",
       "position" : 7,
       "reps" : 20
@@ -861,7 +861,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 236.07942499999999,
+      "microseconds" : 234.89895625,
       "mode" : "serial",
       "position" : 8,
       "reps" : 20
@@ -876,7 +876,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 52.906506249999993,
+      "microseconds" : 52.472400000000007,
       "mode" : "indep",
       "position" : 9,
       "reps" : 20
@@ -891,7 +891,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2049.6554687500002,
+      "microseconds" : 2056.9309937499997,
       "mode" : "indep",
       "position" : 10,
       "reps" : 20
@@ -906,7 +906,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 224.55208750000003,
+      "microseconds" : 225.53359374999999,
       "mode" : "indep",
       "position" : 11,
       "reps" : 20
@@ -921,7 +921,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 68.144787499999993,
+      "microseconds" : 68.696349999999995,
       "mode" : "serial",
       "position" : 12,
       "reps" : 20
@@ -936,7 +936,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1329.9145874999999,
+      "microseconds" : 1328.1984375,
       "mode" : "serial",
       "position" : 13,
       "reps" : 20
@@ -951,7 +951,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 210.10312500000001,
+      "microseconds" : 217.0841125,
       "mode" : "serial",
       "position" : 14,
       "reps" : 20
@@ -966,7 +966,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 55.425518750000002,
+      "microseconds" : 52.331775000000007,
       "mode" : "indep",
       "position" : 15,
       "reps" : 20
@@ -981,7 +981,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1329.9401062499999,
+      "microseconds" : 1330.5046875,
       "mode" : "indep",
       "position" : 16,
       "reps" : 20
@@ -996,7 +996,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 203.08698125000001,
+      "microseconds" : 204.85234374999999,
       "mode" : "indep",
       "position" : 17,
       "reps" : 20
@@ -1011,7 +1011,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 67.658331250000003,
+      "microseconds" : 68.287762499999999,
       "mode" : "serial",
       "position" : 18,
       "reps" : 20
@@ -1026,7 +1026,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 785.09505000000001,
+      "microseconds" : 779.06562499999995,
       "mode" : "serial",
       "position" : 19,
       "reps" : 20
@@ -1041,7 +1041,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 198.02916250000001,
+      "microseconds" : 198.30364374999999,
       "mode" : "serial",
       "position" : 20,
       "reps" : 20
@@ -1056,7 +1056,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 52.152599999999993,
+      "microseconds" : 51.91015625,
       "mode" : "indep",
       "position" : 21,
       "reps" : 20
@@ -1071,7 +1071,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 632.78801874999999,
+      "microseconds" : 637.77317500000004,
       "mode" : "indep",
       "position" : 22,
       "reps" : 20
@@ -1086,7 +1086,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 181.6127625,
+      "microseconds" : 180.24609375,
       "mode" : "indep",
       "position" : 23,
       "reps" : 20
@@ -1101,7 +1101,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 53.362243750000005,
+      "microseconds" : 53.414843750000003,
       "mode" : "serial",
       "position" : 24,
       "reps" : 20
@@ -1116,7 +1116,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1105.66510625,
+      "microseconds" : 1103.3101562500001,
       "mode" : "serial",
       "position" : 25,
       "reps" : 20
@@ -1131,7 +1131,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 171.57057500000002,
+      "microseconds" : 172.74713750000001,
       "mode" : "serial",
       "position" : 26,
       "reps" : 20
@@ -1146,7 +1146,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 41.752862499999999,
+      "microseconds" : 42.059637500000001,
       "mode" : "indep",
       "position" : 27,
       "reps" : 20
@@ -1161,7 +1161,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1063.5515625,
+      "microseconds" : 1068.4817687500001,
       "mode" : "indep",
       "position" : 28,
       "reps" : 20
@@ -1176,7 +1176,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 166.48489375,
+      "microseconds" : 160.85728750000001,
       "mode" : "indep",
       "position" : 29,
       "reps" : 20
@@ -1191,7 +1191,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 53.178906249999997,
+      "microseconds" : 52.5859375,
       "mode" : "serial",
       "position" : 30,
       "reps" : 20
@@ -1206,7 +1206,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1093.4848937500001,
+      "microseconds" : 1102.0572937499999,
       "mode" : "serial",
       "position" : 31,
       "reps" : 20
@@ -1221,7 +1221,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 162.16041875000002,
+      "microseconds" : 168.08619375000001,
       "mode" : "serial",
       "position" : 32,
       "reps" : 20
@@ -1236,7 +1236,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 41.905987499999995,
+      "microseconds" : 47.544531249999999,
       "mode" : "indep",
       "position" : 33,
       "reps" : 20
@@ -1251,7 +1251,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1089.2268187499999,
+      "microseconds" : 1100.53515625,
       "mode" : "indep",
       "position" : 34,
       "reps" : 20
@@ -1266,7 +1266,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 152.57343750000001,
+      "microseconds" : 154.80703124999999,
       "mode" : "indep",
       "position" : 35,
       "reps" : 20
@@ -1281,7 +1281,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 53.071093750000003,
+      "microseconds" : 53.526562499999997,
       "mode" : "serial",
       "position" : 36,
       "reps" : 20
@@ -1296,7 +1296,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 742.13463750000005,
+      "microseconds" : 743.35104375000003,
       "mode" : "serial",
       "position" : 37,
       "reps" : 20
@@ -1311,7 +1311,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 150.60129999999998,
+      "microseconds" : 151.17890625000001,
       "mode" : "serial",
       "position" : 38,
       "reps" : 20
@@ -1326,7 +1326,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 41.821093750000003,
+      "microseconds" : 42.122912499999998,
       "mode" : "indep",
       "position" : 39,
       "reps" : 20
@@ -1341,7 +1341,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 702.40755624999997,
+      "microseconds" : 711.41822500000001,
       "mode" : "indep",
       "position" : 40,
       "reps" : 20
@@ -1356,7 +1356,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 140.44322500000001,
+      "microseconds" : 146.64296874999999,
       "mode" : "indep",
       "position" : 41,
       "reps" : 20
@@ -1371,7 +1371,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 53.40234375,
+      "microseconds" : 62.870050000000006,
       "mode" : "serial",
       "position" : 42,
       "reps" : 20
@@ -1386,7 +1386,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 460.09687500000001,
+      "microseconds" : 464.77708749999999,
       "mode" : "serial",
       "position" : 43,
       "reps" : 20
@@ -1401,7 +1401,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 137.32004999999998,
+      "microseconds" : 138.71796875000001,
       "mode" : "serial",
       "position" : 44,
       "reps" : 20
@@ -1416,7 +1416,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 41.938537500000002,
+      "microseconds" : 51.066143749999995,
       "mode" : "indep",
       "position" : 45,
       "reps" : 20
@@ -1431,7 +1431,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 361.02109374999998,
+      "microseconds" : 370.09713124999996,
       "mode" : "indep",
       "position" : 46,
       "reps" : 20
@@ -1446,7 +1446,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 125.79401250000001,
+      "microseconds" : 118.41536249999999,
       "mode" : "indep",
       "position" : 47,
       "reps" : 20
@@ -1461,7 +1461,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 127.315625,
+      "microseconds" : 118.075,
       "mode" : "indep",
       "position" : 0,
       "reps" : 20
@@ -1476,7 +1476,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 357.68098750000001,
+      "microseconds" : 359.78255000000001,
       "mode" : "indep",
       "position" : 1,
       "reps" : 20
@@ -1491,7 +1491,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 41.4296875,
+      "microseconds" : 42.465106250000005,
       "mode" : "indep",
       "position" : 2,
       "reps" : 20
@@ -1506,7 +1506,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 139.72864375,
+      "microseconds" : 139.69400625,
       "mode" : "serial",
       "position" : 3,
       "reps" : 20
@@ -1521,7 +1521,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 459.29634999999996,
+      "microseconds" : 467.70859374999998,
       "mode" : "serial",
       "position" : 4,
       "reps" : 20
@@ -1536,7 +1536,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 52.976300000000002,
+      "microseconds" : 59.935675000000003,
       "mode" : "serial",
       "position" : 5,
       "reps" : 20
@@ -1551,7 +1551,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 140.90156250000001,
+      "microseconds" : 152.42995000000002,
       "mode" : "indep",
       "position" : 6,
       "reps" : 20
@@ -1566,7 +1566,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 696.46614999999997,
+      "microseconds" : 724.63151249999999,
       "mode" : "indep",
       "position" : 7,
       "reps" : 20
@@ -1581,7 +1581,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 41.543487499999998,
+      "microseconds" : 41.96875,
       "mode" : "indep",
       "position" : 8,
       "reps" : 20
@@ -1596,7 +1596,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 150.57161249999999,
+      "microseconds" : 151.6309875,
       "mode" : "serial",
       "position" : 9,
       "reps" : 20
@@ -1611,7 +1611,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 742.87318125000002,
+      "microseconds" : 740.87864375000004,
       "mode" : "serial",
       "position" : 10,
       "reps" : 20
@@ -1626,7 +1626,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 53.052087500000006,
+      "microseconds" : 53.180731249999994,
       "mode" : "serial",
       "position" : 11,
       "reps" : 20
@@ -1641,7 +1641,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 152.919275,
+      "microseconds" : 152.4888,
       "mode" : "indep",
       "position" : 12,
       "reps" : 20
@@ -1656,7 +1656,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1090.3349000000001,
+      "microseconds" : 1088.40234375,
       "mode" : "indep",
       "position" : 13,
       "reps" : 20
@@ -1671,7 +1671,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 41.452081249999999,
+      "microseconds" : 41.717968749999997,
       "mode" : "indep",
       "position" : 14,
       "reps" : 20
@@ -1686,7 +1686,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 160.99270625,
+      "microseconds" : 162.00807500000002,
       "mode" : "serial",
       "position" : 15,
       "reps" : 20
@@ -1701,7 +1701,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1094.81953125,
+      "microseconds" : 1096.4841125,
       "mode" : "serial",
       "position" : 16,
       "reps" : 20
@@ -1716,7 +1716,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 52.742712500000003,
+      "microseconds" : 53.204687499999999,
       "mode" : "serial",
       "position" : 17,
       "reps" : 20
@@ -1731,7 +1731,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 165.9721375,
+      "microseconds" : 165.995575,
       "mode" : "indep",
       "position" : 18,
       "reps" : 20
@@ -1746,7 +1746,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1061.63698125,
+      "microseconds" : 1057.8106750000002,
       "mode" : "indep",
       "position" : 19,
       "reps" : 20
@@ -1761,7 +1761,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 41.649743749999999,
+      "microseconds" : 41.987756250000004,
       "mode" : "indep",
       "position" : 20,
       "reps" : 20
@@ -1776,7 +1776,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 172.55156249999999,
+      "microseconds" : 171.84400625000001,
       "mode" : "serial",
       "position" : 21,
       "reps" : 20
@@ -1791,7 +1791,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1103.921875,
+      "microseconds" : 1106.0497375,
       "mode" : "serial",
       "position" : 22,
       "reps" : 20
@@ -1806,7 +1806,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 52.782812499999999,
+      "microseconds" : 53.275781250000001,
       "mode" : "serial",
       "position" : 23,
       "reps" : 20
@@ -1821,7 +1821,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 180.62656250000001,
+      "microseconds" : 181.45286249999998,
       "mode" : "indep",
       "position" : 24,
       "reps" : 20
@@ -1836,7 +1836,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 625.73463125000001,
+      "microseconds" : 634.89609374999998,
       "mode" : "indep",
       "position" : 25,
       "reps" : 20
@@ -1851,7 +1851,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 52.422393750000005,
+      "microseconds" : 52.250518750000005,
       "mode" : "indep",
       "position" : 26,
       "reps" : 20
@@ -1866,7 +1866,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 199.76978750000001,
+      "microseconds" : 198.58698125000001,
       "mode" : "serial",
       "position" : 27,
       "reps" : 20
@@ -1881,7 +1881,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 783.95963749999999,
+      "microseconds" : 781.17239374999997,
       "mode" : "serial",
       "position" : 28,
       "reps" : 20
@@ -1896,7 +1896,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 68.291925000000006,
+      "microseconds" : 68.084637499999999,
       "mode" : "serial",
       "position" : 29,
       "reps" : 20
@@ -1911,7 +1911,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 203.83150625000002,
+      "microseconds" : 204.06041875,
       "mode" : "indep",
       "position" : 30,
       "reps" : 20
@@ -1926,7 +1926,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1334.5302125000001,
+      "microseconds" : 1324.35859375,
       "mode" : "indep",
       "position" : 31,
       "reps" : 20
@@ -1941,7 +1941,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 52.213806250000005,
+      "microseconds" : 52.303906249999997,
       "mode" : "indep",
       "position" : 32,
       "reps" : 20
@@ -1956,7 +1956,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 216.92500000000001,
+      "microseconds" : 215.67682500000001,
       "mode" : "serial",
       "position" : 33,
       "reps" : 20
@@ -1971,7 +1971,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1326.1776,
+      "microseconds" : 1328.213025,
       "mode" : "serial",
       "position" : 34,
       "reps" : 20
@@ -1986,7 +1986,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 68.083593750000006,
+      "microseconds" : 68.123437499999994,
       "mode" : "serial",
       "position" : 35,
       "reps" : 20
@@ -2001,7 +2001,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 225.11250000000001,
+      "microseconds" : 225.28645624999999,
       "mode" : "indep",
       "position" : 36,
       "reps" : 20
@@ -2016,7 +2016,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2044.69453125,
+      "microseconds" : 2049.8934875,
       "mode" : "indep",
       "position" : 37,
       "reps" : 20
@@ -2031,7 +2031,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 52.198175000000006,
+      "microseconds" : 52.295574999999999,
       "mode" : "indep",
       "position" : 38,
       "reps" : 20
@@ -2046,7 +2046,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 235.7908875,
+      "microseconds" : 234.28568125000001,
       "mode" : "serial",
       "position" : 39,
       "reps" : 20
@@ -2061,7 +2061,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2012.84453125,
+      "microseconds" : 2004.6778687499998,
       "mode" : "serial",
       "position" : 40,
       "reps" : 20
@@ -2076,7 +2076,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 67.801824999999994,
+      "microseconds" : 67.932550000000006,
       "mode" : "serial",
       "position" : 41,
       "reps" : 20
@@ -2091,7 +2091,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 247.79140624999999,
+      "microseconds" : 246.96328124999999,
       "mode" : "indep",
       "position" : 42,
       "reps" : 20
@@ -2106,7 +2106,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 1985.0252625000001,
+      "microseconds" : 2001.2989624999998,
       "mode" : "indep",
       "position" : 43,
       "reps" : 20
@@ -2121,7 +2121,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 52.086456250000005,
+      "microseconds" : 55.372656249999999,
       "mode" : "indep",
       "position" : 44,
       "reps" : 20
@@ -2136,7 +2136,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 253.51849375,
+      "microseconds" : 251.58853749999997,
       "mode" : "serial",
       "position" : 45,
       "reps" : 20
@@ -2151,7 +2151,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2006.4940125000001,
+      "microseconds" : 2019.0588562500002,
       "mode" : "serial",
       "position" : 46,
       "reps" : 20
@@ -2166,7 +2166,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 68.18021250000001,
+      "microseconds" : 69.24661875000001,
       "mode" : "serial",
       "position" : 47,
       "reps" : 20
@@ -2181,7 +2181,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 67.792450000000002,
+      "microseconds" : 67.25,
       "mode" : "serial",
       "position" : 0,
       "reps" : 20
@@ -2196,7 +2196,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2008.0127625,
+      "microseconds" : 2008.5137999999999,
       "mode" : "serial",
       "position" : 1,
       "reps" : 20
@@ -2211,7 +2211,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 254.0721375,
+      "microseconds" : 262.13203125000001,
       "mode" : "serial",
       "position" : 2,
       "reps" : 20
@@ -2226,7 +2226,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 52.036456250000001,
+      "microseconds" : 55.427862500000003,
       "mode" : "indep",
       "position" : 3,
       "reps" : 20
@@ -2241,7 +2241,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2003.58515625,
+      "microseconds" : 2033.4778624999999,
       "mode" : "indep",
       "position" : 4,
       "reps" : 20
@@ -2256,7 +2256,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 248.1112,
+      "microseconds" : 247.75520624999999,
       "mode" : "indep",
       "position" : 5,
       "reps" : 20
@@ -2271,7 +2271,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 69.1015625,
+      "microseconds" : 69.334900000000005,
       "mode" : "serial",
       "position" : 6,
       "reps" : 20
@@ -2286,7 +2286,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2009.7270812499999,
+      "microseconds" : 2003.4294249999998,
       "mode" : "serial",
       "position" : 7,
       "reps" : 20
@@ -2301,7 +2301,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 234.34401250000002,
+      "microseconds" : 235.9677125,
       "mode" : "serial",
       "position" : 8,
       "reps" : 20
@@ -2316,7 +2316,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 52.253650000000007,
+      "microseconds" : 52.514062500000001,
       "mode" : "indep",
       "position" : 9,
       "reps" : 20
@@ -2331,7 +2331,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2048.6588500000003,
+      "microseconds" : 2056.7635375,
       "mode" : "indep",
       "position" : 10,
       "reps" : 20
@@ -2346,7 +2346,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 224.04453125000001,
+      "microseconds" : 226.03203124999999,
       "mode" : "indep",
       "position" : 11,
       "reps" : 20
@@ -2361,7 +2361,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 68.089587500000007,
+      "microseconds" : 69.131249999999994,
       "mode" : "serial",
       "position" : 12,
       "reps" : 20
@@ -2376,7 +2376,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1324.3125,
+      "microseconds" : 1323.1500000000001,
       "mode" : "serial",
       "position" : 13,
       "reps" : 20
@@ -2391,7 +2391,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 216.5502625,
+      "microseconds" : 216.54036875000003,
       "mode" : "serial",
       "position" : 14,
       "reps" : 20
@@ -2406,7 +2406,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 52.257550000000002,
+      "microseconds" : 52.502606249999999,
       "mode" : "indep",
       "position" : 15,
       "reps" : 20
@@ -2421,7 +2421,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1337.4458374999999,
+      "microseconds" : 1317.3713499999999,
       "mode" : "indep",
       "position" : 16,
       "reps" : 20
@@ -2436,7 +2436,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 204.77968749999999,
+      "microseconds" : 203.66692499999999,
       "mode" : "indep",
       "position" : 17,
       "reps" : 20
@@ -2451,7 +2451,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 68.227862500000001,
+      "microseconds" : 68.482812499999994,
       "mode" : "serial",
       "position" : 18,
       "reps" : 20
@@ -2466,7 +2466,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 782.42578125,
+      "microseconds" : 781.91745000000003,
       "mode" : "serial",
       "position" : 19,
       "reps" : 20
@@ -2481,7 +2481,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 196.80781250000001,
+      "microseconds" : 198.65703124999999,
       "mode" : "serial",
       "position" : 20,
       "reps" : 20
@@ -2496,7 +2496,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 52.409118750000005,
+      "microseconds" : 52.602868750000006,
       "mode" : "indep",
       "position" : 21,
       "reps" : 20
@@ -2511,7 +2511,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 627.94505000000004,
+      "microseconds" : 634.44036249999999,
       "mode" : "indep",
       "position" : 22,
       "reps" : 20
@@ -2526,7 +2526,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 181.32604375,
+      "microseconds" : 179.7724,
       "mode" : "indep",
       "position" : 23,
       "reps" : 20
@@ -2541,7 +2541,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 53.241143750000006,
+      "microseconds" : 53.429425000000002,
       "mode" : "serial",
       "position" : 24,
       "reps" : 20
@@ -2556,7 +2556,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1105.9971375,
+      "microseconds" : 1104.72239375,
       "mode" : "serial",
       "position" : 25,
       "reps" : 20
@@ -2571,7 +2571,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 173.30833124999998,
+      "microseconds" : 173.70338750000002,
       "mode" : "serial",
       "position" : 26,
       "reps" : 20
@@ -2586,7 +2586,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 41.640100000000004,
+      "microseconds" : 42.022656249999997,
       "mode" : "indep",
       "position" : 27,
       "reps" : 20
@@ -2601,7 +2601,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1059.4427125,
+      "microseconds" : 1067.3354187499999,
       "mode" : "indep",
       "position" : 28,
       "reps" : 20
@@ -2616,7 +2616,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 164.54583124999999,
+      "microseconds" : 166.56223749999998,
       "mode" : "indep",
       "position" : 29,
       "reps" : 20
@@ -2631,7 +2631,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 52.980987500000005,
+      "microseconds" : 53.174218750000001,
       "mode" : "serial",
       "position" : 30,
       "reps" : 20
@@ -2646,7 +2646,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1096.9625000000001,
+      "microseconds" : 1093.2638000000002,
       "mode" : "serial",
       "position" : 31,
       "reps" : 20
@@ -2661,7 +2661,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 160.97213125000002,
+      "microseconds" : 161.97318124999998,
       "mode" : "serial",
       "position" : 32,
       "reps" : 20
@@ -2676,7 +2676,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 41.777606250000005,
+      "microseconds" : 41.961456249999998,
       "mode" : "indep",
       "position" : 33,
       "reps" : 20
@@ -2691,7 +2691,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1084.6901062499999,
+      "microseconds" : 1091.528125,
       "mode" : "indep",
       "position" : 34,
       "reps" : 20
@@ -2706,7 +2706,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 152.90755625,
+      "microseconds" : 154.01588125000001,
       "mode" : "indep",
       "position" : 35,
       "reps" : 20
@@ -2721,7 +2721,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 52.927862500000003,
+      "microseconds" : 54.014587500000005,
       "mode" : "serial",
       "position" : 36,
       "reps" : 20
@@ -2736,7 +2736,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 741.16301874999999,
+      "microseconds" : 741.24713750000001,
       "mode" : "serial",
       "position" : 37,
       "reps" : 20
@@ -2751,7 +2751,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 150.58801875,
+      "microseconds" : 150.90573125,
       "mode" : "serial",
       "position" : 38,
       "reps" : 20
@@ -2766,7 +2766,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 41.74609375,
+      "microseconds" : 41.875524999999996,
       "mode" : "indep",
       "position" : 39,
       "reps" : 20
@@ -2781,7 +2781,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 699.72135624999999,
+      "microseconds" : 701.36328125,
       "mode" : "indep",
       "position" : 40,
       "reps" : 20
@@ -2796,7 +2796,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 139.58021249999999,
+      "microseconds" : 140.26432500000001,
       "mode" : "indep",
       "position" : 41,
       "reps" : 20
@@ -2811,7 +2811,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 53.119268750000003,
+      "microseconds" : 53.280724999999997,
       "mode" : "serial",
       "position" : 42,
       "reps" : 20
@@ -2826,7 +2826,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 459.47421874999998,
+      "microseconds" : 460.44609374999999,
       "mode" : "serial",
       "position" : 43,
       "reps" : 20
@@ -2841,7 +2841,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 137.24531250000001,
+      "microseconds" : 139.4315125,
       "mode" : "serial",
       "position" : 44,
       "reps" : 20
@@ -2856,7 +2856,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 41.715362499999998,
+      "microseconds" : 41.878387500000002,
       "mode" : "indep",
       "position" : 45,
       "reps" : 20
@@ -2871,7 +2871,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 361.02109374999998,
+      "microseconds" : 358.57370000000003,
       "mode" : "indep",
       "position" : 46,
       "reps" : 20
@@ -2886,7 +2886,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 126.04192499999999,
+      "microseconds" : 127.31744375000001,
       "mode" : "indep",
       "position" : 47,
       "reps" : 20
@@ -2901,7 +2901,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 127.14036249999999,
+      "microseconds" : 126.37995000000001,
       "mode" : "indep",
       "position" : 0,
       "reps" : 20
@@ -2916,7 +2916,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 359.34322499999996,
+      "microseconds" : 360.33151250000003,
       "mode" : "indep",
       "position" : 1,
       "reps" : 20
@@ -2931,7 +2931,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 41.545312500000001,
+      "microseconds" : 41.967449999999999,
       "mode" : "indep",
       "position" : 2,
       "reps" : 20
@@ -2946,7 +2946,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 138.58828124999999,
+      "microseconds" : 137.71223749999999,
       "mode" : "serial",
       "position" : 3,
       "reps" : 20
@@ -2961,7 +2961,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 460.39869375000001,
+      "microseconds" : 459.69556875000001,
       "mode" : "serial",
       "position" : 4,
       "reps" : 20
@@ -2976,7 +2976,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 52.516406250000003,
+      "microseconds" : 55.024218750000003,
       "mode" : "serial",
       "position" : 5,
       "reps" : 20
@@ -2991,7 +2991,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 139.38307500000002,
+      "microseconds" : 135.64661874999999,
       "mode" : "indep",
       "position" : 6,
       "reps" : 20
@@ -3006,7 +3006,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 700.56588750000003,
+      "microseconds" : 707.48984374999998,
       "mode" : "indep",
       "position" : 7,
       "reps" : 20
@@ -3021,7 +3021,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 41.687237499999995,
+      "microseconds" : 45.101037500000004,
       "mode" : "indep",
       "position" : 8,
       "reps" : 20
@@ -3036,7 +3036,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 149.748175,
+      "microseconds" : 155.00520624999999,
       "mode" : "serial",
       "position" : 9,
       "reps" : 20
@@ -3051,7 +3051,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 741.69478749999996,
+      "microseconds" : 745.90911249999999,
       "mode" : "serial",
       "position" : 10,
       "reps" : 20
@@ -3066,7 +3066,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 52.947656250000001,
+      "microseconds" : 55.147912499999997,
       "mode" : "serial",
       "position" : 11,
       "reps" : 20
@@ -3081,7 +3081,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 153.36926875,
+      "microseconds" : 155.64479375000002,
       "mode" : "indep",
       "position" : 12,
       "reps" : 20
@@ -3096,7 +3096,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1089.1018187499999,
+      "microseconds" : 1107.5236937499999,
       "mode" : "indep",
       "position" : 13,
       "reps" : 20
@@ -3111,7 +3111,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 45.069006250000001,
+      "microseconds" : 41.857293750000004,
       "mode" : "indep",
       "position" : 14,
       "reps" : 20
@@ -3126,7 +3126,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 164.40078124999999,
+      "microseconds" : 161.22968750000001,
       "mode" : "serial",
       "position" : 15,
       "reps" : 20
@@ -3141,7 +3141,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1094.57448125,
+      "microseconds" : 1095.49921875,
       "mode" : "serial",
       "position" : 16,
       "reps" : 20
@@ -3156,7 +3156,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 52.446618750000006,
+      "microseconds" : 53.181249999999999,
       "mode" : "serial",
       "position" : 17,
       "reps" : 20
@@ -3171,7 +3171,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 165.85078125000001,
+      "microseconds" : 165.3612,
       "mode" : "indep",
       "position" : 18,
       "reps" : 20
@@ -3186,7 +3186,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1069.8877625,
+      "microseconds" : 1052.59115,
       "mode" : "indep",
       "position" : 19,
       "reps" : 20
@@ -3201,7 +3201,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 41.843231250000002,
+      "microseconds" : 41.825262500000001,
       "mode" : "indep",
       "position" : 20,
       "reps" : 20
@@ -3216,7 +3216,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 172.11432500000001,
+      "microseconds" : 171.98802499999999,
       "mode" : "serial",
       "position" : 21,
       "reps" : 20
@@ -3231,7 +3231,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1107.8302062500002,
+      "microseconds" : 1101.2075500000001,
       "mode" : "serial",
       "position" : 22,
       "reps" : 20
@@ -3246,7 +3246,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 52.771356249999997,
+      "microseconds" : 53.173699999999997,
       "mode" : "serial",
       "position" : 23,
       "reps" : 20
@@ -3261,7 +3261,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 180.44557500000002,
+      "microseconds" : 180.47343749999999,
       "mode" : "indep",
       "position" : 24,
       "reps" : 20
@@ -3276,7 +3276,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 632.67213749999996,
+      "microseconds" : 635.98853750000001,
       "mode" : "indep",
       "position" : 25,
       "reps" : 20
@@ -3291,7 +3291,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 52.825525000000006,
+      "microseconds" : 52.911718749999999,
       "mode" : "indep",
       "position" : 26,
       "reps" : 20
@@ -3306,7 +3306,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 196.14245,
+      "microseconds" : 198.2622375,
       "mode" : "serial",
       "position" : 27,
       "reps" : 20
@@ -3321,7 +3321,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 782.34661875000006,
+      "microseconds" : 781.81328125000005,
       "mode" : "serial",
       "position" : 28,
       "reps" : 20
@@ -3336,7 +3336,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 67.848437500000003,
+      "microseconds" : 68.295312499999994,
       "mode" : "serial",
       "position" : 29,
       "reps" : 20
@@ -3351,7 +3351,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 201.8533875,
+      "microseconds" : 203.82421875,
       "mode" : "indep",
       "position" : 30,
       "reps" : 20
@@ -3366,7 +3366,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1334.12421875,
+      "microseconds" : 1335.9666625,
       "mode" : "indep",
       "position" : 31,
       "reps" : 20
@@ -3381,7 +3381,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 51.738025000000007,
+      "microseconds" : 52.566668749999998,
       "mode" : "indep",
       "position" : 32,
       "reps" : 20
@@ -3396,7 +3396,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 215.50546875000001,
+      "microseconds" : 215.1640625,
       "mode" : "serial",
       "position" : 33,
       "reps" : 20
@@ -3411,7 +3411,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1326.72760625,
+      "microseconds" : 1323.7528687500001,
       "mode" : "serial",
       "position" : 34,
       "reps" : 20
@@ -3426,7 +3426,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 68.236981249999999,
+      "microseconds" : 68.845312500000006,
       "mode" : "serial",
       "position" : 35,
       "reps" : 20
@@ -3441,7 +3441,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 223.91458125,
+      "microseconds" : 224.69453125000001,
       "mode" : "indep",
       "position" : 36,
       "reps" : 20
@@ -3456,7 +3456,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2051.4841187499997,
+      "microseconds" : 2053.6276062500001,
       "mode" : "indep",
       "position" : 37,
       "reps" : 20
@@ -3471,7 +3471,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 52.153387499999994,
+      "microseconds" : 52.33984375,
       "mode" : "indep",
       "position" : 38,
       "reps" : 20
@@ -3486,7 +3486,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 234.80130625000001,
+      "microseconds" : 235.02995000000001,
       "mode" : "serial",
       "position" : 39,
       "reps" : 20
@@ -3501,7 +3501,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2009.9869750000003,
+      "microseconds" : 2002.5895812499998,
       "mode" : "serial",
       "position" : 40,
       "reps" : 20
@@ -3516,7 +3516,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 68.549999999999997,
+      "microseconds" : 69.05859375,
       "mode" : "serial",
       "position" : 41,
       "reps" : 20
@@ -3531,7 +3531,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 247.16301874999999,
+      "microseconds" : 248.24635625000002,
       "mode" : "indep",
       "position" : 42,
       "reps" : 20
@@ -3546,7 +3546,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 1997.8466187499998,
+      "microseconds" : 1989.1070312500001,
       "mode" : "indep",
       "position" : 43,
       "reps" : 20
@@ -3561,7 +3561,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 52.380468749999999,
+      "microseconds" : 52.576824999999999,
       "mode" : "indep",
       "position" : 44,
       "reps" : 20
@@ -3576,7 +3576,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 253.18384999999998,
+      "microseconds" : 255.02838750000001,
       "mode" : "serial",
       "position" : 45,
       "reps" : 20
@@ -3591,7 +3591,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2000.2760437500001,
+      "microseconds" : 2004.1734375000001,
       "mode" : "serial",
       "position" : 46,
       "reps" : 20
@@ -3606,7 +3606,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 68.406512499999991,
+      "microseconds" : 68.413806250000007,
       "mode" : "serial",
       "position" : 47,
       "reps" : 20
@@ -3621,7 +3621,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 68.799481249999999,
+      "microseconds" : 69.11771250000001,
       "mode" : "serial",
       "position" : 0,
       "reps" : 20
@@ -3636,7 +3636,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2004.3479187500002,
+      "microseconds" : 2000.4372437499999,
       "mode" : "serial",
       "position" : 1,
       "reps" : 20
@@ -3651,7 +3651,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 255.08125000000001,
+      "microseconds" : 253.73723749999999,
       "mode" : "serial",
       "position" : 2,
       "reps" : 20
@@ -3666,7 +3666,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 53.107812500000001,
+      "microseconds" : 52.4453125,
       "mode" : "indep",
       "position" : 3,
       "reps" : 20
@@ -3681,7 +3681,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 2010.47265625,
+      "microseconds" : 2001.5859375,
       "mode" : "indep",
       "position" : 4,
       "reps" : 20
@@ -3696,7 +3696,7 @@
       "kL" : 1023,
       "kv" : 1014,
       "m" : 9,
-      "microseconds" : 247.069275,
+      "microseconds" : 247.96041875,
       "mode" : "indep",
       "position" : 5,
       "reps" : 20
@@ -3711,7 +3711,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 68.696875000000006,
+      "microseconds" : 68.999737500000009,
       "mode" : "serial",
       "position" : 6,
       "reps" : 20
@@ -3726,7 +3726,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2006.0755249999997,
+      "microseconds" : 2005.7520812499999,
       "mode" : "serial",
       "position" : 7,
       "reps" : 20
@@ -3741,7 +3741,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 234.35624999999999,
+      "microseconds" : 236.25911875000003,
       "mode" : "serial",
       "position" : 8,
       "reps" : 20
@@ -3756,7 +3756,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 52.319012499999999,
+      "microseconds" : 52.607287499999998,
       "mode" : "indep",
       "position" : 9,
       "reps" : 20
@@ -3771,7 +3771,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 2038.4140625,
+      "microseconds" : 2054.8255187499999,
       "mode" : "indep",
       "position" : 10,
       "reps" : 20
@@ -3786,7 +3786,7 @@
       "kL" : 1022,
       "kv" : 1014,
       "m" : 8,
-      "microseconds" : 223.58958124999998,
+      "microseconds" : 225.04661249999998,
       "mode" : "indep",
       "position" : 11,
       "reps" : 20
@@ -3801,7 +3801,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 69.508593750000003,
+      "microseconds" : 69.221356249999999,
       "mode" : "serial",
       "position" : 12,
       "reps" : 20
@@ -3816,7 +3816,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1327.72760625,
+      "microseconds" : 1325.40546875,
       "mode" : "serial",
       "position" : 13,
       "reps" : 20
@@ -3831,7 +3831,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 217.109375,
+      "microseconds" : 215.53749999999999,
       "mode" : "serial",
       "position" : 14,
       "reps" : 20
@@ -3846,7 +3846,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 52.585418749999995,
+      "microseconds" : 52.277087500000007,
       "mode" : "indep",
       "position" : 15,
       "reps" : 20
@@ -3861,7 +3861,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 1334.8138000000001,
+      "microseconds" : 1335.69609375,
       "mode" : "indep",
       "position" : 16,
       "reps" : 20
@@ -3876,7 +3876,7 @@
       "kL" : 1021,
       "kv" : 1014,
       "m" : 7,
-      "microseconds" : 202.5,
+      "microseconds" : 202.30859375,
       "mode" : "indep",
       "position" : 17,
       "reps" : 20
@@ -3891,7 +3891,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 68.173956250000003,
+      "microseconds" : 68.616931250000007,
       "mode" : "serial",
       "position" : 18,
       "reps" : 20
@@ -3906,7 +3906,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 783.76953125,
+      "microseconds" : 780.75703124999995,
       "mode" : "serial",
       "position" : 19,
       "reps" : 20
@@ -3921,7 +3921,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 196.31822500000001,
+      "microseconds" : 198.83203125,
       "mode" : "serial",
       "position" : 20,
       "reps" : 20
@@ -3936,7 +3936,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 52.235937499999999,
+      "microseconds" : 53.028906249999999,
       "mode" : "indep",
       "position" : 21,
       "reps" : 20
@@ -3951,7 +3951,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 623.36953125000002,
+      "microseconds" : 632.671875,
       "mode" : "indep",
       "position" : 22,
       "reps" : 20
@@ -3966,7 +3966,7 @@
       "kL" : 1020,
       "kv" : 1014,
       "m" : 6,
-      "microseconds" : 182.0859375,
+      "microseconds" : 182.48020624999998,
       "mode" : "indep",
       "position" : 23,
       "reps" : 20
@@ -3981,7 +3981,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 53.283337500000002,
+      "microseconds" : 53.326824999999999,
       "mode" : "serial",
       "position" : 24,
       "reps" : 20
@@ -3996,7 +3996,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1105.62083125,
+      "microseconds" : 1102.7986999999998,
       "mode" : "serial",
       "position" : 25,
       "reps" : 20
@@ -4011,7 +4011,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 172.61979375000001,
+      "microseconds" : 173.07056875000001,
       "mode" : "serial",
       "position" : 26,
       "reps" : 20
@@ -4026,7 +4026,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 41.945575000000005,
+      "microseconds" : 42.485156250000003,
       "mode" : "indep",
       "position" : 27,
       "reps" : 20
@@ -4041,7 +4041,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 1064.70234375,
+      "microseconds" : 1067.03541875,
       "mode" : "indep",
       "position" : 28,
       "reps" : 20
@@ -4056,7 +4056,7 @@
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "microseconds" : 165.899475,
+      "microseconds" : 165.10312500000001,
       "mode" : "indep",
       "position" : 29,
       "reps" : 20
@@ -4071,7 +4071,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 53.120312499999997,
+      "microseconds" : 53.015362500000002,
       "mode" : "serial",
       "position" : 30,
       "reps" : 20
@@ -4086,7 +4086,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1095.9484375,
+      "microseconds" : 1096.1700500000002,
       "mode" : "serial",
       "position" : 31,
       "reps" : 20
@@ -4101,7 +4101,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 161.06301875,
+      "microseconds" : 162.13489375,
       "mode" : "serial",
       "position" : 32,
       "reps" : 20
@@ -4116,7 +4116,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 41.645575000000001,
+      "microseconds" : 41.92213125,
       "mode" : "indep",
       "position" : 33,
       "reps" : 20
@@ -4131,7 +4131,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 1093.5473937500001,
+      "microseconds" : 1080.5072875000001,
       "mode" : "indep",
       "position" : 34,
       "reps" : 20
@@ -4146,7 +4146,7 @@
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "microseconds" : 158.59609374999999,
+      "microseconds" : 152.88541875000001,
       "mode" : "indep",
       "position" : 35,
       "reps" : 20
@@ -4161,7 +4161,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 56.192187500000003,
+      "microseconds" : 52.390362500000002,
       "mode" : "serial",
       "position" : 36,
       "reps" : 20
@@ -4176,7 +4176,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 742.05234374999998,
+      "microseconds" : 740.68853749999994,
       "mode" : "serial",
       "position" : 37,
       "reps" : 20
@@ -4191,7 +4191,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 151.33333124999999,
+      "microseconds" : 147.78437500000001,
       "mode" : "serial",
       "position" : 38,
       "reps" : 20
@@ -4206,7 +4206,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 41.783075000000004,
+      "microseconds" : 41.764843749999997,
       "mode" : "indep",
       "position" : 39,
       "reps" : 20
@@ -4221,7 +4221,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 705.11900624999998,
+      "microseconds" : 702.62578125000005,
       "mode" : "indep",
       "position" : 40,
       "reps" : 20
@@ -4236,7 +4236,7 @@
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "microseconds" : 140.28411875,
+      "microseconds" : 139.49609375,
       "mode" : "indep",
       "position" : 41,
       "reps" : 20
@@ -4251,7 +4251,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 53.066668749999998,
+      "microseconds" : 53.245312499999997,
       "mode" : "serial",
       "position" : 42,
       "reps" : 20
@@ -4266,7 +4266,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 459.36562500000002,
+      "microseconds" : 462.484375,
       "mode" : "serial",
       "position" : 43,
       "reps" : 20
@@ -4281,7 +4281,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 139.09895624999999,
+      "microseconds" : 138.04140624999999,
       "mode" : "serial",
       "position" : 44,
       "reps" : 20
@@ -4296,7 +4296,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 41.790887500000004,
+      "microseconds" : 42.457293750000005,
       "mode" : "indep",
       "position" : 45,
       "reps" : 20
@@ -4311,7 +4311,7 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 362.92838124999997,
+      "microseconds" : 362.69973749999997,
       "mode" : "indep",
       "position" : 46,
       "reps" : 20
@@ -4326,12 +4326,13 @@
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "microseconds" : 125.73385,
+      "microseconds" : 126.6015625,
       "mode" : "indep",
       "position" : 47,
       "reps" : 20
     }
   ],
   "split_row" : 5,
+  "temperature_source" : "unavailable",
   "warmup" : 6
 }

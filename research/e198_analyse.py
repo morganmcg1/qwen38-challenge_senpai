@@ -116,21 +116,27 @@ def price(reduced, mode):
         one_row = reduced.get(("one_row_floor", mode, m, kv))
         if not (pair and fused and one_row):
             continue
-        # The pair arm times TWO dispatches per chain step; the fused and
-        # floor arms time one. Compare per-layer totals, not per-dispatch.
-        pair_us = pair["median_us"] * 2
+        # Every arm divides its elapsed time by the chain length, and one chain
+        # step of the pair arm already issues BOTH split dispatches. So every
+        # arm below is one full layer's SDPA work for this cell.
+        pair_us = pair["median_us"]
         fused_us = fused["median_us"]
-        floor_us = one_row["median_us"] + (m - 1) * FLOOR_B0_US
+        one_row_us = one_row["median_us"]
+        floor_us = one_row_us + (m - 1) * FLOOR_B0_US
         head_room = pair_us - floor_us
         recovered = pair_us - fused_us
+        # 1/m means the m rows rode along on one set of KV loads; 1.0 means
+        # they cost the same as m separate one-row calls.
+        serialized_us = m * one_row_us
         cells.append(
             {
                 "m": m,
                 "kv": kv,
                 "pair_us": pair_us,
-                "pair_us_per_dispatch": pair["median_us"],
                 "fused_us": fused_us,
-                "one_row_us": one_row["median_us"],
+                "one_row_us": one_row_us,
+                "serialized_us": serialized_us,
+                "amortization_efficiency": fused_us / serialized_us,
                 "floor_us": floor_us,
                 "headroom_us": head_room,
                 "recovered_us": recovered,
@@ -313,6 +319,9 @@ def main():
                 summary[f"{tag}/recovered_us"] = cell["recovered_us"]
                 summary[f"{tag}/recovered_fraction"] = cell[
                     "recovered_fraction_of_headroom"
+                ]
+                summary[f"{tag}/amortization_efficiency"] = cell[
+                    "amortization_efficiency"
                 ]
             summary[f"{mode}/stage2_gate_passing_widths"] = str(
                 payload["stage2_gate_passing_widths"]
