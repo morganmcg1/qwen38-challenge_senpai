@@ -6,25 +6,31 @@
 Everything here is `harness=local`. Not one number is an official or ranked
 score, and none may be compared with a receipt.
 
-THE QUESTION. `CAMPAIGN LAW 353` says group count is close to free because
-concurrent groups reuse the same weight lines, while accumulator width `NA`
-drives registers and occupancy. The shipped QMV width plan picks the smallest
-group count. The law says it should pick the smallest legal `NA`. Width 5 is
-the law's strongest cell: `NA 5 -> 3` is the largest register drop in the whole
-table, `102 -> 90` on the ranked chip, and it stays at `G = 2`, inside the only
-group count `FINDING 279` ever measured.
+THE QUESTION, AS REVISED BY F3. `RULE 194` asked for the smallest legal
+accumulator width `NA`. The advisor retracted it mid-session: `activeInputGroups`
+is not a launch-shape knob, it is the count of full DRAM streams over all 257
+routed quantized matrices, so `CAMPAIGN LAW 354` asks for the smallest weight
+stream count instead. The `minna5` arm takes width 5 from one stream to two, and
+both existing pieces of evidence therefore predict a loss. The run stands as a
+signed, magnitude-quantified prediction test rather than as a search for a win.
 
-FIVE RECORD GROUPS, ONE RUN.
+THE THREE CELLS. The palindrome holds `shipped@w5` (NA 5, G 1), `minna5@w5`
+(NA 3, G 2) and `shipped@w6` (NA 3, G 2), which gives the price of one weight
+stream at fixed rows, the price of one verified row at a fixed kernel, and the
+shipped width boundary as their sum.
 
-  identity    base, candidate, worker digest, host, chip, head provenance,
-              token window, pin, plans, harness.
-  legs        one row per timed leg in schedule order, with entry and exit GPU
-              temperature, `R` in ms per round, and the accept ledger.
-  census      the live g17s and g16s register and spill count of every template
-              the arms instantiate. Zero GPU seconds.
-  exactness   every cell of the hexfloat row gate and its positive control.
-  contrasts   the arm, the width boundary `R(W+1) - R(W)`, the measured noise
-              channel, and the routed-matvec share of a round when it exists.
+SIX RECORD GROUPS, ONE RUN.
+
+  identity       base, candidate, worker digest, host, chip, head provenance,
+                 token window, pin, plans, harness.
+  legs           one row per timed leg in schedule order, with the real cool
+                 gate temperature, `R` in ms per round, and the accept ledger.
+  decomposition  `A`, `B` and `A + B` under both estimators and every channel.
+  census         the live g17s and g16s register and spill count of every
+                 template the arms instantiate. Zero GPU seconds.
+  exactness      every cell of the hexfloat row gate and its positive control.
+  contrasts      the arm, the width boundary, the measured noise channel, and
+                 the routed-matvec share of a round when it exists.
 """
 
 from __future__ import annotations
@@ -108,6 +114,17 @@ def main() -> int:
         "local_mode": identity["local_mode"],
         "sandbox": identity["sandbox"],
         "mechanism": "smallest legal accumulator width NA in the routed QMV width plan",
+        "mechanism_restated_by_f3": (
+            "the arm raises the weight stream count ceil(M/IPG) from 1 to 2 at "
+            "width 5 over all 257 routed quantized matrices"
+        ),
+        "law_194_retracted_by_advisor": True,
+        "law_354": (
+            "minimise the weight stream count subject to the register cliff "
+            "between NA=5 and NA=6; the shipped plan already satisfies it"
+        ),
+        "advisor_predicted_arm_loss_ms_per_round": 13.9,
+        "advisor_predicted_arm_loss_percent": 12.0,
         "candidate_files": ["Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"],
         "selector": "MLX_E163_IPG_PLAN, read once at process start, default shipped",
         "pin": "MLX_E159_FIXED_DRAFT_DEPTH, a physics instrument and not a schedule",
@@ -145,12 +162,43 @@ def main() -> int:
         "decode_tokens", "effective_mean_draft_len", "accepted_draft_rate",
         "all_tokens_matched", "residual_divergence_count", "reference_checked_rows",
         "trace_width_histogram", "trace_pinned_width_share", "trace_round_us_mean",
-        "trace_round_us_sd", "trace_eval_wall_us_mean", "trace_verify_build_us_mean",
-        "trace_draft_build_us_mean", "gpu_temp_entry_c", "gpu_temp_exit_c",
+        "trace_round_us_sd", "ch_round_ms", "ch_verify_pipeline_ms",
+        "ch_draft_window_ms", "ch_unattributed_ms", "raw_eval_wall_ms",
+        "raw_verify_build_ms", "gate_temp_before_mtp_decode_c",
+        "gate_waited_s_before_mtp_decode", "gpu_temp_entry_c", "gpu_temp_exit_c",
         "cool_gate_passed_real_gate", "gate_qualified_for_timing", "worker_sha256",
-        "post_run_worker_sha256", "dirty_candidate_paths", "tag",
+        "post_run_worker_sha256", "dirty_candidate_paths", "base_sha", "tag",
     ]
     run.log({"legs": flat_table(session["legs"], leg_columns)})
+
+    decomposition = session.get("decomposition")
+    if decomposition:
+        sources = {
+            "R_from_leg": decomposition["primary_estimator"],
+            "R_from_trace": decomposition["trace_estimator"],
+        }
+        sources.update(decomposition["channels"])
+        rows = []
+        for source, block in sources.items():
+            for term in ("A", "B", "A_plus_B"):
+                item = block[term]
+                rows.append({
+                    "term": term,
+                    "source": source,
+                    "meaning": item["meaning"],
+                    "low_cell": item["low_cell"],
+                    "high_cell": item["high_cell"],
+                    "low_mean_ms": item["low_mean_ms"],
+                    "high_mean_ms": item["high_mean_ms"],
+                    "delta_ms": item["delta_ms"],
+                    "two_se_ms": item["two_se_ms"],
+                    "delta_percent_of_low": item["delta_percent_of_low"],
+                    "two_se_percent_of_low": item["two_se_percent_of_low"],
+                    "separated_from_zero": item["separated_from_zero"],
+                    "pooled_sd_ms": item["pooled_sd_ms"],
+                    "pooled_sd_df": item["pooled_sd_df"],
+                })
+        run.log({"decomposition": flat_table(rows, list(rows[0].keys()))})
 
     if census:
         rows = []
@@ -249,6 +297,31 @@ def main() -> int:
         summary["clears_min_useful"] = (
             arm["gain_minus_half_range_percent"] > session["min_useful_percent"]
         )
+    if decomposition:
+        for term in ("A", "B", "A_plus_B"):
+            item = decomposition["primary_estimator"][term]
+            split = decomposition["channel_split"][term]
+            summary[f"{term}_delta_ms"] = item["delta_ms"]
+            summary[f"{term}_two_se_ms"] = item["two_se_ms"]
+            summary[f"{term}_delta_percent_of_low"] = item["delta_percent_of_low"]
+            summary[f"{term}_two_se_percent_of_low"] = item["two_se_percent_of_low"]
+            summary[f"{term}_separated_from_zero"] = item["separated_from_zero"]
+            summary[f"{term}_verify_pipeline_ms"] = split["verify_pipeline_ms"]
+            summary[f"{term}_draft_window_ms"] = split["draft_window_ms"]
+            summary[f"{term}_verify_pipeline_share"] = split["verify_pipeline_share"]
+            summary[f"{term}_cross_estimator_residual_ms"] = decomposition[
+                "cross_estimator_residual_ms"
+            ][term]
+        summary["identity_residual_ms"] = decomposition["primary_estimator"][
+            "A_plus_B"
+        ]["identity_residual_ms"]
+        summary["host_encode_upper_bound_ms"] = decomposition["channel_split"]["A"][
+            "host_encode_upper_bound_ms"
+        ]
+        for key, value in decomposition["reference_points"].items():
+            if isinstance(value, (int, float)):
+                summary[f"reference_{key}"] = value
+
     if session["boundary"]:
         for key, value in session["boundary"].items():
             if isinstance(value, (int, float)) or value is None:
