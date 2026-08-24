@@ -1,0 +1,431 @@
+{
+  "boundary_contrast": {
+    "bootstrap_draws": 4000,
+    "contrast_ci95_ms": [
+      -0.7994999999999983,
+      3.2075000000000022
+    ],
+    "curvature_ci95_ms": {
+      "3": [
+        3.6870000000000003,
+        6.854500000000001
+      ],
+      "4": [
+        3.519,
+        4.777000000000001
+      ],
+      "5": [
+        17.617499999999996,
+        19.872
+      ]
+    },
+    "definition": "curvature(M) = inc(M -> M+1) - inc(M-1 -> M); contrast = curvature(3) - curvature(4); curvature(3) is the second difference that straddles tablePays",
+    "point": {
+      "contrast_ms": 1.7219999999999995,
+      "curvature_ms": {
+        "3": 5.939,
+        "4": 4.2170000000000005,
+        "5": 19.296
+      },
+      "increments_ms": {
+        "2": 5.802,
+        "3": 11.741,
+        "4": 15.958,
+        "5": 35.254
+      }
+    }
+  },
+  "controlled_fits": {
+    "eval_wall_us": {
+      "with_step": {
+        "n": 485,
+        "r2": 0.767089814692481,
+        "sigma_us": 2500.988064128603,
+        "terms": [
+          {
+            "coef": 18115.00260875009,
+            "name": "intercept",
+            "se": 953.2227056310217,
+            "t": 19.00395626513972
+          },
+          {
+            "coef": 6146.118335313981,
+            "name": "m_verify",
+            "se": 274.65508030946097,
+            "t": 22.37758838609135
+          },
+          {
+            "coef": -1370.1029036748803,
+            "name": "step4",
+            "se": 437.94832285443147,
+            "t": -3.128457930252847
+          },
+          {
+            "coef": -0.3354592556644664,
+            "name": "cache_pos",
+            "se": 0.7710467121554114,
+            "t": -0.43506995150360167
+          },
+          {
+            "coef": 5.974517400290313,
+            "name": "shortfall",
+            "se": 116.74997916107243,
+            "t": 0.05117360571043577
+          },
+          {
+            "coef": -2.834808875196168,
+            "name": "medicine",
+            "se": 237.0315368988848,
+            "t": -0.011959627449934935
+          }
+        ]
+      },
+      "without_step": {
+        "n": 485,
+        "r2": 0.7623308376920295,
+        "sigma_us": 2523.776745486719,
+        "terms": [
+          {
+            "coef": 19869.654767952678,
+            "name": "intercept",
+            "se": 777.7762301910237,
+            "t": 25.546749819125537
+          },
+          {
+            "coef": 5469.180488543131,
+            "name": "m_verify",
+            "se": 170.70049887304248,
+            "t": 32.039628030676134
+          },
+          {
+            "coef": -0.3060569042671133,
+            "name": "cache_pos",
+            "se": 0.7780145878445308,
+            "t": -0.3933819610182837
+          },
+          {
+            "coef": -17.950870395882127,
+            "name": "shortfall",
+            "se": 117.5607573522316,
+            "t": -0.15269440925851074
+          },
+          {
+            "coef": 28.682148219908814,
+            "name": "medicine",
+            "se": 238.97520162670955,
+            "t": 0.12002144165866914
+          }
+        ]
+      }
+    },
+    "host_phases_us": {
+      "with_step": {
+        "n": 485,
+        "r2": 0.2997955390102356,
+        "sigma_us": 1243.4848234235815,
+        "terms": [
+          {
+            "coef": 428.5095548287216,
+            "name": "intercept",
+            "se": 473.9398739225608,
+            "t": 0.9041432856918422
+          },
+          {
+            "coef": 682.3239140944781,
+            "name": "m_verify",
+            "se": 136.55779847153957,
+            "t": 4.996594275329382
+          },
+          {
+            "coef": -544.1471591775445,
+            "name": "step4",
+            "se": 217.74677805311327,
+            "t": -2.4989906350982376
+          },
+          {
+            "coef": 0.3127263518218386,
+            "name": "cache_pos",
+            "se": 0.38336243921658447,
+            "t": 0.8157459360413781
+          },
+          {
+            "coef": 484.28513625101266,
+            "name": "shortfall",
+            "se": 58.04778891353712,
+            "t": 8.342869647840699
+          },
+          {
+            "coef": 80.81733292839444,
+            "name": "medicine",
+            "se": 117.8514695987665,
+            "t": 0.6857558348957603
+          }
+        ]
+      }
+    },
+    "round_us": {
+      "with_step": {
+        "n": 485,
+        "r2": 0.7631878442336083,
+        "sigma_us": 5967.151751950204,
+        "terms": [
+          {
+            "coef": 34263.60012285607,
+            "name": "intercept",
+            "se": 2274.3109491354935,
+            "t": 15.06548615785378
+          },
+          {
+            "coef": 14445.569703287681,
+            "name": "m_verify",
+            "se": 655.3044243422466,
+            "t": 22.0440594732551
+          },
+          {
+            "coef": -4135.656597879576,
+            "name": "step4",
+            "se": 1044.9086660855396,
+            "t": -3.957912047349235
+          },
+          {
+            "coef": 2.638485952684619,
+            "name": "cache_pos",
+            "se": 1.8396540172520484,
+            "t": 1.4342294409390153
+          },
+          {
+            "coef": 698.3223536309669,
+            "name": "shortfall",
+            "se": 278.5558446612883,
+            "t": 2.5069384362769207
+          },
+          {
+            "coef": -419.3445756976951,
+            "name": "medicine",
+            "se": 565.5377452456727,
+            "t": -0.7414970604933355
+          }
+        ]
+      },
+      "without_step": {
+        "n": 485,
+        "r2": 0.7554432127724015,
+        "sigma_us": 6057.620823010626,
+        "terms": [
+          {
+            "coef": 39560.01892448483,
+            "name": "intercept",
+            "se": 1866.8344955921318,
+            "t": 21.19096203648036
+          },
+          {
+            "coef": 12402.232327063426,
+            "name": "m_verify",
+            "se": 409.71884629685263,
+            "t": 30.270104583077114
+          },
+          {
+            "coef": 2.7272369714756115,
+            "name": "cache_pos",
+            "se": 1.867406606531735,
+            "t": 1.4604408926992112
+          },
+          {
+            "coef": 626.1035534002159,
+            "name": "shortfall",
+            "se": 282.1717463635792,
+            "t": 2.2188740065898713
+          },
+          {
+            "coef": -324.210618090677,
+            "name": "medicine",
+            "se": 573.5931912939233,
+            "t": -0.5652274521587608
+          }
+        ]
+      }
+    }
+  },
+  "cool_gate_passed_real_gate": false,
+  "drop_first_rounds": 2,
+  "experiment": "e173-tablepays-natural-experiment",
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "host_generation": "Apple M4 Pro",
+  "per_width": [
+    {
+      "m_verify": 2,
+      "mean_acc": 0.574468085106383,
+      "mean_cache_pos": 757.531914893617,
+      "mean_round_ms": 71.96236170212765,
+      "mean_shortfall": 0.425531914893617,
+      "median_eval_wall_ms": 34.139,
+      "median_host_tail_ms": 0.378,
+      "median_round_ms": 72.277,
+      "median_verify_build_ms": 36.441,
+      "n": 47,
+      "table_path": false
+    },
+    {
+      "m_verify": 3,
+      "mean_acc": 1.0571428571428572,
+      "mean_cache_pos": 768.8204081632653,
+      "mean_round_ms": 78.84464897959184,
+      "mean_shortfall": 0.9428571428571428,
+      "median_eval_wall_ms": 35.412,
+      "median_host_tail_ms": 2.13,
+      "median_round_ms": 78.079,
+      "median_verify_build_ms": 39.401,
+      "n": 245,
+      "table_path": false
+    },
+    {
+      "m_verify": 4,
+      "mean_acc": 1.1933333333333334,
+      "mean_cache_pos": 766.7533333333333,
+      "mean_round_ms": 89.97391999999999,
+      "mean_shortfall": 1.8066666666666666,
+      "median_eval_wall_ms": 40.285,
+      "median_host_tail_ms": 2.224,
+      "median_round_ms": 89.82,
+      "median_verify_build_ms": 45.543,
+      "n": 150,
+      "table_path": true
+    },
+    {
+      "m_verify": 5,
+      "mean_acc": 1.4,
+      "mean_cache_pos": 786.9142857142857,
+      "mean_round_ms": 105.60882857142857,
+      "mean_shortfall": 2.6,
+      "median_eval_wall_ms": 47.402,
+      "median_host_tail_ms": 2.251,
+      "median_round_ms": 105.778,
+      "median_verify_build_ms": 53.844,
+      "n": 35,
+      "table_path": true
+    },
+    {
+      "m_verify": 6,
+      "mean_acc": 2.0,
+      "mean_cache_pos": 742.875,
+      "mean_round_ms": 140.569625,
+      "mean_shortfall": 3.0,
+      "median_eval_wall_ms": 64.622,
+      "median_host_tail_ms": 2.246,
+      "median_round_ms": 141.032,
+      "median_verify_build_ms": 71.4355,
+      "n": 8,
+      "table_path": true
+    }
+  ],
+  "restricted_m3_m4": {
+    "eval_wall_us": {
+      "n": 395,
+      "r2": 0.6881776203538295,
+      "sigma_us": 1611.3216600493154,
+      "terms": [
+        {
+          "coef": 35589.478999168176,
+          "name": "intercept",
+          "se": 449.56592153549747,
+          "t": 79.16409428368571
+        },
+        {
+          "coef": 4910.894128600882,
+          "name": "is_m4",
+          "se": 184.0522417005387,
+          "t": 26.68206636999906
+        },
+        {
+          "coef": -0.09293225149209476,
+          "name": "cache_pos",
+          "se": 0.5468954313353014,
+          "t": -0.16992691137534485
+        },
+        {
+          "coef": -32.954702480740806,
+          "name": "shortfall",
+          "se": 84.78892833885335,
+          "t": -0.3886675197620085
+        },
+        {
+          "coef": 124.03732056214179,
+          "name": "medicine",
+          "se": 163.7263920909271,
+          "t": 0.7575890421701615
+        }
+      ]
+    },
+    "round_us": {
+      "n": 395,
+      "r2": 0.5218047748764394,
+      "sigma_us": 5287.124229853198,
+      "terms": [
+        {
+          "coef": 75315.96155637932,
+          "name": "intercept",
+          "se": 1475.1312140828938,
+          "t": 51.05712687613632
+        },
+        {
+          "coef": 10504.170258662221,
+          "name": "is_m4",
+          "se": 603.91856621845,
+          "t": 17.393355406236413
+        },
+        {
+          "coef": 3.8582037687309407,
+          "name": "cache_pos",
+          "se": 1.7944921600075752,
+          "t": 2.150025424861513
+        },
+        {
+          "coef": 798.4731736242234,
+          "name": "shortfall",
+          "se": 278.21235732033654,
+          "t": 2.8700133283614475
+        },
+        {
+          "coef": -436.0187336640841,
+          "name": "medicine",
+          "se": 537.2246871328548,
+          "t": -0.8116133604937209
+        }
+      ]
+    }
+  },
+  "rounds_used": 485,
+  "source_files": {
+    "medicine": "research/results/e37/medicine-rounds.txt",
+    "natural_history": "research/results/e37/natural_history-rounds.txt"
+  },
+  "timing_claims_permitted": false,
+  "trace_perturbs_timing": true,
+  "uncontrolled_increments_ms": [
+    {
+      "crosses_table_boundary": false,
+      "from": 2,
+      "median_increment_ms": 5.8019999999999925,
+      "to": 3
+    },
+    {
+      "crosses_table_boundary": true,
+      "from": 3,
+      "median_increment_ms": 11.741,
+      "to": 4
+    },
+    {
+      "crosses_table_boundary": false,
+      "from": 4,
+      "median_increment_ms": 15.958000000000013,
+      "to": 5
+    },
+    {
+      "crosses_table_boundary": false,
+      "from": 5,
+      "median_increment_ms": 35.254000000000005,
+      "to": 6
+    }
+  ]
+}

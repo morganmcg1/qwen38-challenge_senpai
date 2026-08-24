@@ -1,0 +1,139 @@
+{
+  "experiment": "e173-e168-boundary-curvature",
+  "harness": "local",
+  "source_artifact": "e168-round-cost-pairs (Askeladd, run k18flizk)",
+  "gate_qualified_for_timing": false,
+  "timing_claims_permitted": false,
+  "trace_perturbs_timing": true,
+  "trace_tax_note": "about 592 us per round, depth independent, so the second difference cancels it",
+  "drop_first_rounds": 2,
+  "rounds_after_drop": 5158,
+  "single_weight_pass_rounds": 3209,
+  "bootstrap_draws": 4000,
+  "seed": 173,
+  "arm_coverage": {
+    "adapt": {
+      "2": 179,
+      "3": 1219,
+      "4": 746,
+      "5": 212,
+      "6": 32,
+      "7": 9,
+      "8": 180
+    },
+    "p2": {
+      "3": 838
+    },
+    "p7": {
+      "2": 4,
+      "3": 2,
+      "4": 6,
+      "5": 3,
+      "6": 3,
+      "7": 2,
+      "8": 1723
+    }
+  },
+  "coverage_note": "The fixed-depth arms impose depth 2 (m = 3) and depth 7 (m = 8) only. At a single weight pass they contribute m = 3: 840, m = 2: 4, m = 4: 6, m = 5: 3. The m = 2, 4 and 5 rows are truncated drafts, not imposed widths, so the exogenous-m curvature triple the estimator needs does not exist in this artifact. The pooled estimate is confounded by arm composition: the m = 3 stratum is dominated by the p2 arm while m = 4 and m = 5 come only from the adaptive arm, so any level difference between arms enters the second difference directly. The adaptive-arm estimate is the identified one here.",
+  "results": [
+    {
+      "label": "all arms, single weight pass",
+      "usable": true,
+      "n_rounds": 3209,
+      "counts_by_m": {
+        "2": 183,
+        "3": 2059,
+        "4": 752,
+        "5": 215
+      },
+      "median_ms_by_m": {
+        "2": 69.79203224182129,
+        "3": 71.53201103210449,
+        "4": 80.59799671173096,
+        "5": 93.9779281616211
+      },
+      "boundary_curvature_m3_ms": 7.326006889343262,
+      "boundary_ci": [
+        7.086515426635742,
+        7.523953914642334
+      ],
+      "control_curvature_m4_ms": 4.313945770263672,
+      "control_ci": [
+        4.030108451843262,
+        4.593014717102051
+      ],
+      "contrast_ms": 3.01206111907959,
+      "contrast_ci": [
+        2.5491714477539062,
+        3.4362077713012695
+      ],
+      "bootstrap": 4000
+    },
+    {
+      "label": "adaptive arm only (m is endogenous)",
+      "usable": true,
+      "n_rounds": 2356,
+      "counts_by_m": {
+        "2": 179,
+        "3": 1219,
+        "4": 746,
+        "5": 212
+      },
+      "median_ms_by_m": {
+        "2": 69.75603103637695,
+        "3": 72.65007495880127,
+        "4": 80.59501647949219,
+        "5": 93.97649765014648
+      },
+      "boundary_curvature_m3_ms": 5.050897598266602,
+      "boundary_ci": [
+        2.862095832824707,
+        5.774140357971191
+      ],
+      "control_curvature_m4_ms": 5.436539649963379,
+      "control_ci": [
+        4.955470561981201,
+        6.550908088684082
+      ],
+      "contrast_ms": -0.38564205169677734,
+      "contrast_ci": [
+        -3.669857978820801,
+        0.7658600807189941
+      ],
+      "bootstrap": 4000
+    },
+    {
+      "label": "imposed-depth arms only (m is exogenous)",
+      "usable": true,
+      "n_rounds": 853,
+      "counts_by_m": {
+        "2": 4,
+        "3": 840,
+        "4": 6,
+        "5": 3
+      },
+      "median_ms_by_m": {
+        "2": 71.27052545547485,
+        "3": 70.50204277038574,
+        "4": 81.6110372543335,
+        "5": 94.32494640350342
+      },
+      "boundary_curvature_m3_ms": 11.877477169036865,
+      "boundary_ci": [
+        8.963525295257568,
+        13.571500778198242
+      ],
+      "control_curvature_m4_ms": 1.604914665222168,
+      "control_ci": [
+        -1.8070340156555176,
+        7.736086845397949
+      ],
+      "contrast_ms": 10.272562503814697,
+      "contrast_ci": [
+        1.4377236366271973,
+        15.42043685913086
+      ],
+      "bootstrap": 4000
+    }
+  ]
+}
