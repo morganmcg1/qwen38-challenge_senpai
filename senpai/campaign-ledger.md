@@ -70210,3 +70210,97 @@ follows the session.
 - Edward: recovery chain running (job `4f05eae8`), then the three-arm 12-leg
   ABBA with per-leg W&B logging.
 - Alphonse: E173 running; FINDING 427 forwarded as a constraint.
+
+---
+
+## Entry 368 — 2026-08-24 ~08:10Z — The mixture confound: the ranked step is open, and the cap-4 receipt becomes the discriminator
+
+### FINDING 428 — edward's 60–120× step refutation has a mixture confound; withdrawn as decisive
+
+Edward's h-fit on the receipt corpus regressed prompt-mean cost against
+prompt-mean M and found the M≥6 prompts only +0.19–0.38 ms above the M<6
+line, against ~23 ms predicted for a group crossing. He reported this as a
+60–120× refutation of the ranked M≥6 step.
+
+The test compares prompt means, but the step acts on rounds. Under the step
+model, prompt cost = F + h·edl + 23.473·E[groups(M_round)], where the
+expectation runs over the prompt's round-level M distribution. Deeper
+prompts have wider M spread, so E[groups] rises ≈0.23 per unit of mean M
+across the ranked corpus (drama ≈1.0 → botany ≈1.9). That term alone
+contributes ≈ 23.47 × 0.23 ≈ 5.4 ms per unit mean M — the entire measured
+slope — with h ≈ 0. This is exactly the "h not identified" degeneracy
+edward reported inside the same analysis. Both the affine interpolant and
+the mixture-step model fit the eight prompt means within residuals; the
+prompt-mean regression cannot distinguish them.
+
+The refutation is withdrawn as decisive. What remains solid either way:
+
+- the ranked M=1 anchor (measured 30.402 ms vs affine 21.494 vs step
+  23.473 + F) kills the affine law as physics at the shallow end;
+- askeladd's per-round local data proves the step exists at round level on
+  gen16 hardware (FINDING 429).
+
+Status: the ranked M≥6 step (FINDINGs 407/408) is OPEN — neither confirmed
+nor refuted. Analysis forwarded to askeladd as F12 and edward as F19.
+
+### FINDING 429 — askeladd's gated ladder confirms the local M=5→6 step at arm level
+
+Ten gated legs before the host recycle, a complete palindrome unit, on his
+gen16 M4 Pro (which never executes `_nax`): adaptive 31.495 ms/tok
+(meanM 7.377), d3 30.494 (−3.18%), d4 30.006 (−4.73%), d5 34.436 (+9.34%
+vs adaptive; +14.1% vs d4, ~17% predicted). All three pre-registered signs
+hit. Branch A holds: the ladder picks depth 4; no replay owed. The
+remaining six ladder legs are cancelled as no longer decision-relevant.
+
+### Queue ruling (F12) — the cap-4 receipt is upgraded to the physics discriminator
+
+frozenNext stays `min(adaptive, 4)` (askeladd), now carrying two
+non-overlapping predictions:
+
+- step transfers to ranked M≥6 → published ≈ 4.16–4.31 (FINDING 408 roof /
+  worst-feasible): a new crown;
+- step absent at ranked → published ≈ 3.55–3.65 (the min-four prompts
+  accept 0.87–0.90 against 0.55–0.62 break-evens): a rejection.
+
+One receipt decides the physics AND selects between opposite follow-up
+directions: cap-shallower (step real) versus declamp-deeper (E168 §4
+anti-step bet: beagle at depth 7, acc 0.834 → −11% under the linear law).
+
+### FINDING 426 amendment — four environments recycled; resets are ~10-minute events
+
+askeladd's workspace was also recycled at 07:30Z, so the fleet event hit
+four environments (thorfinn, edward, advisor, askeladd). Edward's measured
+recovery was 8 minutes end to end (checkpoint re-download at 105 MiB/s),
+not the ~2.5 h he first estimated. Price future resets as ~10-minute
+events for students.
+
+### F17 rescinded by F18 — edward runs the full four-arm design
+
+F17 (drop B3; three arms, 12 legs) was priced on the 2.5 h recovery
+estimate. The measured 8-minute recovery refutes that premise; this is a
+measurement update, not an advisor error. Edward relaunched the
+predeclared four-arm design at 07:49:32Z: B0/B1/B2/B3 at four legs each,
+16 legs, shared metallib `5d6e3f9f1438dc5d`, reference rows from B0 with
+four-way cross-arm bit-exactness. W&B run `e167-arms-20260824T074932Z`
+carries per-leg logging — the first application of RULE 374. ETA
+≈ 09:45–10:15Z. FINDING 427 constraint forwarded: a surviving mechanism
+must act on the routed call path.
+
+### Base-move reconciliation f6b1f199 → 96f5424f
+
+The advisor branch moved by senpai/-only commits (ledger and frontier
+state). No editable-surface change; the research_base_changed events for
+PRs 166/168/171/172 are informational; no replay owed on any assignment.
+
+### Standing
+
+- Crown unchanged: `ec24d591` newjordan `3.7291100106`; organizer main
+  `0863b06a`.
+- Official slot occupied: `2c885d64` still validating at 08:05Z (~54
+  minutes; ~6 solvers validating concurrently). Reading rule unchanged:
+  near 3.72 is inside the draw; only well below 3.70 counts against Q.
+- Queue: askeladd cap-4 frozenNext (discriminator). Composition base is
+  the `4ba44f82` tree pending the receipt decision, composed by the
+  advisor onto `senpai/qwen38-mtp-r1`.
+- Edward: 16-leg session running; the typed E167 terminal result follows.
+- Alphonse: E173 running; first report expected.

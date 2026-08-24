@@ -1975,6 +1975,21 @@
    "notRouted": "k_proj 1024, v_proj 1024; about 84 MB of 14.41235 GB, roughly 0.6 %",
    "coverage": "better than 99 % of backbone bytes are subject to groups(M)",
    "M1": "widths = 2...9 at :1704, so M=1 stays on MLX and makes one pass, as the plutarch calibration assumes"
+  },
+  "rankedM6Status": "ranked M>=6 step OPEN pending the cap-4 receipt (FINDING 428): the prompt-mean h-fit has a mixture confound \u2014 E[groups] rises ~0.23 per unit mean M, contributing ~5.4 ms/M, the entire measured slope, with h~0 \u2014 so affine and mixture-step models are observationally equivalent on the eight prompt means. Still solid: the M=1 anchor kills affine physics, and the local per-round step is confirmed (FINDING 429).",
+  "localArmLevelConfirmation": {
+   "ledger": 368,
+   "finding": 429,
+   "host": "askeladd gen16 M4 Pro, never executes _nax",
+   "msPerTok": {
+    "adaptive": 31.495,
+    "d3": 30.494,
+    "d4": 30.006,
+    "d5": 34.436
+   },
+   "d5VsD4Pct": 14.1,
+   "predictedPct": 17,
+   "note": "complete 10-leg gated palindrome unit; 3/3 pre-registered signs; ladder picks 4"
   }
  },
  "breakEvenLadderStepModel": {
@@ -2023,7 +2038,8 @@
   "withinGroupCostIsNotFlat": "g16s draft increments 2->3, 3->4, 4->5 are 1.43, 6.94, 13.18 ms, so the one-pass optimum is prompt-dependent: 2, 3 or 4, never >=5. Steepness does not transfer to M5 (FINDING 410).",
   "shipSurfaceDecision": "Ship min(adaptive, 4) as a literal CAP on segmentedVerifyDepthCap and the costModelDepth entry point. Do NOT pin, and do NOT ship MLX_E159_FIXED_DRAFT_DEPTH.",
   "rankedMeanWidth": "M = 1 + edl: plutarch 1.156, drama 3.298, travel 3.648, beagle 5.382, republic 5.989, essays 6.087, medicine 6.256, botany 7.148. Five of eight above the boundary, including both median-pair prompts (beagle, essays). The ranked pool behaves like Askeladd's longcopy fixture (multi-pass 87.2 %), not his english fixture (0.0 %).",
-  "thorfinnLocalHistogram": "512-token local fixture, 77 rounds: d histogram {2:1,3:2,4:6,5:5,6:7,7:56}; M>=6 88.31 %, M>=7 81.82 %, M=8 72.73 %. Independent host, independent fixture."
+  "thorfinnLocalHistogram": "512-token local fixture, 77 rounds: d histogram {2:1,3:2,4:6,5:5,6:7,7:56}; M>=6 88.31 %, M>=7 81.82 %, M=8 72.73 %. Independent host, independent fixture.",
+  "scope": "confirmed at the ranked M=1 anchor and locally per-round/per-arm (FINDING 429); the ranked M>=6 crossing is OPEN (FINDING 428), discriminated by the cap-4 receipt."
  },
  "depthFourLever": {
   "ledger": 361,
@@ -2042,7 +2058,8 @@
   "acceptanceBreakEven": "depth 4 ties the crown only if per-position acceptance drops to 81-85 % of today; shallower offers accept better, so the wrong direction",
   "localConfirmation": "E159 fixed-depth ms/token 35.205, 24.723, 20.510, 19.530, 23.831, 22.271, 20.899 at depths 1..7 vs adaptive 21.037; minimum at 4, worst interior point at 5 = M 6 = first group crossing",
   "owner": "qwen-askeladd, PR 168",
-  "shipSurface": "segmentedVerifyDepthCap Qwen36MTPBlockSession.swift:1060 and the costModelDepth entry point; ship the literal, not MLX_E159_FIXED_DRAFT_DEPTH"
+  "shipSurface": "segmentedVerifyDepthCap Qwen36MTPBlockSession.swift:1060 and the costModelDepth entry point; ship the literal, not MLX_E159_FIXED_DRAFT_DEPTH",
+  "contingency": "the priced gain assumes the ranked M>=6 step, which is OPEN (FINDING 428). Cap-4 receipt predictions: step transfers -> published ~4.16-4.31 (new crown); step absent -> ~3.55-3.65 (rejection, pivot to declamp-deeper per E168 s4)."
  },
  "cheapPromptsAreFree": {
   "ledger": 361,
@@ -2194,7 +2211,7 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": {
-  "ledger": 367,
+  "ledger": 368,
   "inFlight": {
    "id": "2c885d64-8e12-4b07-b7b0-35eb314dbafe",
    "name": "E171 crown attempt",
@@ -2214,14 +2231,19 @@
   "frozenNext": {
    "name": "depth cap min(adaptive, 4)",
    "owner": "qwen-askeladd",
-   "status": "gated ladder running; composes on the shipped stripped tree (4ba44f82), not on 58979332",
+   "status": "ladder complete, picks 4 (FINDING 429); two-build base-vs-cap ABBA confirmation running; composes on the shipped stripped tree (4ba44f82), not on 58979332",
    "blockedOn": "the 2c885d64 receipt decision; the publication blocker is resolved (ledger 367). The advisor composes the 4ba44f82 tree onto senpai/qwen38-mtp-r1 after the receipt; students cannot branch from student branches.",
    "protectedAbove": "FINDING 415",
-   "protectedBelow": "FINDING 421 minimumTableWidth = 4"
+   "protectedBelow": "FINDING 421 minimumTableWidth = 4",
+   "role": "physics discriminator (FINDING 428)",
+   "predictions": {
+    "stepTransfers": "published ~4.16-4.31, new crown, next direction cap-shallower",
+    "stepAbsent": "published ~3.55-3.65, rejection, next direction declamp-deeper (E168 s4)"
+   }
   }
  },
- "lastAdvisorUpdate": "2026-08-24T08:05Z",
- "ledgerEntry": 367,
+ "lastAdvisorUpdate": "2026-08-24T08:15Z",
+ "ledgerEntry": 368,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
