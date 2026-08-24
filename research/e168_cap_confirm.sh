@@ -12,9 +12,13 @@
 #   base  the arm's CLI and worker built from the campaign base
 #   cap   the same pair built from the candidate commit
 #
-# Both binary sets must already exist under ${E168_BIN} (see the header of
-# research/e168_cap_stage.sh). No build runs here, because a rebuild between
-# legs would change the thing under test in the middle of the session.
+# Both binary sets must already exist under ${E168_BIN}:
+#
+#   research/e168_cap_stage.sh cap "$(git rev-parse HEAD)"
+#   ../e168_stage_base.sh "${PWD}" base "$(git rev-parse origin/senpai/qwen38-mtp-r1)"
+#
+# No build runs here, because a rebuild between legs would change the thing
+# under test in the middle of the session.
 #
 # The three properties that make these wall times admissible:
 #   * the real 40 C cool gate runs, because MLXFAST_LOCAL_COOL_GATE is never

@@ -22,7 +22,11 @@ CLANG_MODULE_CACHE_PATH="${PWD}/.build-worker/clang-module-cache" \
 worker=".build-worker/release/mlxfast-runtime-worker"
 # grep -c, not grep -q: under `pipefail` an early-exiting grep SIGPIPEs strings
 # and the pipeline reports 141 even on a match.
-for token in "wcap=%d" "MLX_E159_FIXED_DRAFT_DEPTH" "MLX_QWEN_MTP_TRACE"; do
+# These three tokens must exist in BOTH the campaign base and the candidate,
+# because the depth-cap confirmation stages an arm from each. `wcap=%d` was
+# the original probe, but it named a census field that the ship surface no
+# longer carries, so it reported the base worker as stale.
+for token in "streak=%d" "MLX_E159_FIXED_DRAFT_DEPTH" "MLX_QWEN_MTP_TRACE"; do
   if [[ "$(strings -a "${worker}" | grep -c -- "${token}" || true)" -eq 0 ]]; then
     echo "e168_build: ${worker} has no '${token}'; refusing to census a stale worker" >&2
     exit 1
