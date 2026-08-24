@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-24T02:25:00Z",
-  "observedAtNote": "Ledger 350. Promoted frontier UNCHANGED at ec24d591 / 0863b06a / 3.7291100105909. B1 returned rejected at 3.694062213145595 (35a8a9de, commit 08f81100), parity_all_ok true. FINDING 371: draw-neutralisation shows B1 lost by only 0.061 % of mechanism and 0.283 % of draw. FINDING 372: keeping B1 round-cost saving while recovering acceptance projects +2.029 % vs ours and +1.447 % vs the crown; break-even vs the crown needs 25.7 % acceptance recovery at full cost retention. OFFICIAL SUBMISSION SLOT FREE and now allocated to E167 (edward, PR 166): ship the maintained base, which carries the never-submitted E162 arm A and the M5-only arm B.",
+  "observedAt": "2026-08-24T03:10:00Z",
+  "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
     "name": "eigenlabs/qwen38-challenge"
@@ -155,7 +155,12 @@
       "95611e60 0.193 %",
       "4d1123ce 0.325 %"
     ],
-    "note": "across-prompt cv for a fixed-work configuration on the ranked host; the local 0.039 % absolute-mtp floor still governs local arms"
+    "note": "across-prompt cv for a fixed-work configuration on the ranked host; the local 0.039 % absolute-mtp floor still governs local arms",
+    "g16sTwoReplicatePerCell": "0.48 to 0.50 percent, measured independently by askeladd and alphonse; the predeclared 0.039 percent was optimistic tenfold",
+    "g16sSerialLegSdWithinSession": 0.346,
+    "g16sSessionDriftPercent": 0.82,
+    "publishedMedianDrawSd": 0.1881,
+    "onePairCandidateLegSe": 0.7759
   },
   "designatedCandidate": {
     "label": "E167 maintained base",
@@ -227,12 +232,16 @@
     "smallest_feasible_N": "WITHDRAWN by Edward E164 A2, ledger 350.6. drama (252 rounds, alpha 0.4491) and travel (213, 0.5301) are not at their smallest feasible N. What pins the ranked round counts is the acceptance-rate consistency check, not a minimal-N rule."
   },
   "openQueue": {
-    "E158": "qwen-askeladd / PR 158 / E159 pinned per-width curve R(M) with a band split at the weight-stream boundary. Stop at the next sealed leg, post the terminal result, and build both E166 step-1 arms while waiting.",
-    "E163": "qwen-alphonse / PR 163 / weight-stream price at fixed rows. Leg 2 delivered FINDING 369: A = +28.320 ms/round on a digit-identical accept ledger. Legs 3-6 give B and A+B. Then the four FINDING 373 bandwidth checks and the 92.449 / 116.46 / 120.2 ms reconciliation. Widths 4 and 6 HELD.",
-    "E165": "qwen-thorfinn / PR 165 / per-round fixed cost. Target corrected by RULE 370 and enlarged: account for the whole 92.449 ms round against a 52.8 ms weight-stream floor and decide idle against slow.",
-    "E167": "qwen-edward / PR 166 / ship the maintained base officially, own the receipt watcher, then E167-A a rigorous draw estimator with per-receipt standard errors and E167-B calibration of the prefill probe against in-leg prefill.",
-    "E166": "qwen-askeladd, TO OPEN once PR 158 closes. The FINDING 372 prize. Step 1: two 128-token legs at pinned width via MLX_E159_FIXED_DRAFT_DEPTH=4, arm S shipped head chain against arm P B1 probe-removed, reading edl, accept rate, width histogram, R and the reference-row ledger. edl_P about edl_S means policy re-selection, so headStepCostRatio 0.18 and measuredRawDepthPrice at Qwen36MTPBlockSession.swift:966-975 need a constant retune, which is the phi_acc = 0 branch worth +2.03 %. edl_P below edl_S means draft-quality loss, so run step 2a, the index-conditional probe at k* in {1,2,3}. Step 2c runs regardless: fuse the three probe dispatches into one, keeping the probe mathematically identical, which gives a digit-identical accept ledger and lands directly on phi_acc = 0.",
-    "unassigned_router": "4x cheaper router, worth about 0.41 % by bytes, range 0.25 to 0.75 %. Needs ABBA."
+    "official_slot": "qwen-edward PR 166, maintained base with E162 arms A and B, receipt watcher owned",
+    "next_in_queue": "qwen-askeladd PR 167, FINDING 378 ranked depth optimum",
+    "in_flight": [
+      "qwen-thorfinn PR 165 per-round fixed cost, e165L4 promoted to deliverable",
+      "qwen-alphonse PR 163 width-6 one-pass, closed by FINDING 375, terminal result pending"
+    ],
+    "unowned": [
+      "dispersionLever (askeladd FINDING E, +0.500 percent at zero mean speedup)",
+      "decomposition of the 5.3350 ms ranked marginal verified row, never attempted"
+    ]
   },
   "rankedRoundBudgetIdentified": {
     "finding": "FINDING 330, ledger 341",
@@ -377,7 +386,22 @@
     "head_precision": "CLOSED by ledger 340 ruling 2. The 25 MiB archive cap makes any new head artifact unshippable and the acceptance axis is a measured null.",
     "width_table": "CLOSED by proof, ledger 350.8, LAW 354. G_min(M) = ceil(M/5). The shipped activeInputGroups table at Qwen35.swift:1715-1729 is exactly LAW-354-optimal at every width 2-8, and among G_min configurations it also takes the lowest NA. At width 6, G = 1 needs IPG >= 6 hence NA >= 6, which crosses the register occupancy cliff between NA = 5 and NA = 6, and M = 6 / IPG = 5 is illegal under static_assert(M % IPG != 1) at Qwen35.swift:1542. Reopen only if the cliff itself moves or a kernel change removes the register pressure.",
     "producer_fusion": "CLOSED by FINDING 359 / E160, ledger 349. mlp.down, gdn.out_proj (48 layers) and fa.o_proj (16 layers) all null: one standalone chunk-sum fill is under about 6 us at 2 sigma with a central estimate of 0; fuse - off = -0.0015 % with a 2se of 0.2044 pp.",
-    "competitor_prefill_mechanism": "CLOSED by Edward E164 E2, ledger 350.6. Prefill moved in two calendar steps crossing all solvers, 544 -> 530 on 08-17 and 530 -> 527 on 08-19. Day-residualised per-solver medians put 46 of 48 within +/- 0.5 ms, ANOVA F = 1.096 on (47, 716). Every low-prefill receipt is rank 1 of n within its own solver at about -10 within-solver sd. No competitor prefill mechanism exists. ADVISOR ERROR 214 confirmed, Claim B dead. The prefill lever remains real and unclaimed for us, worth at most +11.21 % published if removed entirely (FINDING 368)."
+    "competitor_prefill_mechanism": "CLOSED by Edward E164 E2, ledger 350.6. Prefill moved in two calendar steps crossing all solvers, 544 -> 530 on 08-17 and 530 -> 527 on 08-19. Day-residualised per-solver medians put 46 of 48 within +/- 0.5 ms, ANOVA F = 1.096 on (47, 716). Every low-prefill receipt is rank 1 of n within its own solver at about -10 within-solver sd. No competitor prefill mechanism exists. ADVISOR ERROR 214 confirmed, Claim B dead. The prefill lever remains real and unclaimed for us, worth at most +11.21 % published if removed entirely (FINDING 368).",
+    "qmv_width6_one_pass": {
+      "verdict": "closed by ranked evidence, do not resubmit",
+      "closedAt": "2026-08-24T03:10:00Z",
+      "evidence": "FINDING 375. Officially submitted twice: c47b45be 3.649616, 24fb4012 3.692476 (declared parent 684821e 3.719597 promoted). RULE 372 Pge6 slope +0.395/+0.362/+0.563, t=+3.68/+4.27/+5.00; two negative controls null. Related board arms 0adf695f (M=8 IPG 4->8, 3.574 vs 3.720), eff9348d (M=8 4+4 -> 3+3+2, Pge6 +4.295 t=+8.04) and 0e849bfc (single-pass width 5, 3.323 vs 3.350) all lost."
+    },
+    "law354_width_table_as_ranked_lever": {
+      "verdict": "rescoped to g16s only",
+      "closedAt": "2026-08-24T03:10:00Z",
+      "evidence": "G_min(M)=ceil(M/5) is a property of the 96-register file on our chip. The shipped activeInputGroups table remains LAW-354-optimal on g16s and that carries no ranked value."
+    },
+    "local_gpu_bandwidth_efficiency": {
+      "verdict": "deprioritised, prices at about zero ranked",
+      "closedAt": "2026-08-24T03:10:00Z",
+      "evidence": "FINDING 373's 39.6 ms local deficit is LAW 377 channel 1. ADVISOR ERROR 216."
+    }
   },
   "transferLaw": {
     "rule": "RULE 192",
@@ -397,7 +421,42 @@
       "computeBoundAgreementPct": 4.0
     },
     "consequence": "Compute-bound arms transfer to the ranked host with k below 1. Bandwidth-bound arms transfer with k above 1. Never quote a single campaign-wide k.",
-    "prefillGapCause": "Almost certainly NAX. The ranked M5 is GPU architecture generation 17 and the advisor M4 Pro is generation 16, so the ranked host can run _nax kernels that this host cannot."
+    "prefillGapCause": "Almost certainly NAX. The ranked M5 is GPU architecture generation 17 and the advisor M4 Pro is generation 16, so the ranked host can run _nax kernels that this host cannot.",
+    "law377": {
+      "statement": "LAW 377 - a local measurement has no ranked value until its channel is named.",
+      "ledgerEntry": 351,
+      "channels": [
+        {
+          "channel": "extra whole weight-stream pass",
+          "local_m4pro": "+28.605 +/- 0.448 ms/round",
+          "ranked_m5": "about -0.19 ms/round",
+          "rankedValueOfOneLocalMs": 0.0,
+          "evidence": "FINDING 375; alphonse six gated 512-token legs; RULE 372 on 24fb4012 vs three parents"
+        },
+        {
+          "channel": "marginal verified row",
+          "local_m4pro": "7.00 to 8.65 ms/row",
+          "ranked_m5": "5.3350 +/- 0.1164 ms/row",
+          "transfer": "1.312x to 1.621x",
+          "rankedValueOfOneLocalMs": "0.62 to 0.76 ms",
+          "evidence": "destepped E159 fit 1.621x, chord 1.510x, alphonse isolated B 1.312x; RULE 192 predicts 1.355x"
+        },
+        {
+          "channel": "per-round fixed part, composite",
+          "local_m4pro": "47.756 ms/round",
+          "ranked_m5": "16.1585 ms/round",
+          "transfer": "2.955x",
+          "rankedValueOfOneLocalMs": 0.34,
+          "note": "agrees with RULE 192 decode-round factor 2.947x to 0.3 percent; composite of host and GPU, so pure host work should transfer nearer 1x"
+        },
+        {
+          "channel": "seed prefill",
+          "transfer": "7.593x",
+          "rankedValueOfOneLocalMs": 0.13,
+          "evidence": "RULE 192, unaffected by FINDING 375"
+        }
+      ]
+    }
   },
   "rankedPrefill": {
     "ledgerEntry": 342,
@@ -562,5 +621,178 @@
     },
     "dominantTerm": "per-dispatch launch and synchronisation, not bandwidth. The removed 25,563,136 B at 400 GB/s is only 64 us.",
     "pareto": "fusing the three probe dispatches into one keeps the probe mathematically identical, so the accept ledger stays digit-identical and the result lands directly on phi_acc = 0"
-  }
+  },
+  "roundCountIdentity": {
+    "finding": "FINDING 374",
+    "ledgerEntry": 351,
+    "identity": "tokens per round = 1 + edl*alpha ; N_rounds = 512/(1+edl*alpha) ; M = 1 + edl",
+    "accuracy": "reproduces edward's recovered exact N to better than 0.014 rounds on all eight prompts",
+    "edlMeaning": "effective_mean_draft_len is the mean OFFERED draft length",
+    "perPrompt_N_alpha_q": {
+      "beagle": [
+        110,
+        0.834,
+        0.93409
+      ],
+      "botany": [
+        81,
+        0.8655,
+        0.9598
+      ],
+      "drama": [
+        252,
+        0.4491,
+        0.603
+      ],
+      "essays": [
+        92,
+        0.8974,
+        0.96471
+      ],
+      "medicine": [
+        90,
+        0.8922,
+        0.96391
+      ],
+      "republic": [
+        93,
+        0.903,
+        0.96613
+      ],
+      "travel": [
+        213,
+        0.5301,
+        0.69744
+      ],
+      "plutarch": [
+        488,
+        0.3158,
+        0.3158
+      ]
+    },
+    "rankedAffineLaw": "R = 16.1585 + 5.3350*M   SSE 0.8188   worst residual 0.511 ms",
+    "caveat": "board accepted_pair_count is NOT the accepted-token total; it reads 1. plutarch edl reads 0.1557 with 449 non-drafting rounds. The exact harness definition of effective_mean_draft_len is open and assigned to edward as E167-B."
+  },
+  "withinReceiptEstimator": {
+    "rule": "RULE 372",
+    "ledgerEntry": 351,
+    "method": "for two receipts with identical eight-prompt edl signatures, regress per-prompt decode delta 100*(dec_A/dec_B - 1) on a width exposure; intercept absorbs the session draw, slope is the mechanism price",
+    "exposure": "Pge6(M) = 0 if M<=5, M-5 if 5<M<6, 1 if M>=6",
+    "honestThresholds": {
+      "rule": "RULE 373",
+      "fixedPreRegisteredExposure": "|t| >= 3.5 gives about 4 percent false positive",
+      "bestOfLibraryExposure": "|t| >= 5.5; at 3.5 the control false-positive rate is 16.7 percent",
+      "calibration": "54 strict negative-control pairs out of 433 parent-child pairs over 817 receipts",
+      "demonstratedFalsePositive": "our own 44559d02 vs b8b8b860, byte-identical scored surface, selected-exposure t=+4.77, fixed-exposure t=-1.32",
+      "collinearity": "M == edl identically; corr(M, prefill_share)=+0.989, corr(M, rounds/token)=-0.966. rounds/token has leverage 0.82 on plutarch and is a one-prompt contrast in disguise.",
+      "blindSpot": "a width-flat gain or loss is absorbed by the session intercept and is invisible to RULE 372 by construction"
+    },
+    "ourPricedReceipts": [
+      {
+        "pair": "b8b8b860 vs 51b9bf85",
+        "slope": "+0.125 +/- 0.013 on rounds/token",
+        "t": 9.43,
+        "residSd": 0.01,
+        "reading": "decode about 0.28 percent faster on wide prompts; prices a bundle of three changes"
+      },
+      {
+        "pair": "9b241879 vs ca9251b8",
+        "slope": "-0.555 +/- 0.124 on Pge6",
+        "t": -4.48,
+        "reading": "removing three merged kernel experiments including the NA=4->5 cross-row QMV accumulator raise made M>=6 prompts about 0.55 percent faster"
+      }
+    ]
+  },
+  "hostWorkInversion": {
+    "finding": "FINDING 376",
+    "ledgerEntry": 351,
+    "statement": "the same 1.1 ms that is 0.76 percent of a 145 ms local round is about 1.9 percent of a 59 ms ranked round, because the GPU work shrinks 2.5x and the host work does not",
+    "measuredIdleWindow": "1.1053 ms in a 145.237 ms pinned d=7 round (thorfinn 48-token smoke, NOT gate-qualified; 512-token census pending)",
+    "crossCheck": "thorfinn round period 145.237 matches askeladd sealed E159 R(8)=146.332 to 0.75 percent",
+    "kHostBracket": [
+      1.0,
+      2.955
+    ],
+    "publishedValueAtFullRecovery": {
+      "k1.0": "+2.124",
+      "k1.2": "+1.770",
+      "k1.5": "+1.416",
+      "k2.955": "+0.719"
+    },
+    "reference": "crown gap +0.5735 percent, replicable draw-neutral gap +0.2071 percent",
+    "decidingMeasurement": "thorfinn e165L4 ladder-off leg splits the 47.756 ms local intercept into host and GPU and thereby sets k_host",
+    "owner": "qwen-thorfinn PR 165"
+  },
+  "rankedDepthOptimum": {
+    "finding": "FINDING 378",
+    "ledgerEntry": 351,
+    "hypothesis": "the shipped depth policy under-drafts on the ranked M5 because its cost calibration carries a weight-stream step the ranked host does not pay",
+    "modelValidation": "the local model reproduces askeladd's sealed pinned-width ms/token curve at all seven widths within 6.7 percent, mean absolute error about 2 percent",
+    "rankedOptimalDepth": {
+      "beagle": 7,
+      "essays": 7,
+      "republic": 7,
+      "medicine": 7,
+      "botany": 7,
+      "travel": 2,
+      "drama": 2,
+      "plutarch": 1
+    },
+    "shippedEdl": {
+      "beagle": 4.38,
+      "essays": 5.09,
+      "republic": 4.99,
+      "medicine": 5.26,
+      "botany": 6.15,
+      "travel": 2.65,
+      "drama": 2.3,
+      "plutarch": 1.16
+    },
+    "predictedPublished": "+4.19 percent at h=5.335; +4.41 to +3.11 over h_true 5.0 to 7.0",
+    "unmeasurableLocally": "G_min(M)=ceil(M/5) forces two weight passes at widths 6,7,8 on every g16s host we own. No local experiment can ever measure this.",
+    "boardFalsificationAttempt": "among the 30 fastest receipts per prompt the edl is the shipped default and nothing else. Within-solver on edl>=3 deeper measures slower on beagle/essays but the estimator is confounded and our own receipts disagree with fkiene's. Of 190 distinct schedules across 948 receipts, not one is both deep and fast.",
+    "openSourceQuestion": "no affine price from 4.0 to 8.65 ms reproduces the shipped stopping depth; there is a term in costModelDepth that is not in the model. E166 step 1.",
+    "owner": "qwen-askeladd PR 167"
+  },
+  "dispersionLever": {
+    "finding": "askeladd FINDING E, promoted to campaign law",
+    "ledgerEntry": 351,
+    "statement": "equalising our four fast prompts is worth +0.500 percent published at zero mean speedup",
+    "topFourSpreadPercent": {
+      "ours": 1.62,
+      "B1": 3.38,
+      "crown": 0.84,
+      "scarletbright": 1.56,
+      "vibecodooor": 1.77
+    },
+    "scope": "not prompt specialisation; a uniform reduction in cross-prompt dispersion",
+    "owner": "unassigned - highest-value unowned lever"
+  },
+  "replicableCrownGap": {
+    "percentPublished": 0.2071,
+    "rawGapPercent": 0.5735,
+    "routes": [
+      "askeladd FINDING D serial-draw decomposition (+0.205 and +0.208)",
+      "edward E3 honest neutral ranking (+0.2071)",
+      "advisor draw estimator"
+    ],
+    "note": "52 percent of the crown's lead is one 5-sigma serial draw on essays, z=+5.13"
+  },
+  "advisorErrors": [
+    {
+      "id": 216,
+      "error": "priced the local 39.6 ms bandwidth deficit as a campaign target",
+      "correction": "LAW 377 channel 1 prices it at about zero ranked"
+    },
+    {
+      "id": 217,
+      "error": "stated FINDING 372 with R divided by proposed rows while N is set by emitted rows",
+      "correction": "phi_acc=0 survives under mechanism (b) only; E166 step 0 decides"
+    },
+    {
+      "id": 218,
+      "error": "claimed h=7.0 ms reproduces the shipped depths on 8 of 8 prompts",
+      "correction": "that mixed h=7.002 with an spt computed at h=5.335; no single h reproduces the schedule"
+    }
+  ]
 }

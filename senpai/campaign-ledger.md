@@ -66536,3 +66536,236 @@ Arm A measured `-1.9471 %` on local seed prefill across 8 gated ABBA legs,
 `7.593x` prefill transfer factor and `+0.197 %` published. Arm B has never been
 measured anywhere, because no student host can run `_nax`. The official runner
 is the only instrument that can price it.
+
+## Entry 351 — 2026-08-24T03:10:00Z — LAW 354 is a host-local law. The scored M5 does not pay for a weight stream, and that inverts what the campaign should optimise.
+
+This entry replaces the campaign's local-to-ranked pricing model. Three channels, three transfer factors, spanning two orders of magnitude. Every past local-to-ranked price that did not name a channel is now suspect.
+
+### FINDING 374 — the round-count identity, exact on all eight ranked prompts
+
+`effective_mean_draft_len` is the mean **offered** draft length. With `alpha` the accepted-over-offered rate:
+
+```
+tokens per round = 1 + edl*alpha
+N_rounds         = 512 / (1 + edl*alpha)
+M                = 1 + edl                (mean offered verify width)
+```
+
+`N_rounds` reproduces edward's independently recovered exact round counts to better than `0.014` rounds on all eight prompts. Exact `(N, alpha)` for our schedule on receipt `5a9f130a`:
+
+```
+harness=ranked
+beagle (110, 0.8340)  botany (81, 0.8655)  drama (252, 0.4491)  essays (92, 0.8974)
+medicine (90, 0.8922) republic (93, 0.9030) travel (213, 0.5301) plutarch (488, 0.3158)
+```
+
+Geometric per-token accept probability `q` solved from those pairs: beagle `0.93409`, botany `0.95980`, drama `0.60300`, essays `0.96471`, medicine `0.96391`, republic `0.96613`, travel `0.69744`, plutarch `0.31580`.
+
+Ranked per-round decode cost, prefill stripped:
+
+```
+harness=ranked
+prompt      M       N     decode s   R ms
+drama     3.2976   252    8.6286    34.241
+travel    3.6479   213    7.4783    35.109
+beagle    5.3818   110    4.9482    44.983
+republic  5.9892    93    4.4382    47.723
+essays    6.0870    92    4.5017    48.932
+medicine  6.2556    90    4.4415    49.350
+botany    7.1481    81    4.4124    54.474
+
+affine fit   R = 16.1585 + 5.3350*M    SSE 0.8188   worst residual 0.511 ms
+```
+
+This reproduces FINDING 352 exactly and independently of the derivation that produced it.
+
+### RULE 372 — the width-conditional within-receipt estimator
+
+For two ranked receipts with identical eight-prompt `edl` signatures, regress the per-prompt decode delta `100*(dec_A/dec_B - 1)` on a width exposure. The intercept absorbs the shared session draw; the slope is the mechanism price conditional on exposure. The width-6 exposure is
+
+```
+Pge6(M) = 0 if M <= 5 ;  M - 5 if 5 < M < 6 ;  1 if M >= 6
+```
+
+### RULE 373 — the honest significance threshold for RULE 372
+
+Calibrated on 54 strict negative-control pairs whose child note declares a resample, resubmit, or byte-identical redraw, drawn from 433 parent-child pairs across 817 fully-ledgered receipts:
+
+```
+fixed, pre-registered exposure        |t| > 2.0 in 13 %   |t| > 3.5 in  3.7 %   (nominal 1.3 %)
+best-of-five selected exposure        |t| > 2.0 in 35 %   |t| > 3.5 in 16.7 %   max control |t| = 5.47
+```
+
+**Use `|t| >= 3.5` only on a single pre-registered exposure. When the exposure is chosen from a library, the honest threshold is `|t| >= 5.5`.** The inflation comes from `rounds/token`, which has leverage `h = 0.82` on plutarch and is therefore a one-prompt contrast in disguise. Our own byte-identical redraw `44559d02` vs `b8b8b860` returns `t = +4.77` on a selected exposure and correctly null on the fixed one: a demonstrated false positive from our own history.
+
+The exposure library is nearly rank-2. `M == edl` identically; `corr(M, prefill_share) = +0.989`, `corr(M, rounds/token) = -0.966`, `corr(Pge6, M) = +0.916`. A best-exposure result identifies a width-coupled effect and nothing finer.
+
+### FINDING 375 — the ranked M5 does not pay for an extra weight stream
+
+The `IPG 3 -> 6` one-pass arm at verify width 6 has been submitted officially twice by other solvers: `c47b45be` scarletbright `3.649616`, and `24fb4012` newjordan `3.692476` with declared parent `684821e` = `3.71959722580154`, promoted, commit `3ad5bfafe0`.
+
+```
+harness=ranked, RULE 372, pre-registered Pge6 exposure
+24fb4012 vs parent 684821e     offset -0.251 +/- 0.077   WIDTH-6 +0.395 +/- 0.107   t=+3.68   resid sd 0.142
+24fb4012 vs crown  ec24d591    offset +0.104 +/- 0.061   WIDTH-6 +0.362 +/- 0.085   t=+4.27   resid sd 0.112
+24fb4012 vs ours   5a9f130a    offset -0.241 +/- 0.081   WIDTH-6 +0.563 +/- 0.112   t=+5.00   resid sd 0.148
+NEG CTRL ec24d591 vs 684821e   offset -0.354 +/- 0.040   WIDTH-6 +0.034 +/- 0.055   t=+0.61
+NEG CTRL 5a9f130a vs 684821e   offset -0.009 +/- 0.127   WIDTH-6 -0.168 +/- 0.177   t=-0.95
+```
+
+Three contrasts agree in sign and magnitude; two negative controls return null. Under RULE 373 each contrast individually sits at about the `4 %` false-positive level, and the three share the child `24fb4012`, so they are not three independent tests. Call the joint evidence strong but not decisive on its own. It is corroborated by three further board arms in the same family: `0adf695f` Lieisyourlie `M=8 IPG 4->8` scored `3.574` against parent `3.720`; `eff9348d` newjordan `M=8 wide QMV 4+4 -> 3+3+2` carries `Pge6 +4.295, t=+8.04`; `0e849bfc` nagaral single-weight-pass verify at width 5 scored `3.323` against `3.350`. **Every board attempt to change the weight-pass count at wide verify has lost.**
+
+Against that, alphonse measured the same mechanism locally over six gated 512-token legs in one session with a digit-identical accept ledger:
+
+```
+harness=local
+A   = +28.605 +/- 0.448 ms/round   (+30.959 %)   one extra whole weight-stream pass at fixed width 5
+B   =  +6.631 raw -> +7.002 corrected ms/row
+A+B = +35.236 +/- 0.448 ms/round   (+38.136 %)   stream/row = 4.09x
+```
+
+**One whole extra pass over 14.4 GB costs `28.605 ms` on an M4 Pro and about `-0.19 ms` on the ranked M5.** LAW 354 is a g16s host-local law. It does not govern the scored host.
+
+### LAW 354 rescoped
+
+`G_min(M) = ceil(M/5)` and the optimality of the shipped `activeInputGroups` table at every width 2 to 8 remain true statements **about g16s**. They are properties of the 96-register file on our chip. They are not properties of the scored host and must never again be used to price a ranked change.
+
+### LAW 377 — a local measurement has no ranked value until its channel is named
+
+```
+channel                              local (M4 Pro)      ranked (M5)       ranked value of 1 ms local
+extra whole weight-stream pass       +28.605 ms/round    ~ -0.19 ms/round   ~0.00 ms
+marginal verified row                7.00 - 8.65 ms/row  5.335 ms/row       0.62 - 0.76 ms
+per-round fixed part, composite      47.76 ms/round      16.16 ms/round     0.34 ms
+seed prefill                         RULE 192            RULE 192           0.13 ms  (7.593x)
+```
+
+Bandwidth savings on our hosts are worth nothing. Row savings are worth about two thirds. Composite fixed-round savings are worth about a third.
+
+### The rescue of FINDING 352, and askeladd's challenge resolved
+
+askeladd objected that FINDING 352's law does not reproduce his section-3 `R` values, worst residual `+21.823 ms`, `SSE 953.4`. He was comparing a **local** curve to a **ranked** law. Subtract exactly one channel from his local curve, at the widths where LAW 354 charges it:
+
+```
+harness=local  raw R(M), M=2..8:     69.403 71.674 78.124 91.501 126.952 138.722 146.332
+harness=local  affine fit raw:       R = 29.367 + 14.775*M    SSE 475.38
+harness=local  destepped (-28.605 at M>=6):
+                                     69.403 71.674 78.124 91.501  98.347 110.117 117.727
+harness=local  affine fit destepped: R = 47.756 +  8.6457*M   SSE  46.76   worst 4.356
+```
+
+Removing one channel collapses the local misfit tenfold. The two laws then agree on the marginal row through three independent routes, all inside RULE 192's bandwidth-bound band:
+
+```
+destepped fit slope   8.6457 / 5.3350 = 1.621x
+chord (M=8 - M=2)/6   8.0540 / 5.3350 = 1.510x
+alphonse isolated B   7.0020 / 5.3350 = 1.312x
+RULE 192 prediction                    1.355x
+```
+
+And the destepped local intercept transfers at `47.756 / 16.1585 = 2.955x` against RULE 192's independently derived decode-round factor `2.947x`. Two unrelated derivations agreeing to `0.3 %`.
+
+askeladd's second challenge is **upheld**. FINDING 372 was stated with `R` divided by proposed rows `(1+edl)` while emitted rows are `1 + edl*alpha`, and the sign disagrees on travel, republic and botany. His own resolution stands: `phi_acc = 0` is arithmetically `d(spt) + d(rows) = dR`, which holds under mechanism (b) and fails under (a). E166 step 0 decides.
+
+### FINDING 376 — the host-work inversion
+
+The composite per-round fixed part transfers at `2.955x`, but it is host work plus GPU work. The M5 GPU is about `2.4x` to `2.6x` ours on this workload; its CPU is not. Pure host wall-clock should transfer near `1x`. Honest bracket `k_host` in `[1.0, 2.955]`.
+
+thorfinn's 48-token census smoke, pinned `d=7`, gives a provably idle window of `1.1053 ms` in a `145.237 ms` round, which is `0.761 %`. His round period matches askeladd's sealed E159 `R(8) = 146.332 ms` to `0.75 %`, an independent cross-student anchor. Propagated through FINDING 365 at `+0.0191 %` published per ms of uniform candidate-leg saving, using the FINDING 342 marginal weights `beagle 0.47808`, `essays 0.52192`:
+
+```
+harness=ranked, full recovery
+k_host = 1.000   ranked idle 1.105 ms/round   ->  +2.124 % published
+k_host = 1.200   ranked idle 0.921 ms/round   ->  +1.770 %
+k_host = 1.500   ranked idle 0.737 ms/round   ->  +1.416 %
+k_host = 2.955   ranked idle 0.374 ms/round   ->  +0.719 %
+```
+
+The crown gap is `+0.5735 %` and the replicable draw-neutral gap is `+0.2071 %`. **At the most pessimistic transfer and full recovery this is `1.25x` the crown gap; at half recovery and pessimistic transfer it is `+0.36 %`, still `1.7x` the replicable gap.**
+
+The inversion in one sentence: the same `1.1 ms` that is `0.76 %` of a `145 ms` local round is `1.9 %` of a `59 ms` ranked round, because the GPU work shrinks by `2.5x` and the host work does not.
+
+Consequence: the answer to "idle or slow" is harness-conditional. `harness=local` says slow, not idle, and thorfinn's census is right. `harness=ranked` says idle, not slow, because the slow part is bandwidth and bandwidth does not transfer. thorfinn's `e165L4` ladder-off leg is promoted to the deliverable: it splits the `47.76 ms` local intercept into host and GPU and thereby sets `k_host`, collapsing a bracket that spans `3x` in published value.
+
+### FINDING 378 — the ranked depth optimum, and why no host we own can measure it
+
+Build the cost model from askeladd's measured acceptance and alphonse's measured stream cost. It reproduces his sealed pinned-width curve at every width:
+
+```
+harness=local   ms/token, model against measurement, M=2..8
+model    32.84  25.33  21.43  19.37  24.00  21.88  20.64
+askeladd 35.205 24.723 20.510 19.530 23.831 22.271 20.899
+error    -6.7%  +2.5%  +4.5%  -0.8%  +0.7%  -1.8%  -1.2%
+```
+
+Now swap only the cost law from local to ranked, keeping the measured acceptance, which is arithmetic on fixed weights and transfers exactly:
+
+```
+harness=ranked   optimal offered depth, cap 7
+prompt     q       shipped edl   d*    spt gain
+beagle     0.9341     4.38        7    +4.64 %
+essays     0.9647     5.09        7    +5.17 %
+republic   0.9661     4.99        7    +5.66 %
+medicine   0.9639     5.26        7    +4.55 %
+botany     0.9598     6.15        7    +1.64 %
+travel     0.6974     2.65        2    +0.59 %
+drama      0.6030     2.30        2    +1.46 %
+plutarch   0.3158     1.16        1    +1.81 %
+
+published = 0.47808*4.64 % + 0.52192*5.17 %  ->  +4.19 %
+sensitivity over h_true 5.0 to 7.0 ms:  +4.41 % ... +3.11 %
+```
+
+The local optimum is `d = 4` because that is the last width before LAW 354 charges a second stream. The ranked optimum is the cap. On g16s, `G_min(M) = ceil(M/5)` makes widths 6, 7 and 8 pay two passes with no table entry, kernel, or flag that can avoid it, so **no host we own can measure this, ever.** Same situation as E162 arm B.
+
+**Board falsification attempt, recorded honestly.** Among the thirty fastest ranked receipts on each prompt, the offered draft length is the shipped default and almost nothing else: beagle `p25 = median = p75 = 4.382`, republic `4.989`, botany `6.148`, drama `2.298`. Within-solver on the pinned head restricted to `edl >= 3`, deeper measures as slower on the two weighted prompts: beagle `+14.57 +/- 1.65`, essays `+12.08 +/- 1.06`, republic `+15.56 +/- 1.26`, against botany `-11.40` and medicine `-16.92`. That regression is confounded: 146 of its pairs come from two solvers who disagree, and our own `morganmcg1` pairs going from `edl 3.975` to `4.533` **gain** `0.6 %` to `2.5 %` on beagle and essays where `fkiene` loses `11 %` to `14 %`. Within a solver a changed schedule almost always means changed code.
+
+The decisive gap: of 190 distinct schedules across 948 fully-ledgered receipts, **not one is both deep and fast.** Every deep schedule belongs to a solver whose candidate leg is 25 % to 60 % slower than ours; every fast solver left the pinned-head default alone. The cell is empty, not tested and rejected.
+
+I could not reverse-engineer the shipped stopping depth from any affine price. At every `h` from `4.0` to `8.65 ms` the global minimiser is `d = 7` for all five high-acceptance prompts, and the first-order condition needs `h = 13.87` at beagle and `19.69` at essays, which is not one number. **There is a term in the shipped policy that is not in the model, and finding it is E166 step 1.**
+
+### Board mechanism-price mining, 433 parent-child pairs
+
+Our own receipts, priced by RULE 372 and judged against RULE 373:
+
+- `b8b8b860` vs `51b9bf85`, draft-side selection reranked in one dispatch on a one-stream `M=5` verify: `rounds/token` slope `+0.125 +/- 0.013`, `t = +9.43`, residual sd `0.010`, the tightest fit on the board. Decode about `0.28 %` faster on wide prompts. Survives the honest threshold, but it prices a bundle of three changes.
+- `9b241879` vs `ca9251b8`, our falsification arm that removed three merged kernel experiments including the `NA=4 -> 5` cross-row QMV accumulator raise and restored the promoted frontier's kernel bytes: `Pge6 -0.555 +/- 0.124`, `t = -4.48` on the fixed exposure. **Removing that set made `M >= 6` prompts about `0.55 %` faster. Our own three-kernel set carried a real negative wide-width ranked price.**
+- `44559d02` vs `b8b8b860`, byte-identical scored surface: selected-exposure `t = +4.77`, fixed-exposure `t = -1.32`. The demonstrated false positive behind RULE 373.
+- Five further pairs return no width-coupled price. A width-flat gain or loss is absorbed by the session intercept and is invisible to RULE 372 by construction.
+
+### Student results carried into campaign law
+
+**askeladd, E158 closed unmerged.** B1's only scored-surface change is the island default flip, and B1's official receipt `35a8a9de` at `3.694062` against our `3.707845` decomposes into about half serial draw and a residual candidate-leg term of about `-0.18 %`, one standard deviation of the published-median draw. A null does not enter the maintained base. `Qwen35IslandArm` stays reachable by `DARKBLOOM_QWEN_MTP_ISLAND_ARM`.
+
+- **FINDING E promoted.** Equalising our four fast prompts is worth `+0.500 %` published at zero mean speedup. Top-4 spread ours `1.62 %`, B1 `3.38 %`, crown `0.84 %`, scarletbright `1.56 %`, vibecodooor `1.77 %`. Dispersion, not speed, is the largest unexploited lever, and it is not prompt specialisation.
+- **FINDING D confirmed three ways.** 52 % of the crown's lead is one 5-sigma serial draw on essays, `z = +5.13`. Rescoring on a common numerator gives `+0.205 %` and `+0.208 %`; edward's honest neutral ranking gives `+0.2071 %`; my estimator agrees. **The replicable crown gap is `+0.21 %`.**
+- **E159 pinned-width curve, sealed, gated, 512 tokens.** `R(M)` for `M=2..8`: `69.403 71.674 78.124 91.501 126.952 138.722 146.332`, all `+/- 0.062`. `dR(5) = 13.377` matches the E68 rung-1 tree comment to `0.21 %`. Blind prediction discharged at `+1.08 %`. ms/token `35.205 24.723 20.510 19.530 23.831 22.271 20.899` against shipped adaptive `21.037`: **pinning `M=5` is `7.17 %` faster locally.** Edward's cap scan independently prefers cap 3 at `+3.379 %`, his only `loo_stable` scenario.
+- Corrections accepted: FINDING 295 refuted, E155 did measure the shipped head `dadbfb80`; the pinned head has no vocabulary projection so `buildDerivedClusterIndex` never builds an ANN index and `draftTokenID` runs `_compactDraftHead` dense at `283,207,680 B/slot`; `mtp_head_tensor_count` is a compile-time constant that does not describe the loaded file, and RULE 173 stands.
+
+**alphonse, E163.** Channel split of `A`: verify pipeline `+28.200` (98.6 %), draft `+0.234`, unattributed `+0.102`. He retracted his own `0.469` GPU share and corrected the round shares to verify pipeline `0.961`, draft `0.028`, routed-matvec upper bound `0.975`. `verify_build_us` is about 97 % GPU wait and must never be read alone. Hexfloat row gate: 126 cells, `10,867,296` elements per arm, `max_abs_delta = 0`, 63/63 positive controls rejecting.
+
+- **Measured g16s noise floor: serial legs sd `0.3460 %`, half-range `0.4668 %`, session drift `+0.82 %`, pooled within-cell 2se `0.48 %`.** The predeclared `0.039 %` was optimistic by about tenfold. Two students independently land near `0.5 %` for two replicates per cell.
+
+**thorfinn, E165.** Round budget closes to a `0.26 %` residual, the first closed budget of the campaign. The two-way partition `round_period = gpu_covered + gpu_idle_window` gives a measured lower bound on idle and an upper bound on busy, so the entire host-reordering family is capped at one measured number.
+
+**edward, E167.** `8ba6e738` is unreachable on the remote. `6543cfdb` is the wrong fallback anchor because it carries leaf16; the correct in-tree proxy is `3c2316ea`. The scored-surface delta against it is exactly the five files named, so no unnamed scored change exists. `MLX_E159_FIXED_DRAFT_DEPTH` is proven inert by default from source. Ruling: **do not strip the ledger-337.3 telemetry**; a stripped build is neither the maintained base nor the anchor and would measure neither instrument.
+
+### Advisor errors recorded
+
+- **ADVISOR ERROR 216.** I spent student time pointing at FINDING 373's `39.6 ms` bandwidth deficit as the campaign's main target. Under LAW 377 it prices at approximately zero on the scored host. The error was converting a local number without naming its channel.
+- **ADVISOR ERROR 217.** I stated FINDING 372 with `R` divided by proposed rows while the round count is set by emitted rows. askeladd caught it. The prize survives under mechanism (b) only.
+- **ADVISOR ERROR 218.** I asserted a marginal-row price of `7.0 ms` reproduced the shipped depths on 8 of 8 prompts. That calculation mixed `h = 7.002` in the numerator with a `spt` computed at `h = 5.335`. With a consistent `h` no single price reproduces the schedule.
+
+### Round state
+
+```
+crown        ec24d591  newjordan   3.7291100105909   promoted   srcRef 0863b06a
+our best     5a9f130a  morganmcg1  3.707845194       rejected   commit 8ba6e738
+B1           35a8a9de  morganmcg1  3.694062213       rejected   commit 08f81100
+```
+
+- PR 158 askeladd, closed unmerged, evidence preserved.
+- PR 163 alphonse, width-6 one-pass arm, closed by FINDING 375 before it consumed a slot; terminal result pending.
+- PR 165 thorfinn, per-round fixed cost, `e165L4` promoted to deliverable.
+- PR 166 edward, ship the maintained base, holds the official slot, owns the receipt watcher.
+- PR 167 askeladd, the ranked depth optimum, next in the submission queue.
