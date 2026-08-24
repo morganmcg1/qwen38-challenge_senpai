@@ -1,0 +1,101 @@
+{
+  "askeladd_fit": {
+    "evaluated_at_m5_ms": 120.18,
+    "intercept_agreement_percent": 0.7773689537608375,
+    "intercept_ms": 57.83,
+    "per_row_ms": 12.47
+  },
+  "gated_g1": [
+    {
+      "cool_gate": "1",
+      "cool_gate_passed_real_gate": "true",
+      "d4_mean_ms": 91.96600917431192,
+      "d4_median_ms": 90.532,
+      "d4_min_ms": 89.366,
+      "d4_rounds": 109,
+      "gate_qualified_for_timing": "true",
+      "gpu_temp_entry_c": 58.07280349731445,
+      "gpu_temp_exit_c": 59.092891693115234,
+      "mtp_seconds_per_token": 0.027339080115780234,
+      "serial_seconds_per_token": 0.07376190996728837,
+      "tag": "e163w5p1shippedd4",
+      "tokens": 512
+    },
+    {
+      "cool_gate": "1",
+      "cool_gate_passed_real_gate": "true",
+      "d4_mean_ms": 91.86099082568808,
+      "d4_median_ms": 90.516,
+      "d4_min_ms": 89.559,
+      "d4_rounds": 109,
+      "gate_qualified_for_timing": "true",
+      "gpu_temp_entry_c": 55.65232849121094,
+      "gpu_temp_exit_c": 58.86691665649414,
+      "mtp_seconds_per_token": 0.02731373650021851,
+      "serial_seconds_per_token": 0.07436899817548692,
+      "tag": "e163w5p6shippedd4",
+      "tokens": 512
+    }
+  ],
+  "gated_g2": [
+    {
+      "cool_gate": "1",
+      "cool_gate_passed_real_gate": "true",
+      "d4_mean_ms": 120.23165137614679,
+      "d4_median_ms": 119.707,
+      "d4_min_ms": 118.87,
+      "d4_rounds": 109,
+      "gate_qualified_for_timing": "true",
+      "gpu_temp_entry_c": 55.65084457397461,
+      "gpu_temp_exit_c": 58.233543395996094,
+      "mtp_seconds_per_token": 0.03336660354398191,
+      "serial_seconds_per_token": 0.07367908605374396,
+      "tag": "e163w5p2minna5d4",
+      "tokens": 512
+    },
+    {
+      "cool_gate": "1",
+      "cool_gate_passed_real_gate": "true",
+      "d4_mean_ms": 120.6676880733945,
+      "d4_median_ms": 119.695,
+      "d4_min_ms": 118.681,
+      "d4_rounds": 109,
+      "gate_qualified_for_timing": "true",
+      "gpu_temp_entry_c": 55.18111801147461,
+      "gpu_temp_exit_c": 59.15011978149414,
+      "mtp_seconds_per_token": 0.0334620566572994,
+      "serial_seconds_per_token": 0.07390149217098951,
+      "tag": "e163w5p5minna5d4",
+      "tokens": 512
+    }
+  ],
+  "harness": "local",
+  "interim2_retracted_round_ms": 116.46,
+  "official_or_ranked_score": false,
+  "two_band": {
+    "R_m5_g1_ms": 92.3946743119266,
+    "R_m5_g2_ms": 120.99925688073395,
+    "R_m6_g2_ms": 127.63050520833335,
+    "R_m6_g2_pure_ms": 128.0014086914534,
+    "per_row_h_ms": 7.002151810719454,
+    "round_base_a_ms": 57.383915258329324,
+    "second_stream_step_s_ms": 28.60458256880736
+  },
+  "witness": {
+    "cool_gate": "0",
+    "cool_gate_passed_real_gate": "false",
+    "d4_mean_ms": 121.59716,
+    "d4_median_ms": 119.256,
+    "d4_min_ms": 118.9,
+    "d4_rounds": 25,
+    "gate_qualified_for_timing": "false",
+    "gpu_temp_entry_c": 46.351924896240234,
+    "gpu_temp_exit_c": 61.238746643066406,
+    "mtp_seconds_per_token": 0.055582195520401,
+    "serial_seconds_per_token": 0.09657096117734909,
+    "tag": "e163w5hist",
+    "tokens": 128
+  },
+  "witness_round_over_gated_round": 1.3173964915381555,
+  "witness_serial_over_gated_serial": 1.3038597060954977
+}

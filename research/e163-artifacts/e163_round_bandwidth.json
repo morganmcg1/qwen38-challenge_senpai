@@ -5,9 +5,10 @@
   "gdn_state_bytes": 150994944,
   "harness": "local",
   "head_stream_bytes": 849398784,
-  "measured_peak_gb_per_s": null,
+  "measured_peak_gb_per_s": 255.48499027637033,
   "nominal_peak_gb_per_s": 273.0,
   "official_or_ranked_score": false,
+  "ranked_per_row_ms": 5.3351,
   "rounds": [
     {
       "achieved_gb_s": 205.07747275596086,
@@ -49,6 +50,10 @@
       "width": 6
     }
   ],
+  "row_b_ms": 7.002151810719454,
+  "row_extra_bytes": 12640256,
+  "row_extra_gflop": 51.24390912,
+  "size_matched_peak_gb_per_s": 255.48499027637033,
   "target_by_role_bytes": {
     "embed_gather": 715161600,
     "layer_full_attn": 943734784,

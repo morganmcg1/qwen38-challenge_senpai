@@ -78,11 +78,83 @@ def flat_table(rows: list[dict], columns: list[str]) -> wandb.Table:
     return table
 
 
+def log_bandwidth(run) -> dict:
+    """F4's four sceptical checks, published onto the session's own run."""
+    peak = load("bandwidth-peak.json")
+    budget = load("e163_round_bandwidth.json")
+    recon = load("e163_round_cost_reconciliation.json")
+    summary: dict[str, object] = {}
+
+    if peak:
+        columns = ["kernel", "dtype", "buffer_gib", "bytes_touched", "us_min",
+                   "us_median", "gb_per_s_best", "gb_per_s_median"]
+        run.log({"bandwidth_peak": flat_table(peak["cells"], columns)})
+        summary["measured_streaming_peak_gb_per_s"] = peak["measured_peak_gb_per_s"]
+        summary["device_architecture"] = peak["device_architecture"]
+
+    if budget:
+        columns = ["arm", "width", "groups", "drafts", "round_ms", "verify_ms",
+                   "round_weight_bytes", "target_share_bytes",
+                   "draft_share_bytes", "achieved_gb_s"]
+        run.log({"round_bandwidth": flat_table(budget["rounds"], columns)})
+        census = [{"role": k, "bytes": v}
+                  for k, v in sorted(budget["target_by_role_bytes"].items())]
+        run.log({"weight_census": flat_table(census, ["role", "bytes"])})
+        for key in ("target_total_bytes", "target_stream_bytes",
+                    "head_stream_bytes", "compact_draft_stream_bytes",
+                    "size_matched_peak_gb_per_s", "nominal_peak_gb_per_s",
+                    "gdn_state_bytes", "row_extra_bytes", "row_extra_gflop",
+                    "row_b_ms", "ranked_per_row_ms"):
+            if budget.get(key) is not None:
+                summary[key] = budget[key]
+        matched = budget.get("size_matched_peak_gb_per_s")
+        for r in budget["rounds"]:
+            tag = f"{r['arm'].replace('@', '_')}_w{r['width']}"
+            summary[f"bw_{tag}_achieved_gb_per_s"] = r["achieved_gb_s"]
+            if matched:
+                summary[f"bw_{tag}_percent_of_measured_peak"] = (
+                    100 * r["achieved_gb_s"] / matched)
+        if budget.get("row_b_ms") and budget.get("ranked_per_row_ms"):
+            summary["row_channel_local_over_ranked"] = (
+                budget["row_b_ms"] / budget["ranked_per_row_ms"])
+
+    if recon:
+        for key, value in recon["two_band"].items():
+            summary[f"two_band_{key}"] = value
+        summary["witness_round_over_gated_round"] = recon[
+            "witness_round_over_gated_round"]
+        summary["witness_serial_over_gated_serial"] = recon[
+            "witness_serial_over_gated_serial"]
+        summary["interim2_retracted_round_ms"] = recon[
+            "interim2_retracted_round_ms"]
+        summary["askeladd_intercept_agreement_percent"] = recon[
+            "askeladd_fit"]["intercept_agreement_percent"]
+        legs = [recon["witness"]] + recon["gated_g1"] + recon["gated_g2"]
+        columns = sorted({k for leg in legs for k in leg})
+        run.log({"round_cost_reconciliation": flat_table(legs, columns)})
+
+    return summary
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--run-name", required=True)
+    ap.add_argument("--run-name")
     ap.add_argument("--label", default="w5")
+    ap.add_argument(
+        "--resume-id",
+        help="append the F4 bandwidth evidence to an existing run and stop")
     args = ap.parse_args()
+
+    if args.resume_id:
+        run = wandb.init(
+            project=PROJECT, entity=ENTITY, id=args.resume_id, resume="must")
+        run.summary.update(log_bandwidth(run))
+        print(f"wandb run {run.url}")
+        run.finish()
+        return 0
+
+    if not args.run_name:
+        raise SystemExit("e163_wandb_log: --run-name is required for a new run")
 
     session = load(f"e163_pinned_{args.label}.json")
     census = load("e163_na_register_census.json")

@@ -1,0 +1,47 @@
+==============================================================================
+NUMBER 2: the 116 ms round came from an UNGATED 128-token leg.
+==============================================================================
+  leg                   tok  gate   qual   Tin  Tout    n   med ms   min ms  serial s/tok
+  e163w5hist            128     0  false  46.4  61.2   25  119.256  118.900      0.096571
+  e163w5p1shippedd4     512     1   true  58.1  59.1  109   90.532   89.366      0.073762
+  e163w5p6shippedd4     512     1   true  55.7  58.9  109   90.516   89.559      0.074369
+  e163w5p2minna5d4      512     1   true  55.7  58.2  109  119.707  118.870      0.073679
+  e163w5p5minna5d4      512     1   true  55.2  59.2  109  119.695  118.681      0.073901
+
+  witness round / gated round   = 1.3174
+  witness serial / gated serial = 1.3039
+  The two ratios agree to 1.0 %.
+  The serial depth-0 path shares no drafting, no head and no
+  accumulator grouping with the MTP path, so a factor that moves both
+  by the same amount is a HOST STATE factor. The witness leg was
+  slower everywhere; it is not evidence about width 5 or the shipped
+  plan. It also carries gate_qualified_for_timing=false, so it may
+  not be compared with gated history at all.
+  Predicted from the gated round: 90.524 x 1.3039 = 118.031 ms, against 119.256 measured.
+  The Interim-2 figure 116.46 ms is the same leg, reduced over
+  a different round subset. It is retracted as a round cost.
+
+==============================================================================
+NUMBER 3: askeladd's 120.18 ms is a fit evaluated across a step.
+==============================================================================
+  Three measured cells determine three parameters exactly:
+    R(M=5, G=1) = a + 5h       =   92.395 ms
+    R(M=5, G=2) = a + 5h + s   =  120.999 ms
+    R(M=6, G=2) = a + 6h + s   =  128.001 ms  (from 127.631 ms measured, un-diluted over 190 width-6 and 2 width-5 rounds)
+  -> s (one-off second weight stream) =  28.605 ms
+  -> h (per verified row, within band) =   7.002 ms
+  -> a (round base)                    =  57.384 ms
+
+  askeladd's intercept 57.83 ms agrees with my a = 57.384 ms
+  to 0.8 %, from a different session and a different fit.
+  His slope 12.47 ms/row does not: it mixes the within-band
+  7.002 ms/row with the 28.605 ms band step, because a single line was
+  fitted across the G=1/G=2 boundary. Evaluating that line INSIDE
+  band 1 gives 120.18 ms against the measured 92.395 ms, an
+  overstatement of 30 %. The two-band form is the one to keep.
+
+  The two errors are unrelated and land within 1 % of each other by
+  coincidence. Neither is a measurement of R(5) on the shipped plan.
+  The ledger value is 92.395 ms: gated, 512 tokens, six-leg palindrome.
+
+wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r3/roles/student-qwen-alphonse/workspace/target/research/e163-artifacts/e163_round_cost_reconciliation.json

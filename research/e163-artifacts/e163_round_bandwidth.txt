@@ -1,0 +1,163 @@
+==============================================================================
+CHECK 1 - BYTES.  Source: safetensors headers of the pinned artifacts.
+==============================================================================
+  target checkpoint total        15,132,802,048    15.133 GB
+    layer_mlp                    9,625,927,680     9.626 GB   63.6%
+    layer_gdn                    3,131,495,424     3.131 GB   20.7%
+    layer_full_attn                943,734,784     0.944 GB    6.2%
+    vocab_readout                  715,161,600     0.715 GB    4.7%
+    embed_gather                   715,161,600     0.715 GB    4.7%
+    layer_norm_misc                  1,310,720     0.001 GB    0.0%
+    top_level                           10,240     0.000 GB    0.0%
+
+  embed_tokens is GATHERED (M rows of 5,120), not streamed, so it
+  leaves the per-round budget. lm_head is NOT tied (tie_word_embeddings=false)
+  and IS streamed: the verify pass needs exact top-two evidence over
+  the whole 248,320-row vocabulary.
+  target weight stream per verify pass    14,417,640,448    14.418 GB
+
+  pinned MTP head (BF16, no .scales tensors, so it loads unquantised)
+    per draft step                           849,398,784     0.849 GB
+  compact draft lm_head slice (98,336/248,320 rows)
+    per draft step                           283,207,680     0.283 GB
+
+==============================================================================
+CHECK 2 - PEAK.  Measured, not quoted.
+==============================================================================
+  device applegpu_g16s, 48 GiB, working set 37.4 GiB
+  kernel      dtype        buffer     touched    us_min  GB/s best  GB/s med
+  sum         float32       0.25G       0.27G    1624.4      165.3     153.8
+  max         float32       0.25G       0.27G    1188.9      225.8     134.0
+  scale_copy  float32       0.25G       0.54G    2450.5      219.1     217.3
+  sum         bfloat16      0.12G       0.13G    1694.8       79.2      66.7
+  max         bfloat16      0.12G       0.13G    2187.0       61.4      55.2
+  scale_copy  bfloat16      0.12G       0.27G    1592.5      168.6     116.5
+  sum         float32       1.00G       1.07G    4280.7      250.8     248.0
+  max         float32       1.00G       1.07G    4275.4      251.1     249.3
+  scale_copy  float32       1.00G       2.15G    9209.6      233.2     232.5
+  sum         bfloat16      0.50G       0.54G    2223.4      241.5     240.3
+  max         bfloat16      0.50G       0.54G    2205.9      243.4     241.2
+  scale_copy  bfloat16      0.50G       1.07G    4699.0      228.5     227.6
+  sum         float32       4.00G       4.29G   16834.5      255.1     254.7
+  max         float32       4.00G       4.29G   16811.5      255.5     254.6
+  scale_copy  float32       4.00G       8.59G   36257.8      236.9     236.6
+  sum         bfloat16      2.00G       2.15G    8353.2      257.1     255.3
+  max         bfloat16      2.00G       2.15G    8361.4      256.8     255.2
+  scale_copy  bfloat16      2.00G       4.29G   18295.8      234.8     234.4
+  sum         float32      14.00G      15.03G   58838.6      255.5     254.6
+  max         float32      14.00G      15.03G   59281.0      253.6     252.1
+  sum         bfloat16      7.00G       7.52G   29251.8      256.9     256.5
+  max         bfloat16      7.00G       7.52G   29295.7      256.6     255.9
+
+  MEASURED streaming peak  257.1 GB/s   = 94.2% of the 273 GB/s datasheet figure
+  SIZE-MATCHED read of a >=14 GB buffer  255.5 GB/s   = 93.6% of datasheet
+  Use the size-matched rate as the round's denominator: it has
+  the same working set and the same absence of cache help.
+
+==============================================================================
+CHECK 3 - HOW MANY TIMES.  Streams per round, from the source.
+==============================================================================
+  target verify pass   x1 per round at G=1: one routed QMV per
+    projection per layer, 257 dispatches, no re-read. At G>=2 the
+    kernel splits the width over G groups and reads the same weight
+    G times - that is FINDING 369 and it is a bandwidth statement.
+  proposal head        xd per round: the draft ladder is sequential
+    (Qwen36MTPBlockSession.swift:1458-1464), each step depends on the
+    previous draft id, and 849 MB does not fit any cache.
+  compact draft head   xd per round, same argument.
+  embed_tokens         gathered, not streamed.
+
+==============================================================================
+ROUND BANDWIDTH.  harness=local, sealed six-leg session.
+==============================================================================
+  arm            W G    d     R ms verify ms  GB/round    GB/s  %meas   %273
+  shipped@d4     5 1    4   92.395    88.353    18.948   205.1   80.3   75.1
+  minna5@d4      5 2    4  120.999   116.553    33.366   275.8  107.9  101.0
+  shipped@d5     6 2    5  127.631   122.405    34.498   270.3  105.8   99.0
+
+  !! Every G>=2 row above exceeds the datasheet peak. A DRAM rate
+     cannot exceed the bus. So 'G groups read the weight G times'
+     counts DISPATCH-LEVEL loads, not DRAM traffic: the second
+     group is largely served from cache. The G=1 row is the only
+     one whose byte count is a sound DRAM figure.
+     minna5@d4 costs +28.20 ms for its second
+     stream. A second DRAM stream at the G=1 rate (163 GB/s)
+     would cost +88.4 ms. The measured extra is 32% of that, so the
+     second stream moves at an effective 511 GB/s.
+
+  The advisor's model counted the target stream only and divided by
+  the whole round, which drops the draft window's weight traffic:
+    shipped@d4     W=5 target-only  156.0 GB/s -> with drafts  205.1 GB/s (+31.4%)
+    minna5@d4      W=5 target-only  238.3 GB/s -> with drafts  275.8 GB/s (+15.7%)
+    shipped@d5     W=6 target-only  225.9 GB/s -> with drafts  270.3 GB/s (+19.6%)
+
+  Verify pass alone, against its own measured pipeline time:
+    shipped@d4     W=5 G=1  163.2 GB/s = 63.9% of measured peak
+    minna5@d4      W=5 G=2  247.4 GB/s = 96.8% of measured peak
+    shipped@d5     W=6 G=2  235.6 GB/s = 92.2% of measured peak
+
+  Non-weight traffic, ESTIMATED from the config (not measured):
+    GDN recurrent state 151.0 MB; the round reads and
+      writes it, and snapshots it again for rollback: <= 0.604 GB/round
+    full-attention KV 65536 B/token x ~768 ctx = 0.050 GB/round
+    upper-bound total for shipped@d4 W=5: 19.602 GB -> 212.2 GB/s = 83.0% of measured peak
+
+==============================================================================
+CHECK 4 - IS IT BANDWIDTH BOUND?
+==============================================================================
+    per packed byte (2 weights): 4*M FLOP of matvec + 4*G FLOP of
+    dequantisation, against 1 byte of weight and 1/16 byte of
+    bf16 scale and bias. AI ~ 4*(M+G)/1.0625.
+    The advisor's 'AI ~ 5' is the SERIAL number: at M=1, G=1 it is
+    7.5. Arithmetic intensity rises with verified rows, which is the
+    whole point of batching the verify pass.
+    shipped@d4     W=5 G=1  AI ~  22.6 FLOP/byte   knee ~ 28 FLOP/byte
+    minna5@d4      W=5 G=2  AI ~  26.4 FLOP/byte   knee ~ 28 FLOP/byte
+    shipped@d5     W=6 G=2  AI ~  30.1 FLOP/byte   knee ~ 28 FLOP/byte
+    machine balance uses 7.2 TFLOP/s fp32 (20 cores x 128 lanes x 2 x 1.4 GHz), an ESTIMATE, over the
+    measured 255 GB/s.
+
+==============================================================================
+B, THE MARGINAL VERIFIED ROW, AGAINST THE WEIGHT STREAM
+==============================================================================
+  One extra verified row reads NO extra weights. The batch grows by
+  one activation row and one output row per projection, and nothing
+  else. Across the 257 routed dispatches of a verify pass:
+    extra bytes per row        12,640,256  = 12.64 MB
+    at the measured 255 GB/s that is 0.049 ms
+    extra FLOP per row               51.2 GFLOP (2 x 25.62e9 weights)
+    B measured                      7.002 ms
+    B is 142x its own byte cost, so B is not a bandwidth term at all.
+    B implies 7.32 TFLOP/s against an estimated 7.2 TFLOP/s fp32 peak
+    = 102% of peak. Above 100 %
+    means the peak estimate is a little low, not that the row
+    broke physics: the clock and the lane count are both guesses.
+    Either way the marginal row sits on the FLOP roofline and not
+    on the bandwidth roofline. Lowering h needs arithmetic, not
+    traffic.
+    local B / ranked h = 7.002 / 5.3351 = 1.3125
+    This is a clean local-to-ranked row-channel transfer factor:
+    both sides are one extra verified row and nothing else.
+
+==============================================================================
+WHAT IS THE HEADROOM WORTH, AND WHAT COULD EXPLAIN IT?
+==============================================================================
+  shipped@d4 W=5: 92.39 ms measured, 74.17 ms at the size-matched rate.
+  Headroom 18.23 ms/round = 19.7% of the round, not 43%.
+  Thorfinn measures a 1.03 ms host-side GPU-idle window per
+  round. That is 6% of this headroom, so the idle
+  window and the missing bandwidth are NOT the same phenomenon at
+  this width. Most of the gap is inside GPU execution.
+
+  The round has two regimes, and they answer the question
+  differently:
+    whole round   205 / 255 GB/s = 80% of bandwidth, 3.14 / 7.2 TFLOP/s = 44% of compute
+    marginal row  1.8 GB/s = 0.7% of bandwidth, 7.32 TFLOP/s = 102% of compute
+  The base of the round streams weights and is bandwidth limited.
+  The rows stacked on that base are compute limited. That is why
+  neither 'wasting 43 % of bandwidth' nor 'purely compute bound'
+  describes it, and it is why a kernel change that saves traffic
+  helps the base while a kernel change that saves arithmetic helps
+  the per-row term.
+
+wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r3/roles/student-qwen-alphonse/workspace/target/research/e163-artifacts/e163_round_bandwidth.json

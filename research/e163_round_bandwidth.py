@@ -43,6 +43,21 @@ DTYPE_BITS = {
 COMPACT_DRAFT_PADDED_ROWS = 98_336
 NOMINAL_PEAK_GB_S = 273.0
 
+# FINDING 352, harness=ranked: R = 16.158 ms + 5.3351 ms x rows on 5a9f130a.
+RANKED_PER_ROW_MS = 5.3351
+
+# The affine 4-bit group-64 transposed projections one target verify pass
+# reaches, as (k, n, dispatches per pass). Same census the exactness gate uses.
+SCORED_SHAPES = [
+    (5120, 16480, 48),   # linear_attn.in_proj_fused_qkvzba
+    (6144, 5120, 48),    # linear_attn.out_proj
+    (5120, 14336, 16),   # full_attn.qkv_proj_fused
+    (6144, 5120, 16),    # full_attn.o_proj
+    (5120, 34816, 64),   # mlp.gate_up_fused
+    (17408, 5120, 64),   # mlp.down
+    (5120, 248320, 1),   # head.lm_head
+]
+
 
 def _header(path: Path) -> dict:
     with path.open("rb") as fh:
@@ -131,9 +146,16 @@ def main() -> int:
     print("CHECK 2 - PEAK.  Measured, not quoted.")
     print("=" * 78)
     measured_peak = None
+    size_matched = None
     if bw_path.exists():
         bwd = json.loads(bw_path.read_text())
         measured_peak = bwd["measured_peak_gb_per_s"]
+        # The right denominator for a 14 GB round is a 14 GB read: same
+        # working set, same absence of cache help.
+        matched = [c for c in bwd["cells"]
+                   if c["kernel"] in ("sum", "max") and c["bytes_touched"] >= 14e9]
+        if matched:
+            size_matched = max(c["gb_per_s_best"] for c in matched)
         print(f"  device {bwd['device_architecture']}, "
               f"{bwd['device_memory_size_bytes']/2**30:.0f} GiB, working set "
               f"{bwd['device_max_recommended_working_set_bytes']/2**30:.1f} GiB")
@@ -147,6 +169,12 @@ def main() -> int:
         print(f"  MEASURED streaming peak  {measured_peak:.1f} GB/s"
               f"   = {100*measured_peak/NOMINAL_PEAK_GB_S:.1f}% of the "
               f"{NOMINAL_PEAK_GB_S:.0f} GB/s datasheet figure")
+        if size_matched:
+            print(f"  SIZE-MATCHED read of a >=14 GB buffer  {size_matched:.1f} GB/s"
+                  f"   = {100*size_matched/NOMINAL_PEAK_GB_S:.1f}% of datasheet")
+            print("  Use the size-matched rate as the round's denominator: it has")
+            print("  the same working set and the same absence of cache help.")
+        measured_peak = size_matched or measured_peak
     else:
         print(f"  {bw_path} missing - run research/e163_bandwidth_run.sh first.")
 
@@ -308,6 +336,87 @@ def main() -> int:
               f"(20 cores x 128 lanes x 2 x 1.4 GHz), an ESTIMATE, over the")
         print(f"    measured {measured_peak:.0f} GB/s.")
 
+    # --- B against the weight stream -------------------------------------
+    print()
+    print("=" * 78)
+    print("B, THE MARGINAL VERIFIED ROW, AGAINST THE WEIGHT STREAM")
+    print("=" * 78)
+    row_bytes = sum(
+        (k + n) * 2 * calls for k, n, calls in SCORED_SHAPES)
+    row_weight_elems = sum(k * n * calls for k, n, calls in SCORED_SHAPES)
+    row_flops = 2 * row_weight_elems
+    # Use the un-diluted per-row slope, not the raw width-6 leg mean.
+    recon_path = ARTIFACTS / "e163_round_cost_reconciliation.json"
+    b_ms = None
+    if recon_path.exists():
+        b_ms = json.loads(recon_path.read_text())["two_band"]["per_row_h_ms"]
+    print("  One extra verified row reads NO extra weights. The batch grows by")
+    print("  one activation row and one output row per projection, and nothing")
+    print("  else. Across the 257 routed dispatches of a verify pass:")
+    print(f"    extra bytes per row   {row_bytes:>15,}  = {row_bytes/1e6:.2f} MB")
+    if measured_peak:
+        print(f"    at the measured {measured_peak:.0f} GB/s that is "
+              f"{row_bytes/(measured_peak*1e6):.3f} ms")
+    print(f"    extra FLOP per row    {row_flops/1e9:>15.1f} GFLOP "
+          f"(2 x {row_weight_elems/1e9:.2f}e9 weights)")
+    if b_ms:
+        print(f"    B measured            {b_ms:>15.3f} ms")
+        if measured_peak:
+            print(f"    B is {b_ms/(row_bytes/(measured_peak*1e6)):.0f}x its own byte "
+                  f"cost, so B is not a bandwidth term at all.")
+        print(f"    B implies {row_flops*1e3/b_ms/1e12:.2f} TFLOP/s against an "
+              f"estimated {fp32_peak/1e12:.1f} TFLOP/s fp32 peak")
+        print(f"    = {100*row_flops*1e3/b_ms/fp32_peak:.0f}% of peak. Above 100 %")
+        print("    means the peak estimate is a little low, not that the row")
+        print("    broke physics: the clock and the lane count are both guesses.")
+        print("    Either way the marginal row sits on the FLOP roofline and not")
+        print("    on the bandwidth roofline. Lowering h needs arithmetic, not")
+        print("    traffic.")
+        print(f"    local B / ranked h = {b_ms:.3f} / {RANKED_PER_ROW_MS:.4f} = "
+              f"{b_ms/RANKED_PER_ROW_MS:.4f}")
+        print("    This is a clean local-to-ranked row-channel transfer factor:")
+        print("    both sides are one extra verified row and nothing else.")
+
+    print()
+    print("=" * 78)
+    print("WHAT IS THE HEADROOM WORTH, AND WHAT COULD EXPLAIN IT?")
+    print("=" * 78)
+    if rows and measured_peak:
+        r = [x for x in rows if x["groups"] == 1][0]
+        ideal_ms = r["round_weight_bytes"] / (measured_peak * 1e6)
+        gap = r["round_ms"] - ideal_ms
+        print(f"  {r['arm']} W={r['width']}: {r['round_ms']:.2f} ms measured, "
+              f"{ideal_ms:.2f} ms at the size-matched rate.")
+        print(f"  Headroom {gap:.2f} ms/round = "
+              f"{100*gap/r['round_ms']:.1f}% of the round, not 43%.")
+        idle = 1.03  # Thorfinn's host-side GPU-idle window per round, ms
+        print(f"  Thorfinn measures a {idle:.2f} ms host-side GPU-idle window per")
+        print(f"  round. That is {100*idle/gap:.0f}% of this headroom, so the idle")
+        print("  window and the missing bandwidth are NOT the same phenomenon at")
+        print("  this width. Most of the gap is inside GPU execution.")
+        round_flops = (r["width"] * row_flops
+                       + r["groups"] * row_flops / 2
+                       + r["drafts"] * 2 * (head_stream / 2 + compact_stream * 2))
+        print()
+        print("  The round has two regimes, and they answer the question")
+        print("  differently:")
+        print(f"    whole round   {r['achieved_gb_s']:.0f} / {measured_peak:.0f} "
+              f"GB/s = {100*r['achieved_gb_s']/measured_peak:.0f}% of bandwidth, "
+              f"{round_flops*1e3/r['round_ms']/1e12:.2f} / {fp32_peak/1e12:.1f} "
+              f"TFLOP/s = {100*round_flops*1e3/r['round_ms']/fp32_peak:.0f}% of "
+              f"compute")
+        if b_ms:
+            print(f"    marginal row  {row_bytes/(b_ms*1e6):.1f} GB/s = "
+                  f"{100*row_bytes/(b_ms*1e6)/measured_peak:.1f}% of bandwidth, "
+                  f"{row_flops*1e3/b_ms/1e12:.2f} TFLOP/s = "
+                  f"{100*row_flops*1e3/b_ms/fp32_peak:.0f}% of compute")
+        print("  The base of the round streams weights and is bandwidth limited.")
+        print("  The rows stacked on that base are compute limited. That is why")
+        print("  neither 'wasting 43 % of bandwidth' nor 'purely compute bound'")
+        print("  describes it, and it is why a kernel change that saves traffic")
+        print("  helps the base while a kernel change that saves arithmetic helps")
+        print("  the per-row term.")
+
     out = ARTIFACTS / "e163_round_bandwidth.json"
     out.write_text(json.dumps({
         "harness": "local",
@@ -319,10 +428,15 @@ def main() -> int:
         "compact_draft_stream_bytes": compact_stream,
         "compact_draft_rows": COMPACT_DRAFT_PADDED_ROWS,
         "measured_peak_gb_per_s": measured_peak,
+        "size_matched_peak_gb_per_s": size_matched,
         "nominal_peak_gb_per_s": NOMINAL_PEAK_GB_S,
         "gdn_state_bytes": gdn_state,
         "full_attn_kv_bytes_per_token": kv_per_token,
         "rounds": rows,
+        "row_extra_bytes": row_bytes,
+        "row_extra_gflop": row_flops / 1e9,
+        "row_b_ms": b_ms,
+        "ranked_per_row_ms": RANKED_PER_ROW_MS,
     }, indent=2, sort_keys=True) + "\n")
     print(f"\nwrote {out}")
     return 0
