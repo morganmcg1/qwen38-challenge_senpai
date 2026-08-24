@@ -1,0 +1,62 @@
+{
+  "question": "Given that verify cost steps on ceil(rows/5), which local fixtures sit in the same verify-pass band as the ranked run, and which local sweep could produce an (s, h) fit comparable with FINDING 286?",
+  "harness": "local for the fixture measurements, ranked for the reference points",
+  "gpu_seconds": 0,
+  "follows_from": "research/e158-artifacts/f11-retraction.json",
+
+  "band_rule": "verify passes = ceil(rows / 5), rows = 1 + q. Ledger item 92.",
+
+  "local_fixtures_at_shipped_cap_8": [
+    {"fixture": "beagle_a", "q": 4.244, "rows": 5.244, "passes": 2, "matches_ranked_band": true,
+     "margin_rows_above_boundary": 0.244},
+    {"fixture": "essays_montaigne", "q": 3.438, "rows": 4.438, "passes": 1, "matches_ranked_band": false,
+     "margin_rows_below_boundary": 0.562},
+    {"fixture": "benchfixture", "q": 6.359, "rows": 7.359, "passes": 2, "matches_ranked_band": true,
+     "margin_rows_above_boundary": 2.359}
+  ],
+
+  "ranked_reference_points": [
+    {"source": "advisor, ranked beagle on the current base", "q": 4.3818, "rows": 5.3818, "passes": 2},
+    {"source": "ledger item 93, scoring range low", "q": 4.53, "rows": 5.53, "passes": 2},
+    {"source": "ledger item 93, scoring range high", "q": 5.78, "rows": 6.78, "passes": 2}
+  ],
+  "ranked_band_verdict": "every available ranked reference point is 2-pass",
+
+  "finding_1_essays_is_in_the_wrong_regime": {
+    "claim": "local essays_montaigne runs one verify pass per round; every known ranked operating point runs two",
+    "margin_rows": 0.562,
+    "borderline": false,
+    "consequence": "any per-row cost, depth sensitivity, or verify-batching effect measured on essays_montaigne is measured in a regime the ranked run never enters, and will misprice by the size of the step",
+    "explicitly_not_claimed": "that local essays_montaigne corresponds to the ranked prompt the recovered ledger calls essays. The fixture pool entries are anonymous sha256 digests with no names, so no mapping is established here. The claim is regime-level and holds whichever ranked prompt it corresponds to."
+  },
+
+  "finding_2_beagle_cannot_support_a_within_band_fit": {
+    "points_reaching_the_2_pass_band": [{"cap": 6, "rows": 5.032}, {"cap": 8, "rows": 5.244}],
+    "n": 2,
+    "rows_span": 0.211,
+    "verdict": "two points spanning 0.211 rows cannot estimate a slope. beagle_a can validate the shipped operating point but cannot produce a within-band (s, h)."
+  },
+
+  "finding_3_benchfixture_can": {
+    "method": "benchfixture realises 1.50x beagle_a's depth at the same cap; scaling beagle_a's measured cap->q curve by that factor",
+    "estimated": [
+      {"cap": 3, "q_est": 4.20, "rows_est": 5.20, "passes": 2, "risk": "only 0.20 rows above the boundary; may straddle"},
+      {"cap": 4, "q_est": 5.05, "rows_est": 6.05, "passes": 2, "risk": "safe"},
+      {"cap": 6, "q_est": 6.04, "rows_est": 7.04, "passes": 2, "risk": "safe"},
+      {"cap": 8, "q_est": 6.36, "rows_est": 7.36, "passes": 2, "risk": "safe"}
+    ],
+    "rows_span_if_all_valid": 2.16,
+    "brackets_the_ranked_range": "ranked rows 5.38 to 6.78 lies inside the proposed 5.20 to 7.36 span, so the comparison interpolates rather than extrapolates",
+    "estimate_caveat": "the 1.50x factor comes from a single cap-8 ratio and acceptance is nonlinear in cap, so realised rows must be read back per point rather than trusted from this table"
+  },
+
+  "proposed_design_not_implemented": {
+    "sweep": "benchfixture, caps 3, 4, 5, 6, 8, both island arms as usual",
+    "robustness_rule": "fit only the points whose MEASURED rows are >= 5.0; discard any that fall below rather than fitting across the step",
+    "delivers": "a local (s, h) inside the same verify-pass band as FINDING 286, which is the comparison I had to withdraw",
+    "cost": "5 to 10 legs",
+    "status": "suggested follow-up only. No branch opened, no GPU taken, not part of the current assignment."
+  },
+
+  "consequence_for_earlier_work": "composing my beagle_a depth-sweep fit with FINDING 334's benchfixture cell was invalid twice over: cross-prompt, and cross-band because the beagle_a sweep straddled the boundary while the FINDING 334 cell is entirely 2-pass."
+}
