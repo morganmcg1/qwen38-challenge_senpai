@@ -377,11 +377,13 @@ struct E196KernelIdentityCensusTests {
                     census("B_isolated") {
                         E196Probe.sdpa(qB, keys, values)
                     })
+                let todayCache = E196Probe.seededCache(length: kvLength)
+                let todayKV = E196Probe.newKV(rows: m)
+                eval(todayKV)
                 calls.append(
                     census("today_full_form") {
-                        E196Probe.today(
-                            queries: qFull, cache: E196Probe.seededCache(length: kvLength),
-                            kv: E196Probe.newKV(rows: m))
+                        todayCache.offset = kvLength
+                        return E196Probe.today(queries: qFull, cache: todayCache, kv: todayKV)
                     })
 
                 cells.append([
