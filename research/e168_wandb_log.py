@@ -439,6 +439,64 @@ def main() -> int:
             {f"clamp_counterfactual/{k}": v for k, v in counter["pooled"].items()}
         )
 
+    timing = report.get("timing", {})
+    if timing.get("legs"):
+        fields = [
+            "prompt",
+            "arm",
+            "replicate",
+            "started",
+            "gpu_temp_entry",
+            "gpu_temp_exit",
+            "mean_depth",
+            "mean_accepted",
+            "seconds_per_token",
+            "decode_ms_per_token",
+            "predicted_decode_ms_per_token",
+            "residual_pct",
+            "matched",
+            "cool_gate_passed_real_gate",
+            "gate_qualified_for_timing",
+        ]
+        table = wandb.Table(columns=fields)
+        for leg in timing["legs"]:
+            table.add_data(*(leg[field] for field in fields))
+        run.log({"timing/legs": table})
+        contrast = wandb.Table(
+            columns=[
+                "prompt",
+                "arm_a",
+                "arm_b",
+                "legs_per_arm",
+                "decode_ms_a",
+                "decode_ms_b",
+                "measured_pct",
+                "modelled_pct",
+                "entry_temp_spread_c",
+                "all_matched",
+            ]
+        )
+        for row in timing["prompts"]:
+            first, second = row["arms"]
+            contrast.add_data(
+                row["prompt"],
+                first,
+                second,
+                row["legs_per_arm"][first],
+                row["decode_ms_per_token"][first],
+                row["decode_ms_per_token"][second],
+                row["measured_pct"],
+                row["modelled_pct"],
+                row["entry_temp_spread_c"],
+                row["all_matched"],
+            )
+            summary[f"timing/{row['prompt']}/measured_pct"] = row["measured_pct"]
+            summary[f"timing/{row['prompt']}/modelled_pct"] = row["modelled_pct"]
+        run.log({"timing/contrast": contrast})
+        residuals = [abs(leg["residual_pct"]) for leg in timing["legs"]]
+        summary["timing/max_abs_round_law_residual_pct"] = max(residuals)
+        summary["timing/legs"] = len(timing["legs"])
+
     run.summary.update(summary)
     run.finish()
     print(f"e168_wandb_log: logged {len(summary)} summary metrics")

@@ -24,6 +24,7 @@ import json
 import math
 import os
 import re
+import statistics
 import sys
 from collections import defaultdict
 
@@ -982,6 +983,154 @@ def local_decode_ms_per_token(mean_depth: float, mean_accepted: float) -> float:
     )
 
 
+# Measured on this host by regressing leg seconds per token on rounds per
+# token across the E159 depth sweep. It only converts a whole-leg number into
+# a decode-only number; it never enters a ranked price.
+LOCAL_PREFILL_MS_PER_TOKEN = 7.8
+
+
+def load_timed_legs(dirs: list[str]) -> list[dict]:
+    """Read untraced legs, which carry wall time but no per-round trace.
+
+    A traced leg is rejected here. The trace perturbs round wall time, so a
+    traced leg can answer a schedule question or a timing question but never
+    both, and silently mixing the two would be the easiest way to publish a
+    wrong number.
+    """
+    legs = []
+    for directory in dirs:
+        meta = {}
+        meta_path = os.path.join(directory, "meta.txt")
+        if not os.path.exists(meta_path):
+            sys.exit(f"e168: no meta.txt in {directory}")
+        for line in open(meta_path):
+            if "=" in line:
+                key, _, value = line.partition("=")
+                meta[key.strip()] = value.strip()
+        if meta.get("phase_trace") != "0":
+            sys.exit(f"e168: {directory} is traced, so its wall time is void")
+        score_path = os.path.join(directory, "score.json")
+        if not os.path.exists(score_path):
+            sys.exit(f"e168: no score.json in {directory}")
+        metrics = json.load(open(score_path))["metrics"]
+
+        def temperature(field: str) -> float:
+            match = re.search(r"gpu_temp=([\d.]+)C", meta.get(field, ""))
+            return float(match.group(1)) if match else float("nan")
+
+        legs.append(
+            {
+                "dir": directory,
+                "prompt": meta.get("prompt_id", os.path.basename(directory)),
+                "arm": meta.get("e168_arm", "?"),
+                "replicate": int(meta.get("e168_replicate", 1)),
+                "started": meta.get("started", ""),
+                "seconds_per_token": metrics["mtp_seconds_per_token"],
+                "mean_depth": metrics["effective_mean_draft_len"],
+                "accepted_draft_rate": metrics["accepted_draft_rate"],
+                "matched": bool(metrics["all_tokens_matched"]),
+                "speedup": metrics["mtp_decode_speedup"],
+                "serial_seconds_per_token": metrics["serial_seconds_per_token"],
+                "gpu_temp_entry": temperature("thermal_before"),
+                "gpu_temp_exit": temperature("thermal_after"),
+                "cool_gate_passed_real_gate": meta.get(
+                    "cool_gate_passed_real_gate", "?"
+                ),
+                "gate_qualified_for_timing": meta.get(
+                    "gate_qualified_for_timing", "?"
+                ),
+            }
+        )
+    return sorted(legs, key=lambda leg: leg["started"])
+
+
+def timing_contrast(legs: list[dict]) -> dict:
+    """Measured seconds per token per arm, and the round law's residual.
+
+    Two independent questions are answered on the same legs.
+
+    The arm contrast is model free. It takes the ABBA mean of each arm inside
+    one prompt, so a monotone thermal or clock drift cancels to first order,
+    and reports the percentage difference in measured seconds per token.
+
+    The residual is the model check. Each leg's own measured mean draft depth
+    and measured accepted length are pushed through the local round law, and
+    the predicted decode time is compared with the measured decode time. The
+    offline policy sweep prices every controller through that law, so a large
+    residual at either depth would invalidate the sweep, not just this leg.
+    """
+    per_leg = []
+    for leg in legs:
+        accepted = leg["mean_depth"] * leg["accepted_draft_rate"]
+        decode_ms = (
+            leg["seconds_per_token"] * 1000.0 - LOCAL_PREFILL_MS_PER_TOKEN
+        )
+        predicted = local_decode_ms_per_token(leg["mean_depth"], accepted)
+        per_leg.append(
+            {
+                **leg,
+                "mean_accepted": accepted,
+                "decode_ms_per_token": decode_ms,
+                "predicted_decode_ms_per_token": predicted,
+                "residual_pct": 100.0 * (predicted / decode_ms - 1.0),
+            }
+        )
+
+    prompts: dict[str, dict[str, list[dict]]] = {}
+    for leg in per_leg:
+        prompts.setdefault(leg["prompt"], {}).setdefault(leg["arm"], []).append(
+            leg
+        )
+
+    def mean_of(rows: list[dict], field: str) -> float:
+        return statistics.fmean(row[field] for row in rows)
+
+    per_prompt = []
+    for prompt, arms in sorted(prompts.items()):
+        if len(arms) != 2:
+            continue
+        # Both sides are decode only. Prefill is common to the two arms, so
+        # leaving it in would shrink the measured contrast while the modelled
+        # contrast stayed whole, and the two numbers would not be comparable.
+        names = sorted(arms)
+        measured = {name: mean_of(arms[name], "decode_ms_per_token") for name in names}
+        modelled = {
+            name: local_decode_ms_per_token(
+                mean_of(arms[name], "mean_depth"),
+                mean_of(arms[name], "mean_accepted"),
+            )
+            for name in names
+        }
+        entries = [
+            leg["gpu_temp_entry"]
+            for rows in arms.values()
+            for leg in rows
+            if not math.isnan(leg["gpu_temp_entry"])
+        ]
+        first, second = names
+        per_prompt.append(
+            {
+                "prompt": prompt,
+                "arms": names,
+                "legs_per_arm": {name: len(arms[name]) for name in names},
+                "decode_ms_per_token": measured,
+                "modelled_decode_ms_per_token": modelled,
+                "mean_depth": {
+                    name: mean_of(arms[name], "mean_depth") for name in names
+                },
+                "measured_pct": 100.0 * (measured[second] / measured[first] - 1.0),
+                "modelled_pct": 100.0 * (modelled[second] / modelled[first] - 1.0),
+                "all_matched": all(
+                    leg["matched"] for rows in arms.values() for leg in rows
+                ),
+                "entry_temp_spread_c": (
+                    max(entries) - min(entries) if entries else float("nan")
+                ),
+            }
+        )
+    return {"legs": per_leg, "prompts": per_prompt}
+
+
 def policy_sweep(
     adapt_legs: list[dict],
     profiles: dict[str, list[float]],
@@ -1214,10 +1363,18 @@ def main() -> int:
     parser.add_argument("--pinned", nargs="*", default=[])
     parser.add_argument("--adapt", nargs="*", default=[])
     parser.add_argument("--offered", type=int, default=8)
+    parser.add_argument(
+        "--timing",
+        nargs="*",
+        default=[],
+        help="untraced leg directories; wall time only, no schedule question",
+    )
     parser.add_argument("--json")
     args = parser.parse_args()
 
     report: dict = {"offered_depth": args.offered}
+    if args.timing:
+        report["timing"] = timing_contrast(load_timed_legs(args.timing))
     pinned_legs = load_legs(args.pinned, "pinned") if args.pinned else []
     adapt_legs = load_legs(args.adapt, "adapt") if args.adapt else []
     if pinned_legs:
@@ -1253,6 +1410,45 @@ def main() -> int:
                 for position, block in report["pinned"]["positions"].items()
             },
         )
+
+    if "timing" in report:
+        print("=== measured wall time, untraced ABBA legs ===")
+        print(
+            f"{'prompt':<16}{'arm':<7}{'rep':>4}{'entryC':>8}{'exitC':>7}"
+            f"{'depth':>7}{'A':>7}{'decode ms/tok':>15}{'law':>8}{'resid':>8}"
+            f"{'  matched':>10}"
+        )
+        for leg in report["timing"]["legs"]:
+            print(
+                f"{leg['prompt']:<16}{leg['arm']:<7}{leg['replicate']:>4}"
+                f"{leg['gpu_temp_entry']:>8.1f}{leg['gpu_temp_exit']:>7.1f}"
+                f"{leg['mean_depth']:>7.3f}{leg['mean_accepted']:>7.3f}"
+                f"{leg['decode_ms_per_token']:>15.3f}"
+                f"{leg['predicted_decode_ms_per_token']:>8.2f}"
+                f"{leg['residual_pct']:>+7.1f}%"
+                f"{str(leg['matched']):>10}"
+            )
+        print()
+        for row in report["timing"]["prompts"]:
+            first, second = row["arms"]
+            print(
+                f"  {row['prompt']:<16}{second} vs {first}: "
+                f"measured {row['measured_pct']:+.2f}%   "
+                f"round law predicted {row['modelled_pct']:+.2f}%   "
+                f"entry spread {row['entry_temp_spread_c']:.1f}C   "
+                f"exact {row['all_matched']}"
+            )
+        gates = {
+            (leg["cool_gate_passed_real_gate"], leg["gate_qualified_for_timing"])
+            for leg in report["timing"]["legs"]
+        }
+        print(
+            "  Negative means the second arm is faster. ABBA within one prompt,\n"
+            "  so a monotone drift cancels to first order.\n"
+            "  cool_gate_passed_real_gate / gate_qualified_for_timing: "
+            + "; ".join(f"{a}/{b}" for a, b in sorted(gates))
+        )
+        print()
 
     if "arms" in report:
         print("=== per prompt, both arms, counts then ranked price ===")
