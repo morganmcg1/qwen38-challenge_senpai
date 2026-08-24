@@ -70812,3 +70812,193 @@ smallest local probe.
 - Frozen next: Edward's E175 four-file A+Q (building; suite heads-up delivered).
 - Thorfinn: E176 assigned (desk-first; host needs full recovery sequence before GPU legs).
 - Alphonse: 8-leg screen running; coefficients ~11:30Z.
+
+---
+
+## Entry 375 — 2026-08-24T09:59Z — E175 FROZEN at `9c4fefe8`; conditional pre-authorized fire order; two-model registration; FINDING 447
+
+### 1. E175 freeze accepted
+
+Edward froze the four-file A+Q candidate at `9c4fefe847dc088817034c8644f59b3dda4da748`
+(content commit `cba4307b`; worker `5e8291e0…`, metallib `5d6e3f9f…`). Packaged diff vs
+organizer `0863b06a` over the 89 `editablePaths`: exactly the four Q files (344+/92−). Gates
+green; twin audit 29 runtime-effective twins; 512-token real-gate local-submit exact (both
+legs matched, ledger closed). Binary assertions on the built worker: Q symbols required,
+positive control present, three campaign instrumentation symbols forbidden at 0 — the built
+artifact is proven to be the intended tree. Test control: candidate vs campaign base run in
+the same worktree — identical 10 known-red functions on the 743-test campaign set (Askeladd's
+9 was the 657-test organizer set; both consistent). Submission note drafted at 12.3 KiB. W&B
+[`8bc65oel`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/8bc65oel).
+
+### 2. Conditional pre-authorized fire order (F6)
+
+When Yukon shows `90c131dc` terminal:
+- **Rejected AND promoted row still `ec24d591` @ 3.7291100105909** → Edward fires
+  immediately (no further advisor word), `--model senpai`, then owns the read-only watcher.
+- **Promoted, or the promoted row changed in any way** → hold and ping; the likely re-spec is
+  cap4+Q (one literal on the frozen tree — a single factor on the new frontier), pending
+  E176's answer on Q consumers at M ≤ 5. Rationale: under a cap-4 promote, a cap-7-schedule
+  A+Q receipt would price Q on a schedule we no longer ship.
+- Ambiguous Yukon response → inspect before any retry, never duplicate.
+
+### 3. Two-model registration and FINDING 447
+
+Edward's local-submit recorded prefill separately (per F3) and found **Q's local prefill
+effect is a PENALTY: +1.936%, 8/8 same sign, spread 0.154** (FINDING 447; harness=local,
+M4-class). His adjusted centrals 3.7218/3.7157 now stand against my ranked-route centrals
+3.7328/3.7267; the receipt discriminates. Nearer 3.73 → the penalty is M4-local (nax vs
+non-nax `qmm_t`) and the plutarch bound holds; nearer 3.72 or below → the penalty transfers
+to M5 and the plutarch-bound reasoning has a hole. Datum forwarded to E176 (PR 175 F1): the
+prefill term is host-dependent with its own sign per host — E165's tau < 0 lesson again.
+
+### 4. Board state after this entry
+
+- In flight: `90c131dc` (cap-4, Askeladd) validating; watcher `1f4d2080`.
+- Frozen behind it: E175 `9c4fefe8` with a conditional pre-authorized fire order — ship-mode
+  latency to the next receipt is now zero in the reject branch.
+- Thorfinn: E176 census under way (desk).
+- Alphonse: 8-leg screen running; coefficients ~11:30Z.
+
+## Entry 376 — 2026-08-24T10:25Z — Receipt E REJECTED 3.54742901 (cap-4, single-factor −4.33 % vs A); step law does not transfer to ranked; PR 168 merged; E175 FIRED as `15017ddf`
+
+### Receipt E terminal
+
+`90c131dc-c3e4-4022-b00c-038cf928bbb7` (qwen-askeladd, E168 r1): **REJECTED, published
+3.54742900664627**, scored commit `4937373`, frozen `99959d49`, surface `e044a583`,
+43-minute validation. Yukon's delta column (−0.181681) prices rejects against the promoted
+crown: 3.54742900664627 + 0.181681 = 3.729110 = `ec24d591`. All three briefed bands read
+negative; the outcome fell 0.0026 below the lowest band's floor. Registered central 3.9847
+missed by −11 %. Execution was clean end to end (one-literal packaged diff, gates green,
+exact 512-token confirmation, honest typed result within minutes of the receipt).
+
+### FINDING 448 — cap-4 single-factor ranked cost
+
+Receipt A (`5a9f130a`, 3.70784519415395) is itself organizer-pure, so receipt E vs A is a
+SINGLE-FACTOR contrast: exactly the literal `segmentedVerifyDepthCap 7→4`. The −4.33 %
+published (≈ +4.5 % candidate-leg) is cleanly and completely attributed to the cap, at ~23×
+the 0.189 % candidate-leg 1σ. The student's stated extras-removal confound does not exist —
+corrected at accept time (his verdict is unchanged and strengthened; the extras-removal
+framing belongs to the B/C/D lineage, not A). The same frozen tree measured **−3.97 %
+candidate time locally** (a clear win): the depth axis inverts between hosts.
+
+### FINDING 449 — step-law ranked transfer falsified
+
+FINDING 407's step model priced cap-4 at worst-feasible 4.1637 published (roof 4.3058,
+already assuming h = 2.5 ms). The controlled outcome 3.5474 sits **15 % below
+worst-feasible**. The groups(M) weight-pass step is directly measured on local M4 (per-round
+medians: M5 = 90.83 ms → M6 = 125.79 ms) and does **not** price ranked M5 rounds. Rough
+implied ranked ratio: an M≈7 round costs ~1.3–1.4× an M≤5 round, not 1.77× (two-pass) and
+not 1.0×. Consequences recorded in frontier-state:
+
+- `depthFourLever` → FALSIFIED-BY-RECEIPT.
+- `depthCapEightOpenLever` → REOPENED-UNPRICED (its DEAD verdict was priced by the falsified
+  law; between 4 and 7 ranked prefers deeper — sign only; beyond 7 unknown).
+- `rankedRoundIsAStepFunction` / `stepLawConfirmed` → annotated: local measurement stands,
+  ranked pricing forbidden.
+- `marginalRowShare` → interpolant-derived rowShare numbers unreliable on ranked.
+- New key `rankedDepthTwoPointLaw`: cap-7 → 3.70784519, cap-4 → 3.54742901, single-factor.
+
+### RULE 378
+
+No depth-axis change is promoted on local timing evidence alone; the depth axis inverts
+between local M4 and ranked M5. Adopted from the student's E168 r1 follow-up (3). Ranked
+depth moves are priced only from controlled ranked receipts.
+
+### PR 168 merged
+
+Merged as a high-value negative at `3b7cfee9` (true merge, ancestry preserved). Merge
+hygiene verified before accepting: `git diff 5cf5a255..c9f01088` excluding `research/` is
+empty, so the merge adds research files only (watcher fix `43995554` with the 7-char Yukon
+truncation handling, rebuild/confirm scripts, organizer-pure suite baseline). Base had moved
+only by advisor record commits; validity recorded via accept-on-current-base with the
+FINDING 448 correction embedded.
+
+### E175 FIRED — submission `15017ddf-cfba-4f07-adb1-8c67e6e79a95`
+
+Edward fired at 10:11Z under F6 branch 1 (90c131dc REJECTED, crown unmoved at
+`ec24d591`/3.7291100105909), six minutes after the slot freed. Frozen `9c4fefe8`, content
+commit `cba4307b`, four-file A+Q candidate, note 12.5 KiB, guard line-383 clean
+(`770a3ff2` submitted snapshot == origin/main). Read-only watcher: Edward's job `95233da4`.
+Two-model registration on the record: advisor ranked-route 3.7328/3.7267 vs Edward
+local-prefill-adjusted 3.7218/3.7157 — the receipt discriminates whether the +1.936 % M4
+prefill penalty (FINDING 447) transfers to M5.
+
+### Board
+
+- Thorfinn E176 (PR 175): desk census in progress; F2 queued — extend the census M-range to
+  9, receipt-E implications, cap4+Q composition framing dead.
+- Alphonse E174 (PR 173): 8-leg palindrome screen running; coefficients ~11:30Z; pivot
+  ruling follows.
+- Askeladd: E177 next — ranked depth-law recovery from the two paid controlled receipts
+  (desk-first, organizer-pure workspace already built).
+
+## Entry 377 — 2026-08-24T10:35Z — FINDING 450: Q has no decode channel (E175 is now a three-model discriminator); FINDING 451: fill-cost bracket + Alphonse pivot ruling; ADVISOR ERROR 238
+
+### FINDING 450 — the Q-consuming decode set is empty (Thorfinn E176 interim 1; advisor source-verified)
+
+`get_qmv_batch_limit` (`quantized.cpp:84-125`) returns its 14/10/6 table only for
+`arch_gen 13/14`; g16s (gen 16) and every nax-capable host (gen ≥ 17) take 18/12/10 —
+minimum **10**. Decode width M = d+1 ≤ 9 never crosses it, so every transposed decode cell
+dispatches to `qmv`; no decode site folds M (all 257 wide QMV calls are x=[1,M,K], M ≤ 9);
+`qmm_t_splitk` is dead (entry 258). Q edits only the `qmm_t` family ⇒ **Q's ranked exposure
+is prefill-only** (the M≈512 seed). Probe: `research/e176_arch_probe.swift`. This completes
+ADVISOR-ERROR-225 and falsifies the decode half of the FINDING 440 Q attribution *if the
+E175 receipt confirms it*.
+
+Consequence: B−C = −0.6691 % mean7 candidate-leg cannot be Q-decode, and Q-prefill goes the
+wrong way (C→B prefill +2.17 % × 6.78 % share ⇒ B *slower* ~+0.15 %). B−C therefore needs a
+~−0.8 % non-code component in receipt C — converging with Edward's independent C/A −1.08 %
+anomaly. **Receipt-C-outlier hypothesis is live.** FINDING 444's cross-host corroboration is
+flagged as an UNRESOLVED CONFLICT (its derived local Q ≈ −0.88 % decode is forbidden by the
+same census); do not cite the 0.76 transfer ratio until a direct local pair with separated
+prefill/decode settles it.
+
+### Three-model registration at the E175 receipt (all frozen pre-receipt)
+
+| model | central | mechanism |
+|---|---|---|
+| advisor (B−C route) | 3.7328 / 3.7267 | B−C is a real Q decode gain |
+| edward (prefill-adjusted) | 3.7218 / 3.7157 | M4 prefill penalty transfers to M5 |
+| thorfinn (census, 10:24Z) | ~3.700–3.704 | Q prefill-only: A × (1 − 0.0678 × 1.936 %) |
+
+Reading rule updated (F7 on PR 174): ≥3.7291 promote and the census needs a named hole;
+3.71–3.729 compose band; **≤3.705 → Q leaves the ship set, receipt C declared an outlier,
+FINDING 440 re-opens, A-replay contingency prices the receipt channel itself.** Edward will
+extract the per-prompt prefill/decode split at the receipt — the three models separate there
+even if the scalar is ambiguous.
+
+### ADVISOR ERROR 238
+
+The E176 brief carried FINDING 390's `get_qmv_batch_limit = 6` arithmetic although
+ADVISOR-ERROR-225 had already corrected the routing fact; the arch-gen guard was never
+re-read. Caught by Thorfinn with a first-hand device probe. Lesson: when a finding is
+corrected, grep later briefs and findings for its residue.
+
+### FINDING 451 — standalone x-sums fill cost bracket (Alphonse E174 screen, W&B `7ueick4f`)
+
+Eight gated 512-token legs, all `gate_qualified_for_timing=true`, entry-temp spread 2.94 °C,
+tokens digit-identical across arms. **One standalone fill dispatch + host kernel record =
+4.0–5.3 µs** candidate MTP wall time (lower bound o−s: +0.3849 % leg, 699.1 µs/round, 127
+cells, 5.505 µs/cell; upper bound f−r: +0.5190 %, 981.9 µs/round, 257 cells, 3.820 µs/cell;
+bounds cross ⇒ bracket, not a point). RETRACTION accepted: f−r is grade C (different
+consumer pipeline objects — the E135/F41 caveat, rediscovered); o−s grade B; f−o grade A. My
+earlier ruling that f−r was the only admissible pricing path is struck.
+
+**Pivot ruling (feedback on PR 173):** dedup census first — count distinct activation
+identities among the ~257 standalone `xsumsTable(x)` calls/round (the machinery `Slot`/
+`take`/`publish` exists; several routed cells reading one normed activation each pay their
+own fill). ≥20 % dupes → smallest opt-in dedup arm + one ABBA gated pair; <20 % → CPU-side
+record-creation probe gates the item-2 record cache (dead by arithmetic if record-creation
+< 1 µs); BF16 gate parked. The sidecar/replica is organizer code, so this cost is paid on
+the shipped tree. Post-FINDING 449, LAW 377's 0.34× per-round-fixed transfer is suspect:
+price any local win as a mechanism result; a receipt prices ranked.
+
+### Board
+
+- E175 `15017ddf` validating (~11:00–11:30Z terminal expected); Edward holds the watcher.
+- Askeladd: E177 assigned (PR 176), depth-law recovery, desk-first.
+- Thorfinn: tasks 2–3 (null calibration, Q 8-vector fit) → typed result.
+- Alphonse: dedup census → probe/arm per ruling.
+- research_base_changed events for PRs 168/173/174/175 this cycle are advisor record-only
+  publishes plus the PR 168 merge; no experiment replay is required (reasoning recorded in
+  the PR 168 accept and here).
