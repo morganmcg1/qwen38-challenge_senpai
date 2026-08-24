@@ -207,6 +207,7 @@ public final class Qwen36MTPBlockSession {
                 // Trace-gated exactly like the schedule's own snapshot.
                 if Self.traceRounds {
                     self?.snapshotScheduleSignal(
+                        offeredDepth: offeredDepth,
                         widthCap: Self.segmentedVerifyDepthCap)
                 }
                 return Swift.min(offeredDepth, pinned)
@@ -1143,7 +1144,10 @@ public final class Qwen36MTPBlockSession {
         // round's trace line is emitted, the EMAs, the streak and `pendingTop2`
         // have all been advanced by this round's own outcome, so reading them
         // there would describe the next round's inputs, not this one's.
-        if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
+        if Self.traceRounds {
+            snapshotScheduleSignal(
+                offeredDepth: offeredDepth, widthCap: widthCap)
+        }
         guard cap > 0 else { return 0 }
         let price = Self.depthPrice
         var reach = 1.0
@@ -1184,7 +1188,7 @@ public final class Qwen36MTPBlockSession {
     /// full-accept streak and the width cap in force. Recorded so an offline
     /// fit can ask which of these separates a round that accepts its whole
     /// chain from one that accepts nothing, without spending a second run.
-    private func snapshotScheduleSignal(widthCap: Int) {
+    private func snapshotScheduleSignal(offeredDepth: Int, widthCap: Int) {
         let margin: Double
         if let tail = pendingTop2, tail.1.count >= 2 {
             margin = tail.1[0] - tail.1[1]
@@ -1193,9 +1197,18 @@ public final class Qwen36MTPBlockSession {
         }
         let emas = positionAcceptEMA
             .map { String(format: "%.6f", $0) }.joined(separator: ",")
+        // `offer` and the effective `cap` separate the two reasons a round can
+        // be shallow: the walk stopped on its own threshold, or it ran out of
+        // cap. Without both, a reader cannot tell a policy decision from an
+        // externally imposed ceiling. `cap` now means the EFFECTIVE cap and
+        // `wcap` the width cap; a trace written before this split reports only
+        // the width cap under the name `cap`.
+        let cap = Swift.min(
+            Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth), widthCap)
         scheduleTrace = "arm=" + Self.depthPriceArm.rawValue + " " + String(
-            format: "m=%.6f streak=%d cap=%d ema=",
-            margin, fullAcceptStreak, widthCap) + emas + " sched="
+            format: "m=%.6f streak=%d offer=%d wcap=%d cap=%d ema=",
+            margin, fullAcceptStreak, offeredDepth, widthCap, cap) + emas
+            + " sched="
     }
 
     /// Fold one round's acceptance outcome into the per-position EMAs.

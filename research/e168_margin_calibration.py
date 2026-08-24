@@ -35,7 +35,7 @@ CLAMP_T = {0: 2.0, 1: 3.0}
 
 ROUND_RE = re.compile(
     r"^mtp-trace: round=(\d+) d=(\d+) acc=(\d+).*? m=(\S+) streak=(\d+) "
-    r"cap=(\d+) ema=(\S+)"
+    r"(?:offer=(\d+) wcap=(\d+) )?cap=(\d+) ema=(\S+)"
 )
 
 
@@ -51,6 +51,7 @@ def parse_rounds(path: str) -> list[dict]:
             if not match:
                 continue
             margin = float(match.group(4))
+            offer = int(match.group(6)) if match.group(6) else None
             rounds.append(
                 {
                     "round": int(match.group(1)),
@@ -58,8 +59,10 @@ def parse_rounds(path: str) -> list[dict]:
                     "acc": int(match.group(3)),
                     "margin": margin,
                     "streak": int(match.group(5)),
-                    "cap": int(match.group(6)),
-                    "ema": [float(v) for v in match.group(7).split(",")],
+                    "offer": offer,
+                    "wcap": int(match.group(7)) if match.group(7) else WIDTH_CAP,
+                    "cap": int(match.group(8)),
+                    "ema": [float(v) for v in match.group(9).split(",")],
                 }
             )
     return rounds
@@ -263,8 +266,9 @@ def calibration_table(samples, position: int) -> list[dict]:
 
 
 def analyse_pinned(legs: list[dict]) -> dict:
-    result = {"legs": [], "positions": {}}
+    result = {"legs": [], "positions": {}, "profile_by_leg": {}}
     pooled: dict[int, list] = {0: [], 1: [], 2: []}
+    pooled_rounds: list[dict] = []
     for leg in legs:
         rounds = leg["rounds"]
         depths = [r["d"] for r in rounds]
@@ -287,7 +291,10 @@ def analyse_pinned(legs: list[dict]) -> dict:
         )
         for position in pooled:
             pooled[position].extend(observations(rounds, position))
+        pooled_rounds.extend(rounds)
+        result["profile_by_leg"][leg["label"]] = position_profile(rounds)
 
+    result["profile"] = position_profile(pooled_rounds)
     for position in (0, 1):
         samples = pooled[position]
         temperature, _ = fit_temperature(samples)
@@ -325,25 +332,65 @@ def analyse_pinned(legs: list[dict]) -> dict:
     return result
 
 
-def analyse_adapt(legs: list[dict], offered: int) -> dict:
+def position_profile(rounds: list[dict], max_position: int = 8) -> list[dict]:
+    """Per-position conditional acceptance, the quantity the walk models.
+
+    `P(position k accepted | positions 0..<k accepted and k was drafted)`. This
+    is the same conditional the EMA tracks, so a flat profile means the walk's
+    chain-rule `reach` is well specified and a decaying one means it is not.
+    """
+    rows = []
+    for position in range(max_position):
+        reached = sum(
+            1 for r in rounds if r["d"] > position and r["acc"] >= position
+        )
+        accepted = sum(1 for r in rounds if r["acc"] > position)
+        if reached == 0:
+            continue
+        low, high = wilson(accepted, reached)
+        rows.append(
+            {
+                "position": position,
+                "reached": reached,
+                "accepted": accepted,
+                "q": accepted / reached,
+                "ci_low": low,
+                "ci_high": high,
+            }
+        )
+    return rows
+
+
+def analyse_adapt(legs: list[dict], offered_default: int) -> dict:
     result = {"legs": [], "pooled": {}}
     total = binds0 = binds1 = 0
     depth_loss_rounds = 0
     depth_loss_sum = 0
     pure_loss_rounds = 0
     replay_mismatch = 0
+    cap_stops = 0
+    cap_histogram: dict[int, int] = defaultdict(int)
+    pooled_rounds: list[dict] = []
     for leg in legs:
-        leg_total = leg_binds = leg_loss = 0
+        leg_total = leg_binds = leg_loss = leg_cap_stops = 0
         leg_loss_sum = 0
-        # The parent shortens its offer on the last round so the leg lands on
-        # the configured token count, so that round's depth is window-bounded
-        # rather than policy-bounded and cannot be replayed at offer 8.
-        for record in leg["rounds"][:-1]:
+        for record in leg["rounds"]:
             margin, ema = record["margin"], record["ema"]
             if math.isnan(margin):
                 continue
+            # The parent narrows its own offer as the decode window runs down,
+            # so a round replayed at a fixed offer 8 is not the round that ran.
+            # A trace without `offer=` predates that field; its tail round is
+            # the only one the default can misreplay.
+            offered = record["offer"] if record["offer"] is not None else (
+                offered_default
+            )
+            cap = record["cap"] if record["offer"] is not None else min(
+                min(offered, MAX_DEPTH), record["wcap"]
+            )
             leg_total += 1
             total += 1
+            cap_histogram[cap] += 1
             bind0 = sigmoid(margin / 2.0) < ema[0]
             bind1 = sigmoid(margin / 3.0) < ema[1]
             binds0 += bind0
@@ -356,6 +403,11 @@ def analyse_adapt(legs: list[dict], offered: int) -> dict:
             # chose. Any mismatch means the counterfactual below is fiction.
             if clamped != record["d"]:
                 replay_mismatch += 1
+            # A round that reached its cap was stopped from outside the walk;
+            # any other round stopped on its own marginal threshold.
+            if record["d"] >= cap:
+                cap_stops += 1
+                leg_cap_stops += 1
             if unclamped > clamped:
                 depth_loss_rounds += 1
                 leg_loss += 1
@@ -366,6 +418,8 @@ def analyse_adapt(legs: list[dict], offered: int) -> dict:
                 # where the removed position was very likely acceptable too.
                 if record["acc"] == record["d"]:
                     pure_loss_rounds += 1
+        pooled_rounds.extend(leg["rounds"])
+        depths = [r["d"] for r in leg["rounds"]]
         result["legs"].append(
             {
                 "label": leg["label"],
@@ -373,9 +427,13 @@ def analyse_adapt(legs: list[dict], offered: int) -> dict:
                 "bind_fraction": leg_binds / leg_total if leg_total else 0.0,
                 "depth_loss_fraction": leg_loss / leg_total if leg_total else 0.0,
                 "mean_depth_loss": leg_loss_sum / leg_total if leg_total else 0.0,
-                "mean_d": (
-                    sum(r["d"] for r in leg["rounds"]) / len(leg["rounds"])
-                    if leg["rounds"]
+                "cap_stop_fraction": (
+                    leg_cap_stops / leg_total if leg_total else 0.0
+                ),
+                "mean_d": sum(depths) / len(depths) if depths else 0.0,
+                "accept_fraction": (
+                    sum(r["acc"] for r in leg["rounds"]) / sum(depths)
+                    if sum(depths)
                     else 0.0
                 ),
             }
@@ -388,8 +446,21 @@ def analyse_adapt(legs: list[dict], offered: int) -> dict:
         "depth_loss_fraction": depth_loss_rounds / total if total else 0.0,
         "mean_depth_removed": depth_loss_sum / total if total else 0.0,
         "pure_loss_fraction": pure_loss_rounds / total if total else 0.0,
+        "cap_stop_fraction": cap_stops / total if total else 0.0,
+        "cap_histogram": dict(sorted(cap_histogram.items())),
     }
+    result["profile"] = position_profile(pooled_rounds)
     return result
+
+
+def print_profile(title: str, profile: list[dict]) -> None:
+    print(f"  per-position conditional acceptance, {title}:")
+    for row in profile:
+        print(
+            f"    q[{row['position']}] = {row['q']:.4f}  "
+            f"[{row['ci_low']:.4f},{row['ci_high']:.4f}]  "
+            f"n={row['reached']}"
+        )
 
 
 def main() -> int:
@@ -423,14 +494,22 @@ def main() -> int:
             f"of those, rounds that then accepted every draft they made "
             f"{pooled['pure_loss_fraction']:.3f}"
         )
+        print(
+            f"rounds that stopped ON THE CAP rather than on the threshold "
+            f"{pooled['cap_stop_fraction']:.3f}; "
+            f"effective cap histogram {pooled['cap_histogram']}"
+        )
         for leg in report["adapt"]["legs"]:
             print(
                 f"  {leg['label']:<24} n={leg['rounds']:<4} "
                 f"bind={leg['bind_fraction']:.3f} "
                 f"depth_loss={leg['depth_loss_fraction']:.3f} "
                 f"rows_removed={leg['mean_depth_loss']:.3f} "
-                f"mean_d={leg['mean_d']:.3f}"
+                f"cap_stop={leg['cap_stop_fraction']:.3f} "
+                f"mean_d={leg['mean_d']:.3f} "
+                f"acc_frac={leg['accept_fraction']:.3f}"
             )
+        print_profile("shipped adaptive", report["adapt"]["profile"])
         print()
 
     if "pinned" in report:
@@ -442,6 +521,10 @@ def main() -> int:
                 f"accept_frac={leg['accept_fraction']:.3f} "
                 f"mean_margin={leg['margin_mean']:.2f}"
             )
+        print_profile("pinned depth (pooled)", report["pinned"]["profile"])
+        for label, profile in report["pinned"]["profile_by_leg"].items():
+            values = " ".join(f"{row['q']:.4f}" for row in profile)
+            print(f"  q[{label:<20}] {values}")
         for position in (0, 1):
             block = report["pinned"]["positions"][position]
             print(
