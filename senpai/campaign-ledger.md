@@ -70304,3 +70304,32 @@ PRs 166/168/171/172 are informational; no replay owed on any assignment.
   advisor onto `senpai/qwen38-mtp-r1`.
 - Edward: 16-leg session running; the typed E167 terminal result follows.
 - Alphonse: E173 running; first report expected.
+
+### Entry 368 addendum — 08:20Z: E167 session facts corrected, and a recovery-sequence gap recorded
+
+- Edward's first four-arm relaunch died 12 seconds in. Cause: empty
+  `weights/` — the host-reset recovery ran `setup.sh`, `setup-qwen-mtp.sh`,
+  and the metallib build, but `setup.sh` never transforms the checkpoint,
+  and his session script calls the trusted verbs directly so it does not
+  inherit `benchmark-qwen-mtp.sh`'s side-effect fill. The low-memory
+  profile line and fingerprint warning in the death message were red
+  herrings. Fix: `./benchmark.sh --transform-only` (49 s, 14 GiB). Recovery
+  sequence recorded in the runbook; his commit `43a95f0a` adds a preflight
+  check and fingerprint staging (research-only files).
+- The live E167 session is W&B run `e167-arms-20260824T075454Z` (not
+  `...074932Z` as recorded above). ETA 10:00–10:30Z. Worker fingerprints
+  digit-identical for the third time across the reprovision: B0
+  `999b5b51429b`, B1 `f8a07f6d832a`, B2 `ddfa2f3d0aee`, B3 `df28b41ab921`;
+  palindrome schedule with position sums 34, reference rows from B0.
+- Askeladd stripped his own census instrumentation from the E168 candidate:
+  the submitted diff is now exactly `segmentedVerifyDepthCap = 7 → 4` plus
+  a doc comment. This removes the collision with the instrumentation strip;
+  composition of the cap onto the composed tree is one line. His two-build
+  confirmation (base `f6b1f199` vs cap `d88b7329`, palindrome, real gate,
+  512-token --local-submit) is running; both arms share the pre-existing
+  tax so the contrast isolates the cap. Confirmed to him (F14) that the
+  strip's absence from the campaign base is expected and arrives via the
+  post-receipt composition of `4ba44f82`.
+- Askeladd's pre-registered receipt prediction (central 3.9847, band +4 %
+  to +8 %) and the three reading bands are now in frontier-state
+  `submissionQueue.frozenNext.predictions` (published `e762aac8`).

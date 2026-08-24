@@ -579,6 +579,17 @@ pushed commit at the moment it exists.
   on the same disk; a frozen commit can be rescued byte-identical from it.
   A student's only publication channel is the typed
   `submit_experiment_result` (lease-push); shell pushes are denied.
+- Full measurement-host recovery sequence: `./setup.sh && ./setup-qwen-mtp.sh`,
+  `tools/build-mlx-metallib.sh`, **and `./benchmark.sh --transform-only`**.
+  `setup.sh` provisions the reference checkpoint but never transforms it, so
+  a fresh host has an empty `weights/` (only `.gitkeep`).
+  `benchmark-qwen-mtp.sh` hides the gap by filling the tree as a side effect;
+  any script that calls the trusted verbs directly with `--weights weights`
+  dies at reference generation instead. The failure is misleading: the
+  worker exits with a low-memory-profile line (normal on 48 GiB hosts) and a
+  missing-fingerprint warning (harmless); the real cause is the missing
+  `weights/config.json`. Transform cost: ~49 s, 14 GiB, 1847 tensors
+  (E167, commit `43a95f0a` adds the preflight check).
 
 ## Protocol note — feedback requires `status:wip`
 
