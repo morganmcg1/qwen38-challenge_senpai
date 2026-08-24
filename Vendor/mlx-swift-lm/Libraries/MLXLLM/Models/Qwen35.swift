@@ -685,6 +685,7 @@ enum Qwen35E187StateStore: String {
     case ulp1
     case ulpbf16
     case cell2x
+    case cellbig
 }
 
 let qwen35E187StateStoreMode: Qwen35E187StateStore = {
@@ -719,7 +720,7 @@ func qwen35E187StoreState(_ state: MLXArray) -> MLXArray {
     case .fp16:
         Qwen35E187Probe.announce(.fp16)
         return state.asType(.float16).asType(.float32)
-    case .ulp1, .ulpbf16, .cell2x:
+    case .ulp1, .ulpbf16, .cell2x, .cellbig:
         guard !Qwen35E187Probe.applied, state.ndim == 4 else { return state }
         Qwen35E187Probe.applied = true
         Qwen35E187Probe.announce(qwen35E187StateStoreMode)
@@ -734,10 +735,14 @@ func qwen35E187StoreState(_ state: MLXArray) -> MLXArray {
                 ? Float.leastNormalMagnitude
                 : Float(sign: .plus, exponent: cell.exponent - 7, significand: 1)
             bumped = cell + step
-        default:
+        case .cell2x:
             // Sensitivity ladder rung: a perturbation far above the storage
             // grain, used to prove the probe path reaches the recurrence.
             bumped = cell == 0 ? 1 : cell * 2
+        default:
+            // Instrument control: a value no correct decode can absorb. If
+            // this cell still changes nothing, the probe itself is broken.
+            bumped = 1e30
         }
         let perturbed = state[.ellipsis]
         perturbed[0, 0, 0, 0] = MLXArray(bumped)
