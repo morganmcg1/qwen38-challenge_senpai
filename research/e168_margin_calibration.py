@@ -143,22 +143,31 @@ def load_legs(dirs: list[str], kind: str) -> list[dict]:
     return legs
 
 
-def walk(margin: float, ema: list[float], offered: int, clamped: bool) -> int:
-    """Replay `costModelDepth` exactly, with or without the margin clamps."""
+def walk(
+    margin: float,
+    ema: list[float],
+    offered: int,
+    clamped: bool,
+    ratio: float = HEAD_STEP_COST_RATIO,
+    temps: dict[int, float] | None = None,
+) -> int:
+    """Replay `costModelDepth` exactly, with or without the margin clamps.
+
+    `ratio` and `temps` default to the shipped constants, so the default call
+    is the shipped controller. Overriding them replays a counterfactual
+    controller on the same recorded inputs.
+    """
     cap = min(min(offered, MAX_DEPTH), WIDTH_CAP)
     if cap <= 0:
         return 0
+    table = CLAMP_T if temps is None else temps
     reach, expected, depth = 1.0, 0.0, 0
     while depth < cap:
         p = ema[depth]
-        if clamped and depth in CLAMP_T and not math.isnan(margin):
-            p = min(p, sigmoid(margin / CLAMP_T[depth]))
+        if clamped and depth in table and not math.isnan(margin):
+            p = min(p, sigmoid(margin / table[depth]))
         reach *= p
-        threshold = (
-            HEAD_STEP_COST_RATIO
-            * (1.0 + expected)
-            / (1.0 + depth * HEAD_STEP_COST_RATIO)
-        )
+        threshold = ratio * (1.0 + expected) / (1.0 + depth * ratio)
         if not reach > threshold:
             break
         expected += reach
@@ -698,7 +707,201 @@ def analyse_adapt(legs: list[dict], offered_default: int) -> dict:
     return result
 
 
-def splice_arms(adapt_legs: list[dict], pinned_legs: list[dict]) -> dict:
+def chain_survival(profile: list[float], position: int) -> float:
+    """P(the draft at `position` is accepted) under a position-only model.
+
+    Every position below `position` must also be accepted, so this is the
+    running product of the conditional profile. Positions past the profile's
+    reach reuse its last measured value; those tails are rare and the report
+    states the reach so the extrapolation is visible.
+    """
+    if not profile:
+        return float("nan")
+    survival = 1.0
+    for index in range(position + 1):
+        survival *= profile[min(index, len(profile) - 1)]
+    return survival
+
+
+def expected_accepted(profile: list[float], depth: int) -> float:
+    """Accepted drafts per round for a chain of `depth` proposals."""
+    return sum(chain_survival(profile, k) for k in range(depth))
+
+
+def clamp_counterfactual(
+    adapt_legs: list[dict], profile: list[float], offered_default: int
+) -> dict:
+    """Price the clamp itself: replay each round with and without it.
+
+    The comparison holds the recorded margin, EMA and offered cap fixed and
+    changes only whether the clamp term applies, so the depth difference is
+    caused by the clamp alone. Accepted tokens cannot be observed for a depth
+    the arm never took, so they come from the pinned arm's measured position
+    profile. That model is the same for both policies, which makes the
+    DIFFERENCE a fair comparison even where the absolute level is approximate.
+    """
+    per_leg = []
+    for leg in adapt_legs:
+        rounds = [r for r in leg["rounds"] if not math.isnan(r["margin"])]
+        if not rounds:
+            continue
+        clamped_depth = unclamped_depth = 0
+        predicted_on = predicted_off = 0.0
+        for record in rounds:
+            offered = (
+                record["offer"] if record["offer"] is not None else offered_default
+            )
+            other = walk(record["margin"], record["ema"], offered, False)
+            clamped_depth += record["d"]
+            unclamped_depth += other
+            predicted_on += expected_accepted(profile, record["d"])
+            predicted_off += expected_accepted(profile, other)
+        count = len(rounds)
+        entry = {
+            "label": leg["label"],
+            "rounds": count,
+            "mean_depth_clamped": clamped_depth / count,
+            "mean_depth_unclamped": unclamped_depth / count,
+            "predicted_accepted_clamped": predicted_on / count,
+            "predicted_accepted_unclamped": predicted_off / count,
+            # Validation: the SAME model, run on the depths the arm actually
+            # took, must reproduce the accepted tokens the arm actually got.
+            # Without this the unclamped number is an unchecked extrapolation.
+            "measured_accepted": sum(r["acc"] for r in rounds) / count,
+        }
+        entry["model_error"] = (
+            entry["predicted_accepted_clamped"] - entry["measured_accepted"]
+        )
+        entry["raw_clamped"] = ranked_price(
+            entry["mean_depth_clamped"], entry["predicted_accepted_clamped"]
+        )["raw"]
+        entry["raw_unclamped"] = ranked_price(
+            entry["mean_depth_unclamped"], entry["predicted_accepted_unclamped"]
+        )["raw"]
+        entry["raw_gain_from_clamp"] = entry["raw_clamped"] - entry["raw_unclamped"]
+        per_leg.append(entry)
+    pooled: dict = {}
+    if per_leg:
+        total = sum(entry["rounds"] for entry in per_leg)
+
+        def weighted(key: str) -> float:
+            return sum(e[key] * e["rounds"] for e in per_leg) / total
+
+        pooled = {
+            "rounds": total,
+            "mean_depth_clamped": weighted("mean_depth_clamped"),
+            "mean_depth_unclamped": weighted("mean_depth_unclamped"),
+            "mean_model_error": weighted("model_error"),
+            "mean_raw_gain_from_clamp": weighted("raw_gain_from_clamp"),
+        }
+    return {"pooled": pooled, "legs": per_leg}
+
+
+RANKED_COST_RATIO = RANKED_ROW_MS / (RANKED_ROUND_FIXED_MS + RANKED_ROW_MS)
+
+# Local M4 Pro round law, sealed gated E159 512-token sweep (qwen-askeladd PR
+# 158, base 3cdab4e2), raw form. It is used only to PREDICT local decode time,
+# never to price ranked value.
+LOCAL_ROUND_FIXED_MS = 29.367
+LOCAL_ROW_MS = 14.775
+LOCAL_COST_RATIO = LOCAL_ROW_MS / (LOCAL_ROUND_FIXED_MS + LOCAL_ROW_MS)
+
+
+def local_decode_ms_per_token(mean_depth: float, mean_accepted: float) -> float:
+    """Predicted local decode ms per token, prefill excluded."""
+    return (LOCAL_ROUND_FIXED_MS + LOCAL_ROW_MS * (1.0 + mean_depth)) / (
+        1.0 + mean_accepted
+    )
+
+
+def policy_sweep(
+    adapt_legs: list[dict],
+    profile: list[float],
+    offered_default: int,
+    fitted: dict[int, float] | None = None,
+) -> list[dict]:
+    """Price alternative controllers on the recorded rounds, without a GPU.
+
+    Every policy sees the same recorded margin, EMA and offered cap, and every
+    policy is priced through the same measured position profile and the same
+    ranked round law. The comparison therefore isolates the decision rule. It
+    inherits the profile's assumption that acceptance depends on position and
+    not on the round, which is exactly the assumption the AUC and skill tests
+    above are there to check.
+    """
+    rounds = [
+        record
+        for leg in adapt_legs
+        for record in leg["rounds"]
+        if not math.isnan(record["margin"])
+    ]
+    if not rounds:
+        return []
+
+    def offered_of(record: dict) -> int:
+        return record["offer"] if record["offer"] is not None else offered_default
+
+    policies: list[tuple[str, object]] = [
+        ("shipped (clamp, ratio 0.180)", lambda r: r["d"]),
+        (
+            "no clamp, ratio 0.180",
+            lambda r: walk(r["margin"], r["ema"], offered_of(r), False),
+        ),
+        (
+            f"no clamp, ranked ratio {RANKED_COST_RATIO:.3f}",
+            lambda r: walk(
+                r["margin"], r["ema"], offered_of(r), False, ratio=RANKED_COST_RATIO
+            ),
+        ),
+        (
+            f"clamp, ranked ratio {RANKED_COST_RATIO:.3f}",
+            lambda r: walk(
+                r["margin"], r["ema"], offered_of(r), True, ratio=RANKED_COST_RATIO
+            ),
+        ),
+        (
+            f"clamp, local ratio {LOCAL_COST_RATIO:.3f}",
+            lambda r: walk(
+                r["margin"], r["ema"], offered_of(r), True, ratio=LOCAL_COST_RATIO
+            ),
+        ),
+    ]
+    if fitted:
+        policies.append(
+            (
+                "clamp at fitted T, ratio 0.180",
+                lambda r: walk(r["margin"], r["ema"], offered_of(r), True, temps=fitted),
+            )
+        )
+    for fixed in range(0, min(offered_default, WIDTH_CAP) + 1):
+        policies.append((f"fixed depth {fixed}", lambda r, f=fixed: f))
+
+    results = []
+    for name, rule in policies:
+        depths = [rule(record) for record in rounds]
+        mean_depth = sum(depths) / len(depths)
+        accepted = sum(expected_accepted(profile, d) for d in depths) / len(depths)
+        priced = ranked_price(mean_depth, accepted)
+        results.append(
+            {
+                "policy": name,
+                "mean_depth": mean_depth,
+                "predicted_accepted": accepted,
+                "raw": priced["raw"],
+                "local_decode_ms_per_token": local_decode_ms_per_token(
+                    mean_depth, accepted
+                ),
+            }
+        )
+    best = max(row["raw"] for row in results)
+    for row in results:
+        row["raw_deficit_vs_best"] = row["raw"] - best
+    return results
+
+
+def splice_arms(
+    adapt_legs: list[dict], pinned_legs: list[dict], profile: list[float] | None = None
+) -> dict:
     """Answer the counterfactual DIRECTLY instead of by proxy.
 
     The two arms decode the same prompt to the same serial tokens, so absolute
@@ -728,6 +931,7 @@ def splice_arms(adapt_legs: list[dict], pinned_legs: list[dict]) -> dict:
         "removed_resolved": 0,
         "removed_accepted": 0,
         "extra_tokens_available": 0,
+        "removed_predicted": 0.0,
     }
     per_leg = []
     for leg in adapt_legs:
@@ -752,6 +956,7 @@ def splice_arms(adapt_legs: list[dict], pinned_legs: list[dict]) -> dict:
             "removed_resolved": 0,
             "removed_accepted": 0,
             "extra_tokens_available": 0,
+            "removed_predicted": 0.0,
         }
         for record in leg["rounds"]:
             twin = index.get(record["start"])
@@ -779,6 +984,13 @@ def splice_arms(adapt_legs: list[dict], pinned_legs: list[dict]) -> dict:
             if twin["d"] <= record["d"]:
                 continue
             entry["removed_resolved"] += 1
+            # Skill test. A clamp that reads the round correctly must refuse
+            # positions that were LESS acceptable than a position-only rule
+            # predicts. The prediction uses the pinned arm's profile at the
+            # same position, so a match means the margin added nothing beyond
+            # knowing how deep the round already was.
+            if profile:
+                entry["removed_predicted"] += chain_survival(profile, record["d"])
             if twin["acc"] > record["d"]:
                 entry["removed_accepted"] += 1
                 entry["extra_tokens_available"] += (
@@ -817,8 +1029,22 @@ def main() -> int:
     if adapt_legs:
         report["adapt"] = analyse_adapt(adapt_legs, args.offered)
     if pinned_legs and adapt_legs:
-        report["splice"] = splice_arms(adapt_legs, pinned_legs)
+        profile = [row["q"] for row in report["pinned"]["profile"]]
+        report["position_profile_used"] = profile
+        report["splice"] = splice_arms(adapt_legs, pinned_legs, profile)
         report["arms"] = compare_arms(pinned_legs, adapt_legs)
+        report["clamp_counterfactual"] = clamp_counterfactual(
+            adapt_legs, profile, args.offered
+        )
+        report["policy_sweep"] = policy_sweep(
+            adapt_legs,
+            profile,
+            args.offered,
+            {
+                position: block["fitted_temperature"]
+                for position, block in report["pinned"]["positions"].items()
+            },
+        )
 
     if "arms" in report:
         print("=== per prompt, both arms, counts then ranked price ===")
@@ -864,6 +1090,47 @@ def main() -> int:
                 for depth, bucket in counts["depth_bins"].items()
             )
             print(f"  {'':<20} {split}")
+        print()
+
+    if "clamp_counterfactual" in report:
+        counter = report["clamp_counterfactual"]
+        print("=== what the clamp itself buys: same rounds, clamp on vs off ===")
+        print(
+            f"{'prompt':<20}{'d_on':>7}{'d_off':>7}{'A_model':>9}{'A_real':>8}"
+            f"{'err':>8}{'raw_on':>8}{'raw_off':>9}{'raw gain':>10}"
+        )
+        for entry in counter["legs"]:
+            print(
+                f"{entry['label']:<20}{entry['mean_depth_clamped']:>7.3f}"
+                f"{entry['mean_depth_unclamped']:>7.3f}"
+                f"{entry['predicted_accepted_clamped']:>9.3f}"
+                f"{entry['measured_accepted']:>8.3f}{entry['model_error']:>+8.3f}"
+                f"{entry['raw_clamped']:>8.3f}{entry['raw_unclamped']:>9.3f}"
+                f"{entry['raw_gain_from_clamp']:>+10.3f}"
+            )
+        if counter["pooled"]:
+            print(
+                f"{'POOLED':<20}{counter['pooled']['mean_depth_clamped']:>7.3f}"
+                f"{counter['pooled']['mean_depth_unclamped']:>7.3f}"
+                f"{'':>9}{'':>8}{counter['pooled']['mean_model_error']:>+8.3f}"
+                f"{'':>8}{'':>9}"
+                f"{counter['pooled']['mean_raw_gain_from_clamp']:>+10.3f}"
+            )
+        print()
+
+    if report.get("policy_sweep"):
+        print("=== controllers priced on the same recorded rounds ===")
+        print(
+            f"{'policy':<34}{'mean d':>8}{'A':>8}{'raw':>8}{'vs best':>10}"
+            f"{'local ms/tok':>14}"
+        )
+        for row in report["policy_sweep"]:
+            print(
+                f"{row['policy']:<34}{row['mean_depth']:>8.3f}"
+                f"{row['predicted_accepted']:>8.3f}{row['raw']:>8.3f}"
+                f"{row['raw_deficit_vs_best']:>+10.3f}"
+                f"{row['local_decode_ms_per_token']:>14.2f}"
+            )
         print()
 
     if "adapt" in report:
@@ -983,6 +1250,14 @@ def main() -> int:
                 f"pure-loss rate {pooled['removed_accepted'] / pooled['removed_resolved']:.4f} "
                 f"[{low:.4f},{high:.4f}]  "
                 f"tokens the clamp gave up {pooled['extra_tokens_available']}"
+            )
+            predicted = pooled["removed_predicted"] / pooled["removed_resolved"]
+            observed = pooled["removed_accepted"] / pooled["removed_resolved"]
+            print(
+                f"skill test: a position-only rule predicts {predicted:.4f}, "
+                f"the clamp's refusals actually paid {observed:.4f}  "
+                f"(skill {observed - predicted:+.4f}; negative means the clamp "
+                f"refused better-than-average positions)"
             )
 
     if args.json:
