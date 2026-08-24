@@ -111,3 +111,9 @@ research/e77-artifacts/rung1.log
 research/e78-artifacts/rung2a.log
 research/e78-artifacts/rung2b.log
 # SENPAI-CAMPAIGN-END
+
+# E184 profiling session outputs (committed explicitly as evidence when final)
+research/capture-e184-*/
+research/score-e184-*.json
+research/score-e184-*.json.*
+research/e184-phases-*.jsonl

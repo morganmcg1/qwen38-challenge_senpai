@@ -1,0 +1,98 @@
+{
+  "cells" : [
+    {
+      "arm" : "scan_T1",
+      "forward_microseconds" : 564.30566666666664,
+      "microseconds" : 394.3125,
+      "replicates" : 3,
+      "reverse_microseconds" : 224.31933333333333,
+      "timesteps" : 1
+    },
+    {
+      "arm" : "scan_T2",
+      "forward_microseconds" : 332.7348484848485,
+      "microseconds" : 278.66561616161619,
+      "replicates" : 99,
+      "reverse_microseconds" : 224.59638383838384,
+      "timesteps" : 2
+    },
+    {
+      "arm" : "scan_T8",
+      "forward_microseconds" : 401.55961111111111,
+      "microseconds" : 323.55324305555553,
+      "replicates" : 144,
+      "reverse_microseconds" : 245.546875,
+      "timesteps" : 8
+    },
+    {
+      "arm" : "scan_T32",
+      "forward_microseconds" : 757.18113888888888,
+      "microseconds" : 545.18981944444442,
+      "replicates" : 72,
+      "reverse_microseconds" : 333.19850000000002,
+      "timesteps" : 32
+    },
+    {
+      "arm" : "scan_T64",
+      "forward_microseconds" : 656.22685714285717,
+      "microseconds" : 551.22652380952377,
+      "replicates" : 63,
+      "reverse_microseconds" : 446.22619047619048,
+      "timesteps" : 64
+    },
+    {
+      "arm" : "scan_T128",
+      "forward_microseconds" : 781.94791176470585,
+      "microseconds" : 765.64031617647061,
+      "replicates" : 68,
+      "reverse_microseconds" : 749.33272058823525,
+      "timesteps" : 128
+    },
+    {
+      "arm" : "scan_T256",
+      "forward_microseconds" : 1203.125,
+      "microseconds" : 1213.2957391304349,
+      "replicates" : 46,
+      "reverse_microseconds" : 1223.4664782608695,
+      "timesteps" : 256
+    },
+    {
+      "arm" : "scan_T512",
+      "forward_microseconds" : 2153.4022307692308,
+      "microseconds" : 2168.958326923077,
+      "replicates" : 26,
+      "reverse_microseconds" : 2184.5144230769229,
+      "timesteps" : 512
+    },
+    {
+      "arm" : "scan_T512_L1",
+      "forward_microseconds" : 221.84707999999998,
+      "microseconds" : 223.94114500000001,
+      "replicates" : 200,
+      "reverse_microseconds" : 226.03521000000001,
+      "timesteps" : 512
+    },
+    {
+      "arm" : "chunk64_proxy",
+      "forward_microseconds" : 1602.3293225806453,
+      "microseconds" : 1604.3131935483871,
+      "replicates" : 31,
+      "reverse_microseconds" : 1606.297064516129,
+      "timesteps" : 512
+    },
+    {
+      "arm" : "chunk128_proxy",
+      "forward_microseconds" : 1250.5144489795919,
+      "microseconds" : 1243.358418367347,
+      "replicates" : 49,
+      "reverse_microseconds" : 1236.2023877551021,
+      "timesteps" : 512
+    }
+  ],
+  "cool_gate_passed_real_gate" : false,
+  "gate_qualified_for_timing" : false,
+  "harness" : "local",
+  "linear_layers" : 48,
+  "probe" : "e184_gated_delta_scan_cost",
+  "seed_length" : 512
+}
