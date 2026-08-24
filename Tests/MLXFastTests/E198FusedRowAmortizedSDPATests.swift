@@ -345,6 +345,34 @@ struct E198FusedExactnessTests {
 
 // MARK: - Stage 2: isolated dispatch pricing
 
+/// One macmon sample. The pricing session runs ABBA-counterbalanced under no
+/// thermal gate, so the entry and exit temperature of every arm is the thermal
+/// record required for an ungated timed arm.
+private func e198GPUTemperature() -> Double? {
+    let binary =
+        ProcessInfo.processInfo.environment["MLXFAST_E198_MACMON"]
+        ?? "/opt/homebrew/bin/macmon"
+    guard FileManager.default.isExecutableFile(atPath: binary) else { return nil }
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: binary)
+    process.arguments = ["pipe", "-s1"]
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    process.standardError = FileHandle.nullDevice
+    do { try process.run() } catch { return nil }
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    for line in String(decoding: data, as: UTF8.self).split(separator: "\n") {
+        guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)),
+            let root = object as? [String: Any],
+            let temp = root["temp"] as? [String: Any],
+            let gpu = temp["gpu_temp_avg"] as? Double
+        else { continue }
+        return gpu
+    }
+    return nil
+}
+
 private enum E198Mode: String {
     case indep
     case serial
@@ -501,15 +529,19 @@ struct E198DispatchPricingTests {
             for _ in 0 ..< 20 { settle() }
             for (position, index) in order.enumerated() {
                 let cell = cells[index]
+                let entryTemperature = e198GPUTemperature()
                 let start = DispatchTime.now().uptimeNanoseconds
                 for _ in 0 ..< reps { cell.run() }
                 let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start)
+                let exitTemperature = e198GPUTemperature()
                 samples.append([
                     "arm": cell.arm, "mode": cell.mode.rawValue, "m": cell.m,
                     "kv": cell.kv, "kL": cell.kL, "chain": chain,
                     "block": block, "ascending": ascending, "position": position,
                     "microseconds": elapsed / 1e3 / Double(reps) / Double(chain),
                     "reps": reps,
+                    "entry_gpu_temperature_c": entryTemperature ?? -1,
+                    "exit_gpu_temperature_c": exitTemperature ?? -1,
                 ])
             }
         }

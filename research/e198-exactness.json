@@ -1,84 +1,120 @@
 {
   "cells" : [
     {
-      "control_differing_elements" : 26038,
-      "control_max_absolute_difference" : 0.02490234375,
+      "control_differing_elements" : 25508,
+      "control_max_absolute_difference" : 0.066650390625,
       "differing_elements" : 0,
       "elements" : 36864,
       "kL" : 518,
       "kv" : 512,
       "m" : 6,
-      "max_absolute_difference" : 0
+      "max_absolute_difference" : 0,
+      "served" : true
     },
     {
-      "control_differing_elements" : 30839,
-      "control_max_absolute_difference" : 0.04276275634765625,
+      "control_differing_elements" : 31196,
+      "control_max_absolute_difference" : 0.06103515625,
       "differing_elements" : 0,
       "elements" : 43008,
       "kL" : 519,
       "kv" : 512,
       "m" : 7,
-      "max_absolute_difference" : 0
+      "max_absolute_difference" : 0,
+      "served" : true
     },
     {
-      "control_differing_elements" : 36328,
-      "control_max_absolute_difference" : 0.084228515625,
+      "control_differing_elements" : 36055,
+      "control_max_absolute_difference" : 0.03363037109375,
       "differing_elements" : 0,
       "elements" : 49152,
       "kL" : 520,
       "kv" : 512,
       "m" : 8,
-      "max_absolute_difference" : 0
+      "max_absolute_difference" : 0,
+      "served" : true
     },
     {
-      "control_differing_elements" : 41776,
-      "control_max_absolute_difference" : 0.04833984375,
+      "control_differing_elements" : 41140,
+      "control_max_absolute_difference" : 0.10626220703125,
       "differing_elements" : 0,
       "elements" : 55296,
       "kL" : 521,
       "kv" : 512,
       "m" : 9,
-      "max_absolute_difference" : 0
+      "max_absolute_difference" : 0,
+      "served" : true
     },
     {
-      "control_differing_elements" : 28105,
-      "control_max_absolute_difference" : 0.0411376953125,
-      "differing_elements" : 15666,
+      "control_differing_elements" : 24399,
+      "control_max_absolute_difference" : 0.01593017578125,
+      "differing_elements" : 0,
       "elements" : 36864,
+      "kL" : 1020,
+      "kv" : 1014,
+      "m" : 6,
+      "max_absolute_difference" : 0,
+      "served" : true
+    },
+    {
+      "control_differing_elements" : 29947,
+      "control_max_absolute_difference" : 0.0352783203125,
+      "differing_elements" : 0,
+      "elements" : 43008,
+      "kL" : 1021,
+      "kv" : 1014,
+      "m" : 7,
+      "max_absolute_difference" : 0,
+      "served" : true
+    },
+    {
+      "control_differing_elements" : 35167,
+      "control_max_absolute_difference" : 0.0137939453125,
+      "differing_elements" : 0,
+      "elements" : 49152,
+      "kL" : 1022,
+      "kv" : 1014,
+      "m" : 8,
+      "max_absolute_difference" : 0,
+      "served" : true
+    },
+    {
+      "control_differing_elements" : 39711,
+      "control_max_absolute_difference" : 0.02032470703125,
+      "differing_elements" : 0,
+      "elements" : 55296,
+      "kL" : 1023,
+      "kv" : 1014,
+      "m" : 9,
+      "max_absolute_difference" : 0,
+      "served" : true
+    },
+    {
+      "declined_at_two_pass_boundary" : true,
       "kL" : 1030,
       "kv" : 1024,
       "m" : 6,
-      "max_absolute_difference" : 0.0009765625
+      "served" : false
     },
     {
-      "control_differing_elements" : 32706,
-      "control_max_absolute_difference" : 0.032745361328125,
-      "differing_elements" : 18023,
-      "elements" : 43008,
+      "declined_at_two_pass_boundary" : true,
       "kL" : 1031,
       "kv" : 1024,
       "m" : 7,
-      "max_absolute_difference" : 0.0009765625
+      "served" : false
     },
     {
-      "control_differing_elements" : 37179,
-      "control_max_absolute_difference" : 0.020751953125,
-      "differing_elements" : 20735,
-      "elements" : 49152,
+      "declined_at_two_pass_boundary" : true,
       "kL" : 1032,
       "kv" : 1024,
       "m" : 8,
-      "max_absolute_difference" : 0.0009765625
+      "served" : false
     },
     {
-      "control_differing_elements" : 42535,
-      "control_max_absolute_difference" : 0.03582763671875,
-      "differing_elements" : 23295,
-      "elements" : 55296,
+      "declined_at_two_pass_boundary" : true,
       "kL" : 1033,
       "kv" : 1024,
       "m" : 9,
-      "max_absolute_difference" : 0.0009765625
+      "served" : false
     }
   ],
   "harness" : "local",
