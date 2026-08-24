@@ -72236,3 +72236,75 @@ Round-end seam measured at 959.3 µs/round = 0.66% (commit 455.8 + inter_round_g
 ### Board
 
 Receipt ladder unchanged (A 3.70785 paid best; crown 3.7291). Queue drains in creation order post-stall. Slot reserved for E199's refrozen composed candidate.
+
+## 413 — E192 review: persistent-rollback-slot family DEAD at Stage-0 diagnostic cost. FINDING 528 (relocation, not removal); RULE 394 (round-endpoint statistics only). Merged research-only.
+
+**Review of PR #201 (qwen-askeladd, E192, terminal `failed`, head `6571f772`).** Stage 0 fired the
+predeclared stop rule; Stage 1 was never built. Merged as research-only artifacts (six files under
+`research/`, scored surface byte-identical to its recorded base `55b34155`; RULE 393 full-editablePaths
+diff empty). Accepted on current base `136ab8a4` — the relocation account is structural and unaffected
+by the E193 prefetch merge. Base tip after merge: `9d67e465`.
+
+W&B (harness=local, host ip-10-231-2-227 M4 Pro, 256 decode tokens, ungated standing mode, temps and
+gate flags verbatim; one instrumented worker sha256-asserted across both legs):
+- barrier leg `d4qoppo1` — https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/d4qoppo1
+- tape-suppression leg `ao5dabij` — https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ao5dabij
+- rollup with account verdicts `26e8ap4p` — https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/26e8ap4p
+
+### FINDING 528 — clearRecurrentRollback's 397–403 µs/round release cost is RELOCATION, not removable work. The persistent-slot family is dead.
+
+Three accounts, decided in one Stage-0 session (14 depth-matched adjacent pairs per leg, 31
+full-acceptance rounds, exactness held, schedule unperturbed: edl 6.4571 and adr 0.97788 identical
+across legs):
+
+1. **(a) in-flight reference — FALSIFIED.** Thread-CPU vs wall clock across the same release:
+   cpu/wall = 0.9976 (median 409 vs 410 µs). The release is real host CPU work, not a blocked wait.
+   (This also retires FINDING 495's in-flight account.)
+2. **(b) allocator free — CONFIRMED as the site.** Suppressing the PrefixReplayTape drops
+   `clear_release_count` 48 → 0 and `clear_release_us` −403.4 ± 7.0 µs paired; `commit_us` −326.9 ± 20.6.
+3. **(c) relocation — CONFIRMED as the outcome.** Same arm, round endpoint: `round_us` −92.5 ± 239.8 µs.
+   Full removal predicts −403.4 µs and is rejected at 2.6σ. Displaced work reappears in
+   `verify_build_us` +122.8 ± 203.1 and `draft_build_us` +148.6 ± 282.7 (jointly ≈ +271 µs).
+
+Why it generalizes: the 48 references are the GDN verify forward's own intermediates
+(`PrefixReplayTape` views — KVCache.swift:1256, Qwen35.swift:1047/1309). Nothing is separately
+allocated for rollback, so there is nothing to preallocate; retaining the tape only defers frees the
+verify eval would otherwise pay. The tape-suppression arm is a **strict upper bound** on any
+persistent-slot design (it removes 100% of the references; a real slot still writes state every
+round). Ceilings: 2σ-optimistic win 332.3 µs/round = 0.23% < MUE 0.39%; whole-leg `clear_release_us`
+is 10.3 ms of 4.883 s drafting time = **0.211%** — even perfect, fully realized removal cannot clear
+the MUE.
+
+Secondary results:
+- **E188 option 3 (barrier before the release) is 11× net-negative:** barrier cost +1109.6 ± 108.0 µs
+  recovers only −103.4 ± 21.3 µs; net +1006.3 µs/round; `commit_us` rises 1:1 (+1007.1 ± 102.8). The
+  commit phase is host-serial and overlaps nothing. Never spend a leg on this variant.
+- **Open follow-up, PARKED as dominated:** deferring the tape release into the next round's verify
+  eval (host waits ~67.5 ms there). Ceiling is the same 0.211% whole-leg bound, it needs a
+  background-thread or reordered release with MLX allocator thread-safety risk, and this same data
+  shows displaced frees land in build phases rather than vanish. Reopen only with evidence that a
+  free executed during an eval wait is actually off the critical path.
+
+### RULE 394 — decision statistics must be round-endpoint contrasts; phase timers are attribution instruments only.
+
+A site or phase-timer reduction (`clear_release_us`, `commit_us`, seam slices, etc.) is not evidence
+of round-level value: host work relocates across phase boundaries (FINDING 528 measured a −403 µs
+site win that priced to −92 ± 240 µs at the round endpoint). Every removal, overlap, or deferral
+claim must be decided on `round_us` / `mtp_ms_per_round` (or absolute leg time) in the same paired
+contrast. Phase timers say *where* the cost sits, never *whether it is gone*.
+
+### Consequences for standing items
+
+- **FINDING 494 (rejection seam, `restoreAfterPrefixReject` +1107 µs) is now relocation-suspect.**
+  Any experiment on it must satisfy RULE 394. Its queued "composition behind E192" slot is replaced
+  by E205 (below).
+- **E204 (Alphonse) is strengthened, not weakened:** the 397 µs commit-phase release cannot be
+  removed, so overlap is the only way to reclaim that window. The double-count concern between
+  E192 and E204 is void — E204 now owns the whole seam window. Noted in his PR when Stage 0 reports.
+- **FINDING 495's per-ref regime step** (3.27 → 8.27 µs/ref) is consistent with the
+  `MetalAllocator::free` residency-set/release branch (Askeladd's source reading); no further action.
+
+**Askeladd freed.** Next assignment E205: rejection-round cost decomposition at widths 8–9 — closes
+FINDING 485's declared limitation (no rejected-row cost ever measured), prices FINDING 494 under
+RULE 394, and delivers the acceptance-sensitivity correction needed to interpret an intermediate
+E199 receipt value between the flat (≈3.82) and step (≈3.68) desk predictions.
