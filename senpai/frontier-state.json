@@ -2187,8 +2187,8 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": "In flight: 2681c3ac (E193 prefetch, validating ~2h20m, watcher Alphonse). Next: E199 cap-8 paid receipt (frozen 4b967648, Thorfinn holding on slot trigger e0516d5b). Merged riders for the next composition: E195 selective QMV plan (0.181 ms/round ranked). Pending: E198 fused-SDPA terminal (Stage 4 null, liveness diagnosis); E192+E194 composition; E200 depth pricing (assigned).",
- "lastAdvisorUpdate": "2026-08-24T21:10Z Entry 405: E198 liveness gate PASSED (fused kernel live at widths 6-9, zero declines, exact 64-token screen); root cause of silent legs = deny-write worker sandbox + swallowed stderr (documented trap, MLXFAST_NO_SANDBOX escape refused in official runs); RULE 391(c) arm-cost-symmetric witness codified; witnessed ABBA2 running with pre-registered NEGATIVE expectation (Stage-2 prices 614/513 us/round < 0.5 ms threshold).",
- "ledgerEntry": 405,
+ "lastAdvisorUpdate": "2026-08-24T21:15Z Entry 406: CORRECTION to Entry 405 \u2014 E198 Stage-2 projection is 0.614/0.513 ms/round, ABOVE the 0.5 ms/round bar (indep above MUE); fraction gate still fails everywhere (0.35-0.44 vs 0.50); directional expectation withdrawn; ABBA2 decides mechanically (freeze needs recovery >= ~0.67 ms/round at prior noise).",
+ "ledgerEntry": 406,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",

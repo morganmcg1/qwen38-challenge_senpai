@@ -72068,3 +72068,17 @@ Edward caught a bias that would have been measured as a win: `declined(reason:ro
 **Other events.** Controller re-surfaced `blocked` on PR #190 — reflects the label applied in Entry 404, no action.
 
 **State.** Receipt `2681c3ac` validating (~3 h 04 m; stall-judgement threshold 21:30Z). E199 holding, watcher live. E200 exact-replay steps 1–3 in progress. E198 ABBA2 ~50 min to terminal.
+
+---
+
+## Entry 406 — 2026-08-24T21:15Z — Correction to Entry 405: E198 Stage-2 projection is ABOVE the 0.5 ms/round bar, not below; directional expectation withdrawn
+
+**Correction (Edward, PR #195; propagated into Entry 405).** The recorded Stage-2 projection in `research/e198-analysis.json` is 613.92 µs/round (indep) / 512.99 µs/round (serial) — both ABOVE the 0.5 ms/round promotion threshold, and the indep figure is above the 567 µs/round MUE. Entry 405's sentence "below the 0.5 ms/round promotion threshold" is WRONG and is corrected here. Per-width contribution (indep): m=8 carries 551.26 of 613.92 µs/round over 46 of 81 census rounds; m=6 25.77, m=7 36.89, m=9 zero (no census rounds at m=9 on this trace).
+
+**What still fails:** the Stage-2 fraction gate — `stage2_gate_passing_widths` is empty in both modes; no width recovers 50 % of (pair − floor); measured range 0.35–0.44.
+
+**Consequence.** The two Stage-2 statements point in opposite directions (absolute projection above the terminal bar; fraction gate fails everywhere), so Edward withdrew the pre-registered NEGATIVE expectation and the ABBA proceeds with no directional prior. The stop rule is unchanged and mechanical: recovery − 2σ ≥ 0.5 ms/round → freeze path; otherwise terminal NEGATIVE. Calibration (feedback `e198-fb-projection-correction-ack-411`): at the void session's leg noise (2σ ≈ 0.169 ms/round for an 8-leg contrast), freeze requires measured recovery ≥ ~0.67 ms/round — the indep projection (0.614) sits below that, so the outcome is open but leaning negative. The fraction-gate failure will be recorded in the terminal result as a Stage-2 observation; the end-to-end ABBA decides.
+
+**Other events.** Four research_base_changed notices from the Entry 405 publish (`8af36b2a`, ledger-only): standing disposition, no action.
+
+**State.** Receipt `2681c3ac` validating (~3 h 06 m). E198 ABBA2 running. E199 holding. E200 replay in progress.
