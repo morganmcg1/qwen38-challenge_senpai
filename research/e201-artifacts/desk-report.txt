@@ -1,0 +1,182 @@
+==============================================================================
+E201 STAGE 1  ONLINE PER-PROMPT DEPTH-CAP RULE  (harness=ranked)
+==============================================================================
+  instrument: FINDING 520 survival-pinned latent-q, corrected S_k
+  ranked law: smooth-step, AICc 29.8, wRMSE 0.268 ms
+  9-row cell: smooth continuation vs E186 step transferred at 0.237
+  receipt A 3.70784519 (cap 7), crown 3.72911001
+  EMA transient charged at +0.057 edl on the committed segment
+
+  MODEL CHECKS
+   cap 7 in-sample   3.70784519 vs paid 3.70784519  (-0.000%)
+   cap 4 out-of-sample 3.531905 vs paid 3.547429  (-0.44%)
+   cap 5 out-of-sample 3.532206 vs paid 3.523636  (+0.24%)
+   receipt channel 1-sigma 0.689%
+
+  STATIC GLOBAL CAP (the E199 axis; the control the online rule
+  must beat, since it is one line and needs no observation)
+   cap      median smooth      vs A | median step9      vs A
+   4            3.535224    -4.66% |     3.535224    -4.66%
+   5            3.550300    -4.25% |     3.550300    -4.25%
+   6            3.594083    -3.07% |     3.594083    -3.07%
+   7            3.707845    -0.00% |     3.707845    -0.00%
+   8            3.829386    +3.28% |     3.681378    -0.71%
+   best static cap: smooth 8 (+3.28%), step9 7 (-0.00%)
+
+  ORACLE PER-PROMPT CAP (perfect information, zero observation
+  cost) on the corrected instrument, vs the FINDING 515 `chain`
+  value of +3.02%%
+   smooth  median 3.829386 (+3.28%)  caps plut=4 dram=4 trav=4 beag=8 repu=8 essa=8 medi=8 bota=8
+   step9   median 3.707845 (-0.00%)  caps plut=4 dram=4 trav=4 beag=7 repu=7 essa=7 medi=7 bota=7
+
+  MEDIAN STRUCTURE: the published score is the mean of the 4th and
+  5th raw ratios of 8, so only those two prompts can move it
+   prompt      rank@7     edl@7 | raw at cap 4..8
+   plutarch         1     0.156 |  1.2607  1.2607  1.2607  1.2607  1.2607
+   drama            2     2.298 |  2.1222  2.1222  2.1222  2.1222  2.1222
+   travel           3     2.649 |  2.4333  2.4277  2.4277  2.4277  2.4277
+   beagle           4     4.383 |  3.3934  3.4105  3.4498  3.5453  3.6472
+   essays           5     5.088 |  3.6771  3.6901  3.7383  3.8704  4.0116
+   medicine         6     5.256 |  3.7108  3.7193  3.7651  3.9065  4.0589
+   republic         7     4.990 |  3.7569  3.7628  3.8046  3.9199  4.0439
+   botany           8     6.149 |  3.7719  3.7393  3.7717  3.9332  4.1134
+   pivotal prompts at cap 7: beagle, essays
+   rank-4 raw 3.5453, rank-5 raw 3.8704; best non-pivot raw below is
+   travel at 2.4333 over all caps -- it cannot reach rank 4, so its
+   per-prompt gain is invisible to the published median.
+
+  WHERE THE ORACLE GAIN ACTUALLY COMES FROM. Two independent
+  reasons the per-prompt part of the oracle is empty:
+
+  (1) THE CAP DOES NOT BIND ON SHALLOW PROMPTS. P(greedy depth
+      reaches the cap) under the shipped price:
+   prompt      P(d>=4)   P(d>=5)   P(d>=6)   P(d>=7)   P(d>=8)
+   plutarch   1.83e-06  7.70e-21  0.00e+00  0.00e+00  0.00e+00
+   drama      4.97e-04  2.66e-08  0.00e+00  0.00e+00  0.00e+00
+   travel     2.11e-01  5.72e-02  1.26e-04  0.00e+00  0.00e+00
+   beagle     6.19e-01  4.28e-01  3.80e-01  2.83e-01  2.29e-01
+   republic   7.40e-01  5.95e-01  4.76e-01  3.57e-01  2.89e-01
+   essays     7.36e-01  6.24e-01  5.18e-01  4.21e-01  3.41e-01
+   medicine   7.71e-01  6.22e-01  5.66e-01  4.71e-01  3.82e-01
+   botany     8.98e-01  8.90e-01  7.57e-01  6.75e-01  5.47e-01
+      A prompt whose rounds never reach depth 4 is IDENTICAL at
+      every cap in 4..8, so there is nothing to adapt for it.
+
+  (2) EVERY PROMPT ON WHICH THE CAP BINDS WANTS THE SAME CAP.
+      Per-prompt argmax cap: plut=4 dram=4 trav=4 beag=8 repu=8 essa=8 medi=8 bota=8
+      The shallow prompts pick 4 only because the cap is inert
+      there; the caps differ, but the TIMES do not.
+
+  (3) THE SIGNAL IS REAL; THE LEVER IS NOT. Decompose the variance
+      of the shipped rule's drafting depth (cap 8) into between-
+      and within-prompt parts. A per-prompt cap can only address
+      the between part.
+      mean within-prompt variance of depth  3.393
+      between-prompt variance of mean depth 4.178
+      within / (within + between)           44.8%
+      So between-prompt structure EXISTS, and the observable
+      separates the prompts almost perfectly (misclassification
+      below 1e-7 by r = 16). This experiment does not fail from
+      weak signal or from sampling noise. It fails because the CAP
+      has no per-prompt optimum to find: it is inert where the
+      prompts differ most, and maximal wherever it binds. The
+      remaining within-prompt variation is already handled by the
+      shipped per-round greedy price, which is a finer instrument
+      than any per-prompt constant.
+
+  COUNTERFACTUAL: if the score were the MEAN of 8 raws instead of
+  the median, would the per-prompt information be worth anything?
+   best static global cap under a MEAN score: 8 -> 3.210700
+   per-prompt oracle under a MEAN score:          3.211400 (+0.022%)
+   So even with the median removed, per-prompt cap choice is worth
+   +0.022%. The median is not the only blocker; the cap simply is
+   not a per-prompt lever under the shipped greedy depth rule.
+
+  THE OBSERVABLE: mean accepted tokens per round, r rounds at the
+  default cap c0 = 7. Separation decides misclassification.
+   prompt       abar@7        sd | P(mean < 2.0) at r =
+                                 |      r=4     r=16     r=64
+   plutarch     0.0492    0.2794 | 1.00e+00 1.00e+00 1.00e+00
+   drama        1.0317    1.0409 | 9.40e-01 1.00e+00 1.00e+00
+   travel       1.4038    1.3908 | 7.57e-01 9.43e-01 9.99e-01
+   beagle       3.6545    2.4745 | 7.67e-02 2.58e-03 1.34e-08
+   republic     4.5054    2.2931 | 1.33e-02 6.75e-06 2.42e-18
+   essays       4.5652    2.4078 | 1.58e-02 1.18e-05 1.93e-17
+   medicine     4.6889    2.4167 | 1.31e-02 6.19e-06 1.61e-18
+   botany       5.3210    2.3287 | 4.49e-03 1.55e-07 1.05e-24
+
+  RULE SWEEP: two-cap observe-then-commit. cap_lo below the
+  threshold, cap_hi at or above it. The DEFAULT cap c0 is swept
+  too, so the family is given its best possible exploration cap
+  rather than being handicapped by the shipped one. Reported value
+  is the MEAN of the exact published-median distribution.
+   r      c0  cap_lo  cap_hi   theta  mean median      vs A   p90-p10  adapt
+   4       8       8       8     0.5     3.829386    +3.28%    0.0000  False
+   4       8       8       8     1.0     3.829386    +3.28%    0.0000  False
+   4       8       8       8     1.5     3.829386    +3.28%    0.0000  False
+   4       8       8       8     2.0     3.829386    +3.28%    0.0000  False
+   4       8       8       8     2.5     3.829386    +3.28%    0.0000  False
+   4       8       8       8     3.0     3.829386    +3.28%    0.0000  False
+   4       8       8       8     3.5     3.829386    +3.28%    0.0000  False
+   4       8       8       8     4.0     3.829386    +3.28%    0.0000  False
+   4       8       8       8     4.5     3.829386    +3.28%    0.0000  False
+   48      8       4       8     0.5     3.829386    +3.28%    0.0000   True
+   48      8       4       8     1.0     3.829386    +3.28%    0.0000   True
+   48      8       4       8     1.5     3.829386    +3.28%    0.0000   True
+   best GENUINELY ADAPTIVE rule (its commits are not all the
+   same cap): r=48 c0=8 4/8 theta=0.5 -> 3.829386 (+3.28%)
+
+  DECISIVE COMPARISON (harness=ranked, smooth 9-row treatment)
+   receipt A (paid, cap 7)              3.707845   +0.00%
+   best STATIC global cap 8             3.829386  +3.28%
+   oracle per-prompt cap                3.829386  +3.28%
+   best ONLINE observe-then-commit      3.829386  +3.28%
+   ONLINE minus STATIC (the value of the per-prompt information
+   this experiment would have to build)  +0.000%
+
+  r / theta SURFACE at the best (c0, cap_lo, cap_hi) = (8, 8, 8)
+   r           0.5      1.0      1.5      2.0      2.5      3.0      3.5      4.0      4.5
+   4        +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%
+   8        +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%
+   12       +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%
+   16       +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%
+   24       +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%
+   32       +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%
+   48       +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%
+   64       +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%   +3.28%
+
+  CHARGE DECOMPOSITION at the best rule (r=4, theta=0.5, 8/8)
+   online, all charges                  3.829386  +3.28%
+   same rule, EMA transient waived      3.829386  +3.28%  (EMA costs +0.000%)
+   same commits, exploration waived     3.829386  +3.28%  (exploration costs +0.000%)
+
+  SENSITIVITY
+   9-row cell: the rule family is RE-OPTIMISED under each
+   treatment, so the margin is never a transplanted optimum.
+   9-row smooth  online +3.28% vs A (r=4 c0=8 8/8 th=0.5), static cap 8 +3.28%, margin +0.000%
+   9-row step9   online -0.00% vs A (r=4 c0=7 7/7 th=0.5), static cap 7 -0.00%, margin +0.000%
+
+   prompt-mix leave-one-out on the online-minus-static margin:
+    drop plutarch  online-minus-static +0.000%
+    drop drama     online-minus-static +0.000%
+    drop travel    online-minus-static +0.000%
+    drop beagle    online-minus-static +0.000%
+    drop republic  online-minus-static +0.000%
+    drop essays    online-minus-static +0.000%
+    drop medicine  online-minus-static +0.000%
+    drop botany    online-minus-static +0.000%
+
+  STOP-RULE READING (predeclared: <+0.2%% NOT USEFUL desk-only;
+  [+0.2%%, +0.5%%) hold for advisor; >=+0.5%% Stage 2)
+   naive reading, vs receipt A              +3.28%
+   mechanism reading, vs best static cap    +0.000%
+
+   The naive reading is NOT the assigned mechanism. The rule that
+   attains +3.28% is the DEGENERATE member of the family (c0=8, 8/8):
+   it commits every prompt to the same cap and never uses its own
+   observation. That number is the E199 cap-8 axis, not online
+   adaptation. The value of the per-prompt information this
+   assignment exists to build is +0.000%, so the stop rule reads
+   NOT USEFUL: terminal, desk-only, no GPU.
+
+  wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-askeladd/workspace/target/research/e201-artifacts/desk-online-cap.json
