@@ -230,6 +230,38 @@ def arm_table(legs: list[dict]) -> dict:
     return out
 
 
+# The source bisection puts the only repair-path change at merge eec2c14b, so
+# the two arms whose window content predates it are pooled against the two that
+# follow it.
+PRE_EEC = ("e90-anchor", "e134-restore-v1")
+POST_EEC = ("pre-e165", "post-e165")
+
+
+def rank_test(table: dict) -> dict:
+    """Exact Mann-Whitney U on rejection-round commit cost across eec2c14b.
+
+    The rejection cells are small (4 to 6 per arm) and the values are not
+    normal, so a rank test is the honest statistic. U counts the pairs in which
+    a post-merge round is slower than a pre-merge round.
+    """
+    pre = [v for a in PRE_EEC for v in table.get(a, {}).get("rejectCommitValues", [])]
+    post = [v for a in POST_EEC for v in table.get(a, {}).get("rejectCommitValues", [])]
+    if not pre or not post:
+        return {}
+    wins = sum(1 for b in post for a in pre if b > a)
+    ties = sum(1 for b in post for a in pre if b == a)
+    u = wins + 0.5 * ties
+    n = len(pre) * len(post)
+    # Normal approximation with a continuity correction; exact enumeration is
+    # unnecessary because U sits at the extreme of its range.
+    mu = n / 2
+    sigma = (len(pre) * len(post) * (len(pre) + len(post) + 1) / 12) ** 0.5
+    z = (u - mu - 0.5) / sigma if sigma else float("nan")
+    return {"nPre": len(pre), "nPost": len(post), "U": u, "UMax": n,
+            "medianPreUs": st.median(pre), "medianPostUs": st.median(post),
+            "stepUs": st.median(post) - st.median(pre), "z": z}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--legs", nargs="+", required=True)
@@ -262,6 +294,14 @@ def main() -> None:
               f" | repair={rec['repairCostUs']:7.1f}"
               f" roundExcess={rec['rejectRoundExcessUs']:8.1f}")
 
+    rank = rank_test(table)
+    if rank:
+        print(f"\nrejection-round commit across merge eec2c14b (rank test): "
+              f"U={rank['U']:.0f}/{rank['UMax']} "
+              f"(n_pre={rank['nPre']}, n_post={rank['nPost']}), "
+              f"median {rank['medianPreUs']:.1f} -> {rank['medianPostUs']:.1f} us, "
+              f"step +{rank['stepUs']:.1f} us, z={rank['z']:.2f}")
+
     print("\nE90 reference (harness=local, 512 tokens, depth 8, Edward host):")
     for ph, v in E90.items():
         here = st.mean([leg[ph] for leg in legs if ph in leg])
@@ -282,7 +322,7 @@ def main() -> None:
     print(f"  excluded {depth['nSpikes']} spike rounds >= {SPIKE_US:.0f} us: "
           f"{[(t, rd) for t, rd, _ in depth['spikeRounds']]}")
 
-    out = {"baseSha": base_sha, "arms": table, "depth": depth,
+    out = {"baseSha": base_sha, "arms": table, "depth": depth, "rankTest": rank,
            "legs": [{k: v for k, v in leg.items() if k != "rounds"} for leg in legs],
            "e90Reference": E90}
     pathlib.Path("/tmp/e188").mkdir(exist_ok=True)
@@ -329,6 +369,7 @@ def main() -> None:
         {f"depth/d{d}/{k}": v for d, r in depth["byDepth"].items()
          for k, v in r.items()} |
         {f"depthFit/{k}": v for k, v in depth["fit"].items()} |
+        {f"rankTest/{k}": v for k, v in rank.items()} |
         {"depth/nSpikesExcluded": depth["nSpikes"]})
     urls.append(("rollup", roll.id, roll.url))
     roll.finish()

@@ -137,19 +137,101 @@ That leaves four distinct window contents to time: `59b67f50` (blob `b946c17c`),
 
 Honest limit: `Qwen35.swift` changes at 9 of the 15 merges, so "provably inert" is too strong a phrase for the rest of the tree. The claim is confined to the window body and its named callees.
 
-### 2.2 Timed ladder: PLACEHOLDER
+### 2.2 Timed ladder: no merge grew the ordinary commit phase
 
-### 2.3 The E90 comparison is common-mode
+8 legs, 4 arms, 2 legs per arm, in the palindromic order `head, pre165, e90, e134, e134, e90, pre165, head`. A palindrome is the ABBA generalisation for four arms: every arm sits as far before the session midpoint as after it, so monotone thermal drift cancels to first order in each arm mean.
 
-PLACEHOLDER
+| leg | arm | rev | n | commit | readout | upkeep | eval_wall | round |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| `e188-head-a` | post-E165 | HEAD | 18 | 440.5 | 42.0 | 268.0 | 67503.5 | 145219.0 |
+| `e188-pre165-a` | pre-E165 | `806181de` | 18 | 461.0 | 43.0 | 264.0 | 67567.5 | 145108.5 |
+| `e188-e90-a` | E90 anchor | `59b67f50` | 18 | 462.0 | 43.0 | 256.0 | 65395.0 | 145059.0 |
+| `e188-e134-a` | E134 restore v1 | `7a427dfa` | 19 | 461.0 | 43.0 | 251.0 | 67568.0 | 145181.0 |
+| `e188-e134-b` | E134 restore v1 | `7a427dfa` | 19 | 444.0 | 42.0 | 245.0 | 67554.0 | 145212.0 |
+| `e188-e90-b` | E90 anchor | `59b67f50` | 18 | 446.0 | 43.0 | 258.5 | 67504.5 | 145142.0 |
+| `e188-pre165-b` | pre-E165 | `806181de` | 18 | 444.5 | 44.0 | 263.5 | 67379.5 | 145137.5 |
+| `e188-head-b` | post-E165 | HEAD | 18 | 450.0 | 42.0 | 267.0 | 67471.0 | 145054.0 |
 
-### 2.4 The multi-millisecond commit spikes are the prefix-reject repair
+All values are µs, medians over the leg with round 1 dropped.
 
-PLACEHOLDER
+The leg medians are flat: arm means span `445.2` to `454.0 µs`, and the within-arm leg-to-leg spread is `9.5` to `17.0 µs`, which is as large as the between-arm spread. **Swapping the commit-phase window body across four campaign revisions does not move the commit phase, and no arm approaches E90's 183.9 µs.**
 
-### 2.5 A second regime shift that draft depth does not explain
+### 2.3 The E90 comparison is common-mode, not commit-specific
 
-PLACEHOLDER
+| phase | E90 (ledger 234.5) | E188 mean over 8 legs | ratio |
+|---|---:|---:|---:|
+| `readout` | 14.8 µs | 42.8 µs | 2.89 |
+| `commit` | 183.9 µs | 451.1 µs | 2.45 |
+| `upkeep` | 66.7 µs | 259.1 µs | 3.88 |
+| `eval_wall` | 76434.2 µs | 67242.9 µs | 0.88 |
+| ROUND | 165183.9 µs | 145139.1 µs | 0.88 |
+
+Every host-only, ~100 % idle phase grew 2.4× to 3.9×. Both GPU-bound phases shrank by the same 0.88×. FINDING 482 names only the commit phase, but `readout` and `upkeep` grew as much or more, and section 2.2 shows the window body does not produce any of it.
+
+The token window is not the cause. E185's 455.8 µs came from a ~70-round leg and E90's 183.9 µs from a 78-round leg, both about 512 tokens, and my 128-token legs reproduce E185's value to within 3 %.
+
+**Two instrument definitions, kept explicit as the advisor asked.** E90 and E185 use the GPU interval ledger: MTLCommandBuffer `gpuStart`/`gpuEnd` unions intersected with round windows, which attributes an *interval* to a phase and splits it into GPU busy and GPU idle. `mtp-trace` uses host `DispatchTime.now().uptimeNanoseconds` deltas between named points on the decode thread; `commit_us` is exactly `tCommitDone − tReadDone`. The two agree on the current base (455.8 against 440.5–462.0), so they measure the same window there. Whether they agreed on the E90 tree cannot be checked from this side, because I can only run the current tree. That is the open half of the reconciliation.
+
+### 2.4 The multi-millisecond spikes are the prefix-reject repair, and it regressed at `eec2c14b`
+
+The per-round trace is deterministic and repeats exactly across legs. In every 19-round leg, rounds 3, 11 and 18 are the only rounds where `acc < d`, and they are the only rounds with a multi-millisecond commit phase.
+
+`restoreAfterPrefixReject` is the only commit-window callee the bisection moves, and it runs **only** when `acc < d`. A median over all rounds is dominated by full-acceptance rounds and cannot see it. Splitting by acceptance outcome:
+
+| arm | rev | full-accept n | full-accept commit | reject n | reject commit | repair cost | round excess |
+|---|---|---:|---:|---:|---:|---:|---:|
+| E90 anchor | `59b67f50` | 30 | 450.0 µs | 6 | 1659.5 µs | +1209.5 µs | +1331.0 µs |
+| E134 restore v1 | `7a427dfa` | 34 | 446.5 µs | 4 | 1664.0 µs | +1217.5 µs | +1609.0 µs |
+| pre-E165 | `806181de` | 30 | 444.0 µs | 6 | 2694.5 µs | +2250.5 µs | +2317.5 µs |
+| post-E165 | HEAD | 30 | 441.0 µs | 6 | 2820.0 µs | +2379.0 µs | +2885.0 µs |
+
+Individual rejection-round values:
+
+- `59b67f50`: 1577, 1643, 1648, 1671, 1673, 1771
+- `7a427dfa`: 1645, 1662, 1666, 1856
+- `806181de`: 1631, 2508, 2606, 2783, 2842, 3025
+- HEAD: 2111, 2560, 2759, 2881, 2886, 3051
+
+Pooling the two arms whose window content predates merge `eec2c14b` against the two that follow it gives a Mann-Whitney `U = 111/120` with `n_pre = 10` and `n_post = 12`, median `1664.0 → 2771.0 µs`, step **`+1107 µs`**, `z = 3.33`. Only one of the twelve post-merge rounds falls inside the pre-merge range.
+
+The step lands at the merge the free source bisection had already named. `eec2c14b` (PR #152) replaces `prefetchRecurrentBoundary(cache)` in the K=1 restore path with an inline `asyncEval` over the 48 Gated DeltaNet boundary states, and removes `prefetchRecurrentBoundary(cache)` from the generic repair fallback:
+
+```swift
+-            prefetchRecurrentBoundary(cache)
++            let replayedRecurrentStates = cache.compactMap { entry -> MLXArray? in
++                guard let arrays = entry as? ArraysCache else { return nil }
++                return arrays[1]
++            }
++            asyncEval(replayedRecurrentStates)
+```
+
+The in-source comment attributes the change to E020 replay-prefetch and records a promoted `+0.039 %`. HEAD still carries it.
+
+**The extra cost is not hidden.** The round excess on rejection rounds tracks the commit excess almost one for one: repair rises `+1041 µs` from the E90 anchor to `806181de` while the round excess rises `+986 µs`. The asynchronous submission does not buy the time back inside the same round at this token window.
+
+Priced honestly: rejections are 3 of 18 scored rounds here, so `986 µs × 0.167 = 165 µs/round` on a `145.1 ms` round, which is **`0.113 %`**. That is below the `0.39 %` MUE as a single mechanism. It is a real, localised, 100 %-GPU-idle seam cost with a named cause, not a candidate that pays for itself alone.
+
+**Two honest limits.** First, the `7a427dfa` arm is not workload-matched: it diverges from the shared trajectory at round 2 and produces 20 rounds instead of 19, so it yields 4 rejection rounds rather than 6. The `59b67f50` arm reproduces the current trajectory exactly, so the matched contrast is `59b67f50` against `806181de` and HEAD; `7a427dfa` only corroborates. Second, a rejection rate of 3/18 comes from one public fixture at 128 tokens and will differ on the hidden prompts, so the `0.113 %` figure is a local point estimate, not a ranked price.
+
+### 2.5 A regime shift that draft depth does not explain
+
+Rounds 1 and 2 cost 173–184 µs, which reproduces E90's 183.9 µs on the current base and the current host. Round 3 is the first rejection. From round 4 onward the full-acceptance commit phase costs about 440 µs and never returns to the cheap level.
+
+Realized draft depth ramps 4 → 5 → 6 → 7 over the same rounds, so depth and round index are confounded. Pooling all 8 legs:
+
+| d | n | commit | readout | upkeep |
+|---:|---:|---:|---:|---:|
+| 1 | 8 | 231.5 | 34.5 | 108.0 |
+| 4 | 18 | 181.5 | 34.5 | 93.5 |
+| 5 | 18 | 432.0 | 40.5 | 222.5 |
+| 6 | 22 | 452.5 | 43.0 | 260.0 |
+| 7 | 65 | 450.0 | 43.0 | 273.0 |
+
+Depth alone does not explain the step. `d = 5` appears both before and after the transition: round 2 runs `d = 5` at 181 µs, and rounds 4 and 5 run `d = 5` at 428 and 436 µs. The break tracks the first rejection, not the depth. `d = 4` occurs only in rounds 1–2, so its cell is not an independent depth contrast.
+
+### 2.6 The advisor's discriminator: is the step the cost of releasing populated state?
+
+PLACEHOLDER-CLEAR
 
 ---
 

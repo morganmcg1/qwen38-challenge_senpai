@@ -11,7 +11,8 @@ Usage: python3 research/e188_round_table.py TAG [TAG ...]
 import re
 import sys
 
-FIELDS = ["d", "acc", "commit_us", "readout_us", "upkeep_us", "round_us"]
+FIELDS = ["d", "acc", "commit_us", "clear_release_us", "clear_release_count",
+          "readout_us", "upkeep_us", "round_us"]
 
 
 def rows(tag):
