@@ -166,6 +166,11 @@ dest="${workers_root}/${arm}"
 mkdir -p "${dest}"
 cp "${worker}" "${dest}/mlxfast-runtime-worker"
 cp "${metallib}" "${dest}/mlx.metallib"
+# The staged metallib needs its sidecar too: MLXFAST_MLX_METALLIB points the
+# worker at ${dest}/mlx.metallib, and the fingerprint check reads
+# "${that path}.fingerprint". Without it every leg logs a "no fingerprint
+# record" warning and the check degrades to a no-op.
+cp "${metallib}.fingerprint" "${dest}/mlx.metallib.fingerprint"
 {
   echo "arm=${arm}"
   echo "built=$(date -u +%Y-%m-%dT%H:%M:%SZ)"

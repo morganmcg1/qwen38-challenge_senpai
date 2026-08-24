@@ -86,11 +86,26 @@ done
 [[ -n "${arms}" ]] || { echo "e167_arms_abba: empty schedule" >&2; exit 1; }
 
 for label in ${arms}; do
-  for f in "$(arm_dir "${label}")/mlxfast-runtime-worker" "$(arm_dir "${label}")/mlx.metallib"; do
+  for f in \
+    "$(arm_dir "${label}")/mlxfast-runtime-worker" \
+    "$(arm_dir "${label}")/mlx.metallib" \
+    "$(arm_dir "${label}")/mlx.metallib.fingerprint"
+  do
     [[ -s "${f}" ]] || { echo "e167_arms_abba: missing ${f}" >&2; exit 1; }
   done
 done
 [[ -x "${swift_bin}" ]] || { echo "e167_arms_abba: missing ${swift_bin}" >&2; exit 1; }
+
+# The transformed target tree is a prerequisite this script cannot produce.
+# setup.sh provisions the REFERENCE checkpoint and never transforms it, so a
+# freshly provisioned host reaches here with an empty weights/ and the first
+# worker start dies with `exit_status=15` after about twelve seconds. Fail here
+# with the command that fixes it instead of inside reference generation.
+if [[ ! -f "${weights_path}/config.json" ]]; then
+  echo "e167_arms_abba: no transformed target at ${weights_path}/config.json" >&2
+  echo "e167_arms_abba: run ./benchmark.sh --transform-only first" >&2
+  exit 1
+fi
 
 # Every arm must appear the same number of times, or the schedule is not
 # balanced and a monotone drift does not cancel.
