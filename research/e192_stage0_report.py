@@ -129,8 +129,13 @@ def leg_report(tag):
             if "=" in line:
                 key, _, value = line.partition("=")
                 meta[key] = value
-    arm_key = ("e192_barrier_arm" if any("e192_barrier_arm" in r for r in rows)
-               else "e192_tape_suppressed_arm")
+    # Both witnesses are emitted every round, so select the one that actually
+    # alternates in this leg rather than the one that is merely present.
+    arm_key = ""
+    for key in ("e192_barrier_arm", "e192_tape_suppressed_arm"):
+        if len({r[key] for r in rows if key in r}) > 1:
+            arm_key = key
+            break
     report = {
         "tag": tag,
         "arm_key": arm_key,
@@ -163,6 +168,10 @@ def main():
     reports = [leg_report(tag) for tag in args.tags]
     for report in reports:
         print(f"== {report['tag']}  ({report['arm_env']})")
+        if not report["arm_key"]:
+            print("   NO ARM WITNESS: no per-round key alternated in this leg")
+        else:
+            print(f"   arm witness {report['arm_key']}")
         print(f"   rounds traced {report['trace_rounds']}, "
               f"drafting {report['drafting_rounds']}, "
               f"full-acceptance {report['full_acceptance_rounds']}, "
