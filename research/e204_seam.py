@@ -37,27 +37,34 @@ import statistics as st
 import sys
 from pathlib import Path
 
-# Consecutive anchor pairs tiling the round (E185's PHASES, unchanged).
-PHASES = [
-    ("t_round0", "t_draft0", "d_pre"),
-    ("t_draft0", "t_flush_built", "d_flush"),
-    ("t_flush_built", "t_head1_built", "d_head1"),
-    ("t_head1_built", "t_submit1", "d_submit1"),
-    ("t_submit1", "t_chain_built", "d_chain"),
-    ("t_chain_built", "t_draft_built", "d_submit2"),
-    ("t_draft_built", "t_snapshot_done", "snapshot"),
-    ("t_snapshot_done", "t_verify_built", "verify_graph"),
-    ("t_verify_built", "t_eval_done", "eval_wall"),
-    ("t_eval_done", "t_read_done", "readout"),
-    ("t_read_done", "t_commit_done", "commit"),
-    ("t_commit_done", "t_row_trace0", "upkeep_pre"),
-    ("t_row_trace0", "t_row_trace_done", "row_dump"),
-    ("t_row_trace_done", "t_tail_done", "trace_tail"),
-]
 INSTRUMENT_PHASES = {"row_dump", "trace_tail"}
-# The round-end seam: everything after the round's single blocking eval, plus
-# the protocol turnaround before the next round starts.
-SEAM_PHASES = ["readout", "commit", "upkeep_pre", "inter_round_gap"]
+
+# Two windows are reported.
+#
+# `protocol_seam` is E185's round-end seam: everything after the round's single
+# blocking eval up to the next round's first host instruction.
+#
+# `overlappable` is the window the head-chain mechanism can actually cover. It
+# runs from the same start to the point where the next round SUBMITS its draft
+# chain (`t_chain_built`). The extra span matters because the prefetch already
+# submits head step 1 inside the commit phase: once that step completes, the
+# device has nothing else queued until the next round builds and submits steps
+# 2..d, and that stretch sits AFTER `t_round0`, outside E185's tiling.
+SEAM_PHASES = [
+    ("r", "t_eval_done", "t_read_done", "readout"),
+    ("r", "t_read_done", "t_commit_done", "commit"),
+    ("r", "t_commit_done", "t_row_trace0", "upkeep_pre"),
+    ("r", "t_row_trace0", "t_row_trace_done", "row_dump"),
+    ("r", "t_row_trace_done", "t_tail_done", "trace_tail"),
+    ("r", "t_tail_done", "n:t_round0", "inter_round_gap"),
+]
+NEXT_LEAD_PHASES = [
+    ("n", "t_round0", "t_draft0", "next_d_pre"),
+    ("n", "t_draft0", "t_flush_built", "next_d_flush"),
+    ("n", "t_flush_built", "t_head1_built", "next_d_head1"),
+    ("n", "t_head1_built", "t_submit1", "next_d_submit1"),
+    ("n", "t_submit1", "t_chain_built", "next_d_chain"),
+]
 
 
 def read_anchors(path: Path) -> list[dict]:
@@ -133,12 +140,24 @@ def gaps_in(merged: list[tuple[int, int]], t0: int, t1: int) -> list[tuple[int, 
     return [(a, b) for a, b in out if b > a]
 
 
-def phase_of(anchors: dict, next_round0: int, t: int) -> str:
-    for lo, hi, name in PHASES:
-        if anchors.get(lo, 0) <= t < anchors.get(hi, 0):
+def window_phases(r: dict, nxt: dict, extended: bool) -> list[tuple[str, int, int]]:
+    """(name, t0, t1) for every phase of the reported window, in order."""
+    out = []
+    for source, lo, hi, name in SEAM_PHASES + (NEXT_LEAD_PHASES if extended else []):
+        base_lo = r if source == "r" else nxt
+        t0 = base_lo.get(lo, 0)
+        if hi.startswith("n:"):
+            t1 = nxt.get(hi[2:], 0)
+        else:
+            t1 = (r if source == "r" else nxt).get(hi, 0)
+        out.append((name, t0, max(t0, t1)))
+    return out
+
+
+def phase_at(phases: list[tuple[str, int, int]], t: int) -> str:
+    for name, t0, t1 in phases:
+        if t0 <= t < t1:
             return name
-    if anchors.get("t_tail_done", 0) <= t < next_round0:
-        return "inter_round_gap"
     return "outside"
 
 
@@ -156,22 +175,21 @@ def summarise(values: list[float]) -> dict:
     }
 
 
-def seam_report(rounds: list[dict], merged: list[tuple[int, int]],
+def seam_report(merged: list[tuple[int, int]],
                 pairs: list[tuple[dict, dict]], label: str,
-                round_us_median: float) -> dict:
-    """Decompose the round-end seam over the given (round, next round) pairs."""
-    per_phase: dict[str, list[float]] = {name: [] for name in SEAM_PHASES}
-    per_phase_span: dict[str, list[float]] = {name: [] for name in SEAM_PHASES}
+                round_us_median: float, extended: bool) -> dict:
+    """Decompose one round-end window over the given (round, next round) pairs."""
+    names = [p[3] for p in SEAM_PHASES + (NEXT_LEAD_PHASES if extended else [])]
+    per_phase: dict[str, list[float]] = {name: [] for name in names}
+    per_phase_span: dict[str, list[float]] = {name: [] for name in names}
     seam_span, seam_idle, seam_idle_prod = [], [], []
     coherent_max, coherent_start = [], []
     slices: list[dict] = []
 
     for r, nxt in pairs:
-        # Production-equivalent seam: the two instrument phases (row_dump,
-        # trace_tail) exist only because the leg is traced, so their span is
-        # removed from the production figure rather than assumed small.
-        instrument_span = (r.get("t_row_trace_done", 0) - r.get("t_row_trace0", 0))
-        t0, t1 = r["t_eval_done"], nxt["t_round0"]
+        phases = window_phases(r, nxt, extended)
+        t0 = r["t_eval_done"]
+        t1 = nxt["t_chain_built"] if extended else nxt["t_round0"]
         if t1 <= t0:
             continue
         span = t1 - t0
@@ -179,38 +197,31 @@ def seam_report(rounds: list[dict], merged: list[tuple[int, int]],
         idle = span - busy
         seam_span.append(span / 1000.0)
         seam_idle.append(idle / 1000.0)
-        instrument_idle = (
-            instrument_span - busy_in(merged, r.get("t_row_trace0", 0),
-                                      r.get("t_row_trace_done", 0)))
+        # Production-equivalent window: the two instrument phases (row_dump,
+        # trace_tail) exist only because the leg is traced, so their idle is
+        # removed from the production figure rather than assumed small.
+        instrument_idle = 0
+        for name, a, b in phases:
+            if b > a:
+                phase_idle = b - a - busy_in(merged, a, b)
+                per_phase[name].append(phase_idle / 1000.0)
+                per_phase_span[name].append((b - a) / 1000.0)
+                if name in INSTRUMENT_PHASES:
+                    instrument_idle += phase_idle
         seam_idle_prod.append((idle - instrument_idle) / 1000.0)
 
-        for lo, hi, name in PHASES:
-            if name not in per_phase:
-                continue
-            a, b = r.get(lo, 0), r.get(hi, 0)
-            if b > a:
-                per_phase[name].append((b - a - busy_in(merged, a, b)) / 1000.0)
-                per_phase_span[name].append((b - a) / 1000.0)
-        a, b = r["t_tail_done"], nxt["t_round0"]
-        if b > a:
-            per_phase["inter_round_gap"].append(
-                (b - a - busy_in(merged, a, b)) / 1000.0)
-            per_phase_span["inter_round_gap"].append((b - a) / 1000.0)
-
-        # Coherent slices: maximal contiguous idle intervals inside the seam,
+        # Coherent slices: maximal contiguous idle intervals inside the window,
         # crossing every anchor boundary including the round boundary.
-        window_gaps = gaps_in(merged, t0, t1)
         best_us, best_phase = 0.0, "none"
-        for ga, gb in window_gaps:
+        for ga, gb in gaps_in(merged, t0, t1):
             us = (gb - ga) / 1000.0
-            start_phase = phase_of(r, nxt["t_round0"], ga)
-            end_phase = phase_of(r, nxt["t_round0"], gb - 1)
             slices.append({
                 "round": r.get("round"), "us": us,
-                "start_phase": start_phase, "end_phase": end_phase,
+                "start_phase": phase_at(phases, ga),
+                "end_phase": phase_at(phases, gb - 1),
             })
             if us > best_us:
-                best_us, best_phase = us, start_phase
+                best_us, best_phase = us, phase_at(phases, ga)
         coherent_max.append(best_us)
         coherent_start.append(best_phase)
 
@@ -301,12 +312,19 @@ def main() -> int:
         "round_us": summarise(round_us),
         "depth_histogram": {},
         "accept_histogram": {},
-        "seam": {
-            "all": seam_report(rounds, merged, pairs_all, "all", round_us_median),
+        "protocol_seam": {
+            "all": seam_report(merged, pairs_all, "all", round_us_median, False),
             "full_acceptance": seam_report(
-                rounds, merged, pairs_full, "full_acceptance", round_us_median),
+                merged, pairs_full, "full_acceptance", round_us_median, False),
             "rejection": seam_report(
-                rounds, merged, pairs_reject, "rejection", round_us_median),
+                merged, pairs_reject, "rejection", round_us_median, False),
+        },
+        "overlappable": {
+            "all": seam_report(merged, pairs_all, "all", round_us_median, True),
+            "full_acceptance": seam_report(
+                merged, pairs_full, "full_acceptance", round_us_median, True),
+            "rejection": seam_report(
+                merged, pairs_reject, "rejection", round_us_median, True),
         },
     }
     for r in rounds:
@@ -330,13 +348,17 @@ def main() -> int:
           % (round_us_median / 1000.0, len(rounds), report["chip"], report["tokens"]))
     print("accept histogram acc/d: %s" % report["accept_histogram"])
     print()
-    for key in ("all", "full_acceptance", "rejection"):
-        block = report["seam"][key]
+    blocks = [
+        (window, key, report[window][key])
+        for window in ("protocol_seam", "overlappable")
+        for key in ("all", "full_acceptance", "rejection")
+    ]
+    for window, key, block in blocks:
         if not block["rounds"]:
             continue
-        print("== %s (%d rounds) ==" % (key, block["rounds"]))
+        print("== %s / %s (%d rounds) ==" % (window, key, block["rounds"]))
         print("%-18s %12s %12s" % ("phase", "span_us", "idle_us"))
-        for name in SEAM_PHASES:
+        for name in block["phase_span_us_median"]:
             print("%-18s %12.1f %12.1f"
                   % (name, block["phase_span_us_median"][name],
                      block["phase_idle_us_median"][name]))
