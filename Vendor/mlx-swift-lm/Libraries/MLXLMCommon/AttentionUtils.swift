@@ -124,13 +124,18 @@ public func attentionWithCacheUpdate(
         {
             let split = 5
             let kSplit = kL - (qL - split)
+            let barrier = Qwen35SplitCellBarrier.arm
+            let keysA = cachedKeys[0..., 0..., 0 ..< kSplit, 0...]
+            let valuesA = cachedValues[0..., 0..., 0 ..< kSplit, 0...]
+            if barrier == .all { eval(keysA); eval(valuesA) }
             let outA = MLXFast.scaledDotProductAttention(
                 queries: queries[0..., 0..., 0 ..< split, 0...],
-                keys: cachedKeys[0..., 0..., 0 ..< kSplit, 0...],
-                values: cachedValues[0..., 0..., 0 ..< kSplit, 0...],
+                keys: keysA,
+                values: valuesA,
                 scale: scale,
                 mask: .causal
             )
+            if barrier == .all { eval(outA) }
             let outB = MLXFast.scaledDotProductAttention(
                 queries: queries[0..., 0..., split..., 0...],
                 keys: cachedKeys,
@@ -138,7 +143,11 @@ public func attentionWithCacheUpdate(
                 scale: scale,
                 mask: .causal
             )
-            return concatenated([outA, outB], axis: 2)
+            if barrier == .all { eval(outB) }
+            let out = concatenated([outA, outB], axis: 2)
+            if barrier != .shipped { eval(out) }
+            Qwen35SplitCellBarrier.served(width: qL, barriers: barrier.barrierCount)
+            return out
         }
         return MLXFast.scaledDotProductAttention(
             queries: queries,
@@ -147,6 +156,89 @@ public func attentionWithCacheUpdate(
             scale: scale,
             mask: mask
         )
+    }
+}
+
+/// RESEARCH ONLY (E202), delete before any submission (RULE 198).
+///
+/// Selects one of three `eval()` barrier arms inside the shipped qL 6...9
+/// split-cell branch above, to settle whether MLX overlaps that branch's five
+/// dispatches. The arm is switched IN PROCESS at every round boundary
+/// (`Qwen36MTPBlockSession.generateRound`), so all arms share one binary, one
+/// head, one thermal state and one token stream (RULE 388). `eval()` changes
+/// no computed value, so every arm emits the identical token stream and the
+/// per-round width sequence is identical in every leg.
+///
+/// THE SWITCH PREFIX IS LOAD BEARING (HARNESS DEFECT 28). The runtime worker
+/// rebuilds its environment from an allowlist that excludes `MLXFAST_*`, so
+/// only a `DARKBLOOM_`-prefixed model-side opt-in survives (RULE 391(a)).
+public enum Qwen35SplitCellBarrier {
+    public enum Arm: Int {
+        /// The unmodified shipped branch: no barrier.
+        case shipped = 0
+        /// One barrier after the final dispatch of the group. Prices the
+        /// per-`eval()` sync cost without de-overlapping the interior.
+        case last = 1
+        /// One barrier after each of the five dispatches.
+        case all = 2
+
+        var barrierCount: Int {
+            switch self {
+            case .shipped: return 0
+            case .last: return 1
+            case .all: return 5
+            }
+        }
+    }
+
+    /// Round-rotation offset for the arm schedule. Unset means "never arm a
+    /// barrier": the branch then runs exactly as shipped in every round.
+    /// RULE 391(a) allowlisted name.
+    private static let offset: Int? = ProcessInfo.processInfo
+        .environment["DARKBLOOM_E202_BARRIER_OFFSET"].flatMap { Int($0) }
+
+    private static let schedule: [Arm] = [.shipped, .last, .all]
+
+    nonisolated(unsafe) public private(set) static var arm: Arm = .shipped
+
+    /// RULE 391(b) witness, arm-cost-symmetric (RULE 391(c)): the counter work
+    /// below is identical in all three arms, and only the `eval()` calls
+    /// differ. `calls`/`barriers` are the per-round witness carried in the
+    /// round trace line; `widthCensus` is the leg-wide served-width histogram.
+    nonisolated(unsafe) public private(set) static var calls = 0
+    nonisolated(unsafe) public private(set) static var barriers = 0
+    nonisolated(unsafe) public private(set) static var lastWidth = 0
+    nonisolated(unsafe) public private(set) static var widthCensus: [Int: Int] = [:]
+
+    /// Whether this process ever armed a barrier. A leg that reads
+    /// `armed=false` on a barrier arm is VOID, not null.
+    public static var armSelectionActive: Bool { offset != nil }
+
+    public static func beginRound(_ round: Int) {
+        calls = 0
+        barriers = 0
+        lastWidth = 0
+        guard let offset else {
+            arm = .shipped
+            return
+        }
+        arm = schedule[((round + offset) % schedule.count + schedule.count)
+            % schedule.count]
+    }
+
+    @inline(__always)
+    static func served(width: Int, barriers barrierCount: Int) {
+        calls += 1
+        barriers += barrierCount
+        lastWidth = width
+        widthCensus[width, default: 0] += 1
+    }
+
+    /// Compact census string for the round trace line.
+    public static func censusWitness() -> String {
+        widthCensus.sorted { $0.key < $1.key }
+            .map { "\($0.key):\($0.value)" }
+            .joined(separator: "|")
     }
 }
 

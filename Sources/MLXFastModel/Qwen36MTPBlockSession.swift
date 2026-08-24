@@ -1458,6 +1458,12 @@ public final class Qwen36MTPBlockSession {
             throw Qwen36MTPSessionError.invalidDepth(depth)
         }
         roundCount += 1
+        // RESEARCH ONLY (E202), delete before any submission (RULE 198). The
+        // in-process arm switch for the split-cell barrier study: one binary,
+        // one head, one thermal state, arms rotating at the round boundary
+        // (RULE 388). With the offset unset this resets counters and leaves the
+        // shipped arm selected, so a bare leg is byte-identical in behaviour.
+        Qwen35SplitCellBarrier.beginRound(roundCount)
         // Local-only phase trace (MLXFAST_QWEN_MTP_TRACE=1): three boundaries
         // split a round into head-chain graph build, verify graph build, and
         // the single blocking eval's GPU wall. Never on in a ranked run.
@@ -1588,6 +1594,17 @@ public final class Qwen36MTPBlockSession {
                         + "band_fa_mixer_us=\(Qwen35BandTimer.faMixerNs / 1000) "
                         + "band_fa_mlp_us=\(Qwen35BandTimer.faMLPNs / 1000) "
                         + "band_fwd=\(Qwen35BandTimer.forwards) "
+                        // RESEARCH ONLY (E202). The serial body runs qL == 1,
+                        // which the split-cell branch never serves, so these
+                        // rounds are the causally unreachable null control the
+                        // in-process design needs (RULE 388): the arm rotates
+                        // over them and `e202_calls` must stay 0.
+                        + "e202_pid=\(ProcessInfo.processInfo.processIdentifier) "
+                        + "e202_sel=\(Qwen35SplitCellBarrier.armSelectionActive ? 1 : 0) "
+                        + "e202_arm=\(Qwen35SplitCellBarrier.arm.rawValue) "
+                        + "e202_calls=\(Qwen35SplitCellBarrier.calls) "
+                        + "e202_barriers=\(Qwen35SplitCellBarrier.barriers) "
+                        + "e202_width=\(Qwen35SplitCellBarrier.lastWidth) "
                         + "serial_body=1\n")
             }
             return Qwen36MTPRoundResult(
@@ -1957,6 +1974,22 @@ public final class Qwen36MTPBlockSession {
                 + "pf_made=\(prefetchMadeCount) "
                 + "pf_hits=\(prefetchHitCount) "
                 + "pf_undo=\(prefetchUndoCount) "
+                // RESEARCH ONLY (E202), delete before any submission. Per-round
+                // RULE 391(b) arm witness. `e202_sel` is the process-level arm
+                // selector: 0 means no arm rotation was requested, so a barrier
+                // arm can never be silently dropped by the env sanitizer.
+                // `e202_arm` is the arm this round executed, `e202_calls` the
+                // split-cell branch executions it made, and `e202_barriers` the
+                // barrier `eval()` calls it served. A barrier round with
+                // `e202_barriers=0` is VOID, not null. `e202_census` is the
+                // running served-width histogram of this process.
+                + "e202_pid=\(ProcessInfo.processInfo.processIdentifier) "
+                + "e202_sel=\(Qwen35SplitCellBarrier.armSelectionActive ? 1 : 0) "
+                + "e202_arm=\(Qwen35SplitCellBarrier.arm.rawValue) "
+                + "e202_calls=\(Qwen35SplitCellBarrier.calls) "
+                + "e202_barriers=\(Qwen35SplitCellBarrier.barriers) "
+                + "e202_width=\(Qwen35SplitCellBarrier.lastWidth) "
+                + "e202_census=\(Qwen35SplitCellBarrier.censusWitness()) "
                 + scheduleTrace + "\n"
             Self.traceWrite(line)
             Qwen35XSumsDedupCensus.rollRound()
