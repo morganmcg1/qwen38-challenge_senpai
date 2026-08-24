@@ -858,7 +858,7 @@
  },
  "observedAt": "2026-08-24T05:50:00Z",
  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
- "officialSlot": "OCCUPIED: E190 cap-5 receipt in flight (submission 04710829-3c7e-4ace-9751-f1fda9e368e9, validating; Thorfinn PR 188, candidate 913b0d59; watcher job cae28b40). Decision rule: receipt > 3.5474 quadratic band (3.66501433 predicted), < 3.5474 staircase band. Ready-behind: E193 E165-prefetch retest (Alphonse, PR 190, screen running, preauthorized to fire when E190 receipt terminal + frontier check passes).",
+ "officialSlot": "OCCUPIED: aff4ad64-7850-49fb-bf8b-e9107c387f71 (aff4ad6) validating since 23:47Z 2026-08-24. Candidate c47c7284 = b9ee228c + segmentedVerifyDepthCap=8 (one line). Prices E195+prefetch+cap-8 vs receipt A 3.70785. Desk discriminator: flat ~3.82 vs step ~3.68 (5.5 sigma). Queue depth 6 ahead at submit (oldest 5.8h; board terminating rows - depth not stall). Thorfinn owns the bounded read-only receipt watcher. No second submission goes in while this is in flight; one distinct frozen candidate may queue behind it.",
  "onlyExactRoundCostOnBoard": {
   "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
   "optimised": {
@@ -2186,8 +2186,8 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": "In flight: 2681c3ac (E193 prefetch, validating ~2h20m, watcher Alphonse). Next: E199 cap-8 paid receipt (frozen 4b967648, Thorfinn holding on slot trigger e0516d5b). Merged riders for the next composition: E195 selective QMV plan (0.181 ms/round ranked). Pending: E198 fused-SDPA terminal (Stage 4 null, liveness diagnosis); E192+E194 composition; E200 depth pricing (assigned).",
- "lastAdvisorUpdate": "Entry 413: E192 reviewed and merged research-only (base 9d67e465). FINDING 528: clearRecurrentRollback release cost is relocation, not removal - persistent-slot family DEAD (full removal rejected 2.6 sigma; 2-sigma ceiling 0.23%/round < MUE; whole-leg 0.211%). RULE 394: decisions on round-endpoint statistics only; phase timers attribute, never price. E188 option-3 barrier 11x net-negative. FINDING 494 now relocation-suspect. Askeladd freed -> E205 rejection-round cost decomposition.",
- "ledgerEntry": 413,
+ "lastAdvisorUpdate": "Entry 414: E199 submitted officially at 23:48Z - receipt aff4ad64 validating, frozen c47c7284 (one line cap-8 on b9ee228c, E195+prefetch beneath). Re-gate 7y6ap5l8 gated+validated; width-9 live (42/76 rounds), exactness clean. Queue depth 6 ahead. Crown unchanged ec24d59/3.7291. E204 two-window Stage-0 design approved (protocol_seam + overlappable; GPU-idle vs chain-build split required).",
+ "ledgerEntry": 414,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2856,7 +2856,7 @@
   "frontier": "crown ec24d591 newjordan 3.7291100105909 unchanged",
   "ledgerEntry": 409
  },
- "depthValueAxis": "CLOSED except two items: (1) E199 cap-8 receipt (frozen, HELD behind 2681c3a - which now heads the draining Yukon queue); (2) FINDING 526 EMA-subtraction question (held behind E199). Closed: static price axis (FINDING 519), per-prompt cap (FINDING 523), within-prompt lookahead/drift/EMA (FINDING 524, 16-57x below break-even).",
- "assignmentQueue": "Live: E199 (Thorfinn, rebasing to b9ee228c, bounded re-gate, preauthorized submit - slot reserved), E202 (Edward, 14-leg eval-barrier session running), E204 (Alphonse, round-end seam overlap Stage 0; E192's relocation verdict voids the double-count concern - E204 owns the whole seam window), E205 (Askeladd, being assigned: rejection-round cost decomposition widths 8-9, FINDING 485 limitation + FINDING 494 under RULE 394 + E199-receipt interpretation curve). Queued: FINDING 526 EMA-subtraction (behind E199 receipt).",
- "baseComposition": "Tip b9ee228c scored surface = receipt-A lineage (8ba6e738 receipt 5a9f130a, 3.70784519) + E195 selective-m6 QMV plan (local -7.31 ms/round at m=6, FINDING 516) + E193 round-start prefetch (local -0.2165%, FINDING 527). This composition is OFFICIALLY UNPRICED; the E199 cap-8 receipt (rebased onto b9ee228c) prices E195+prefetch+cap-8 together vs receipt A."
+ "depthValueAxis": "CLOSED except the aff4ad64 receipt now in flight (cap-8 on the composed tree) and FINDING 526 EMA-subtraction (held behind that receipt). E201: no per-prompt cap lever (oracle = static cap 8 = 3.829386, FINDING 515-corrected +3.28% global). E203: within-prompt family closed. Receipt outcomes: >=crown 3.7291 promote+crown; >A 3.70785 promote; between step 3.68 and flat 3.82 read via E205 Stage-B acceptance-sensitivity curve; <A reject - prefetch and E195 become subtraction suspects.",
+ "assignmentQueue": "Live: E199 (Thorfinn, SUBMITTED aff4ad64 validating, receipt watcher running), E202 (Edward, 14-leg eval-barrier session running), E204 (Alphonse, Stage 0 running with approved two-window design: protocol_seam + overlappable, stop rule on overlappable, GPU-idle vs chain-build split), E205 (Askeladd, rejection-round cost decomposition + E199 receipt-reading curve, PR 203). Queued: FINDING 526 EMA-subtraction (behind aff4ad64 receipt).",
+ "baseComposition": "Advisor tip scored surface = receipt-A lineage + E195 selective-m6 QMV plan + E193 round-start prefetch (cap 7). Officially UNPRICED as composed; the aff4ad64 receipt prices it WITH cap-8 in one draw. If aff4ad64 promotes, merge E199's one-liner and the base becomes the promoted surface; replay only affected evidence."
 }

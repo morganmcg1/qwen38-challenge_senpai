@@ -72308,3 +72308,54 @@ contrast. Phase timers say *where* the cost sits, never *whether it is gone*.
 FINDING 485's declared limitation (no rejected-row cost ever measured), prices FINDING 494 under
 RULE 394, and delivers the acceptance-sensitivity correction needed to interpret an intermediate
 E199 receipt value between the flat (≈3.82) and step (≈3.68) desk predictions.
+
+## 414 — E199 SUBMITTED OFFICIALLY: receipt `aff4ad6` validating. The composed frontier (E195 + prefetch + cap-8) is on the board. E204 two-window design approved.
+
+### E199 official submission (Thorfinn, autonomous under the Entry 412 preauthorization)
+
+Submitted 2026-08-24T23:48Z. All preconditions met; no advisor round-trip was needed — ship mode
+worked as designed.
+
+| field | value |
+| --- | --- |
+| submission | `aff4ad64-7850-49fb-bf8b-e9107c387f71` (`aff4ad6`), status `validating` (confirmed on board 23:47Z) |
+| frozen candidate SHA | `c47c72841b8e2c6dd696b0154c9d2291d33ce853` |
+| campaign base | `b9ee228c` (records-only deltas to the advisor tip verified by unfiltered RULE 393 diff) |
+| submitted diff | ONE line vs `b9ee228c`: `segmentedVerifyDepthCap = 8` (Qwen36MTPBlockSession.swift:1067) |
+| beneath it | E195 selective-m6 QMV plan + E193 round-start prefetch |
+| model flag | `senpai`; note 10.4 KiB |
+| crown check | `ec24d59` newjordan 3.7291100105909 unchanged — hold condition not triggered |
+| queue | 6 submissions validating ahead (oldest 5.8 h); board terminating rows again — queue depth, not a stall |
+
+Re-gate evidence: W&B `7y6ap5l8` — https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/7y6ap5l8
+(supersedes `exdb3vyt`, which measured the pre-E195 tree). Advisor-validated: real 40 C gate passed
+(authoritative temps 39.3/39.2/39.5 C), identity tuple matches (candidate `c47c7284`, base `b9ee228c`,
+upstream `0863b06`), 512/512 tokens. Width-9 liveness on the composed tree: **42 of 76 drafting rounds
+verified nine rows**, `effective_max_draft_len=8`, exactness clean (`all_tokens_matched=true`,
+`residual_divergence_count=0`, `parity_all_ok=true`, `max_rejected_tail_logit_delta=0`), RULE 179
+ledger closes exactly (76 + 436 + 85 = 597 = 597 reference-checked).
+
+Discipline notes worth keeping: Thorfinn self-corrected his earlier temperature quote (the 40.74 C
+figure was his own pre-cool-down sample, now logged separately as `gpu_temp_entry_pre_gate_c`; the
+three harness gate values are authoritative), and he DELETED retained cap-7 wall-times from the
+logger rather than logging them beside cap-8 (RULE 79 — counts kept, marked `is_matched_control=false`).
+Both are the right calls.
+
+**What the receipt decides.** This is the maximal discriminator on the board: desk predictions for
+cap-8 are flat ≈3.82 vs step ≈3.68 (5.5σ apart on the 0.689% channel) — and the receipt also prices
+the E195+prefetch composition against receipt A (3.70785) for the first time. Possible outcomes:
+promote past crown (3.7291), promote past A only, land between (acceptance shortfall or partial
+step — E205's Stage-B curve is being built to read exactly this case), or reject below A (prefetch
+and E195 become subtraction suspects per Entry 412). Thorfinn owns the bounded read-only receipt
+watcher and reports the terminal receipt with per-prompt rows and inverted dR9.
+
+### E204 two-window Stage-0 design approved (feedback 418)
+
+Alphonse found that the base already ships part of the named mechanism: `prefetchHeadStep` at
+:1769 submits the next round's FIRST head step under the bookkeeping (E165/E193). The mechanism's
+remaining coverable window is `t_eval_done(i) → t_chain_built(i+1)` — past E185's tiling. Stage 0
+therefore reports two windows: `protocol_seam` (E185-comparable refresh) and `overlappable` (stop
+rule applies here), both split by full-acceptance vs rejection rounds, both reporting the largest
+COHERENT idle slice. Required labeling: split GPU-idle vs host-chain-build time inside `overlappable`
+so relocating host work is not counted as recoverable (RULE 394 protects Stage 2 regardless).
+Rejection-round slice structure to be reported joinably with E205's decomposition.
