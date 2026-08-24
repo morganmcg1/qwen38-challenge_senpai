@@ -914,6 +914,7 @@ final class Qwen35GatedDeltaNet: Module {
             kScaleConst
             * MLXFast.rmsNorm(k, weight: MLXArray.mlxNone, eps: 1e-6)
 
+        E184Prefill.fineStep("42_gdn_conv_qknorm", [qNormed, kNormed, v])
         let (out, newSsmState) = gatedDeltaUpdateMemoG(
             q: qNormed,
             k: kNormed,
@@ -923,6 +924,7 @@ final class Qwen35GatedDeltaNet: Module {
             state: ssmState,
             mask: mask
         )
+        E184Prefill.fineStep("43_gdn_recurrent_scan", [out, newSsmState])
         return (out, newConvState, newSsmState)
     }
 
@@ -1159,6 +1161,8 @@ final class Qwen35GatedDeltaNet: Module {
             convState = MLXArray.zeros([B, convKernelSize - 1, convDim], dtype: inputs.dtype)
         }
 
+        E184Prefill.fineStep("41_gdn_in_projections", [qkv, z, b, a])
+
         // Apply mask to full qkv before any chunking.
         if let mask {
             qkv = MLX.where(mask[.ellipsis, .newAxis], qkv, 0)
@@ -1319,7 +1323,9 @@ final class Qwen35GatedDeltaNet: Module {
         } else {
             normedOut = norm(out, gate: z)
         }
-        return qwen35RoutedLinear(outProj, normedOut.reshaped(B, S, -1))
+        let gdnOut = qwen35RoutedLinear(outProj, normedOut.reshaped(B, S, -1))
+        E184Prefill.fineStep("44_gdn_postnorm_outproj", [gdnOut])
+        return gdnOut
     }
 }
 
@@ -1987,7 +1993,11 @@ final class Qwen35FusedMLP: Module, UnaryLayer {
         if x.dim(-2) <= 16, let y = fusedGateUp(x), _gateOut * 2 == y.dim(-1) {
             return qwen35RoutedLinear(downProj, qwen35CompiledFusedSwiGLU(y))
         }
-        return qwen35RoutedLinear(downProj, silu(gateProj(x)) * upProj(x))
+        let activation = silu(gateProj(x)) * upProj(x)
+        E184Prefill.fineStep("61_mlp_gate_up_act", [activation])
+        let mlpOut = qwen35RoutedLinear(downProj, activation)
+        E184Prefill.fineStep("62_mlp_down", [mlpOut])
+        return mlpOut
     }
 
 }
@@ -3472,6 +3482,7 @@ final class Qwen35Attention: Module {
         let L = x.dim(1)
 
         let (qProjOutput, keysIn, valuesIn) = qkv(x)
+        E184Prefill.fineStep("51_fa_qkv_projection", [qProjOutput, keysIn, valuesIn])
         let qSplit = qProjOutput.reshaped(B, L, attentionHeads, -1).split(parts: 2, axis: -1)
         var queries = qSplit[0]
         // Keep the gate 4-D: flattening here merged a head axis across the
@@ -3520,6 +3531,8 @@ final class Qwen35Attention: Module {
             keys = applyRotaryPosition(rope, to: keys, cache: cache)
         }
 
+        E184Prefill.fineStep("52_fa_qk_norm_rope", [queries, keys])
+
         // Transpose is a view; the old post-transpose flatten was the second
         // REAL Copy of this function. Multiply 4-D (strided inputs are
         // copy-free in the compiled elementwise), then flatten the compiled
@@ -3533,9 +3546,12 @@ final class Qwen35Attention: Module {
             mask: mask
         )
         .transposed(0, 2, 1, 3)
+        E184Prefill.fineStep("53_fa_sdpa_cache_update", [output])
 
-        return qwen35RoutedLinear(
+        let attnOut = qwen35RoutedLinear(
             oProj, qwen35CompiledSigmoidMultiply(output, gate).reshaped(B, L, -1))
+        E184Prefill.fineStep("54_fa_gate_outproj", [attnOut])
+        return attnOut
     }
 }
 
@@ -3700,6 +3716,7 @@ final class Qwen35DecoderLayer: Module {
             hIn = base
             normedIn = inputLayerNorm(base)
         }
+        E184Prefill.fineStep("10_entry_resid_norm", [normedIn])
         let r: MLXArray
         if isLinear {
             r = linearAttn!(
@@ -3712,6 +3729,7 @@ final class Qwen35DecoderLayer: Module {
             x: hIn, r: r,
             weight: postAttentionLayerNorm.weight,
             eps: postAttentionLayerNorm.eps)
+        E184Prefill.fineStep("60_post_attn_resid_norm", [h, postAttnNorm])
         return (h, (mlp as! UnaryLayer)(postAttnNorm))
     }
 }
@@ -3783,7 +3801,10 @@ public class Qwen35TextModelInner: Module {
         cache: [KVCache?]? = nil,
         nConfirmed: Int = 0
     ) -> MLXArray {
+        // E184 research instrument, default-off (see E184PrefillProfile.swift).
+        E184Prefill.beginForward(sequenceLength: inputs.dim(1))
         var hiddenStates = embedTokens(inputs)
+        E184Prefill.step("00_embed", [hiddenStates])
 
         var cacheArray = cache
         if cacheArray == nil {
@@ -3792,6 +3813,7 @@ public class Qwen35TextModelInner: Module {
 
         let faMask = createAttentionMask(h: hiddenStates, cache: cacheArray?[faIdx])
         let ssmMask = createSSMMask(h: hiddenStates, cache: cacheArray?[ssmIdx] as? MambaCache)
+        E184Prefill.step("01_masks", ssmMask.map { [$0] } ?? [])
 
         // Decode-width asyncEval ladder: at S <= 9 (serial step and every MTP
         // verify width) the host builds a ~64-layer graph before anything
@@ -3836,6 +3858,9 @@ public class Qwen35TextModelInner: Module {
                         asyncEval(base, out.delta)
                     }
                 }
+                E184Prefill.step(
+                    layer.isLinear ? "49_gdn_layer_tail" : "59_fa_layer_tail",
+                    [base, out.delta])
             }
             hiddenStates = delta.map { base + $0 } ?? base
         } else {
@@ -3860,6 +3885,7 @@ public class Qwen35TextModelInner: Module {
         }
 
         // Return pre-norm hidden states. Norm is applied by Qwen35TextModel.
+        E184Prefill.endForward([hiddenStates])
         return hiddenStates
     }
 
