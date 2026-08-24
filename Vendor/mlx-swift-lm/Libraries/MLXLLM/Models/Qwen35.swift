@@ -1182,7 +1182,7 @@ final class Qwen35GatedDeltaNet: Module {
             out = o
             finalConvState = c
             finalSsmState = s
-            pendingPrefixTape = tape
+            pendingPrefixTape = Qwen35E192TapeArm.suppress ? nil : tape
         } else if nConfirmed == 1 && S == 2 && mask == nil,
            let midKernel = qwen35GatedDeltaMidKernel
         {
@@ -4127,6 +4127,27 @@ let qwen35DecodeLadderRungs: Set<Int> = {
 /// round. A run with this variable set is ATTRIBUTION ONLY: its absolute round
 /// time is not comparable with a shipped-schedule run, and only the shape of
 /// each band against verify width M is meaningful.
+/// E192 stage-0 diagnostic arm. `alt` suppresses the compact replay tape
+/// on odd rounds, so the verify forward's own intermediates are released
+/// inside the verify eval instead of in the next commit phase. That
+/// separates a RELOCATED release cost from a REMOVED one. The reject path
+/// then falls back to the exact generic repair, so this is a diagnostic
+/// arm and never a candidate.
+public enum Qwen35E192TapeArm {
+    public static let mode =
+        ProcessInfo.processInfo.environment["MLX_E192_TAPE"] ?? "on"
+
+    public nonisolated(unsafe) static var suppress = false
+
+    public static func suppressed(round: Int) -> Bool {
+        switch mode {
+        case "off": return true
+        case "alt": return round % 2 == 1
+        default: return false
+        }
+    }
+}
+
 public enum Qwen35BandTimer {
     public static let enabled: Bool =
         ProcessInfo.processInfo.environment["MLX_E182_BAND_SYNC"] == "1"

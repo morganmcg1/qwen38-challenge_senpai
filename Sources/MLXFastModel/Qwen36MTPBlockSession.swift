@@ -1464,12 +1464,19 @@ public final class Qwen36MTPBlockSession {
         let tRound0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
         let cpuRound0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
         if Qwen35BandTimer.enabled { Qwen35BandTimer.reset() }
+        Qwen35E192TapeArm.suppress =
+            Qwen35E192TapeArm.suppressed(round: roundCount)
         var tDraftBuilt: UInt64 = 0
         var tSnapshotDone: UInt64 = 0
         var tVerifyBuilt: UInt64 = 0
         var tEvalDone: UInt64 = 0
         var tReadDone: UInt64 = 0
         var tCommitDone: UInt64 = 0
+        var tClearNs: UInt64 = 0
+        var cClearNs: UInt64 = 0
+        var nClearReleased: Int = 0
+        var tClearBarrierNs: UInt64 = 0
+        var e192Barrier: Int = 0
         var tRowTrace0: UInt64 = 0
         var tRowTraceDone: UInt64 = 0
 
@@ -1787,7 +1794,18 @@ public final class Qwen36MTPBlockSession {
             // FULL ACCEPTANCE: the verify state IS the committed state. No
             // rollback, no repair forward; the bonus row carries the next primary
             // and the last hidden row seeds the next draft.
-            Self.clearRecurrentRollback(cache)
+            e192Barrier = Self.e192BarrierOn(round: roundCount) ? 1 : 0
+            if e192Barrier == 1 {
+                let tBarrier0 = DispatchTime.now().uptimeNanoseconds
+                Self.e192EvalRollbackState(cache)
+                tClearBarrierNs =
+                    DispatchTime.now().uptimeNanoseconds - tBarrier0
+            }
+            let tClear0 = DispatchTime.now().uptimeNanoseconds
+            let cClear0 = Self.threadCPUNanoseconds()
+            nClearReleased = Self.clearRecurrentRollback(cache)
+            tClearNs = DispatchTime.now().uptimeNanoseconds - tClear0
+            cClearNs = Self.threadCPUNanoseconds() &- cClear0
             committed.append(contentsOf: drafts)
             committedTokenCount += drafts.count
         } else {
@@ -1891,6 +1909,12 @@ public final class Qwen36MTPBlockSession {
                 + "eval_wall_us=\((tEvalDone - tVerifyBuilt) / 1000) "
                 + "readout_us=\((tReadDone - tEvalDone) / 1000) "
                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
+                + "clear_release_us=\(tClearNs / 1000) "
+                + "clear_release_cpu_us=\(cClearNs / 1000) "
+                + "clear_release_count=\(nClearReleased) "
+                + "clear_barrier_us=\(tClearBarrierNs / 1000) "
+                + "e192_barrier_arm=\(e192Barrier) "
+                + "e192_tape_suppressed_arm=\(Qwen35E192TapeArm.suppress ? 1 : 0) "
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
                 + "round_us=\((tTailDone - tRound0) / 1000) "
                 // Thread CPU nanoseconds this round consumed, beside the wall
@@ -2144,14 +2168,58 @@ public final class Qwen36MTPBlockSession {
         return true
     }
 
-    private static func clearRecurrentRollback(_ cache: [any KVCache]) {
+    private static let e192BarrierMode =
+        ProcessInfo.processInfo.environment["MLX_E192_BARRIER"] ?? "0"
+
+    private static func e192BarrierOn(round: Int) -> Bool {
+        switch e192BarrierMode {
+        case "1": return true
+        case "alt": return round % 2 == 1
+        default: return false
+        }
+    }
+
+    /// Bring every array the clear is about to drop to completed status,
+    /// so a release that waits on in-flight device work pays inside this
+    /// timed window instead of inside the clear.
+    private static func e192EvalRollbackState(_ cache: [any KVCache]) {
+        var pending: [MLXArray] = []
+        for entry in cache {
+            guard let arrays = entry as? ArraysCache else { continue }
+            if let state = arrays.rollbackState {
+                pending.append(state.0)
+                pending.append(state.1)
+            }
+            for checkpoint in arrays.rollbackCheckpoints {
+                pending.append(checkpoint.0)
+                pending.append(checkpoint.1)
+            }
+            if let tape = arrays.prefixReplayTape {
+                pending.append(contentsOf: [
+                    tape.convInput, tape.q, tape.k, tape.v,
+                    tape.a, tape.b, tape.g, tape.beta,
+                ])
+                if let ssmPre = tape.ssmPre { pending.append(ssmPre) }
+                if let mask = tape.mask { pending.append(mask) }
+            }
+        }
+        if !pending.isEmpty { eval(pending) }
+    }
+
+    @discardableResult
+    private static func clearRecurrentRollback(_ cache: [any KVCache]) -> Int {
+        var released = 0
         for entry in cache {
             if let arrays = entry as? ArraysCache {
+                if arrays.rollbackState != nil { released += 1 }
+                released += arrays.rollbackCheckpoints.count
+                if arrays.prefixReplayTape != nil { released += 1 }
                 arrays.rollbackState = nil
                 arrays.rollbackCheckpoints = []
                 arrays.prefixReplayTape = nil
             }
         }
+        return released
     }
 
     /// Trim every trimmable cache in the stack back to `offset`. Used on the
