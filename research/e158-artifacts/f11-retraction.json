@@ -1,0 +1,80 @@
+{
+  "title": "Retraction of the F11 (s, h) fit and of the 2x local-vs-ranked batching claim",
+  "harness": "local",
+  "gpu_seconds": 0,
+  "method": "re-analysis of the depth sweep already in r1-abba.json plus leg temperatures recovered from r1-harvest.json",
+
+  "what_i_reported_and_now_withdraw": {
+    "reported_in": "PR #158 comment 5389165875 (F11)",
+    "claims": {
+      "s_ms_per_round": 43.584,
+      "h_ms_per_row": 17.457,
+      "h_over_s": 0.4005,
+      "eight_h_over_s": 3.2044,
+      "derived_claim": "local verify batches about half as well as the ranked host, a 2x disagreement",
+      "derived_split": "head 8.2 percent, target verify 91.8 percent of marginal row cost"
+    },
+    "status": "WITHDRAWN. The fit is a straight line drawn across a step discontinuity."
+  },
+
+  "root_cause": {
+    "already_known_as": "campaign-ledger.md item 92",
+    "ledger_text": "the true verify cost is a step function of ceil(M/5), which the smooth h/(1+d*h) price cannot express at all",
+    "independent_confirmation": "This sweep was not used by item 92, and it locates the step exactly where item 92 predicts.",
+    "per_interval_slopes_arm_all": [
+      {"rows_from": 2.000, "rows_to": 2.995, "passes": "1->1", "ms_per_row": 8.96},
+      {"rows_from": 2.995, "rows_to": 3.803, "passes": "1->1", "ms_per_row": 12.64},
+      {"rows_from": 3.803, "rows_to": 4.373, "passes": "1->1", "ms_per_row": 19.42},
+      {"rows_from": 4.373, "rows_to": 5.032, "passes": "1->2", "ms_per_row": 33.32,
+       "note": "this is the step, not a slope"},
+      {"rows_from": 5.032, "rows_to": 5.244, "passes": "2->2", "ms_per_row": 10.70}
+    ],
+    "band_aware_fits": {
+      "straddling_all_6_points": {"s_ms": 43.58, "h_ms_per_row": 17.46, "h_over_s": 0.4005, "eight_h_over_s": 3.2044, "valid": false},
+      "within_1_pass_band_n4": {"s_ms": 57.83, "h_ms_per_row": 12.47, "h_over_s": 0.2156, "eight_h_over_s": 1.7250, "valid": true},
+      "within_2_pass_band_n2": {"h_ms_per_row": 10.70, "valid": "indicative only, 2 points, no usable intercept"}
+    },
+    "why_the_2x_claim_fails": "FINDING 286 is fitted where the ranked fixture lives, entirely inside the 2-pass band (rows 5.53-6.78). This sweep has only two points in that band and no usable intercept there. A like-for-like local-vs-ranked (s, h) comparison is therefore not available from this data, in either direction. The 2x figure came from comparing a straddling local fit against a within-band ranked fit."
+  },
+
+  "depth_policy_near_miss": {
+    "what_the_data_shows": {
+      "arm_all": {"best_cap": 3, "spt_best": 0.031724, "spt_cap8": 0.032251, "pct_faster": 1.634},
+      "arm_none": {"best_cap": 4, "spt_best": 0.031585, "spt_cap8": 0.032041, "pct_faster": 1.422}
+    },
+    "why_it_must_not_be_proposed": {
+      "already_closed_as": "campaign-ledger.md item 93",
+      "prior_experiment": "E25 PRICE arm, hard max depth 3, won 8/8 locally at +3.83 percent",
+      "ranked_outcome": "structural approximately -18 percent",
+      "established_negative": "any hard depth cap below 6",
+      "governing_rule": "a local fixture whose depth histogram does not overlap the ranked one cannot test a depth policy at all, in either direction",
+      "this_sweep_fails_that_rule": {
+        "local_max_realised_q_at_cap8": 4.244,
+        "ranked_realised_q_range": [4.53, 5.78],
+        "overlap": "none; the local sweep never reaches the scored depth region"
+      }
+    },
+    "verdict": "not a candidate. This is the E25 local mirage reproduced on a second fixture."
+  },
+
+  "thermal_confound_test": {
+    "concern": "the sweep is ungated and runs depths in strictly ascending order, so depth is confounded with session drift",
+    "entry_temp_c_depths_2_to_8": {"min": 61.06, "max": 62.52, "spread": 1.45},
+    "natural_experiment_at_depth_1": {"delta_temp_c": 17.49, "delta_spt_pct": 0.324, "sensitivity_pct_per_c": 0.0185},
+    "implied_thermal_effect_across_depth_range_pct": 0.027,
+    "verdict": "refuted. The machine reached thermal steady state from depth 2 onward; drift cannot explain effects of order 1 percent. The sweep data is sound. It is the depth POLICY inference that fails, for the histogram reason above, not for a thermal reason."
+  },
+
+  "corrected_head_share": {
+    "finding_334_head_ms_per_row": 1.4310,
+    "finding_334_cell_rows": 7.359,
+    "finding_334_cell_passes": 2,
+    "band_matched_denominator_ms_per_row": 10.70,
+    "head_share_pct": 13.4,
+    "verify_share_pct": 86.6,
+    "previous_reported_head_share_pct": 8.2,
+    "caveat": "the 2-pass slope rests on two points; treat 11-13 percent as the range. The qualitative conclusion is unchanged: the marginal row is dominated by target verify, not by the head."
+  },
+
+  "guardrail_for_finding_286": "FINDING 286's linear row law is fitted inside the 2-pass band. It must not be extrapolated below rows = 5, where a verify pass is removed. Any price that multiplies a smooth per-row cost by a depth change which crosses a multiple of 5 rows is wrong by the size of the step."
+}
