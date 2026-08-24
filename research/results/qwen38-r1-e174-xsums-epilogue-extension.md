@@ -4,171 +4,216 @@
 
 - PR: #173, branch `qwen-alphonse/e174-xsums-epilogue-extension`, revision `r0`
 - Base: `2b8037c3e5207fa2f5633e61d013a779492b05c2`
-- Verdict: **not useful.** The mechanism's ceiling is already measured and it
-  sits below the assignment's own minimum useful effect.
-- Timed legs spent: **0.** The stop rule fired before any timed session,
-  because the largest effect consistent with existing matched evidence cannot
-  cross the decision threshold.
+- Session commit: `9877d915f48a6d4ede58c5e6143ba9a59611e3f6`
+- Worker: `1d9947bb01a48fec20a185b138ce1f08fc4e8f0cae7f0e4b8a79fce3b3e0adc4`
+- Host: `ip-10-231-2-22.ec2.internal`, Apple M4 Pro, 48 GiB
+- W&B: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/7ueick4f
+- Verdict on the assigned hypothesis: **unresolved, and held.** Not implemented.
+- Delivered instead: first-hand per-fill and per-kernel-record coefficients,
+  an exact additive decomposition of the shipped sumtable mechanism, and two
+  retractions of my own earlier claims.
 
-## 1. What the assignment asked, and what stopped it
+> **An earlier revision of this file said the axis was closed and that I would
+> spend zero timed legs. Both statements were wrong.** The advisor approved a
+> four-arm screen, I ran it, and it falsified my own argument for closing the
+> axis. This document records what the measurement actually says.
 
-The assignment asked me to publish xsums from the producers of the 130 routed
-table-paying cells that have no publishing producer, and priced that at
-0.650 ms/round of GPU standalone-fill work plus about 0.43 ms/round of host
-admission work. Both numbers come from my own E173 inventory.
+## 1. What the assignment asked
 
-The GPU number is method-tagged in my own script as
-`source-derived (producer/consumer census) x in-source measured fill cost`:
-130 cells multiplied by the "measured at 4 to 6 us" comment at
-`Qwen35.swift:1732`. RULE 160 requires a 0.21 factor on that class of price
-until a matched end-to-end measurement replaces it. Three such measurements
-already exist in the campaign ledger on this base. I did not cross-reference
-them when I raised this item in the E173 verdict. That is my error.
+Publish xsums from the producers of the 130 routed table-paying cells that have
+no publishing producer, so those cells skip the standalone fill. The assignment
+priced that at 0.650 ms/round of GPU fill work plus about 0.43 ms/round of host
+admission work, both from my own E173 inventory, against a predeclared minimum
+useful effect of **0.30 %** per-token local.
 
-## 2. The three matched end-to-end measurements
+I objected before implementing, arguing that merged E160 evidence had closed the
+axis. The advisor accepted the objection (ADVISOR ERROR 237, RULE 376), held the
+implementation, and approved a screen to measure the coefficients first-hand.
 
-Every row is a thermally gated ABBA session with a real 40 C gate, quoted with
-its own published interval. `harness=local`.
+## 2. Census — the 130 is measured, not source-derived
 
-| line | lever | measured effect | se |
-| --- | --- | ---: | ---: |
-| E135 / F41, ledger 313.7 ("THE FILL COSTS 1.711 us, NOT 4.9. ADVISOR ERROR 183") | add a live fill for **all 257** routed cells (`fill_noconsume - replica`) | **+0.2213 %** of candidate MTP time | 0.0942 pp (drift fitted), 0.0681 pp (no drift) |
-| E160 replicate 1, FINDING 350, ledger 65434 | **remove 64** fills with a producer epilogue (`fuse - off`) | **+0.0214 %** | 2σ `[-0.1752, +0.2181]` |
-| E160 replicate 2, FINDING 359, ledger 65873 | same mechanism, 12 legs | **-0.0015 %** | 2σ `[-0.2059, +0.2029]` |
+Two untimed 32-token traced legs, one worker, `dirty_candidate_paths=0`.
+Artifact `research/out/e174-census-c1.json`.
 
-E135 is the decisive one, and it prices exactly the composite this assignment
-proposes to delete. Its `fill_noconsume` arm calls `xsumsTable(x)` for every
-routed cell and binds a table the kernel never reads, so the contrast carries
-**both** the GPU fill dispatch **and** its host kernel record, with the consumer
-held fixed (`consume:` is false on both arms). Its published decomposition is
-`+439.7 us/round over 257 fills`, `1.711 us per dispatch`, against a local round
-of `198,671 us`. Its four 512-token legs ran the palindrome
-`repl fill fill repl` behind the real 40 C gate with `edl = 6.358974` on all
-four, so the arms share one schedule and the contrast is a pure cost
-measurement. Thorfinn stated three caveats, all of which help this argument:
-the arms remove all 257 fills at once so the total is what is measured and the
-division by 257 is untested; the two arms run different pipeline objects, so
-1.711 us is an **upper bound** on the fill alone; and the cross-session
-comparison against the shipped `sumtable` arm is directional.
+| arm | `xs_hit`/round | `xs_fill`/round |
+| --- | ---: | ---: |
+| shipped | 127 | 130 |
+| `MLX_E174_XSUMS_SIDECAR=off` | 0 | 257 |
 
-### The ceiling, two ways
+Singleton counter sets on every traced round. Both arms digit-identical on
+`all_tokens_matched`, `effective_mean_draft_len` and `accepted_draft_rate`, so
+the switch changes only the fill count. This confirms the E173 source-derived
+count of 130 exactly and closes ledger §332.3's standing ask.
 
-The assignment-free form needs no scaling assumption at all:
+## 3. The screen
 
-> The **entire** 257-cell fill surface costs **+0.2213 %** of candidate MTP
-> time. E174 targets a subset of that surface. So E174's payoff is at most
-> +0.2213 %, against a predeclared minimum useful effect of **0.30 %**.
+Eight thermally gated 512-token legs in one session, palindrome
+`s o r f f r o s`, so every arm has mean leg position 4.5 and a monotone drift
+cancels to first order. All eight legs `cool_gate_passed_real_gate=true` and
+`gate_qualified_for_timing=true`, entry-temperature spread 2.94 C, one worker
+binary, `edl = 6.358974` and `accept = 0.87701613` digit-identical on all eight.
 
-With per-cell scaling, on E135's own caveat that the division is untested:
+| arm | what it runs |
+| --- | --- |
+| `s` | shipped: 127 producer epilogues, 130 fills, table consumer `USE_TABLE=true` |
+| `o` | `MLX_E174_XSUMS_SIDECAR=off`: 0 epilogues, 257 fills, table consumer `USE_TABLE=true` |
+| `r` | `MLX_E120_QMV_ARM=replica`: 0 fills, `qwen35CustomAffine4QMVKernel` |
+| `f` | `MLX_E120_QMV_ARM=fill_noconsume`: 257 fills, table consumer `USE_TABLE=false` |
 
-| quantity, 130 cells | value |
+Phase 1 witnessed all four arms from the run's own per-round census before any
+timed leg ran. All four matched their source-predicted counters exactly, so no
+arm was silently timing the shipped path.
+
+### Results, absolute candidate MTP time
+
+| contrast | grade | effect | µs/round | cells | µs/cell |
+| --- | :-: | ---: | ---: | ---: | ---: |
+| `o − s` | B | +0.3849 % | +699.1 | 127 | 5.505 |
+| `f − o` | **A** | **+4.2997 %** | +7840.1 | — | — |
+| `f − r` | C | +0.5190 % | +981.9 | 257 | 3.820 |
+| `r − s` | C | +4.1605 % | +7557.3 | — | — |
+
+Cleanliness is graded from source, not from the numbers. **A**: same kernel
+object, same bindings, same grid, one declared thing differs. **B**: consumer
+identical, more than one thing differs. **C**: different consumer pipeline
+objects.
+
+### Noise control
+
+The serial leg is unreachable by every arm — `routable` refuses at `M = 1` — so
+its arm-to-arm spread is a direct empirical null for a two-versus-two contrast
+in this session: max **0.2232 %**, median 0.1117 % over the six pairs. `o − s`
+clears it by 1.7×, `f − r` by 2.3×, `f − o` by 19×. Residual standard errors
+give 7.4σ for `o − s`; the serial band argues for more caution than that, and
+both are recorded.
+
+## 4. The coefficient, as a bracket
+
+`o − s` holds the consumer identical and additionally contains the producer's
+epilogue cost, which is **≥ 0**, so it is a **lower** bound on one fill plus its
+record. `f − r` additionally contains one extra buffer binding, also **≥ 0**, so
+it is an **upper** bound.
+
+| bound | source | µs/cell | 2σ |
+| --- | --- | ---: | --- |
+| lower | `o − s` | 5.505 | [4.03, 7.00] |
+| upper | `f − r` | 3.820 | [2.39, 5.27] |
+
+The bounds **cross**, so they cannot both be tight. They reconcile only inside
+their overlapping 2σ region, or if the fill's marginal cost rises between the
+130-fill and 257-fill regimes, which this session did not test.
+
+> **Working value: one standalone fill dispatch plus its host kernel record
+> costs about 4.0 to 5.3 µs of candidate MTP wall time on this host and tree.**
+
+No point estimate is quoted. The crossing is reported rather than averaged away.
+
+## 5. Two retractions
+
+### 5.1 `f − r` is not the clean contrast; `o − s` is
+
+I told the advisor that `f − r` holds the consumer fixed with `consume:` false
+on both arms. Reading `Qwen35CustomQMV.matmul` again shows the opposite:
+`replica` never enters the table branch, so it dispatches
+`qwen35CustomAffine4QMVKernel` while `fill_noconsume` dispatches
+`qwen35CustomAffine4QMVTableKernel` with one extra bound buffer. E135/F41
+carried this caveat and I quoted its number without carrying the caveat.
+
+### 5.2 E160 did not close the axis; it was underpowered by construction
+
+The measured per-cell bracket predicts that removing E160's 64 fills **with a
+completely free epilogue** would show `fuse − off` between −0.130 % and
+−0.187 %. E160's 2σ intervals were `[-0.1752, +0.2181]` and
+`[-0.2059, +0.2029]`.
+
+**Its 2σ half-width (≈0.20 pp) was wider than the entire effect its own
+mechanism could produce.** It could not have detected a perfectly free epilogue.
+Its null is a failure to reject, not evidence of absence.
+
+I therefore retract this claim from my blocker comment: *"The E173 cost premise
+is therefore rejected at about 2σ, twice independently."* It was never tested
+with enough power. My own E173 row — 0.650 ms / 130 cells = 5.0 µs per cell —
+sits **inside** the bracket measured here. The row I apologised for was
+approximately right; E135's 1.711 µs and E160's null were what misled me.
+
+**Proposed amendment to RULE 376:** a merged null closes a mechanism axis only
+if its confidence interval excludes the minimum useful effect. A null whose
+interval is wider than the effect under test closes nothing.
+
+## 6. Verdict on the assigned hypothesis
+
+By the predeclared rule `|o − s| × 130/127 ≥ 0.30 %`, the premise **survives**:
+0.3849 × 130/127 = **+0.394 %**.
+
+**Unresolved, not falsified — and still not worth implementing.** The fills cost
+real money. What remains unproven is that a producer *epilogue* can capture that
+money on these particular producers. The source argument is untouched: no
+producer of the 130 cells has a grid matching the fill grid `(32, kBlocks, m)`,
+so each new epilogue is a sparse post-barrier tail. `o − s` measures the
+epilogue on the **best available** producer, already in the tree; E174 must use
+strictly worse ones. The ceiling is +0.394 % and the epilogue cost on worse
+grids is unmeasured and could consume all of it.
+
+Held per the advisor's ruling.
+
+## 7. The sumtable mechanism, decomposed exactly
+
+`f − o` is the grade-A contrast: same kernel, same bindings, same grid, fill
+count held at 257, only the `USE_TABLE` template constant differs.
+
+> **Reading the precomputed chunk-sum table instead of recomputing sums per
+> output-row block is worth +4.2997 % = 7,840 µs/round of candidate MTP time.**
+
+Exact additive decomposition, in absolute candidate seconds per token:
+
+| component | contribution |
 | --- | ---: |
-| E173 source-derived prediction (0.650 + 0.43 ms/round of a 188.8 ms round) | +0.572 % |
-| E135 measured, central | **+0.112 %** |
-| E135 measured, 2σ upper bound | **+0.207 %** |
-| E160 replicate 1, central, scaled from 64 cells | +0.043 % |
-| E160 replicate 2, central, scaled from 64 cells | -0.003 % |
-| predeclared minimum useful effect | 0.30 % |
+| table consumption at fixed fill count (`o − f`) | **−0.00123291** |
+| sidecar epilogue, 127 cells (`s − o`) | −0.00010994 |
+| the fills themselves, 257 (`f − r`) | +0.00015440 |
+| **total (`s − r`)** | **−0.00118845** |
 
-The E173 row overpredicts the measured central value by about **5.1x**, which
-is close to the 4.7x overprediction RULE 160 was written to correct.
+### Relevance to receipt D
 
-**And every figure above assumes the replacement epilogue is free.** E160
-measured that it is not. Its accepted mechanism: the epilogue re-reads the
-chunk from the producer's output after a device barrier with a small fraction of
-the threads active, so it converts a well-shaped standalone dispatch into a
-badly occupied tail on a larger one. Dispatch count falls, work does not.
+Receipt D's tree carried the campaign quantized kernels without the sidecar —
+the arm `o` topology — and lost 1.34 % on ranked. Arm `o` measures only
+**+0.385 %** slower than shipped here, because arm `o` still consumes the table
+and merely self-fills. So the missing sidecar accounts for at most about a
+quarter of D's loss and **something else explains the rest**. The 4.30 % figure
+is the cost of losing table *consumption*, which is the failure mode if the
+`_nax` variants do not consume the table.
 
-## 3. The reopen condition is not met
+## 8. Suggested follow-ups, which I did not implement
 
-FINDING 359 closed the producer-fusion axis for `mlp.down` (64 sites),
-`gdn.out_proj` (48) and `fa.o_proj` (16) — **128 of the 130 cells** this
-assignment targets — and set one reopening condition: a producer whose grid
-already matches the fill grid `(32, kBlocks, m)` at full occupancy, so the
-epilogue is not a tail. Checked against source on this base:
+1. **Memoize the standalone fill on activation identity.**
+   `Qwen35CustomQMV.matmul` calls `xsumsTable(x)` per cell with no memoization.
+   The sidecar's `take()` already dedupes by activation identity, but only for
+   published tables. Where several routed cells read the same activation — the
+   standard transformer shape — each pays its own fill for an identical table.
+   At 4.0–5.3 µs per fill every duplicate removed is worth that much, with no
+   new kernel, no epilogue and no grid risk. Sizing needs one cheap census:
+   distinct `x` identities among the fill calls in a round, against 257. If a
+   quarter are duplicates that is ≈0.14–0.18 %. Not measured.
+2. **Price item (2) against this bracket.** Removing 257 dispatch-plus-record
+   pairs bought 982 µs/round = 0.52 %. Item (2) removes the record only, so its
+   per-record value is strictly below 3.82 µs and its ceiling is ≈0.52 %, only
+   if every record is cacheable, on the critical path, and the dominant half of
+   the pair. Nothing here says the record is the larger half.
+3. **Test whether the fill's marginal cost is regime-dependent.** That is the
+   physical hypothesis that would reconcile the crossing bounds, and it decides
+   whether removal work should be priced at 3.8 or 5.5 µs per cell.
+4. **Carry method tags forward.** Both retractions here came from quoting a
+   number without its caveat. An assignment citing a ledger row should carry
+   that row's `method` tag and its stated caveats with it.
 
-| site | grid | threadgroup | matches the fill grid? |
-| --- | --- | --- | --- |
-| `xsumsTable`, the fill itself, `:1803` | `(32, kBlocks, m)` | `(32, 1, 1)` | reference; every thread writes one sum |
-| `qwen35FusedResidualRMSNormXSumsKernel`, `:2355` | `(nRows * 1024, 1, 1)` | `(1024, 1, 1)` | no — 320 of 1024 threads per row at K = 5120 |
-| `:2156` | `(totalRows * 64, 1, 1)` | row-major | no |
-| `:2584`, `:2845`, `:2865` | `(2 * nRows * 1024, 1, 1)` | row-major | no |
-| `:654`, `:976`, `:1234` | `(32, ...)` with y and z fixed by head geometry | — | no — y and z are not `kBlocks` and `m` |
+## 9. Reproduction
 
-No producer of the 130 cells satisfies the condition. The two cells outside the
-closed families are `lm_head` (1) and `gdn.in_proj` at layer 0 (1). At E135's
-measured 1.711 us per dispatch they are worth at most 0.002 % of a round
-together, so they cannot carry the experiment either.
+```bash
+research/e174_census.sh          # census, 2 untimed traced legs
+research/e174_screen.sh 512 s1   # 1 warmup + 4 witness + 8 gated 512-token legs
+python3 research/e174_decompose.py
+```
 
-## 4. Why I did not run a timed screen
-
-I planned one, built the arm for it, and then priced the measurement:
-
-- The largest effect consistent with existing evidence is **+0.112 %** central,
-  **+0.207 %** at 2σ. The campaign's local per-leg noise floor is **0.120 %**.
-- To resolve +0.112 % at 2σ needs `se ~ 0.056 pp`. E135 reached
-  `se = 0.068 to 0.094 pp` with 4 gated legs at a **257**-cell lever. A
-  130-cell lever needs roughly **11 or more** gated legs to reach 2σ.
-- The result would not change the decision. Both the central value and the 2σ
-  upper bound for 130 cells already sit below the 0.30 % threshold, so no
-  outcome of that session promotes the experiment.
-
-`program.md` rejects an experiment when "the largest plausible gain is below
-measurement noise". That is this case, so the timed session was not run. If the
-advisor wants the first-hand contrast anyway, it now costs one environment
-variable and no new code: see section 5.
-
-## 5. What this branch leaves behind
-
-- `MLX_E174_XSUMS_SIDECAR=off` gates `Qwen35XSumsSidecar.wants`, so the
-  producer publishes nothing and all 257 table-paying cells take the standalone
-  fill. The shipped default is unchanged. Arithmetic is identical on both arms:
-  each reads a table written by the same fill body, and the `off` arm is the
-  shipped pre-sidecar dispatch. Witnessed inside the built worker by
-  `senpai/rebuild-and-assert-worker.sh --require MLX_E174_XSUMS_SIDECAR`.
-- `research/e174_census.sh` and `research/e174_census.py` read the live
-  `xs_hit`/`xs_fill` pair that ledger 332.3 asked for and nobody had read. Each
-  arm is the other arm's positive control, so a switch that never reached the
-  worker cannot pass.
-- `research/e174_log_wandb.py` publishes the census and this reconciliation.
-
-**The switch is instrumentation on the scored surface, and nothing here ships,
-so I reverted it from the submitted surface before submitting this result.** It
-stays recoverable from this branch at commit `b5fd35b1`. That keeps the
-campaign's simplification direction intact and matches the instrumentation strip
-the advisor has in flight.
-
-## 6. Suggested follow-ups, which I did not implement
-
-1. **Correct the E173 inventory row rather than delete it.** Replace
-   `gpu.xsums_standalone_fills` 0.650 ms/round with E135's measured
-   `439.7 us/round over 257 cells`, which is 0.222 ms/round for the 130
-   unserved cells, and tag it `measured-e2e (E135/F41)`. The same correction
-   applies to the host share the assignment took from
-   `admission.kernel_record_construction`: E135's contrast already contains
-   that host record, so the two terms must not be added.
-2. **Apply the same audit to the other three E173 items before assigning
-   them.** Item (2), kernel-record caching, rests on the same
-   `admission.kernel_record_construction` residual. Item (3), BF16 recurrent
-   state, is priced from `gdn.recurrence` 2.0872 ms/round, which is a
-   measured-GPU intercept and therefore does not carry the RULE 160 problem.
-   Item (3) is the one item whose price survives this audit.
-3. **Close the whole chunk-sum axis, not just this experiment.** The two
-   remaining levers in this area are both below the campaign's minimum useful
-   effect, from measurements already in the tree:
-   - Removing fills: at most +0.207 % at 2σ for the 130 unserved cells, central
-     +0.112 %, and only if the replacement epilogue were free (E135, E160).
-   - Lowering `minimumTableWidth` to 3 per shape: the E120 rung 5d net table at
-     `Qwen35.swift:1737-1745` gives -90.1 us for taking every M = 3 cell and at
-     most +62.7 us for taking only the four shapes with a positive sign. That
-     ceiling is **0.031 %** of a 198,671 us round, and the in-source note
-     already declines it because it would hard-code one host's timings.
-
-   The fill is cheap relative to what the table buys (1.711 us against +11 to
-   +199 us saved per matvec at M >= 4), so the shipped design is close to
-   optimal here. I suggest marking the axis closed in the ledger so it is not
-   re-audited a fourth time.
-4. **A campaign check worth automating.** Every assignment that cites an E173
-   row should carry that row's `method` tag in the assignment body. The two
-   method classes in that inventory — `measured-*` and `source-derived` — differ
-   by about 5x in realized value, and the tag is already in the artifact.
+Artifacts: `research/out/e174-census-c1.json`,
+`research/out/e174-witness-s1.json`, `research/out/e174-screen-s1.json`,
+`research/out/e174-decompose-s1.json`. All under gitignored `research/out/`.
