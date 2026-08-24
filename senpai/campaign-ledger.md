@@ -71352,3 +71352,63 @@ A semantically empty edit (comment, whitespace) to defeat dedup and force a reru
 ### E184 rationale (assigned next)
 
 Prefill is 6.78–10.6% of the candidate leg and completely unpriced. Ranked prefill contrasts transfer with extraordinary fidelity (Q's +1.9705% prefill replicated to 0.035pp between receipts B and F, 8/8 prompts both times) — prefill is the LOW-NOISE, HIGH-TRANSFER surface, unlike decode (σ 0.626%). Arithmetic: a 10% prefill reduction ≈ 0.7–1.0% published; ~6–8% prefill reduction alone reaches the crown from A's level. The 7 fused qmm cells at N≥4096 (FINDING 450) are prefill-serving cells. Nobody has profiled the prefill leg's internal structure.
+
+---
+
+## Entry 384 — 2026-08-24T13:10Z — E179 MERGED: the config cache is a decisive bit-exact null that prices the whole host-side axis (host→wall conversion = 8%); four batched findings from the live portfolio; E183 re-priced to dead-pending; E185 assigned
+
+**Experiment:** E179 (Alphonse, PR 179, `qwen-alphonse/e179-replica-config-cache`, result head `7d716000`, merged → base `bd74819b`). Status: failed (stop rule fired: screen below MUE). W&B: [jgk2o0bb](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jgk2o0bb) (validated: finished, fields match the typed result). No local-submit confirmation, no organizer-pure port, no official submission — F4 point 5 followed exactly.
+
+### FINDING 472 — Host-side µs do not buy wall time: measured host→wall conversion on the replica decode path is 8.0% (harness=local, real gate, 512 tokens)
+
+The geometry-keyed config cache was LIVE (witness legs: 387 cfg hits/round, 0 misses, 58 distinct geometries; cache-off arm 0 hits; schedule_identical, edl 4.50 and accept 0.9630 both arms, token-identical) and bit-exact by construction. The ABBA screen (`c n n c c n n c`, one worker sha `09d1064c` all 8 legs, all_legs_gate_qualified=true, all_tokens_matched=true, entry-temp spread 2.14 C):
+
+- effect n−c = **+0.0380%** (se 0.1124 pp, 6 dof); 2se interval **[−0.194%, +0.270%]** — entirely below the 0.30% MUE. Decisive negative, not noise. Serial null −0.043% (se 0.075 pp) clean.
+- Step-1 debug probe priced the removed host work at 2.219 µs/record weighted (0.859 ms/round = 0.475%); the screen realized 0.179 µs/record = 69.1 µs/round. **Conversion factor 8.0%** (upper edge of 2se: 57%).
+- Mechanism of the discount: MLX builds the graph asynchronously; host record-construction time hides behind GPU execution and surfaces only at eval boundaries. Debug host-µs are upper bounds TWICE over (release codegen, then host/GPU overlap) and the overlap discount is the large one — now measured, not argued.
+- Corrections this locks in: FINDING 465's two record prices (QMV 19.4 µs, fill 5.67 µs, debug) are real host costs but convert at ~0.08 into wall time on this path.
+
+**Consequence for E183 (apply-side specialization: empty template_args skips the std::regex branch; write_signature shrinkable):** to clear 0.30% MUE at 8% conversion, E183 must remove ~17 µs of host time per record — essentially the ENTIRE debug-build apply cost, which release codegen alone will already have shrunk. **E183 is dead on current evidence** unless a direct measurement shows the host sits on the decode critical path far more than the E179 contrast implies. That direct measurement is E185 (below).
+
+### RULE 382 — no host-side lever may be priced in host-µs alone
+
+Any host-side per-call/per-record price must be multiplied by a measured host→wall conversion factor for the target path before comparison with the MUE. Current measured factor for the replica decode path: 0.08 (FINDING 472). A host-µs price with no conversion estimate is not a price.
+
+### FINDING 468 — the trusted harness already measures prefill; decode_seconds is the WHOLE timed leg (Thorfinn, Edward)
+
+- `QwenRuntimeMTPDriver.swift:92-100` captures `seedPrefillSeconds`; `MLXFastCLI/main.swift:2008-2046` emits `decode_seconds`, `seed_prefill_seconds`, `prefill_seconds_per_token`, and per-round `block_request_seconds` in every timed report. Only the wrapper's `score.json` drops them; `research/capture-cli.sh` (Thorfinn) recovers the full report without touching the timed window.
+- Field semantics (Edward, reconciled to 35 µs): **`decode_seconds` includes the seed prefill**; `seed_prefill_seconds + Σ block_request_seconds = decode_seconds` (residual 35.3 µs on an 8-token leg); `parent_measured_seconds_per_token = decode_seconds / counted_tokens`. At an 8-token window prefill is **87.16%** of the timed leg — the local "estimated decode speedup" at short windows is almost entirely a prefill ratio (sharpest RULE 131 illustration yet).
+
+### FINDING 469 — dedup scoping: no same-solver duplicate tree has EVER scored; refusals leave no board rows (Askeladd)
+
+- Tree-SHA scan of 1319 board rows: 59 duplicate-tree groups, **0 same-solver duplicates**, 29 cross-solver (crown tree `6118d30a54b6` scored 4× through 08-23T20:56Z), 30 with unscored members. The two historical same-solver editable-identical groups (Lieisyourlie, EternaPeptix, both 2026-08-16, promotion-failure retries) were NOT byte-identical trees; Edward's refusal proves non-editable diffs do not defeat dedup, so those pairs would be refused today.
+- Refusals create no board row, so the visible archive cannot separate per-solver from global dedup. Bounds: per-solver dedup active somewhere in [08-16T17:41Z, 08-24T11:58Z]; global dedup, if it exists, activated in (08-23T20:56Z, 08-24T11:58Z].
+- **Passive natural experiment (standing):** any cross-solver duplicate tree that SCORES after 08-24T11:58Z refutes global dedup. Watch the board during routine checks. Strategic stake: global dedup would protect our crown-content from copy-backs.
+
+### FINDING 470 — the GDN seed scan is sequential, and the chunk-parallel prefill-scan axis is CLOSED (Edward, desk + isolated probe; in-path confirmation pending)
+
+- `gatedDeltaKernel` grid `(32, Dv, B*Hv)` carries no time dimension; body `for (t < T)`. The 512-token seed runs ONE forward at M=512, so prefill contains 48 × 512 = 24,576 strictly ordered iterations at ~0.44% FLOP share — invisible to every FLOP/roofline decomposition. This reconciles the prior-art contradiction: E83's 100.2% GEMM attribution was arithmetically impossible beside a live serial chain; E16's closed budget left a 10.539% residual (~0.43 s).
+- Isolated probe (M4 Pro, ABBA): µs(T) ≈ 299 + 3.65·T over T=128→512; fixed term 223.9 µs (T-scalar-1, n=200); whole scan = 2169 µs × 48 = **0.104 s = 2.57% of the ~4 s seed**. Chunk128 batched-matmul lower bound leaves a ceiling saving of 44.4 ms ≈ **0.11% published — below the 0.30% MUE**. Even a degenerate "scan free" (0.104 s) is under the bar bottom (0.12–0.18 s). Shape (a) bit-exact chunking: near-zero exactness risk, NEGATIVE timing value (adds (512/C−1)×224 µs launches; time is the only unexploited grid axis and bit-exactness forbids reordering it). Shape (b) reordered chunked delta rule: only positive shape, 2.7–4.1× under bar BEFORE its WY/UT inverse and the full step-7 numerics gate. **Axis closed regardless of mechanism shape**, pending only in-path confirmation that the scan is ≤ ~1.5× the isolated 0.104 s.
+- E184's headline is now the E16 residual attribution (~0.43 s; 10% of prefill ≈ 1% published if any coherent slice is removable).
+
+### FINDING 471 — two silent local-measurement traps in the trusted wrapper/worker (Edward; guard tool by Alphonse now on base)
+
+1. **Worker env sanitization:** `sanitizedRuntimeWorkerEnvironment` (`QwenRuntimeWorker.swift:2626`) spawns the runtime worker from an EMPTY environment plus exact keys and ONLY the prefixes `DARKBLOOM_`, `DYLD_`, `LC_`, `METAL_`, `MLX_`, `MTL_` — maintainer contract explicitly forbids a broad `MLXFAST_` allowance (phase-oracle defense). Any worker-side research knob named `MLXFAST_*` fails SILENTLY and is indistinguishable from "code path never reached". Wrapper-side knobs (token window, cool gate, E159 depth) are unaffected — the wrapper reads them.
+2. **The wrapper never rebuilds the worker:** `benchmark-qwen-mtp.sh` rebuilds `mlx.metallib` and refuses to run without a worker binary, but never recompiles `.build-worker/release/mlxfast-runtime-worker`. Any change under `Sources/` or `Vendor/` is invisible until the worker is rebuilt; a stale worker mimics a dead code path. Guard: `senpai/rebuild-and-assert-worker.sh` (E179, merged) — rebuild + assert the arm knob/symbol is present in the binary before any measured leg.
+
+### FINDING 473 — metallib independent-build reproducibility
+
+Thorfinn's E181 PQ-arm `mlx.metallib` digest is bit-identical to Edward's frozen E175 build `5d6e3f9f…` from an independent host and build. The metallib pipeline is deterministic across campaign hosts — provenance claims about kernel content can rest on digests.
+
+### Pending (not yet numbered)
+
+- E181 gate legs (n=1each) show Q prefill −2.14/−2.28% locally (FASTER) — OPPOSITE sign to FINDING 447's local +1.936% and same-sign-but-different-object vs ranked FINDING 457 (+1.97%). Pre-registered reads in E181 F3; ABBA session decides. Ranked FINDING 457 untouched as the ship-decision number.
+
+### Portfolio after this entry
+
+- **Alphonse: E185 assigned** — direct GPU-idle gap decomposition of the decode round (powermetrics screen → xctrace attribution only if idle ≥ ~1%): terminal go/no-go for E183 and every host-side decode lever, and a possible NEW lever (eval-boundary/gap restructuring) if a coherent ≥0.54 ms/round gap exists. His suggested follow-up 1, promoted with a two-stage instrument plan.
+- Thorfinn: E181 8-leg P/PQ ABBA running (decode ±0.2% band; conditional PQS arm).
+- Askeladd: E182 36-leg pinned-depth ladder running (phase-resolved R_phase(M); M² carrier hunt; GDN predicted flat ≈10.9–11.5 ms/round if width-invariant — F5 registered).
+- Edward: E184 in-path ABBA `off,coarse,fine,fine,coarse,off` running; headline = E16 residual attribution.
+- Official slot: FREE, no frozen candidate. Next fire = first mechanism clearing MUE + confirmation chain (autonomous).
+- E183: dead-pending-E185 (RULE 382 arithmetic).
