@@ -1,6 +1,16 @@
 import Foundation
 import MLX
 
+/// E194 arm switch for the sequence-major query share below. Read ONCE per
+/// process (a `ProcessInfo` lookup inside the wide-decode branch would be
+/// charged to every full-attention layer of every round), so both arms live
+/// in one binary and one ABBA session can alternate them without a rebuild.
+/// `MLX_` is the only usable prefix: the worker is spawned from an empty
+/// environment and forwards `DARKBLOOM_ DYLD_ LC_ METAL_ MLX_ MTL_` only
+/// (`QwenRuntimeWorker.swift:2626`).
+public let mlxE194SequenceMajorQueryShare: Bool =
+    ProcessInfo.processInfo.environment["MLX_E194_SEQ_MAJOR_Q"] != "0"
+
 /// Attention utilities that match Python mlx-lm's interface
 ///
 /// This provides a single function that automatically routes to quantized or regular
@@ -140,10 +150,10 @@ public func attentionWithCacheUpdate(
             // change is chunk A's `query_transposed` function constant, which
             // the kernel reads only to compute the query base offset
             // (sdpa_vector.h:66, :229) — never the reduction order.
-            let sharedQueries = queries
-                .transposed(0, 2, 1, 3)
-                .contiguous()
-                .transposed(0, 2, 1, 3)
+            let sharedQueries =
+                mlxE194SequenceMajorQueryShare
+                ? queries.transposed(0, 2, 1, 3).contiguous().transposed(0, 2, 1, 3)
+                : queries
             let outA = MLXFast.scaledDotProductAttention(
                 queries: sharedQueries[0..., 0..., 0 ..< split, 0...],
                 keys: cachedKeys[0..., 0..., 0 ..< kSplit, 0...],

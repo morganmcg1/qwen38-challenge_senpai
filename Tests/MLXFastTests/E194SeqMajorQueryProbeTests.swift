@@ -202,6 +202,73 @@ private func e194SwizzleNewPipeline(_ cls: AnyClass) -> Bool {
     return true
 }
 
+/// Install every swizzle EXACTLY once per process. `method_setImplementation`
+/// captures the previous IMP, so a second installation would chain the
+/// counting block onto itself and double every count.
+private enum E194Swizzle {
+    static let installed: Bool = install()
+
+    private static func install() -> Bool {
+        guard let device = MTLCreateSystemDefaultDevice(),
+            let queue = device.makeCommandQueue(),
+            let buffer = queue.makeCommandBuffer(),
+            let encoder = buffer.makeComputeCommandEncoder()
+        else { return false }
+        let encoderClass: AnyClass = type(of: encoder as AnyObject)
+        let deviceClass: AnyClass = type(of: device as AnyObject)
+        encoder.endEncoding()
+
+        var ok = e194SwizzleNewPipeline(deviceClass)
+        ok = e194SwizzleSetPipeline(encoderClass) && ok
+        ok = e194SwizzleDispatch(encoderClass, "dispatchThreadgroups:threadsPerThreadgroup:") && ok
+        ok = e194SwizzleDispatch(encoderClass, "dispatchThreads:threadsPerThreadgroup:") && ok
+        ok = e194SwizzleScopeBarrier(encoderClass) && ok
+        _ = e194SwizzleResourceBarrier(encoderClass)
+        return ok
+    }
+}
+
+/// Reduce one recorded event list to the counters the route argues about.
+private func e194Summarize(_ events: [E194Event]) -> [String: Any] {
+    var sequence: [String] = []
+    var counts: [String: Int] = [:]
+    var dispatches = 0
+    var barriers = 0
+    var copies = 0
+    var sdpaIndices: [Int] = []
+    for event in events {
+        switch event {
+        case .dispatch(let record):
+            counts[record.kernel, default: 0] += 1
+            dispatches += 1
+            if record.kernel.lowercased().contains("copy") { copies += 1 }
+            if record.kernel.contains("sdpa") { sdpaIndices.append(sequence.count) }
+            sequence.append(record.kernel)
+        case .barrier(let kind):
+            barriers += 1
+            sequence.append("BARRIER(\(kind))")
+        }
+    }
+    // The decisive counter: barriers strictly between the FIRST and LAST sdpa
+    // dispatch of the round. Route 2' must drive this to zero; anything else
+    // falsifies mechanism 2.
+    var barriersBetweenSdpa = 0
+    if let first = sdpaIndices.first, let last = sdpaIndices.last, first < last {
+        for index in (first + 1) ..< last where sequence[index].hasPrefix("BARRIER") {
+            barriersBetweenSdpa += 1
+        }
+    }
+    return [
+        "dispatches": dispatches,
+        "barriers": barriers,
+        "barriers_between_sdpa": barriersBetweenSdpa,
+        "copy_dispatches": copies,
+        "sdpa_calls": sdpaIndices.count,
+        "kernel_counts": counts,
+        "event_sequence": sequence,
+    ]
+}
+
 // MARK: - The two query-layout forms at the scored geometry
 
 private enum E194Form: String, CaseIterable {
@@ -347,24 +414,11 @@ struct E194CensusTests {
             if: ProcessInfo.processInfo.environment["MLX_E194_CENSUS"] == "1",
             "set MLX_E194_CENSUS=1 to run the GPU dispatch and barrier census"))
     func countsDispatchesAndBarriersPerForm() throws {
-        guard let device = MTLCreateSystemDefaultDevice(),
-            let queue = device.makeCommandQueue(),
-            let buffer = queue.makeCommandBuffer(),
-            let encoder = buffer.makeComputeCommandEncoder()
-        else {
-            Issue.record("no Metal compute encoder to swizzle")
+        #expect(E194Swizzle.installed)
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            Issue.record("no Metal device")
             return
         }
-        let encoderClass: AnyClass = type(of: encoder as AnyObject)
-        let deviceClass: AnyClass = type(of: device as AnyObject)
-        encoder.endEncoding()
-
-        #expect(e194SwizzleNewPipeline(deviceClass))
-        #expect(e194SwizzleSetPipeline(encoderClass))
-        #expect(e194SwizzleDispatch(encoderClass, "dispatchThreadgroups:threadsPerThreadgroup:"))
-        #expect(e194SwizzleDispatch(encoderClass, "dispatchThreads:threadsPerThreadgroup:"))
-        #expect(e194SwizzleScopeBarrier(encoderClass))
-        _ = e194SwizzleResourceBarrier(encoderClass)
 
         var cells: [[String: Any]] = []
         for kvLength in [512, 1024] {
@@ -383,45 +437,11 @@ struct E194CensusTests {
                     eval(E194Probe.call(form, q: q, kv: kv, cache: cache, kvLength: kvLength))
                     let events = E194Ledger.shared.stop()
 
-                    var sequence: [String] = []
-                    var counts: [String: Int] = [:]
-                    var dispatches = 0
-                    var barriers = 0
-                    var copies = 0
-                    var sdpaIndices: [Int] = []
-                    for event in events {
-                        switch event {
-                        case .dispatch(let record):
-                            counts[record.kernel, default: 0] += 1
-                            dispatches += 1
-                            if record.kernel.lowercased().contains("copy") { copies += 1 }
-                            if record.kernel.contains("sdpa") { sdpaIndices.append(sequence.count) }
-                            sequence.append(record.kernel)
-                        case .barrier(let kind):
-                            barriers += 1
-                            sequence.append("BARRIER(\(kind))")
-                        }
-                    }
-                    // The decisive counter: barriers strictly between the FIRST
-                    // and LAST sdpa dispatch of the round. Route 2' must drive
-                    // this to zero; anything else falsifies mechanism 2.
-                    var barriersBetweenSdpa = 0
-                    if let first = sdpaIndices.first, let last = sdpaIndices.last, first < last {
-                        for index in (first + 1) ..< last where sequence[index].hasPrefix("BARRIER")
-                        {
-                            barriersBetweenSdpa += 1
-                        }
-                    }
-                    cells.append([
-                        "form": form.rawValue, "qL": width, "kv": kvLength,
-                        "dispatches": dispatches,
-                        "barriers": barriers,
-                        "barriers_between_sdpa": barriersBetweenSdpa,
-                        "copy_dispatches": copies,
-                        "sdpa_calls": sdpaIndices.count,
-                        "kernel_counts": counts,
-                        "event_sequence": sequence,
-                    ])
+                    var cell = e194Summarize(events)
+                    cell["form"] = form.rawValue
+                    cell["qL"] = width
+                    cell["kv"] = kvLength
+                    cells.append(cell)
                 }
             }
         }
@@ -499,3 +519,89 @@ struct E194ValueGateTests {
             ], envKey: "MLX_E194_GATE_OUT")
     }
 }
+
+// MARK: - Section 3: arm liveness on the SHIPPED function
+
+/// Sections 1 and 2 measure private copies of the two forms. This section
+/// measures the function the worker actually calls,
+/// `MLXLMCommon.attentionWithCacheUpdate`, and proves that
+/// `MLX_E194_SEQ_MAJOR_Q` selects which form runs there.
+///
+/// Without it the ABBA session has a guard that cannot fail: if the flag never
+/// reached the branch, both timing arms would execute the same code and the
+/// experiment would report a null that means "no switch", not "no effect".
+/// Run this file TWICE, once per value of the flag — the flag is read once per
+/// process by design, so one process can only witness one arm.
+@Suite(.serialized)
+struct E194ArmLivenessTests {
+    @Test(
+        .enabled(
+            if: ProcessInfo.processInfo.environment["MLX_E194_ARM"] == "1",
+            "set MLX_E194_ARM=1 to census the shipped attentionWithCacheUpdate"))
+    func shippedPathFollowsTheArmFlag() throws {
+        #expect(E194Swizzle.installed)
+        let raw = ProcessInfo.processInfo.environment["MLX_E194_SEQ_MAJOR_Q"]
+        let expectedOn = raw != "0"
+        #expect(mlxE194SequenceMajorQueryShare == expectedOn)
+
+        let kvLength = 512
+        var cells: [[String: Any]] = []
+        for width in [6, 7, 8, 9] {
+            let q = E194Probe.queries(width: width)
+            let kv = E194Probe.newKV(width: width)
+            eval(q, kv)
+
+            func census(_ body: (KVCacheSimple) -> MLXArray) -> [String: Any] {
+                let cache = E194Probe.seededCache(length: kvLength)
+                for _ in 0 ..< 3 {
+                    cache.offset = kvLength
+                    eval(body(cache))
+                }
+                cache.offset = kvLength
+                E194Ledger.shared.start()
+                eval(body(cache))
+                return e194Summarize(E194Ledger.shared.stop())
+            }
+
+            let shipped = census { cache in
+                attentionWithCacheUpdate(
+                    queries: q, keys: kv, values: kv, cache: cache,
+                    scale: E194Probe.scale, mask: .causal)
+            }
+            let today = census { cache in
+                E194Probe.today(queries: q, cache: cache, kv: kv)
+            }
+            let seqMajor = census { cache in
+                E194Probe.seqMajor(queries: q, cache: cache, kv: kv)
+            }
+
+            let reference = expectedOn ? seqMajor : today
+            let other = expectedOn ? today : seqMajor
+            for key in ["dispatches", "barriers", "barriers_between_sdpa", "copy_dispatches"] {
+                #expect(
+                    shipped[key] as? Int == reference[key] as? Int,
+                    """
+                    shipped \(key)=\(shipped[key] ?? -1) at qL=\(width) does not match the \
+                    \(expectedOn ? "seqMajor" : "today") form (\(reference[key] ?? -1))
+                    """)
+            }
+            // The forms must differ, or matching one of them proves nothing.
+            #expect(reference["dispatches"] as? Int != other["dispatches"] as? Int)
+
+            cells.append([
+                "qL": width, "kv": kvLength,
+                "shipped": shipped, "today": today, "seq_major": seqMajor,
+            ])
+        }
+
+        try e194WriteReport(
+            [
+                "probe": "e194-arm-liveness",
+                "harness": "local",
+                "env_MLX_E194_SEQ_MAJOR_Q": raw ?? "<unset>",
+                "arm_flag_value": mlxE194SequenceMajorQueryShare,
+                "cells": cells,
+            ], envKey: "MLX_E194_ARM_OUT")
+    }
+}
+
