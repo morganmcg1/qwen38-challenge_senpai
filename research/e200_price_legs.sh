@@ -11,6 +11,12 @@
 #   rstep     E197 ranked smooth-step dR(m), level rescaled to the shipped 1.26
 #   rstepnat  E197 ranked smooth-step dR(m), measured level, no rescale
 #
+# RULE 198. `MLX_E200_DEPTH_PRICE` and the two candidate tables were deleted
+# from the submitted surface at the terminal commit, so this script cannot run
+# against the branch tip. The legs it produced ran at commit 9c970bb0, whose
+# Qwen36MTPBlockSession.swift carries the arm switch. Check that commit out to
+# replay them.
+#
 # The schedule IS the mechanism here, so MLX_E159_FIXED_DRAFT_DEPTH must stay
 # unset: a fixed depth would pin the very decision under test. The script
 # refuses to run if it is set.
