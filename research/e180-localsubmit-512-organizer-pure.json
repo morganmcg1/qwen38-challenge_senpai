@@ -1,0 +1,25 @@
+{
+  "score": 2.3297197756325754,
+  "passed": true,
+  "track_id": "qwen3.8-27b-mtp-v1",
+  "metrics": {
+    "mode": "qwen-mtp-local-submit",
+    "oracle": "candidate-local-mtp-golden-rows",
+    "official_score": false,
+    "rankable": false,
+    "not_rankable_reason": "candidate-generated reference rows; official scoring disabled; ranked run is the only authority",
+    "ranked_decode_speedup_floor": 0.9,
+    "public_drift_tripwire_passed": true,
+    "decode_tokens": 512,
+    "mtp_depth": 8,
+    "all_tokens_matched": true,
+    "uses_pinned_mtp_head": true,
+    "head_provenance_sha256": "b51574209adf5639a42eb00170ddfdd8c4155ff01527c1fffcdb934fcc8d8057",
+    "effective_mean_draft_len": 6.376623376623376,
+    "serial_seconds_per_token": 0.07352069136686623,
+    "mtp_seconds_per_token": 0.031557740177959204,
+    "mtp_decode_speedup": 2.3297197756325754,
+    "accepted_draft_rate": 0.8859470468431772,
+    "residual_divergence_count": 0
+  }
+}
