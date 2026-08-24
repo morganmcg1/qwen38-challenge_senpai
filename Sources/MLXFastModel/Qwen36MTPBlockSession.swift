@@ -198,7 +198,19 @@ public final class Qwen36MTPBlockSession {
         // E159 research instrument. Unset on every ranked and submitted run, so
         // the shipped adaptive schedule above is the default path.
         if let pinned = Self.pinnedDraftDepth {
-            draftPolicy = { offeredDepth, _ in Swift.min(offeredDepth, pinned) }
+            draftPolicy = { [weak self] offeredDepth, _ in
+                // The pinned path never calls `costModelDepth`, so the round
+                // trace would otherwise lose the margin and EMA snapshot. A
+                // pinned leg is the only way to observe acceptance at a
+                // position the shipped clamp would have refused to draft, so
+                // the offline fit needs both fields from the SAME round.
+                // Trace-gated exactly like the schedule's own snapshot.
+                if Self.traceRounds {
+                    self?.snapshotScheduleSignal(
+                        widthCap: Self.segmentedVerifyDepthCap)
+                }
+                return Swift.min(offeredDepth, pinned)
+            }
         }
     }
 
