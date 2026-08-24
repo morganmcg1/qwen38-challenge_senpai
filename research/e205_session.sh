@@ -32,7 +32,7 @@ senpai/rebuild-and-assert-worker.sh --no-build \
   --require "repair_prefetch_us=" \
   --require "clear_release_cpu_us=" \
   --require "repair_replay_us=" \
-  --require-symbol "e205TruncRequested" || exit 1
+  --require "MLX_E205_TRUNCATION" || exit 1
 
 worker_before="$(shasum -a 256 .build-worker/release/mlxfast-runtime-worker \
   | awk '{print $1}')"
