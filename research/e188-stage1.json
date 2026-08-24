@@ -1,0 +1,298 @@
+{
+ "harness": "ranked",
+ "source": "yukon board officialMetrics.per_prompt",
+ "receipts": {
+  "A": {
+   "id": "5a9f130a-a29b-4b92-84ad-f0a2a59af210",
+   "score": 3.70784519415395,
+   "status": "rejected",
+   "createdAt": "2026-08-23T16:29:11.470Z",
+   "content": "organizer main byte for byte",
+   "heads": [
+    "559b24ebca35"
+   ]
+  },
+  "B": {
+   "id": "180db842-a6b3-4bca-b50b-66372c34f389",
+   "score": 3.70465399491642,
+   "status": "rejected",
+   "createdAt": "2026-08-24T02:50:39.501Z",
+   "content": "organizer + Q + instrumentation, no E165",
+   "heads": [
+    "559b24ebca35"
+   ]
+  },
+  "C": {
+   "id": "fda590bb-e1c7-4b2b-b65b-1de67aa15e52",
+   "score": 3.66784730800019,
+   "status": "rejected",
+   "createdAt": "2026-08-24T05:00:39.098Z",
+   "content": "organizer + instrumentation, no Q, no E165",
+   "heads": [
+    "559b24ebca35"
+   ]
+  },
+  "D": {
+   "id": "2c885d64-8e12-4b07-b7b0-35eb314dbafe",
+   "score": 3.65820901018537,
+   "status": "rejected",
+   "createdAt": "2026-08-24T07:11:18.954Z",
+   "content": "organizer + Q + E165, no instrumentation",
+   "heads": [
+    "559b24ebca35"
+   ]
+  }
+ },
+ "scheduleIdenticalBD": true,
+ "factorTable": {
+  "DvsA": {
+   "mean7Pct": 0.8898548809745404,
+   "plutarchPct": -0.04653113366521744,
+   "ledgerMean7Pct": 0.8899,
+   "perPrompt": {
+    "beagle": 0.7203082098800939,
+    "botany": 0.967972317790533,
+    "drama": 0.14413346431620955,
+    "essays": 1.2130749918616957,
+    "medicine": 0.8701853279271754,
+    "plutarch": -0.04653113366521744,
+    "republic": 1.4597894781259502,
+    "travel": 0.853520376920125
+   },
+   "content": "Q + E165 + P"
+  },
+  "CvsA": {
+   "mean7Pct": 0.87652087422959,
+   "plutarchPct": -0.10972553778894056,
+   "ledgerMean7Pct": 0.8765,
+   "perPrompt": {
+    "beagle": 0.9865588241233736,
+    "botany": 0.48653785658057114,
+    "drama": 0.6447044026306914,
+    "essays": 0.33877995037230324,
+    "medicine": 1.2126407194295252,
+    "plutarch": -0.10972553778894056,
+    "republic": 1.0465459224546336,
+    "travel": 1.4198784440160317
+   },
+   "content": "I + P"
+  },
+  "BvsC": {
+   "mean7Pct": -0.6691103490132815,
+   "plutarchPct": 0.11970604999975709,
+   "ledgerMean7Pct": -0.6691,
+   "perPrompt": {
+    "beagle": -0.8889720081759589,
+    "botany": -0.2522118196836898,
+    "drama": -0.6743834513123215,
+    "essays": -0.12164757216187594,
+    "medicine": -0.9169140600093995,
+    "plutarch": 0.11970604999975709,
+    "republic": -0.694252544463636,
+    "travel": -1.135390987286089
+   },
+   "content": "Q"
+  },
+  "DvsB": {
+   "mean7Pct": 0.6878498639272194,
+   "plutarchPct": -0.05637474532772524,
+   "ledgerMean7Pct": 0.6878,
+   "perPrompt": {
+    "beagle": 0.6309312541350476,
+    "botany": 0.733164388523666,
+    "drama": 0.17822093573118813,
+    "essays": 0.9942000981919108,
+    "medicine": 0.5839156722929228,
+    "plutarch": -0.05637474532772524,
+    "republic": 1.1109287598120243,
+    "travel": 0.5835879388037757
+   },
+   "content": "E165 - I  (P-free, Q-free)"
+  }
+ },
+ "zScores": {
+  "DvsA": {
+   "naive_z": 4.708226883463176,
+   "channel_z": 1.0281412101454992
+  },
+  "CvsA": {
+   "naive_z": 4.637676583225344,
+   "channel_z": 1.012735055587098
+  },
+  "BvsC": {
+   "naive_z": -3.540266396895669,
+   "channel_z": -0.7730922633159949
+  },
+  "DvsB": {
+   "naive_z": 3.639417269456187,
+   "channel_z": 0.7947439595117333
+  },
+  "E165_alone": {
+   "value": 1.5643707381568093,
+   "channel_z": 1.2780806684287658,
+   "sigma": 1.224
+  }
+ },
+ "shapeEstimator": {
+  "withinGroupSdMean7Pct": 0.6981860120668213,
+  "dofMean7": 53,
+  "withinGroupSdPlutarchPct": 0.10511902804923136,
+  "dofPlutarch": 53,
+  "withinGroupSdShapePct": 0.6912575138018666,
+  "dofShape": 53,
+  "corrMean7Plutarch": 0.14086404664571447,
+  "pairSigmaPct": 0.9775857511109067,
+  "contrasts": {
+   "DvsA": {
+    "shapePct": 0.9363860146397578,
+    "z": 0.9578556291104586
+   },
+   "CvsA": {
+    "shapePct": 0.9862464120185306,
+    "z": 1.0088592339830875
+   },
+   "BvsC": {
+    "shapePct": -0.7888163990130386,
+    "z": -0.8069025127633511
+   },
+   "DvsB": {
+    "shapePct": 0.7442246092549446,
+    "z": 0.7612883150242568
+   }
+  }
+ },
+ "perPromptChannelSdPct": {
+  "beagle": 0.7529053070499336,
+  "botany": 0.6304252977493572,
+  "drama": 0.920753331266612,
+  "essays": 0.6207769992560535,
+  "medicine": 0.6472144388385677,
+  "plutarch": 0.10511902804923136,
+  "republic": 0.5825599369461699,
+  "travel": 0.9540991803939056
+ },
+ "additiveEstimator": {
+  "exposure": "1/R_p over the 7 drafting prompts; R_p = 512*(mtp-prefill)/N_rounds from receipt B",
+  "roundCostsMs": {
+   "beagle": 44.945700509931086,
+   "botany": 54.49564242971252,
+   "drama": 34.18289677848341,
+   "essays": 48.94068469661322,
+   "medicine": 49.385433602711586,
+   "plutarch": 30.504557214736536,
+   "republic": 47.791860180841915,
+   "travel": 35.1655590017977
+  },
+  "nullSdUsPerRound": 389.06727833608346,
+  "nullDof": 39,
+  "nullPairSigmaUsPerRound": 550.2242216984771,
+  "contrasts": {
+   "DvsA": {
+    "channelInterceptPct": 2.24678416033624,
+    "slopePctMs": -64.0350543195983,
+    "perRoundUs": -640.350543195983,
+    "seSlopeUs": 350.12687717744257,
+    "t": -1.8289099893106937,
+    "residSdPct": 0.3658066816247682,
+    "perPromptDecode": {
+     "beagle": 0.5968050841466788,
+     "botany": 0.8528671065094473,
+     "drama": 0.015611235533485868,
+     "essays": 1.1341155179217965,
+     "medicine": 0.7248846539372522,
+     "plutarch": -0.11961904900718023,
+     "republic": 1.3843103031881743,
+     "travel": 0.7799257190312492
+    },
+    "nullZ": -1.1637992620886384
+   },
+   "CvsA": {
+    "channelInterceptPct": 0.35364644850133153,
+    "slopePctMs": 27.81057239600996,
+    "perRoundUs": 278.10572396009957,
+    "seSlopeUs": 433.44592121668825,
+    "t": 0.6416157364670851,
+    "residSdPct": 0.4528570196675057,
+    "perPromptDecode": {
+     "beagle": 1.1379729192841248,
+     "botany": 0.5765560179899598,
+     "drama": 0.687003228851335,
+     "essays": 0.41814873820773535,
+     "medicine": 1.3649557701985726,
+     "plutarch": -0.11035328165243108,
+     "republic": 1.1810528444322177,
+     "travel": 1.556643788726153
+    },
+    "nullZ": 0.5054407148809626
+   },
+   "BvsC": {
+    "channelInterceptPct": -0.1602157459956045,
+    "slopePctMs": -34.68035245025263,
+    "perRoundUs": -346.8035245025263,
+    "seSlopeUs": 361.9113978120569,
+    "t": -0.9582553260249177,
+    "residSdPct": 0.3781189508873823,
+    "perPromptDecode": {
+     "beagle": -1.2081527542780357,
+     "botany": -0.5343335071521849,
+     "drama": -0.849629043082123,
+     "essays": -0.39866817128514365,
+     "medicine": -1.2766520335943499,
+     "plutarch": 0.052551440827430795,
+     "republic": -1.0245047935093399,
+     "travel": -1.374830633417734
+    },
+    "nullZ": -0.6302949067418094
+   },
+   "DvsB": {
+    "channelInterceptPct": 2.050011200737715,
+    "slopePctMs": -56.56627777245572,
+    "perRoundUs": -565.6627777245571,
+    "seSlopeUs": 263.09435402793514,
+    "t": -2.1500376920460087,
+    "residSdPct": 0.27487656296776136,
+    "perPromptDecode": {
+     "beagle": 0.6813051780673263,
+     "botany": 0.813406945715478,
+     "drama": 0.18438464825218936,
+     "essays": 1.1161031594332238,
+     "medicine": 0.6535434344089097,
+     "plutarch": -0.061794970409401184,
+     "republic": 1.2380738210612474,
+     "travel": 0.6185215968927071
+    },
+    "nullZ": -1.028058663027271
+   }
+  }
+ },
+ "shapeDiscrimination": {
+  "channelFitPct": 0.7579055405472974,
+  "channelSSE": 0.7270606801402992,
+  "e165FitUsPerRound": 305.7551439944322,
+  "e165SSE": 1.2314647484840524,
+  "sseRatioE165OverChannel": 1.6937578693520043,
+  "verdict": "CHANNEL shape fits better"
+ },
+ "e165AdditiveUsPerRound": {
+  "value": -287.5570537644576,
+  "sigma": 778.1345566721669,
+  "z": -0.3695466951040541,
+  "localRecoveryUsPerRound": 539.0,
+  "finding440ClaimedUsPerRound": 917.0,
+  "sigmaExcluding917": 2.694651960518482
+ },
+ "reopenPricing": {
+  "crown": 3.7291100105909,
+  "driftAdjustedA": 3.705,
+  "gapPct": 0.6507425260701805,
+  "sigmaPct": 0.689,
+  "pBeatCrownByGainPct": {
+   "0.0": 0.1724637632590067,
+   "0.38": 0.34717821838547525,
+   "0.5": 0.4134089576460504,
+   "0.66": 0.5053600676950465,
+   "0.73": 0.5457903659637777,
+   "1.0": 0.6938892251904094
+  }
+ }
+}

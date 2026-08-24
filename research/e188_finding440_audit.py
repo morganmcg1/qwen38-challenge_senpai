@@ -423,6 +423,27 @@ def main():
                                      "finding440ClaimedUsPerRound": 917.0,
                                      "sigmaExcluding917": (917.0 - dvbA["perRoundUs"]) / sd_add_pair}
 
+    print("\n[8] IF UNCONFIRMED: PRICING THE PROPOSED REOPEN RECEIPT")
+    crown, a_drift = 3.7291100105909, 3.705
+    gap = 100.0 * (crown / a_drift - 1.0)
+    phi = lambda t: 0.5 * (1.0 + math.erf(t / math.sqrt(2.0)))
+    print(f"  crown {crown:.5f} vs drift-adjusted A {a_drift:.3f} -> gap {gap:.4f}%")
+    print(f"  one-shot receipt sigma = {SIGMA_PUBLISHED}% (FINDING 460)")
+    print(f"  {'mechanism gain':>16s} {'P(beat crown)':>14s}")
+    pricing = {}
+    for g in [0.0, 0.38, 0.5, 0.66, 0.73, 1.0]:
+        p = phi((g - gap) / SIGMA_PUBLISHED)
+        pricing[g] = p
+        print(f"  {g:15.2f}% {p:14.3f}")
+    print("  E165's seam prices 0.38% (round-end at 58% recovery) to 0.73%")
+    print("  (round-start slice). One receipt therefore cannot CONFIRM the")
+    print("  mechanism, but it roughly doubles the crown probability over an")
+    print("  unchanged tree. Under FINDING 467 every distinct content gets")
+    print("  exactly one draw, so the decision is expected value, not power.")
+    out["reopenPricing"] = {"crown": crown, "driftAdjustedA": a_drift,
+                            "gapPct": gap, "sigmaPct": SIGMA_PUBLISHED,
+                            "pBeatCrownByGainPct": pricing}
+
     if args.json:
         json.dump(out, open(args.json, "w"), indent=1)
         print(f"\nwrote {args.json}")
