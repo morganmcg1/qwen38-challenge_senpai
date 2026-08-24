@@ -523,6 +523,22 @@ the script can read from inside the checkout. Never claim a gate is green when
 it is not: state the exact count of pre-existing `swift test` failures, state
 how many are new, and state whether any of them exercises the changed surface.
 
+`submit-official.sh` also requires the `BASE_SHA` argument to be an ancestor
+of both `HEAD` and `origin/main`. While the advisor campaign branch is ahead
+of `main`, pass the merge base (`git merge-base HEAD origin/main`, currently
+`770a3ff2`), and first verify that no protected path differs between that
+merge base and `origin/main`, so the guard's invariant is satisfied honestly
+rather than dodged. The guard reads `senpai/frontier-state.json` and
+`benchmark.json` from `origin/main`, not from the working tree, so a stale
+`main`-side snapshot sits on the submit path.
+
+The Yukon CLI table truncates submission IDs to seven characters. The
+eight-character IDs used across the ledger come from the JSON API field
+`id8`; the two surfaces disagree by one character. A receipt watcher that
+greps CLI output must match the seven-character prefix, and must treat a
+persistently absent row as a terminal fault (`row_never_found`), never as
+patience: a row that never appears means a broken match or a broken query.
+
 The wrapper is pinned to `eigenlabs/qwen38-challenge`, refreshes both remotes,
 checks the versioned organizer frontier and trusted-surface freshness, proves
 the base's submitted snapshot is current, and refuses dirty or hidden changes
@@ -543,3 +559,43 @@ model-holding process. Do not call `monitor_job` merely to watch the receipt:
 that tool adds W&B metric policies to an existing job and cannot monitor a
 Yukon receipt ID. Inspect Yukon before any retry, report the terminal receipt
 immediately, and release the official-submission slot.
+
+## RULE 374 — per-leg W&B logging (adopted 2026-08-24, ledger 367)
+
+Any timed session longer than one hour logs each leg to W&B as the leg
+completes, not at session end. The 07:30Z fleet reprovision (FINDING 426)
+killed a 16-leg session 22 minutes in with zero surviving timing; per-leg
+logging bounds that loss to the remaining legs. Hosts can be reprovisioned
+without warning: put anything worth keeping into W&B, a PR comment, or a
+pushed commit at the moment it exists.
+
+## Host reprovision recovery
+
+- Advisor checkout: `senpai/bootstrap-checkout.sh` restores the `upstream`
+  remote (push `DISABLED`) and the Yukon benchmark link after a wipe. HEAD
+  and records survive only if committed and published — publish the advisor
+  branch after every ledger entry.
+- Student workspace: the previous generation's Git object store may survive
+  on the same disk; a frozen commit can be rescued byte-identical from it.
+  A student's only publication channel is the typed
+  `submit_experiment_result` (lease-push); shell pushes are denied.
+- Full measurement-host recovery sequence: `./setup.sh && ./setup-qwen-mtp.sh`,
+  `tools/build-mlx-metallib.sh`, **and `./benchmark.sh --transform-only`**.
+  `setup.sh` provisions the reference checkpoint but never transforms it, so
+  a fresh host has an empty `weights/` (only `.gitkeep`).
+  `benchmark-qwen-mtp.sh` hides the gap by filling the tree as a side effect;
+  any script that calls the trusted verbs directly with `--weights weights`
+  dies at reference generation instead. The failure is misleading: the
+  worker exits with a low-memory-profile line (normal on 48 GiB hosts) and a
+  missing-fingerprint warning (harmless); the real cause is the missing
+  `weights/config.json`. Transform cost: ~49 s, 14 GiB, 1847 tensors
+  (E167, commit `43a95f0a` adds the preflight check).
+
+## Protocol note — feedback requires `status:wip`
+
+`send_assignment_feedback` is rejected while a PR is in `status:review`.
+After a typed terminal result, communicate through the review decision
+itself: `request_assignment_revision` (which reopens to wip),
+`accept_result_on_current_base`, `merge_experiment`, or `close_experiment`.
+Plan feedback timing around this: say everything the student needs *before*
+they fire the terminal result, or put it in the revision request.

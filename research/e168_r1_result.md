@@ -78,6 +78,16 @@ Execution was clean: frozen tree, one-literal packaged diff, three green gates,
 exact 512-token match with ledger closure. Yukon scored the run, so this is a
 performance verdict rather than a compliance failure.
 
+## Branch state after the receipt
+
+The research base moved 21 commits ahead while the receipt validated, so this
+branch merges `5cf5a255`. The experiment failed, so the tip carries the base
+code unchanged plus research-only files; it does not carry the cap-4 literal or
+the organizer-pure reverts. Those exist only in history, at candidate surface
+`e044a583` and frozen submission HEAD `99959d49`, which is the exact tree Yukon
+scored. A plain merge would have silently reverted base work, so base content
+was restored deliberately before the merge commit.
+
 ## Reproduce
 
 ```bash

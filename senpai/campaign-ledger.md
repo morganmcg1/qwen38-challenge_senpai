@@ -70006,3 +70006,425 @@ the ship path.
 - Askeladd queued second with `min(adaptive, 4)`, protected above by FINDING 415
   and below by FINDING 421.
 - Edward and Alphonse on characterisation, off the ship path, on separate Macs.
+
+## Entry 366 — 2026-08-24T07:55Z — E171 is FIRED: `2c885d64` validating. The submit guard demands a main-side base, and the frozen tree lived on one disk at fire time.
+
+### The fire
+
+Thorfinn submitted the crown attempt at 07:11Z, before F4's schedule cut
+arrived; the cut applies from the next candidate.
+
+```
+submission   2c885d64-8e12-4b07-b7b0-35eb314dbafe   validating
+frozen SHA   4ba44f8251960eaf79ec4f05135485442438f5ef
+submit base  770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf   (main-side merge base)
+note         13.9 KiB
+watcher      job 4a1ccf84, read-only, 3 h timeout
+```
+
+The single 512-token `--local-submit` confirmation on the exact submitted
+tree, real 40 C gate: `all_tokens_matched true`, rows `568/568`, serial
+`0.0733838` s/tok, MTP `0.0312542` s/tok, ratio `2.347963`, `edl 6.3766`
+digit-identical to the four ABBA legs. Pre-submit chain green once: twin
+audit OK, scope OK (2 paths), budget growth **-5289 bytes**, boundary PASS,
+`Qwen35.swift` at organizer parity, worktree clean at the frozen SHA. Crown
+`ec24d591 3.7291100106` unchanged at fire time and at 07:20Z.
+
+The shipped note carries the byte-identical null pair, both routes (3.7496 /
+3.7559, central 3.7527), the resample table, the single-draw sd, and the
+explicit reading rule: a receipt near 3.72 is inside the draw and settles
+nothing; only a receipt well below 3.70 counts against Q. No probability
+claim.
+
+### FINDING 424 — the submit guard requires a main-side `BASE_SHA`, and `origin/main` carries a stale frontier snapshot on the submit path
+
+Thorfinn's first attempt with `BASE_SHA=58979332` was refused:
+`BASE_SHA is not an ancestor of current origin/main`. `submit-official.sh`
+hard-codes `SOURCE_BRANCH="main"` and requires `BASE_SHA` to be an ancestor
+of both `HEAD` and `origin/main`. While the advisor branch is ahead of main,
+the valid value is the merge base, currently `770a3ff2` (same resolution as
+ledger item 249.4, thorfinn E101). He verified honestly before reuse: no
+protected path differs between `770a3ff2` and `origin/main` head `893a7581`
+(the diff is only `senpai/*.md` docs).
+
+The risk half: `origin/main` moved on 08-24 with a `senpai/program.md`
+change, and its `senpai/frontier-state.json` is still the 2026-08-19
+snapshot (promoted `0cd0a6b4` at `3.2493`). The guard reads
+`frontier-state.json` and `benchmark.json` **from `origin/main`**, not from
+the working tree. That staleness did not block `2c885d64`, but a future
+organizer sync could make it block a submission. Both halves are now
+recorded in `experiment-runbook.md`, next to the 5 KiB note minimum and the
+Yukon seven-character CLI truncation fact from Edward's watcher defect.
+
+### FINDING 425 — the frozen candidate existed on exactly one disk at fire time
+
+`git ls-remote origin` resolves neither `4ba44f82` nor its ancestors; the PR
+branch head `59378248` is only the assignment commit. Every commit of the
+submitted tree lived solely on thorfinn's Mac while its receipt was in
+flight. F5 (PR 171, 07:20Z) demands an immediate push under a new ref —
+pushing publishes the frozen object and is not a reopen. Until the push:
+askeladd's composition base is blocked, and a promotion would record a
+`promotedSourceRef` that resolves nowhere in `origin`. This is the second
+provenance gap this week (Edward's E167 push was refused by the harness for
+a different reason); the standing rule is unchanged — push candidate
+implementations early, before the receipt, not after.
+
+### `research_base_changed` reconciliation, all four assignments
+
+The advisor branch moved to `5dfe6fa2` (ledger commits 362-365). For PRs 171
+and 172 the move ranges are `senpai/`-only: zero scored-surface change,
+conclusions unaffected, no replay owed. For PRs 166 and 168 the ranges
+include the earlier merged E169/E165 session, test, and research files; both
+students were already re-coordinated onto the current tree in feedback
+(F11-F16 on PR 166, F4-F11 on PR 168) before this entry. No assignment is
+cancelled for a moved comparison point; no revision requests owed.
+
+### Standing
+
+- Crown unchanged: `ec24d591` newjordan `3.7291100106`.
+- Official slot **occupied**: `2c885d64` validating, fired 07:11Z, five
+  other solvers' rows validating beside it.
+- Today's terminal receipts, both already ingested: `180db842` rejected
+  `3.70465399` (E167 maintained base), `fda590bb` rejected `3.66784731`
+  (revert alone).
+- Queue: askeladd depth-cap `min(adaptive, 4)` second, composing on the
+  shipped stripped tree once `4ba44f82` is pushed.
+- Edward: four-arm ABBA on the 592 µs instrumentation tax, predeclared,
+  running. Alphonse: E173 fixed-cost decomposition, starting with the free
+  `tablePays` m=3-to-m=4 natural experiment against askeladd's trace.
+
+
+## Entry 367 — 2026-08-24T08:05Z — the 07:30Z fleet reprovision, the typed-result publication of the frozen tree, and the three-regime localization of the instrumentation tax
+
+### FINDING 426 — the 07:30Z reprovision was fleet-wide, and only durable channels survived it
+
+At ~07:30Z the launcher recycled at least three role environments
+simultaneously:
+
+- **thorfinn's Mac**: the workspace regenerated to a new generation. The
+  frozen candidate `4ba44f82` vanished from the live checkout; he rescued it
+  byte-identical from the old generation's object store on the same disk into
+  a local ref. His receipt watcher died (`4a1ccf84`) and was relaunched
+  (`3c66ec90`).
+- **edward's Mac**: the 16-leg four-arm ABBA died ~22 minutes in with no
+  surviving timing. Lost: the pinned checkpoint cache, all four arm worker
+  binaries (B0 `e6015c90`, B1 `55662323`, B2 `3ee791a7`, B3 `ce9d8d51`), the
+  shared metallib `5de2569e4494`, and the out-of-checkout analysis directory.
+  Survived: the clean branch at `a69e3de1`, every finding already posted as a
+  PR comment, and W&B `cqfa2d6n`.
+- **the advisor checkout**: the `upstream` remote and all organizer objects
+  were wiped; HEAD `f6b1f199` survived because every record was committed and
+  published. Recovery: `senpai/bootstrap-checkout.sh` restored `upstream`
+  (push `DISABLED`) and the Yukon link; `upstream/main` re-verified unchanged
+  at `0863b06a`.
+
+The lesson is uniform: PR comments, W&B, and pushed commits survived; every
+disk-only artifact died. Hence RULE 374.
+
+### RULE 374 — per-leg W&B logging for any timed session over one hour
+
+Any timed session longer than one hour logs each leg to W&B as the leg
+completes, not at session end. A reprovision then costs the remaining legs,
+not all of them. Proposed by edward (PR 166 comment 39 §6), adopted as
+campaign practice, recorded in the runbook.
+
+### The frozen tree is published; FINDING 425's gap is resolved
+
+Thorfinn's only publication channel is the typed `submit_experiment_result`
+(his role forbids shell pushes). Per advisor F6 he fired it at 07:43:44Z with
+`commit_sha = 4ba44f82`, status `inconclusive`, explicitly labelled as a
+publication vehicle with no score claim while `2c885d64` validates. PR 171
+flipped to review at head `4ba44f82`.
+
+Advisor verification from an independent fetch:
+
+- `origin/qwen-thorfinn/e171-compose-and-fire-the-crown-attempt` =
+  `4ba44f8251960eaf79ec4f05135485442438f5ef`.
+- Fast-forward: the assignment commit `59378248` is an ancestor of
+  `4ba44f82`; no amend, rebase, squash, or added commit.
+- Submitted surface vs organizer main `0863b06a`: exactly five files —
+  `Sources/MLXFastModel/Qwen36MTPBlockSession.swift`,
+  `Vendor/.../mlx-generated/quantized.cpp`, `quantized_nax.cpp`,
+  `kernels/quantized.h`, `kernels/quantized_nax.h`.
+- `Qwen35.swift` diff vs `0863b06a`: empty. The byte-identical restore claim
+  holds.
+
+A promotion of `2c885d64` now records a `promotedSourceRef` that resolves in
+`origin`. Askeladd's composition base is no longer blocked on publication; it
+waits only on the receipt decision.
+
+### FINDING 427 — the instrumentation tax lives on the routed call path, not in any global mechanism
+
+From thorfinn's terminal result (receipts `5a9f130a` vs `fda590bb`,
+ledger-equal prompt by prompt, common mode −0.2414 % removed): the decode leg
+moves +0.985 % (se 0.190, t = 5.2), split by regime:
+
+| regime | m | routed | measured |
+|---|---|---|---|
+| prefill | 512 | no | −0.23 % (= drift) |
+| non-drafting round | 1 | no | +0.131 % |
+| drafting round | 2..9 | yes | +1.230 % |
+
+The two counters sit behind the `routable` guard; the tax concentrates where
+the counters are reachable. This kills global explanations — allocator
+pressure, code layout in unrelated modules, anything that would tax the m=1
+rounds and prefill equally — and constrains edward's B1-vs-B2 decomposition
+and alphonse's (a)-vs-(b) fork: the mechanism must act on the routed call
+path itself. Forwarded to edward as F17 §2 and usable by alphonse in E173.
+
+Same result, local side: the four-leg gated ABBA on the strip measures
+−0.2074 % ± 0.3611 (2σ) — the right sign at about a fifth of the ranked
+magnitude, unresolvable in four legs against the 0.120 % local floor.
+Consistent with LAW 377 attenuation of per-round fixed work; no local rerun
+is owed.
+
+### Advisor decision — edward drops B3; three arms, 12 legs (F17)
+
+The reset moved the four-arm session from ~100 minutes marginal to ~4 hours
+total. Setup (2–2.5 h) is common to every future on that host, including the
+prefill programme, so the characterisation's marginal price stays roughly
+100 minutes. Approved his own recommendation: B0/B1/B2 at four legs each —
+the F13 §5 design; B3 conflated linkage with the dead-read removal, and at
+n=2 legs per arm a flat arm cannot be called. The prefill programme is the
+leading candidate for his next assignment. The typed terminal E167 result
+follows the session.
+
+### Operational notes
+
+- `send_assignment_feedback` requires `status:wip`; PR 171 in review rejected
+  advisor F7. The verification content travels in the r2 revision request
+  after the receipt instead. Recorded in the runbook.
+- `2c885d64` still validating at 08:00Z (~50 minutes in). About six solvers
+  validating concurrently; slow receipts expected.
+
+### Standing
+
+- Crown unchanged: `ec24d591` newjordan `3.7291100106`; organizer main
+  unchanged at `0863b06a` (re-verified after re-bootstrap).
+- Official slot **occupied**: `2c885d64` validating; reading rule unchanged
+  (near 3.72 is inside the draw; only well below 3.70 counts against Q).
+- Queue: askeladd depth-cap `min(adaptive, 4)` second — census and the
+  pre-registered adapt-vs-p2 ABBA running; the composition base is the
+  `4ba44f82` tree pending the receipt decision, composed by the advisor onto
+  `senpai/qwen38-mtp-r1` (students cannot branch from student branches).
+- Edward: recovery chain running (job `4f05eae8`), then the three-arm 12-leg
+  ABBA with per-leg W&B logging.
+- Alphonse: E173 running; FINDING 427 forwarded as a constraint.
+
+---
+
+## Entry 368 — 2026-08-24 ~08:10Z — The mixture confound: the ranked step is open, and the cap-4 receipt becomes the discriminator
+
+### FINDING 428 — edward's 60–120× step refutation has a mixture confound; withdrawn as decisive
+
+Edward's h-fit on the receipt corpus regressed prompt-mean cost against
+prompt-mean M and found the M≥6 prompts only +0.19–0.38 ms above the M<6
+line, against ~23 ms predicted for a group crossing. He reported this as a
+60–120× refutation of the ranked M≥6 step.
+
+The test compares prompt means, but the step acts on rounds. Under the step
+model, prompt cost = F + h·edl + 23.473·E[groups(M_round)], where the
+expectation runs over the prompt's round-level M distribution. Deeper
+prompts have wider M spread, so E[groups] rises ≈0.23 per unit of mean M
+across the ranked corpus (drama ≈1.0 → botany ≈1.9). That term alone
+contributes ≈ 23.47 × 0.23 ≈ 5.4 ms per unit mean M — the entire measured
+slope — with h ≈ 0. This is exactly the "h not identified" degeneracy
+edward reported inside the same analysis. Both the affine interpolant and
+the mixture-step model fit the eight prompt means within residuals; the
+prompt-mean regression cannot distinguish them.
+
+The refutation is withdrawn as decisive. What remains solid either way:
+
+- the ranked M=1 anchor (measured 30.402 ms vs affine 21.494 vs step
+  23.473 + F) kills the affine law as physics at the shallow end;
+- askeladd's per-round local data proves the step exists at round level on
+  gen16 hardware (FINDING 429).
+
+Status: the ranked M≥6 step (FINDINGs 407/408) is OPEN — neither confirmed
+nor refuted. Analysis forwarded to askeladd as F12 and edward as F19.
+
+### FINDING 429 — askeladd's gated ladder confirms the local M=5→6 step at arm level
+
+Ten gated legs before the host recycle, a complete palindrome unit, on his
+gen16 M4 Pro (which never executes `_nax`): adaptive 31.495 ms/tok
+(meanM 7.377), d3 30.494 (−3.18%), d4 30.006 (−4.73%), d5 34.436 (+9.34%
+vs adaptive; +14.1% vs d4, ~17% predicted). All three pre-registered signs
+hit. Branch A holds: the ladder picks depth 4; no replay owed. The
+remaining six ladder legs are cancelled as no longer decision-relevant.
+
+### Queue ruling (F12) — the cap-4 receipt is upgraded to the physics discriminator
+
+frozenNext stays `min(adaptive, 4)` (askeladd), now carrying two
+non-overlapping predictions:
+
+- step transfers to ranked M≥6 → published ≈ 4.16–4.31 (FINDING 408 roof /
+  worst-feasible): a new crown;
+- step absent at ranked → published ≈ 3.55–3.65 (the min-four prompts
+  accept 0.87–0.90 against 0.55–0.62 break-evens): a rejection.
+
+One receipt decides the physics AND selects between opposite follow-up
+directions: cap-shallower (step real) versus declamp-deeper (E168 §4
+anti-step bet: beagle at depth 7, acc 0.834 → −11% under the linear law).
+
+### FINDING 426 amendment — four environments recycled; resets are ~10-minute events
+
+askeladd's workspace was also recycled at 07:30Z, so the fleet event hit
+four environments (thorfinn, edward, advisor, askeladd). Edward's measured
+recovery was 8 minutes end to end (checkpoint re-download at 105 MiB/s),
+not the ~2.5 h he first estimated. Price future resets as ~10-minute
+events for students.
+
+### F17 rescinded by F18 — edward runs the full four-arm design
+
+F17 (drop B3; three arms, 12 legs) was priced on the 2.5 h recovery
+estimate. The measured 8-minute recovery refutes that premise; this is a
+measurement update, not an advisor error. Edward relaunched the
+predeclared four-arm design at 07:49:32Z: B0/B1/B2/B3 at four legs each,
+16 legs, shared metallib `5d6e3f9f1438dc5d`, reference rows from B0 with
+four-way cross-arm bit-exactness. W&B run `e167-arms-20260824T074932Z`
+carries per-leg logging — the first application of RULE 374. ETA
+≈ 09:45–10:15Z. FINDING 427 constraint forwarded: a surviving mechanism
+must act on the routed call path.
+
+### Base-move reconciliation f6b1f199 → 96f5424f
+
+The advisor branch moved by senpai/-only commits (ledger and frontier
+state). No editable-surface change; the research_base_changed events for
+PRs 166/168/171/172 are informational; no replay owed on any assignment.
+
+### Standing
+
+- Crown unchanged: `ec24d591` newjordan `3.7291100106`; organizer main
+  `0863b06a`.
+- Official slot occupied: `2c885d64` still validating at 08:05Z (~54
+  minutes; ~6 solvers validating concurrently). Reading rule unchanged:
+  near 3.72 is inside the draw; only well below 3.70 counts against Q.
+- Queue: askeladd cap-4 frozenNext (discriminator). Composition base is
+  the `4ba44f82` tree pending the receipt decision, composed by the
+  advisor onto `senpai/qwen38-mtp-r1`.
+- Edward: 16-leg session running; the typed E167 terminal result follows.
+- Alphonse: E173 running; first report expected.
+
+### Entry 368 addendum — 08:20Z: E167 session facts corrected, and a recovery-sequence gap recorded
+
+- Edward's first four-arm relaunch died 12 seconds in. Cause: empty
+  `weights/` — the host-reset recovery ran `setup.sh`, `setup-qwen-mtp.sh`,
+  and the metallib build, but `setup.sh` never transforms the checkpoint,
+  and his session script calls the trusted verbs directly so it does not
+  inherit `benchmark-qwen-mtp.sh`'s side-effect fill. The low-memory
+  profile line and fingerprint warning in the death message were red
+  herrings. Fix: `./benchmark.sh --transform-only` (49 s, 14 GiB). Recovery
+  sequence recorded in the runbook; his commit `43a95f0a` adds a preflight
+  check and fingerprint staging (research-only files).
+- The live E167 session is W&B run `e167-arms-20260824T075454Z` (not
+  `...074932Z` as recorded above). ETA 10:00–10:30Z. Worker fingerprints
+  digit-identical for the third time across the reprovision: B0
+  `999b5b51429b`, B1 `f8a07f6d832a`, B2 `ddfa2f3d0aee`, B3 `df28b41ab921`;
+  palindrome schedule with position sums 34, reference rows from B0.
+- Askeladd stripped his own census instrumentation from the E168 candidate:
+  the submitted diff is now exactly `segmentedVerifyDepthCap = 7 → 4` plus
+  a doc comment. This removes the collision with the instrumentation strip;
+  composition of the cap onto the composed tree is one line. His two-build
+  confirmation (base `f6b1f199` vs cap `d88b7329`, palindrome, real gate,
+  512-token --local-submit) is running; both arms share the pre-existing
+  tax so the contrast isolates the cap. Confirmed to him (F14) that the
+  strip's absence from the campaign base is expected and arrives via the
+  post-receipt composition of `4ba44f82`.
+- Askeladd's pre-registered receipt prediction (central 3.9847, band +4 %
+  to +8 %) and the three reading bands are now in frontier-state
+  `submissionQueue.frozenNext.predictions` (published `e762aac8`).
+
+---
+
+## Entry 369 — 2026-08-24 ~08:40Z — E173 merged: F is 71 % named, the tablePays step is null twice over, and E174 attacks the first line item
+
+### Review decision — PR 172 (E173, alphonse) MERGED at `2b8037c3`
+
+Typed terminal result `succeeded` at head `4c6d7b4c` (08:22Z), ~106 minutes
+from brief to terminal. Verified before merging: diff vs merge-base is 17
+files, all under `Tests/` and `research/`; the editable surface is
+byte-untouched; W&B run `drncx8x0` finished and carries every table
+(failed run `reikzt54` disclosed, died before evidence). Base move
+`58979332 → e36b8026` was senpai/-only, accepted on current base, merged.
+The deliverables were complete against the brief, the stop rule was
+respected (fixes named, not implemented), and the report withdrew its own
+debug-era interims unprompted.
+
+### FINDING 430 — the F_local inventory: 71 % of the per-round fixed cost is named
+
+`harness=local`, g16s, release build. Target F_local = 11.792 ms/round
+(FINDING 404). Explained 8.368 ms (71 %), residual 3.424 ms. Split: host
+2.971 / GPU 4.168 / mixed 1.229. Top rows (ms/round):
+
+- gdn.recurrence **2.087** (GPU: 48 FP32 states [1,48,128,128], 302
+  MB/round at ~147 GB/s)
+- admission.kernel_record_construction **1.284** (host:
+  `MLXFastKernel.callAsFunction` per cell, twice per cell at m≥4)
+- head_chain_fixed **1.229** (prior)
+- post_eval_host_tail **0.655** (prior)
+- gpu.xsums_standalone_fills **0.650** (130 cells with no publishing
+  producer)
+- envelope.rms_norm_5120 **0.587** (127 norms at the 4.7 µs per-dispatch
+  floor)
+- commit 0.433, fa.sdpa 0.427, protocol_gap 0.357, mlp.swiglu 0.284,
+  command_buffer_submits 0.150, six rows < 0.1.
+
+Residual 3.424 > the 1.5 ms stop line: the instrument does not see all of
+F; the named gaps are chiefly command-buffer interval gaps no per-kernel
+measurement can reach. Four fixes ≥ 0.5 ms named, none implemented:
+(1) extend the fused-norm xsums epilogue to the 130 unserved producers
+(~0.43 host + 0.65 GPU); (2) cache the immutable kernel record per
+(kernel, m, n) at warm; (3) BF16 recurrent state (~1 ms, numerical gate
+required first); (4) further norm fusion. Also settled: the admission
+path is 0.046 ms/round in release — not the tax; thread 1 of the brief
+(n=1024 exclusion) refuted at source, no n=1024 cell is dispatched.
+
+### FINDING 431 — debug builds inflate host costs ~6×; RULE 375
+
+Entry-point host build per round: m=1 0.968 → 0.108, m=3 2.930 → 0.526,
+m=4 8.224 → 1.376 ms (debug → release). The debug-era interim claims
+(0.5 µs metadata queries; 0.24–0.29 ms sidecar take) were withdrawn by the
+student: release values are 42 ns and 0.046 ms.
+
+**RULE 375: never put a host-side cost measured in a debug build into an
+inventory, a brief, or a price. Release numbers only; debug is at most a
+ratio check.**
+
+### FINDING 432 — the tablePays boundary step is null in both identified estimates
+
+- e37 observational trace (485 rounds): boundary-minus-non-boundary
+  curvature contrast **+1.72 ms, 95 % CI [−0.80, +3.21]**.
+- E168 adaptive arms (2356 rounds): **−0.39 ms, CI [−3.67, +0.77]**.
+- The E168 pooled +3.01 ms is confounded (the m=3 stratum is dominated by
+  one imposed arm) and is not an effect.
+- Coverage limit: the E168 fixed-depth arms impose only m=3 (p2) and m=8
+  (p7); m=2/4/5 have 4/6/3 truncated-draft rounds, so no exogenous-m
+  triple exists in that dataset.
+- The release-measured boundary host step (1.376 − 0.526 = **0.850
+  ms/round**) sits inside both CIs. It cannot explain FINDING 415's sharp
+  +1.43/+6.94 asymmetry, which remains a g16s trace observation without a
+  mechanism and should not be priced.
+
+### E174 assigned — alphonse, PR 173, `e174-xsums-epilogue-extension`
+
+Item (1) promoted to implementation: extend the fused-norm xsums epilogue
+to the 130 unserved producers, deleting the standalone-fill round trip
+(~0.650 GPU + ~0.43 host ms/round local). Chosen over item (2) because the
+ranked transfer of pure host work is exactly what the in-flight receipt
+pair (`fda590bb` vs `2c885d64`) measures — a GPU-side removal is robust to
+either tau outcome. Item (3) BF16 recurrence stays queued until a
+numerical gate is designed. Gates: xsums bit-identity on actual FP values
+at all 130 cells with a one-ulp positive control; MUE 0.30 % per-token
+local; RULE 374 per-leg logging; freeze only on the post-receipt composed
+tree.
+
+### Standing
+
+- Crown unchanged `ec24d591` 3.7291100106. `2c885d64` still validating at
+  08:28Z (~77 minutes).
+- Base tip: `2b8037c3` (E173 merge). All base moves today remain
+  senpai/- or research/-only; no scored-surface change since `0863b06a`
+  organizer parity on the maintained branch.
+- Students: edward 16-leg ABBA (W&B `e167-arms-20260824T075454Z`, ETA
+  10:00–10:30Z); askeladd two-build cap confirmation running, freeze held;
+  thorfinn watcher on `2c885d64`; alphonse starting E174.
