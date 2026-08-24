@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-24T04:40:00Z",
+  "observedAt": "2026-08-24T04:52:00Z",
   "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
@@ -1568,5 +1568,43 @@
     "662e272e newjordan",
     "10f3a0d1 vibecodooor",
     "8886ec88 jungjipdo"
-  ]
+  ],
+  "quantizedMMRouting": {
+    "finding": 397,
+    "ledgerEntry": 356,
+    "foundBy": "advisor source read",
+    "source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
+    "routableGuards": "Qwen35.swift:1770-1794 \u2014 bits 4, groupSize 64, affine, bf16/uint32, w.dim(1)==k/8, k%512==0, n%8==0, n>=4096, m in widths, x.dim(-2)==m, row contiguity. NO device gate, no is_nax_available, no GPU generation test.",
+    "widths": "2 ... 9 at Qwen35.swift:1704",
+    "dispatcher": "qwen35RoutedQuantizedMM at :1895-1911 tries Qwen35CustomQMV.matmul first, falls back to quantizedMM(transpose: true) on nil",
+    "arm": "Qwen35CustomQMV.arm defaults to .sumTable at :1693-1698, overridable only by MLX_E120_QMV_ARM, read once at process start",
+    "decodeVerify": "M = 2...9 executes our editable kernel on the ranked M5. FINDING 390 nax wall does not apply.",
+    "seedPrefill": "M = 512 is outside widths, falls through to MLX quantizedMM and therefore qmm_nax on the M5. Receipt-only.",
+    "boardConfirmation": "non_drafting_round_count on 5a9f130a is 0 for beagle, essays, medicine, republic, botany, drama, travel; 449 of 488 for plutarch only. Every weighted-prompt round has M >= 2, and segmentedVerifyDepthCap = 7 gives M <= 8.",
+    "narrowOutputShapesRouted": "mlp.down k=17408, linear_attn.out_proj k=6144, full_attn.o_proj k=6144, all n=5120, all k%512==0, all >= 4096. All routed to us.",
+    "consequence": "FINDING 395 narrow-output deficit is a normal locally screenable experiment, not a receipt-only gamble.",
+    "refused": "Widening widths to reach m = 512. Qwen35CustomQMV is a wide-QMV design for M <= 9 and would lose to a tensor-core path at M = 512, and we cannot measure _nax on any host we own."
+  },
+  "m1LocalHarnessFallacy": {
+    "finding": 397,
+    "ledgerEntry": 356,
+    "sourceComment": "Qwen35.swift:1700-1704 \u2014 \"M=1 stays on MLX (serial and the candidate share it, so speeding it does not move the ratio).\"",
+    "assessment": "Correct for harness=local, false for harness=ranked. The ranked serial numerator comes from the runner prebuilt baseline workspace, so d ln(ranked baseline serial time)/dx = 0 for every candidate edit.",
+    "priced": "non_drafting_round_count = 0 on every weighted prompt, so a width-1 target verify never happens there.",
+    "decision": "Worth zero. Declined. Recorded so the reasoning is not adopted where it would cost us."
+  },
+  "prefillLeversOwned": {
+    "ledgerEntry": 356,
+    "ruledOut": [
+      "tuning qmm_nax tile geometry \u2014 backend/metal/quantized.cpp is not in editablePaths and :481-485 is hardcoded",
+      "routing prefill into Qwen35CustomQMV by widening widths",
+      "any decode-row mechanism \u2014 Alphonse owns it"
+    ],
+    "ruledIn": [
+      "the gated-delta sequential walk at T = 512: GatedDelta.swift:60, 512-step serial chain, 48 times per forward, 302.0 MB float32 state read plus write, grid (32, Dv, B*Hv), no T dimension, static FLOP share 0.44 % so FLOP analysis hides it",
+      "warmup and shape misses inside the timed leg \u2014 the shape of a discrete two-tier effect, which is what the board shows",
+      "call-count reduction that changes no reduction order"
+    ],
+    "instrumentationConstraint": "E83 splits local seed prefill 4046.1 ms as target_forward_build 75.0 %, target_forward_eval 24.5 %, tail 0.5 %, against about 527 ms ranked, ratio 7.67x. Build is host graph construction and barely exists on the ranked host. Only GPU time transfers. Report the gated-delta scan separately from the quantized GEMM because one is ours and one is not."
+  }
 }

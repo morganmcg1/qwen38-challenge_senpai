@@ -67902,3 +67902,83 @@ composed base. Do not submit either piece alone.
   anything, and note that all seven low-prefill board receipts use the same pinned
   head `559b24eb` so the mechanism is not a head change. The `T = 512` gated-delta
   sequential walk is scoped to him as the exception to Alphonse's H1 closure.
+
+## Entry 356 — 2026-08-24T04:50:00Z — FINDING 397: the decode row is ours on the ranked M5 and the seed prefill is not, settled from source
+
+Advisor source read of `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` at
+base `4190065f`, answering the blocking precondition that Entry 355 assigned to
+Alphonse. Answered by the advisor so that no student spends GPU or reading time on
+it, and posted to PR #169 and PR #166 with the lines so both can check it.
+
+### `Qwen35CustomQMV.routable` has no device gate
+
+`Qwen35.swift:1770-1794`. The complete guard set is dtype, quantization
+parameters, shape and contiguity. There is no `is_nax_available()` call, no GPU
+generation test and no device query of any kind:
+
+```
+bits == 4, groupSize == 64, mode == .affine
+x/scales/biases bfloat16, w uint32
+w.ndim == 2, x.ndim >= 2
+w.dim(1) == k / 8,  k % 512 == 0,  n % 8 == 0,  n >= 4096
+Self.widths.contains(m),  x.dim(-2) == m          // widths = 2 ... 9  (:1704)
+rowContiguous on x, w, scales and biases
+```
+
+`qwen35RoutedQuantizedMM` at `:1895-1911` calls `Qwen35CustomQMV.matmul` first and
+falls back to `quantizedMM(..., transpose: true, ...)` only when it returns `nil`.
+`Qwen35CustomQMV.arm` at `:1693-1698` defaults to `.sumTable`, is overridable only
+by `MLX_E120_QMV_ARM`, and is read once at process start.
+
+| path | width | routes to | on the ranked M5 | locally screenable |
+|---|---|---|---|---|
+| decode verify | `M = 2...9` | `Qwen35CustomQMV`, ours | our kernel | **yes** |
+| decode verify | `M = 1` | MLX | MLX | yes |
+| **seed prefill** | **`M = 512`** | **MLX `quantizedMM`** | **`qmm_nax`** | **no** |
+
+### Consequences
+
+1. **FINDING 390's `_nax` wall does not apply to the decode row.** Every decode
+   verify at width 2 through 9 with `n >= 4096` executes candidate-editable code on
+   the ranked M5. FINDING 395's narrow-output deficit is therefore a normal
+   experiment with a normal local screen, not a receipt-only gamble. The top lever
+   is unblocked.
+2. **Every scored round on every weighted prompt is inside `2...9`.**
+   `non_drafting_round_count` on receipt `5a9f130a` is **0** for beagle, essays,
+   medicine, republic, botany, drama and travel, and 449 of 488 for plutarch alone.
+   Every round on every prompt that carries published weight drafts at least one
+   row, so `M >= 2`, and `segmentedVerifyDepthCap = 7` gives `M <= 8`.
+3. **All three narrow-output shapes are routed to us.** `mlp.down` `k=17408`,
+   `linear_attn.out_proj` `k=6144`, `full_attn.o_proj` `k=6144`, all `n = 5120`, all
+   `k % 512 == 0`, all clear `n >= 4096`.
+4. **The seed prefill is receipt-only for anything touching the quantized GEMM.**
+   Widening `widths` to reach `m = 512` is refused: `Qwen35CustomQMV` is a wide-QMV
+   design for `M <= 9`, it would lose to a tensor-core path at `M = 512`, and we
+   could not tell locally because no host we own is gen 17.
+5. **The one prefill lever that is ours** is the gated-delta sequential walk at
+   `T = 512`. Alphonse's H1 closure is scoped to `M <= 9`, where the
+   `for (int t = 0; t < T; ++t)` loop at `GatedDelta.swift:60` costs `3.25 us` per
+   call per row. At `T = 512` it is a 512-step serial dependency chain, 48 times per
+   forward, over a float32 recurrent state of `302.0 MB` read plus write per
+   forward, with grid `(32, Dv, B*Hv)` and no `T` dimension. Its static FLOP share
+   is 0.44 %, so any FLOP-based analysis hides it entirely. Routed to Edward.
+
+### A local-harness fallacy written into a source comment, priced and declined
+
+`Qwen35.swift:1700-1704` excludes `M = 1` from the candidate-owned dispatch with:
+
+> M=1 stays on MLX (serial and the candidate share it, so speeding it does not move
+> the ratio).
+
+That is a correct `harness=local` statement and a **false** `harness=ranked`
+statement. On the ranked board the serial numerator comes from the runner's own
+prebuilt baseline workspace, so `d ln(ranked baseline serial time) / dx = 0` for
+every candidate edit and a faster candidate `M = 1` would raise every affected
+`raw_p`. This is precisely the cancellation
+`senpai/verify-ranked-score-boundary.sh` exists to catch, sitting in a source
+comment as a design justification.
+
+Priced before assigning: `non_drafting_round_count = 0` on every weighted prompt,
+so a width-1 target verify never happens there. Worth zero. **Declined**, and
+recorded so that the next reader does not adopt the comment's reasoning in a place
+where it does cost us something.
