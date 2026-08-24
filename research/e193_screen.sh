@@ -65,7 +65,11 @@ anti_arm() { [[ "$1" == "off" ]] && echo on || echo off; }
 # PHASE 1: prove each arm reaches the worker, and that the witness FAILS
 # against the opposite arm. Both legs are traced and ungated; they also warm
 # the caches and supply the row dumps the exactness gate compares.
-declare -A witness_out
+#
+# macOS ships bash 3.2, which has no associative arrays. The witness output
+# directory is derived from the arm instead of looked up.
+witness_dir() { echo "research/out/e165${label}w${rep}$1"; }
+
 for arm in on off; do
   tag="e165${label}w${rep}${arm}"
   echo "=== witness ${tag}: arm=${arm} tokens=${tokens} ungated traced ==="
@@ -81,13 +85,12 @@ for arm in on off; do
     echo "e193_screen: witness ${tag} exited ${status}" >&2
     exit 5
   fi
-  witness_out["${arm}"]="research/out/${tag}"
 done
 
 for arm in on off; do
-  out="${witness_out[${arm}]}"
+  out="$(witness_dir "${arm}")"
   echo "--- arm witness for ${arm} ---"
-  python3 research/e165_prefetch.py witness "${out}/trace.txt" --want "${arm}" \
+  python3 research/e193_gates.py witness "${out}/trace.txt" --want "${arm}" \
     | tee "${out}/e193-arm-check.txt"
   if [[ "${PIPESTATUS[0]}" != "0" ]]; then
     echo "e193_screen: the ${arm} leg did not run the ${arm} arm" >&2
@@ -95,7 +98,7 @@ for arm in on off; do
   fi
   anti="$(anti_arm "${arm}")"
   echo "--- control: the same check must FAIL against ${anti} ---"
-  python3 research/e165_prefetch.py witness "${out}/trace.txt" --want "${anti}" \
+  python3 research/e193_gates.py witness "${out}/trace.txt" --want "${anti}" \
     | tee "${out}/e193-arm-control.txt"
   if [[ "${PIPESTATUS[0]}" == "0" ]]; then
     echo "e193_screen: the ${arm} leg also passed the ${anti} check" >&2
@@ -107,16 +110,16 @@ done
 # PHASE 2: the exactness gate. Every declared row, both arms, exact hexfloats,
 # with the positive control that proves the comparison can fail.
 echo "--- exactness: every declared row, both arms, as exact hexfloats ---"
-python3 research/e165_prefetch.py rows \
-  "${witness_out[off]}/trace.txt" "${witness_out[on]}/trace.txt" \
-  | tee "${witness_out[on]}/e193-rows.txt"
+python3 research/e193_gates.py rows \
+  "$(witness_dir off)/trace.txt" "$(witness_dir on)/trace.txt" \
+  | tee "$(witness_dir on)/e193-rows.txt"
 if [[ "${PIPESTATUS[0]}" != "0" ]]; then
   echo "e193_screen: the two arms did not declare identical rows" >&2
   exit 6
 fi
-python3 research/e165_prefetch.py rows \
-  "${witness_out[off]}/trace.txt" "${witness_out[on]}/trace.txt" \
-  --positive-control | tee "${witness_out[on]}/e193-rows-control.txt"
+python3 research/e193_gates.py rows \
+  "$(witness_dir off)/trace.txt" "$(witness_dir on)/trace.txt" \
+  --positive-control | tee "$(witness_dir on)/e193-rows-control.txt"
 if [[ "${PIPESTATUS[0]}" == "0" ]]; then
   echo "e193_screen: the exactness comparison cannot fail; it is not a gate" >&2
   exit 7
