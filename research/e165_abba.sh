@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # E165: price the cross-round head-chain prefetch against the shipped order.
 #
-#   usage: research/e165_abba.sh [TOKENS] [LABEL] [REP]
+#   usage: research/e165_abba.sh [TOKENS] [LABEL] [REP] [PHASES]
+#
+# PHASES is `all` (default) or `check`. `check` runs the warmup, the two arm
+# witnesses and the exactness gate, then stops before the gated timed session.
+# Use it as a short pre-flight so a broken mechanism costs minutes, not hours.
 #
 # TWO ARMS, one worker, one thermal session, no rebuild between legs. They
 # differ only in `MLX_E165_HEAD_PREFETCH`:
@@ -31,6 +35,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 tokens="${1:-512}"
 label="${2:-pf}"
 rep="${3:-1}"
+phases="${4:-all}"
+
+if [[ "${phases}" != "all" && "${phases}" != "check" ]]; then
+  echo "e165_abba: PHASES must be 'all' or 'check', got '${phases}'" >&2
+  exit 2
+fi
 
 if [[ -n "$(git status --porcelain -- Sources Vendor Package.swift)" ]]; then
   echo "e165_abba: the scored surface is dirty; refusing to time over" \
@@ -127,6 +137,11 @@ if [[ "${PIPESTATUS[0]}" == "0" ]]; then
   exit 7
 fi
 echo "control ok: the exactness comparison fails when a value is perturbed"
+
+if [[ "${phases}" == "check" ]]; then
+  echo "e165_abba: pre-flight complete; stopping before the timed session"
+  exit 0
+fi
 
 # PHASE 3: the counterbalanced gated session.
 failures=0
