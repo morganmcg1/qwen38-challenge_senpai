@@ -813,8 +813,19 @@ def expected_accepted(profile: list[float], depth: int) -> float:
     return sum(chain_survival(profile, k) for k in range(depth))
 
 
+def profile_for(profiles: dict[str, list[float]], label: str) -> list[float]:
+    """The prompt's OWN acceptance profile, never a pooled stand-in.
+
+    Acceptance varies far more between prompts than between positions, so
+    pricing a hard prompt with a pooled profile would import the easy prompts'
+    acceptance into it and invert the answer. A prompt with no pinned twin is
+    dropped rather than priced against someone else's text.
+    """
+    return profiles.get(label, [])
+
+
 def clamp_counterfactual(
-    adapt_legs: list[dict], profile: list[float], offered_default: int
+    adapt_legs: list[dict], profiles: dict[str, list[float]], offered_default: int
 ) -> dict:
     """Price the clamp itself: replay each round with and without it.
 
@@ -828,7 +839,8 @@ def clamp_counterfactual(
     per_leg = []
     for leg in adapt_legs:
         rounds = [r for r in leg["rounds"] if not math.isnan(r["margin"])]
-        if not rounds:
+        profile = profile_for(profiles, leg["label"])
+        if not rounds or not profile:
             continue
         clamped_depth = unclamped_depth = 0
         predicted_on = predicted_off = 0.0
@@ -901,10 +913,10 @@ def local_decode_ms_per_token(mean_depth: float, mean_accepted: float) -> float:
 
 def policy_sweep(
     adapt_legs: list[dict],
-    profile: list[float],
+    profiles: dict[str, list[float]],
     offered_default: int,
     fitted: dict[int, float] | None = None,
-) -> list[dict]:
+) -> dict:
     """Price alternative controllers on the recorded rounds, without a GPU.
 
     Every policy sees the same recorded margin, EMA and offered cap, and every
@@ -914,15 +926,6 @@ def policy_sweep(
     not on the round, which is exactly the assumption the AUC and skill tests
     above are there to check.
     """
-    rounds = [
-        record
-        for leg in adapt_legs
-        for record in leg["rounds"]
-        if not math.isnan(record["margin"])
-    ]
-    if not rounds:
-        return []
-
     def offered_of(record: dict) -> int:
         return record["offer"] if record["offer"] is not None else offered_default
 
@@ -961,31 +964,67 @@ def policy_sweep(
     for fixed in range(0, min(offered_default, WIDTH_CAP) + 1):
         policies.append((f"fixed depth {fixed}", lambda r, f=fixed: f))
 
-    results = []
-    for name, rule in policies:
-        depths = [rule(record) for record in rounds]
-        mean_depth = sum(depths) / len(depths)
-        accepted = sum(expected_accepted(profile, d) for d in depths) / len(depths)
-        priced = ranked_price(mean_depth, accepted)
-        results.append(
+    per_prompt: dict[str, list[dict]] = {}
+    for leg in adapt_legs:
+        rounds = [r for r in leg["rounds"] if not math.isnan(r["margin"])]
+        profile = profile_for(profiles, leg["label"])
+        if not rounds or not profile:
+            continue
+        rows = []
+        for name, rule in policies:
+            depths = [rule(record) for record in rounds]
+            mean_depth = sum(depths) / len(depths)
+            accepted = sum(expected_accepted(profile, d) for d in depths) / len(depths)
+            rows.append(
+                {
+                    "policy": name,
+                    "mean_depth": mean_depth,
+                    "predicted_accepted": accepted,
+                    "raw": ranked_price(mean_depth, accepted)["raw"],
+                    "local_decode_ms_per_token": local_decode_ms_per_token(
+                        mean_depth, accepted
+                    ),
+                }
+            )
+        best = max(row["raw"] for row in rows)
+        for row in rows:
+            row["raw_deficit_vs_best"] = row["raw"] - best
+        per_prompt[leg["label"]] = rows
+
+    # The published score is a MEDIAN of per-prompt ratios, so a policy is
+    # summarised by the median of its per-prompt `raw` and never by a pooled
+    # round set, which would let the prompts with the most rounds decide.
+    pooled = []
+    for index, (name, _) in enumerate(policies):
+        values = sorted(rows[index]["raw"] for rows in per_prompt.values())
+        if not values:
+            continue
+        middle = len(values) // 2
+        median = (
+            values[middle]
+            if len(values) % 2
+            else (values[middle - 1] + values[middle]) / 2.0
+        )
+        pooled.append(
             {
                 "policy": name,
-                "mean_depth": mean_depth,
-                "predicted_accepted": accepted,
-                "raw": priced["raw"],
-                "local_decode_ms_per_token": local_decode_ms_per_token(
-                    mean_depth, accepted
-                ),
+                "median_raw": median,
+                "min_raw": values[0],
+                "max_raw": values[-1],
+                "prompts": len(values),
             }
         )
-    best = max(row["raw"] for row in results)
-    for row in results:
-        row["raw_deficit_vs_best"] = row["raw"] - best
-    return results
+    if pooled:
+        best = max(row["median_raw"] for row in pooled)
+        for row in pooled:
+            row["median_deficit_vs_best"] = row["median_raw"] - best
+    return {"per_prompt": per_prompt, "pooled": pooled}
 
 
 def splice_arms(
-    adapt_legs: list[dict], pinned_legs: list[dict], profile: list[float] | None = None
+    adapt_legs: list[dict],
+    pinned_legs: list[dict],
+    profiles: dict[str, list[float]] | None = None,
 ) -> dict:
     """Answer the counterfactual DIRECTLY instead of by proxy.
 
@@ -1023,6 +1062,7 @@ def splice_arms(
         pinned = pinned_by_label.get(leg["label"])
         if pinned is None:
             continue
+        profile = profile_for(profiles or {}, leg["label"])
         totals["legs_matched"] += 1
         shared = set(leg["rows"]) & set(pinned["rows"])
         differing = [
@@ -1114,12 +1154,15 @@ def main() -> int:
     if adapt_legs:
         report["adapt"] = analyse_adapt(adapt_legs, args.offered)
     if pinned_legs and adapt_legs:
-        profile = [row["q"] for row in report["pinned"]["profile"]]
-        report["position_profile_used"] = profile
-        report["splice"] = splice_arms(adapt_legs, pinned_legs, profile)
+        profiles = {
+            label: [row["q"] for row in rows]
+            for label, rows in report["pinned"]["profile_by_leg"].items()
+        }
+        report["position_profiles_used"] = profiles
+        report["splice"] = splice_arms(adapt_legs, pinned_legs, profiles)
         report["arms"] = compare_arms(pinned_legs, adapt_legs)
         report["clamp_counterfactual"] = clamp_counterfactual(
-            adapt_legs, profile, args.offered
+            adapt_legs, profiles, args.offered
         )
         pooled_pinned = [r for leg in pinned_legs for r in leg["rounds"]]
         report["signal_auc"] = {
@@ -1128,7 +1171,7 @@ def main() -> int:
         report["oracle_ceiling"] = oracle_ceiling(pinned_legs)
         report["policy_sweep"] = policy_sweep(
             adapt_legs,
-            profile,
+            profiles,
             args.offered,
             {
                 position: block["fitted_temperature"]
@@ -1233,18 +1276,28 @@ def main() -> int:
             )
         print()
 
-    if report.get("policy_sweep"):
+    if report.get("policy_sweep", {}).get("pooled"):
+        sweep = report["policy_sweep"]
         print("=== controllers priced on the same recorded rounds ===")
+        print("median of per-prompt raw, which is the published score's shape")
         print(
-            f"{'policy':<34}{'mean d':>8}{'A':>8}{'raw':>8}{'vs best':>10}"
-            f"{'local ms/tok':>14}"
+            f"{'policy':<34}{'median':>9}{'min':>8}{'max':>8}"
+            f"{'vs best':>10}{'prompts':>9}"
         )
-        for row in report["policy_sweep"]:
+        for row in sweep["pooled"]:
             print(
-                f"{row['policy']:<34}{row['mean_depth']:>8.3f}"
-                f"{row['predicted_accepted']:>8.3f}{row['raw']:>8.3f}"
-                f"{row['raw_deficit_vs_best']:>+10.3f}"
-                f"{row['local_decode_ms_per_token']:>14.2f}"
+                f"{row['policy']:<34}{row['median_raw']:>9.3f}"
+                f"{row['min_raw']:>8.3f}{row['max_raw']:>8.3f}"
+                f"{row['median_deficit_vs_best']:>+10.3f}{row['prompts']:>9}"
+            )
+        print()
+        for label, rows in sweep["per_prompt"].items():
+            best = max(rows, key=lambda row: row["raw"])
+            shipped = rows[0]
+            print(
+                f"  {label:<20} shipped raw {shipped['raw']:.3f} at d="
+                f"{shipped['mean_depth']:.2f}   best '{best['policy']}' raw "
+                f"{best['raw']:.3f}   gap {best['raw'] - shipped['raw']:+.3f}"
             )
         print()
 
