@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import collections
 import math
 import statistics
 import sys
@@ -198,6 +199,69 @@ CENSUS_FAMILIES = {
 }
 
 
+def census_per_width_deltas(blocks):
+    """Direct per-width arm deltas, the estimate that needs no row-law fit.
+
+    Each (width, arm) cell is measured ABBA as baseline, arm, arm, baseline, so
+    the local baseline mean already absorbs monotone drift. The null control is
+    the same wrapper at full width, so subtracting it leaves only the pinned
+    family. An arm whose null-corrected delta is inside the baseline pass spread
+    did not reach the scored path at all; the vendored fast path calls
+    `qwen35RoutedLinear` on the module's arrays instead of dispatching through
+    `callAsFunction`, so module surgery cannot intercept it.
+    """
+    cells = collections.defaultdict(list)
+    for block in blocks:
+        cells[(block["width"], block["arm"])].append(block["seconds_median"])
+
+    widths = sorted({w for w, _ in cells})
+    serial = statistics.fmean(cells[(1, "baseline")]) if (1, "baseline") in cells else None
+
+    out = {"width_1_baseline_s": serial, "widths": {}}
+    for width in widths:
+        base_values = cells.get((width, "baseline"))
+        if not base_values:
+            continue
+        base = statistics.fmean(base_values)
+        spread = (max(base_values) - min(base_values)) / base if base else None
+        null_values = cells.get((width, "null"))
+        null_delta = statistics.fmean(null_values) - base if null_values else None
+        width_tax = base - serial if serial is not None else None
+
+        entry = {
+            "baseline_s": base,
+            "baseline_blocks": len(base_values),
+            "baseline_spread_frac": spread,
+            "null_delta_s": null_delta,
+            "width_tax_vs_serial_s": width_tax,
+            "active_input_groups": qmv_groups(width),
+            "inputs_per_group": INPUTS_PER_GROUP.get(width),
+            "arms": {},
+        }
+        for (cell_width, arm), values in cells.items():
+            if cell_width != width or arm in ("baseline", "null"):
+                continue
+            delta = statistics.fmean(values) - base
+            corrected = delta - null_delta if null_delta is not None else None
+            reached = (
+                corrected is not None and spread is not None
+                and abs(corrected) > spread * base
+            )
+            entry["arms"][arm] = {
+                "raw_delta_s": delta,
+                "null_corrected_delta_s": corrected,
+                "family_width_tax_s": -corrected if corrected is not None else None,
+                "share_of_width_tax": (
+                    -corrected / width_tax
+                    if corrected is not None and width_tax else None
+                ),
+                "reached_scored_path": reached,
+                "blocks": len(values),
+            }
+        out["widths"][str(width)] = entry
+    return out
+
+
 def census_shares(arms):
     """Family share of the marginal row, referenced to the null control."""
     if "null" not in arms:
@@ -367,6 +431,7 @@ def main():
         report["in_situ"] = {
             "blocks_parsed": len(blocks),
             "arms": arms,
+            "per_width_deltas": census_per_width_deltas(blocks),
             "attribution": census_shares(arms),
         }
 
