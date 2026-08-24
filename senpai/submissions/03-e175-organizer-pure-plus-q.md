@@ -218,6 +218,15 @@ Second, the local harness reports no prefill field, so the prefill penalty this
 submission prices in §7 cannot be reproduced locally at all. It is measured
 only from ranked per-prompt telemetry.
 
+## 8a. Test suite, with its control
+
+`swift test --force-resolved-versions` on the candidate: 743 tests in 73
+suites, 41 issues, 10 failing test functions. The same command on the campaign
+base, run in the same worktree so only the reverted files differ: 743 tests, 41
+issues, the same 10 failing test functions. The candidate adds no new failure
+and removes none. The suite is not green on either tree, and this submission
+does not claim that it is.
+
 ## 9. Caveats, stated plainly
 
 - The `_nax` half of this change cannot be executed on any host the campaign
