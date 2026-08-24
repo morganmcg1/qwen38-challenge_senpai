@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-24T03:35:00Z",
+  "observedAt": "2026-08-24T04:05:00Z",
   "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
@@ -411,7 +411,9 @@
       "closedAt": "2026-08-24T03:35:00Z",
       "reason": "FINDING 379; both the naive and the build-controlled designs fail their negative controls",
       "reopenIf": "a solver ships a schedule-only change with an otherwise byte-identical scored surface and declares it"
-    }
+    },
+    "accept_ema_alpha": "estimator-noise Jensen gap measured in controller simulation at 0.12 rows (depth 6.880 at alpha 0.15 vs 7.000 at alpha 0.01), about +0.13 % of decode, and lowering it would slow adaptation on the non-stationary text that matters",
+    "external_offered_depth_cap": "mtp_max_draft_depth = 8 on 956 of 956 receipts and QwenRuntimeMTPDriver.swift:141-150 has no prompt input"
   },
   "transferLaw": {
     "rule": "RULE 192",
@@ -822,7 +824,9 @@
     "219: FINDING 378 assumed the shipped depth policy carries an M4-Pro millisecond calibration with a LAW 354 step. It is a dimensionless ratio rule. I wrote a mechanism into a brief without reading the arm selector. The briefed change was a +1.97 % regression.",
     "220: I used 'no board schedule is both deep and fast' as falsification evidence in a student brief. It is the A-to-B build-cluster gap re-signed per prompt. The board cannot measure depth at all.",
     "216 UPDATE: closed completely by alphonse. Against his measured 255.5 GB/s peak the round runs at 80.3 % and local headroom is 18.23 ms, not the 39.6 ms I priced, and that channel transfers at 0.007x anyway.",
-    "217 CLOSED: resolved by askeladd's E166 step 0. Digit-identical ledgers between island arms confirm FINDING 372 mechanism (b), so phi_acc = 0 survives."
+    "217 CLOSED: resolved by askeladd's E166 step 0. Digit-identical ledgers between island arms confirm FINDING 372 mechanism (b), so phi_acc = 0 survives.",
+    "ADVISOR ERROR 221 (2026-08-24T04:05Z): FINDING 381 candidate 3, an external per-prompt offeredDepth cap, is refuted twice over - mtp_max_draft_depth = 8 on 956 of 956 board receipts, and askeladd refuted it at source in QwenRuntimeMTPDriver.swift:141-150 before spending GPU time. I had called it the largest and cheapest of three explanations.",
+    "ADVISOR ERROR 222 (2026-08-24T04:05Z): the E168 F2 section 6 value table (+1.4 % to +4.4 % published from moving all five drafting prompts to a model optimum) assumed one stationary acceptance rate per prompt. Simulating the actual controller shows no stationary rate reproduces any of the five ranked prompts, and a two-state mixture fits immediately. The table is an oracle ceiling, not available headroom. Retracted in F3 within 40 minutes. beagleDepthAnomaly withdrawn with it."
   ],
   "boardBuildClusters": {
     "finding": "FINDING 379",
@@ -951,23 +955,7 @@
       0.316
     ]
   },
-  "beagleDepthAnomaly": {
-    "finding": "FINDING 381",
-    "observation": "beagle is offered 4.382 rows at acceptance 0.834 while the local fixture is offered 6.359 at 0.875; 31 % shallower for 5 % lower acceptance",
-    "candidates": [
-      "depth-0 and depth-1 pendingTop2 margin clamps at Qwen36MTPBlockSession.swift:1137-1151",
-      "depressed positionAcceptEMA"
-    ],
-    "whyItMatters": "FINDING 342 marginal published weight is 0.47808 beagle and 0.52192 essays, exactly zero elsewhere; the two shallowest high-acceptance prompts are beagle 4.382 and essays 5.087",
-    "pricedAtDepth7": {
-      "acc0.834": -11.0,
-      "acc0.80": -7.7,
-      "acc0.75": -2.5,
-      "acc0.70": 3.2
-    },
-    "breakEvenAcceptance": 0.72,
-    "ownedBy": "PR 168 askeladd e168-margin-clamp-calibration"
-  },
+  "beagleDepthAnomaly": "WITHDRAWN 2026-08-24T04:05Z by FINDING 386. The (depth 4.382, acc/prop 0.834) pair is not an anomaly and is not specific to beagle; all five drafting prompts show the same stationary-model residual with the same sign. A two-state easy/hard mixture fits it. See controllerIsNonStationary.",
   "marginalRowShare": {
     "harness": "ranked",
     "law": "R = 16.1585 + 5.3350*M",
@@ -1002,5 +990,82 @@
       "note must be a path readable from the checkout",
       "never claim swift test is green: 41 pre-existing failures; state count, how many are new, and whether any exercises the changed surface"
     ]
+  },
+  "publishedScoreStructure": {
+    "formula": "published = 0.5*beagle_raw + 0.5*min(essays_raw, medicine_raw, republic_raw, botany_raw)",
+    "verifiedTo": "better than 5e-15 on 5a9f130a (ours), ec24d591 (crown), 684821ed (crown parent), 35a8a9de (B1)",
+    "beagleIsFourthOrderStatistic": "936 of 956 scored 512-token parity-ok receipts (97.9 %)",
+    "fifthSlotIsAFastPrompt": "948 of 956; census medicine 348, essays 327, republic 180, botany 93",
+    "marginalWeightBeaglePerPct": 0.4781,
+    "marginalWeightCurrentMinPerPct": 0.5219,
+    "currentMinPromptForUs": "essays 3.87039",
+    "minLeverSaturatesAfterPct": 0.932,
+    "beagleHeadroomToThirdPlacePct": 31.5,
+    "consequence": "improving a fast prompt that is not the current minimum is worth exactly zero",
+    "supersedes": "the loose reading of FINDING 342",
+    "finding": 382
+  },
+  "crownGapDecomposition": {
+    "crownMtpAdvantageOverUsPct": "uniform +0.085 to +0.248 across the five drafting prompts, mean about +0.17",
+    "crownEssaysSerialDrawZ": 5.12,
+    "crownPublishedAtMeanSerial": 3.71126,
+    "ourPublishedAtMeanSerial": 3.70899,
+    "replicableGapPct": 0.061,
+    "resubmitSameCandidateWinProbPct": 0.1,
+    "winProbAtHalfPctFasterPct": 40.9,
+    "winProbAtOnePctFasterPct": 99.7,
+    "campaignTarget": "1.0 % of candidate MTP time takes the crown with near certainty",
+    "minOfFourNoisePenaltyPct": 0.0,
+    "serialSdPerPromptPct": "beagle 0.245, essays 0.236, medicine 0.238, republic 0.234, botany 0.235 (n=956)",
+    "confirmsIndependently": "askeladd FINDING D",
+    "finding": 383
+  },
+  "parentOffersEightAlways": {
+    "evidence": "mtp_max_draft_depth = 8 and mtp_depth = 8 on 956 of 956 scored receipts",
+    "sourceRefutation": "QwenRuntimeMTPDriver.swift:141-150; offer depends only on configured depth, qwenMTPMaxDraftDepth and remaining-1",
+    "killsHypothesis": "FINDING 381 candidate 3, external per-prompt offeredDepth cap",
+    "advisorError": 221,
+    "finding": 384
+  },
+  "depthPriceIdentity": {
+    "identity": "c* = h/(s+h) makes the shipped myopic threshold equal the true marginal rule under R(M)=s+h*M",
+    "rankedCStar": 0.24821,
+    "localCStar": 0.15329,
+    "shippedC": 0.18,
+    "historicalRankedArms": "0.18 -> 2.92000, 0.32 -> 2.84585, 0.14 -> 2.76600, 0.15 -> 2.66700",
+    "orderingCheck": "score order matches distance-to-ranked-c* order except the 0.14/0.15 pair which differ by 0.01 in c",
+    "standingWarning": "the local optimum 0.15329 sits inside the losing pair; a local price sweep would have selected it and lost about 8 % on rank",
+    "doesNotJustifyShipping": "see FINDING 386; the controller is non-stationary so the identity alone does not price a price change",
+    "finding": 385
+  },
+  "controllerIsNonStationary": {
+    "method": "faithful re-implementation of costModelDepth and recordAcceptOutcome driven by a stationary Bernoulli target, 120000 steady-state rounds per point",
+    "result": "the shipped controller saturates at cap 7 for every true per-position acceptance at or above 0.90",
+    "noStationaryFit": "the q reproducing each observed mean depth implies acc/prop too low by -0.212 to -0.336, same sign on all five prompts",
+    "mixtureFit": "beagle: 52.4 % easy rounds at cap 7 with q=0.97, rest cut to about 1.5 rows at q=0.70, gives acc/prop 0.796 vs observed 0.834, untuned",
+    "atCapFractionImplied": "roughly half of ranked rounds on the fast prompts are already pinned at the cap",
+    "confirms": "askeladd positive-feedback-selector explanation",
+    "withdraws": "beagleDepthAnomaly",
+    "advisorError": 222,
+    "finding": 386
+  },
+  "rankedDecodeSeparation": {
+    "identity": "decode_seconds_per_token = mtp_seconds_per_token_mean - prefill_seconds_per_token",
+    "prefillIsConstant": "1.0275 to 1.0319 ms per generated token on all eight prompts",
+    "reproducesRoundLaw": "dividing by FINDING 374 round counts reproduces the ranked per-round decode times to the digit",
+    "conversionRecipe": "N=512/(1+A); decode=N*(16.1585+5.3350*(1+d)); leg=decode+512*1.031; raw=37.92/(leg/512)",
+    "finding": 387
+  },
+  "depthCapEightOpenLever": {
+    "constant": "segmentedVerifyDepthCap = 7 at Qwen36MTPBlockSession.swift:1060",
+    "parentOffers": 8,
+    "chunkCodedRange": "attentionWithCacheUpdate splits a 6..9-row causal decode attention (comment :1045)",
+    "measuredRange": "widths 6..8 bit-exact per position (comment :1049); width 9 coded and UNMEASURED",
+    "boardMaxEdl": "botany 6.846; no receipt anywhere exceeds cap 7, empty cell for the whole competition",
+    "perRoundSizing": "depth 7 -> 8.298 ms/token at M=8; depth 8 -> 8.183 ms/token at M=9; -1.39 %",
+    "expectedLegGainPct": "0.7 to 0.8 at a 50-60 % at-cap fraction",
+    "assignedTo": "qwen-edward, E167 F3",
+    "exactnessRisk": "comment :1031 warns drifted K/V rows from one wide forward contaminate every later round and stay invisible to an argmax-only check; 512-token gate required",
+    "dispatchCheck": "G_min(M)=ceil(M/5) puts M=8 and M=9 both in G=2, no new weight-stream pass expected; confirm from dispatch"
   }
 }

@@ -67033,3 +67033,230 @@ draw-neutral replicable part +0.2071 %.
   5.3350 ms ranked marginal verified row, 63.8 % of the ranked beagle round and
   66.4 % of essays, and the only LAW 377 channel that transfers at better than
   1x. Our `h = 5.3408 ms` is already the lowest on the board.
+
+## Entry 353 — 2026-08-24T04:05:00Z — The published score is a two-term formula, our replicable gap to the crown is 0.061 %, and the only empty cell on the board is a depth cap we set ourselves
+
+Advisor analysis cycle. No GPU used. All numbers below come from the official
+`per_prompt` metrics of 956 scored 512-token parity-ok receipts on the live
+Yukon board (snapshot `/tmp/board_t11.json`, 1298 rows, 04:00Z), from the
+maintained source tree at `ca3181bd`, and from a faithful re-implementation of
+the shipped depth controller.
+
+### FINDING 382 — the published score is exactly two prompts
+
+Recomputing the median from the eight per-prompt `raw_ratio_of_means` values
+reproduces `officialScore` to better than 5e-15 on our receipt, the crown, the
+crown's parent and B1:
+
+```
+published = 0.5 * beagle_raw + 0.5 * min(essays_raw, medicine_raw, republic_raw, botany_raw)
+```
+
+Board-wide the 4th order statistic is beagle on **936 of 956** receipts (97.9 %)
+and the 5th is one of the four fast prompts on **948 of 956**. Beagle's slot is
+structurally safe: it is 31.5 % slower than the 3rd prompt (travel).
+
+Marginal published weights on our receipt (published 3.70784519):
+
+| lever | d(published)% per 1 % | note |
+| --- | --- | --- |
+| beagle only | **+0.4781** | no saturation |
+| current minimum (essays) only | +0.5219 | **saturates after +0.932 %** |
+| all eight uniformly | +1.0000 | |
+
+Consequence for assignment: **improving a fast prompt that is not the current
+minimum is worth exactly zero.** Raising the minimum and reducing dispersion are
+the same action. This sharpens askeladd's FINDING E (+0.500 % from equalising
+the fast four at zero mean speedup) from a curiosity into a mechanism.
+
+Supersedes the loose reading of FINDING 342.
+
+### FINDING 383 — our replicable gap to the crown is 0.061 %, and resubmitting the same code is hopeless
+
+Per-prompt decomposition of the crown's lead into the runner's serial draw
+(which we cannot cause) and candidate speed (which is ours):
+
+| prompt | serial advantage | mtp advantage | raw advantage |
+| --- | --- | --- | --- |
+| beagle | −0.151 % | +0.248 % | +0.096 % |
+| essays | **+1.126 %** | +0.170 % | +1.298 % |
+| medicine | −0.007 % | +0.085 % | +0.078 % |
+| republic | −0.431 % | +0.171 % | −0.260 % |
+| botany | +0.054 % | +0.181 % | +0.236 % |
+
+**The crown's code is only about 0.17 % faster than ours, uniformly.** Its board
+position comes from one essays serial draw at z = +5.12 against the board mean
+(sd 0.236 %, n = 956). Put that draw at the mean and the crown's published falls
+to 3.71126, against our 3.70899 at mean serial. This independently confirms
+askeladd's FINDING D from the opposite direction.
+
+Simulation of a resubmission of our exact candidate, candidate times held fixed,
+serial times drawn from the board's own per-prompt distributions, 200,000 draws:
+
+| candidate speed | P(beat crown 3.72911) | mean | p5 | p95 |
+| --- | --- | --- | --- | --- |
+| as submitted | **0.1 %** | 3.70896 | 3.69859 | 3.71934 |
+| 0.5 % faster | 40.9 % | 3.72764 | 3.71722 | 3.73804 |
+| 1.0 % faster | **99.7 %** | 3.74648 | 3.73602 | 3.75697 |
+| 2.0 % faster | 100 % | 3.78472 | 3.77411 | 3.79526 |
+
+**One percent of candidate MTP time takes the crown with near certainty.** That
+is the campaign target and every brief should be priced against it.
+
+The min-of-four order statistic contributes **0.000 %** of noise penalty: the
+four fast prompts are 1.6 % apart, far outside the 0.24 % serial noise, so the
+minimum is effectively deterministic. Dispersion matters through its level, not
+through draw risk.
+
+### FINDING 384 — the parent offers 8 draft rows to everybody, always
+
+`mtp_max_draft_depth = 8` and `mtp_depth = 8` on **956 of 956** scored receipts.
+Askeladd refuted the same hypothesis independently at source
+(`QwenRuntimeMTPDriver.swift:141-150`): the offer is a function of the configured
+depth, the trusted constant `qwenMTPMaxDraftDepth`, and `remaining - 1` only. The
+prompt is not an input, and the ranked host runs this same trusted driver.
+
+**ADVISOR ERROR 221.** FINDING 381's third candidate — an external per-prompt
+`offeredDepth` cap explaining beagle's shallow drafting — is dead. I proposed it
+as the largest and cheapest of three explanations. It was cheap and wrong.
+
+### FINDING 385 — the depth-price identity, and it explains four historical ranked receipts
+
+The shipped rule extends while `reach > c*(1+A)/(1 + d*c)`. The true marginal
+rule under a round law `R(M) = s + h*M` extends while
+`reach > h*(1+A)/(s + h*(1+d)) = (1+A)/(s/h + 1 + d)`. These agree if and only if
+
+```
+c* = h / (s + h)
+```
+
+| host | s (ms/round) | h (ms/row) | c* |
+| --- | --- | --- | --- |
+| ranked M5 Max | 16.1585 | 5.3350 | **0.24821** |
+| local M4 Pro | 47.756 | 8.6457 | **0.15329** |
+| shipped constant | | | 0.18000 |
+
+The source comment at `:1072-1088` records four ranked price arms. Ordering them
+by distance from the ranked `c*` reproduces the score order almost exactly:
+
+| c | ranked score | \|c − c*\| | rank by score | rank by distance |
+| --- | --- | --- | --- | --- |
+| 0.18 | 2.92000 | 0.06821 | 1 | 1 |
+| 0.32 | 2.84585 | 0.07179 | 2 | 2 |
+| 0.15 | 2.66700 | 0.09821 | 4 | 3 |
+| 0.14 | 2.76600 | 0.10821 | 3 | 4 |
+
+Only the 0.14/0.15 pair swaps, and they differ by 0.01 in `c`. **The local
+optimum 0.15329 sits inside the losing pair.** This is a concrete, standing
+warning: a local price sweep would have selected 0.153 and lost 8 % on rank. It
+is the clearest instance yet of the local/ranked causal boundary in
+`program.md`.
+
+The identity does not by itself justify shipping `c = 0.24821`; see FINDING 386.
+
+### FINDING 386 — the shipped controller cannot be described by any stationary acceptance rate
+
+I re-implemented `costModelDepth` and `recordAcceptOutcome` exactly — cold prior
+`0.85*pow(0.98,i)`, `acceptEMAAlpha = 0.15`, reject update to 0.0, full-accept
+optimism transfer capped at 0.95, `c = 0.18`, cap 7 — and drove it with a
+stationary Bernoulli target for 120,000 steady-state rounds per point.
+
+**It saturates at the cap for every true per-position acceptance at or above
+0.90.** Solving for the `q` that reproduces each ranked mean depth gives an
+acc/prop that is far too low, with the same sign on all five prompts:
+
+| prompt | q needed for observed depth | implied acc/prop | observed | error |
+| --- | --- | --- | --- | --- |
+| beagle | 0.8000 | 0.545 | 0.834 | −0.289 |
+| republic | 0.8216 | 0.567 | 0.903 | −0.336 |
+| essays | 0.8272 | 0.573 | 0.897 | −0.324 |
+| medicine | 0.8363 | 0.583 | 0.892 | −0.309 |
+| botany | 0.8838 | 0.653 | 0.866 | −0.212 |
+
+A two-state mixture fits beagle immediately: 52.4 % easy rounds at the cap with
+q = 0.97, the rest cut to about 1.5 rows at q = 0.70, giving acc/prop 0.796
+against the observed 0.834 from an untuned two-parameter guess.
+
+**Askeladd's positive-feedback-selector explanation is confirmed.** The
+controller is not defective; it is tracking genuinely non-stationary text. Roughly
+half of the ranked rounds on the fast prompts are already **pinned at the cap**.
+
+**`beagleDepthAnomaly` is withdrawn.** It was never a beagle fact and never an
+anomaly; it was my stationary model applied to an adaptive controller.
+
+**ADVISOR ERROR 222.** The value table I sent askeladd in E168 F2 §6
+(+1.4 % to +4.4 % published from moving all five drafting prompts to a model
+optimum) assumed one stationary `q` per prompt. A stationary model necessarily
+overstates the value of forcing depth, because it spreads the hard rounds' low
+acceptance evenly instead of letting the controller avoid them. Retracted in F3
+as an oracle ceiling, not available headroom.
+
+**CLOSED AXIS — `acceptEMAAlpha`.** I hypothesised that alpha = 0.15 was fast
+enough for estimator noise to cost depth through Jensen's inequality. Measured in
+simulation at q = 0.9335: mean depth 6.880 at alpha 0.15 against 7.000 at alpha
+0.01, worth about +0.13 % of decode, and it would slow adaptation on exactly the
+non-stationary text that turns out to matter. Do not reopen without new evidence
+that the estimator, not the text, is the limiter.
+
+### FINDING 387 — ranked decode separates exactly, and confirms the round law per prompt
+
+`decode_seconds_per_token = mtp_seconds_per_token_mean − prefill_seconds_per_token`,
+both present in `officialMetrics.per_prompt`. Dividing by the FINDING 374 round
+counts reproduces the ranked per-round decode times to the digit:
+
+| prompt | mtp ms/tok | prefill ms/tok | decode ms/tok | rounds | ms/round |
+| --- | --- | --- | --- | --- | --- |
+| drama | 17.8803 | 1.0275 | 16.8528 | 252 | 34.241 |
+| travel | 15.6379 | 1.0319 | 14.6060 | 213 | 35.109 |
+| beagle | 10.6961 | 1.0317 | 9.6644 | 110 | 44.983 |
+| republic | 9.6975 | 1.0290 | 8.6684 | 93 | 47.723 |
+| essays | 9.8233 | 1.0308 | 8.7925 | 92 | 48.932 |
+| medicine | 9.7036 | 1.0287 | 8.6749 | 90 | 49.350 |
+| botany | 9.6485 | 1.0305 | 8.6180 | 81 | 54.474 |
+| plutarch | 30.1213 | 1.0298 | 29.0915 | 488 | 30.522 |
+
+Prefill is 1.0275 to 1.0319 ms per generated token on every prompt — effectively
+a constant. Any student may now convert a measured round bookkeeping
+`(mean depth d, accepted extra per round A)` straight to a ranked prediction:
+
+```
+N = 512/(1+A);  decode = N*(16.1585 + 5.3350*(1+d));  leg = decode + 512*1.031
+raw = 37.92 / (leg/512)
+```
+
+### THE OPEN LEVER — `segmentedVerifyDepthCap = 7` while the parent offers 8
+
+Three facts line up:
+
+- the parent offers 8 draft rows on every round of every receipt (FINDING 384);
+- the sdpa exactness chunk at `Qwen36MTPBlockSession.swift:1045` is coded for a
+  **6..9-row** split, but the measured claim at `:1049` is only *"widths 6..8
+  bit-exact"* — **width 9 is coded and unmeasured**;
+- the maximum `effective_mean_draft_len` anywhere on the board is botany 6.846.
+  **No solver has ever exceeded cap 7.** This is an empty cell for the whole
+  competition, not just for us.
+
+Sizing one released at-cap round with the ranked round law: depth 7 gives 8.298
+ms/token at M=8, depth 8 gives 8.183 ms/token at M=9, a 1.39 % improvement. At the
+50 to 60 % at-cap fraction implied by FINDING 386 that is roughly 0.7 % to 0.8 %
+of the ranked leg — which FINDING 383 prices at close to a 90 % chance of the
+crown.
+
+Assigned to Edward as E167 F3 while `180db842` validates. Exactness first, at 512
+tokens, with a one-ulp positive control, because the comment at `:1031` warns that
+drifted K/V rows from one wide forward contaminate every later round and stay
+invisible to an argmax-only check. A clean refutation is a complete result: it
+converts a coded-but-unproven range into a measured boundary.
+
+`G_min(M) = ceil(M/5)` puts M=8 and M=9 both in G=2, so no new weight-stream pass
+is expected at width 9; that must still be confirmed from the dispatch.
+
+### State of the round
+
+- Edward, PR #166: `180db842` still validating at 04:00Z, 70 minutes elapsed. Official slot held. Now also carrying the cap-8 question.
+- Thorfinn, PR #165: cross-round head-chain prefetch built, gated and witnessed with a one-ulp positive control; 512-token gated ABBA job `18875159` running to about 04:28Z. Targets 0.267 ranked ms/round against our +0.2883 ms/round deficit.
+- Askeladd, PR #168: refuted my Explanation 2 at source before spending GPU time; measured the clamp at 49 % binding but only 9 % depth-removing on the local fixture; `p7` uncensored arm running over eight varied prose prompts. Now also owns the at-cap fraction and the easy/hard depth-bin split.
+- Alphonse, PR #169: marginal verified row decomposition, just started.
+
+Three of the four live experiments target a channel capable of the 0.5 % to 1.0 %
+needed for the crown. That is the right portfolio.
