@@ -71739,3 +71739,68 @@ fetched advisor tip at Stage 3 (its branch base predates the fix); E189 reminded
 RULE 384 manually (its branch predates the wrapper SWIFT-GUARD).
 
 Numbering next free: FINDING 498, Entry 394, RULE 387, HARNESS DEFECT 44.
+
+## Entry 394 — 2026-08-24T16:25Z — E194 Stage 0 accepted (Route 2′); FINDINGs 498–499 close the stream and vector-call axes
+
+**E194 Stage 0 (PR 191, Edward, head fcab052c) ACCEPTED; build approved.** Chosen route is a
+refinement of menu Route 2, named Route 2′: ONE sequence-major query materialization in
+`Vendor/mlx-swift-lm/Libraries/MLXLMCommon/AttentionUtils.swift` (`attentionWithCacheUpdate`,
+split branch, lines 106–142 only). `queries.transposed(0,2,1,3).contiguous()` then a
+transposed view `[1, H, qL, D]` with strides `[·, 256, 6144, 1]`, which satisfies
+`q_copy_unless`'s second layout (`shape[0]==1`, `strides[3]==1`,
+`strides[2]==shape[3]*shape[1]`, `strides[1]==shape[3]`), and every axis-2 row slice keeps
+those strides. Two mechanisms:
+1. The two per-chunk query copies (g2_copy ×2/FA layer) disappear; one transpose copy is paid
+   instead (net −1 dispatch of 5–6 extra). Census cross-check: the E191 `headTransposed` arm
+   already shows the split adds ZERO query copies under this layout.
+2. The MLX memory barrier between the two SDPA calls disappears (barriers are emitted only on
+   true buffer dependency, `device.cpp:315–348`; today's `g2_copy, sdpa, g2_copy, sdpa` RAW
+   chain forces one; with one shared query buffer, sdpaB reads a `prev_inputs_` member and
+   writes fresh output → no barrier → the two under-occupied calls (24×5 and 24×(m−5)
+   threadgroups) can overlap inside ONE stream. Route 3's benefit without streams.
+
+**Predeclared recovery (harness=local, g16s, from the merged E191 census):** step separates
+into fixed + per-row (kv512: 86.9 µs/layer + 11.8 µs/row; kv1024: 98.0 + 23.0). Route 2′
+attacks only the fixed part: dispatch term 0.05–0.32 ms/round + barrier/overlap term
+0–0.33 ms/round = **0.10–0.65 ms/round, point 0.30 ms/round (≈0.53 MUE)**. Edward flagged
+honestly that the point estimate sits below the CONTINUE bar and predeclared it anyway.
+
+**Advisor ruling on the sub-threshold question:** the written stop rule stands — STOP at
+Stage 2 if recovery − 2σ ≤ 0.5 ms/round; NO standalone Stage 3. A clean positive in
+(0, 0.5) ms/round is labelled **"Not useful (standalone) — composition material"** and enters
+the composition plan (pairs with E192's persistent rollback slot, also sub-MUE). Requirement:
+the FULL Stage-1 gate chain (barrier census, bf16 value gate with positive control, end-to-end
+exact-token + row-ledger, RULE 384 fingerprint) completes regardless of the timing outcome and
+is archived in research/, so composition later needs no rework. The barrier census is a
+first-class result either way: the barrier slot is the one unmeasured part of FINDING 497's
+mechanism and prices Route 1 and future overlap work. Named trap to measure, not assume:
+allocator recycling can force a spurious barrier via `set_output_array`'s `prev_outputs_`
+check.
+
+**FINDING 498 (stream axis CLOSED on this base).** Two-stream SDPA overlap is unreachable:
+`StreamOrDevice.stream(_:)` discards its argument and returns the device default stream
+(`Vendor/mlx-swift/Source/MLX/Stream.swift:54–56`), so per-call stream routing is silently a
+no-op; `Stream.swift` is NOT in editablePaths, so fixing it cannot ship;
+`Stream.withNewDefaultStream` is unsafe here (MLX 0.32 thread-local command encoder — GPU work
+that hops threads aborts; campaign pins one process-global stream, per the repository's own
+comment at Stream.swift:84–110); and a cross-stream join needs an Event signal+wait per FA
+layer, forcing a command-buffer boundary 16×/round. Single-stream barrier removal (Route 2′)
+is the correct form of overlap on this base.
+
+**FINDING 499 (single-vector-call axis CLOSED for m≥6).** `supports_sdpa_vector` requires
+`qL <= 8 && qL*gqa <= 32` with `gqa = q.shape(1)/k.shape(1) = 24/4 = 6` — a RATIO, so no
+reshape lowers it. Batch-major query moves keep 6 query heads per KV head; broadcasting keys
+to 24 heads materializes a stride-0 axis; a stride-0 batch axis fails `kv_copy_unless`'s
+`strides[0] == strides[1]*shape[1]` and reintroduces the whole-KV copy FINDING 496 priced at
+−1.903 ms/round; `qL <= 8` excludes m=9 outright. Route 4 cannot be made copy-free.
+
+**Correction for the record:** the assignment menu's Route-1 file path was wrong — the fused
+`qwen35AttentionQKRMSRoPE` kernel lives at
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` (there is no
+`Sources/MLXFastModel/Qwen35.swift` on this base). E189 collision reasoning unchanged.
+
+**Base-change disposition:** E194 base 80abd5ac → 8323ec4d is ledger-only (Entry 393); no
+rebase, no replay. Scope precondition ordered before build: `validate-assignment-scope.sh` +
+`check-editable-budget.sh` must confirm `AttentionUtils.swift` on the editable surface.
+
+Numbering next free: FINDING 500, Entry 395, RULE 387, HARNESS DEFECT 44.
