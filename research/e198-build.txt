@@ -1,0 +1,21 @@
+experiment=e198-route1-row-amortized-kernel
+tree=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-edward/workspace/target
+organizer_sha=0863b06ac16e26e48fc06e97444095b00feb66d4
+assignment_head=bcde8dffa16339623dc06884a2b867e715749d9a
+worktree_clean=true
+scored_diff_vs_organizer=7 files +1495 -246
+worker_sha256=877b1e20c6ef40f2455276f54e86c702c1b56e4d97f82e631fc1f9e0d5527510
+cli_sha256=cf5819008c4c1184edbc3fdc4895e0e497084a0d97bd7ae6c1df3dd1037f470d
+metallib_sha256=5d6e3f9f1438dc5d6e99423b720d66676b08a3c92a204c1e3fd8b6b0ecaef91d
+metallib_fingerprint=ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50
+needle_kernel_name=1
+needle_causal_rule=1
+needle_arm_switch=1
+needle_control_trace=3
+twin_audit<<EOF
+OK ternary: 1 vendored section(s), 0 normalized toolchain section(s)
+OK ternary_ops: 1 vendored section(s), 0 normalized toolchain section(s)
+OK unary: 1 vendored section(s), 0 normalized toolchain section(s)
+OK unary_ops: 5 vendored section(s), 0 normalized toolchain section(s)
+TWIN AUDIT OK: 29 runtime-effective twin(s), 1 allowlisted comment-only waiver(s) (non-comment lines byte-identical, both comment streams sha256-pinned)
+EOF

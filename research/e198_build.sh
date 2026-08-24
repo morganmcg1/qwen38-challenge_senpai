@@ -37,6 +37,10 @@ causal_count="$(count_in_worker "${causal_needle}")"
 arm_count="$(count_in_worker "${arm_needle}")"
 control_count="$(count_in_worker "${control_needle}")"
 
+# Read the worktree state BEFORE `tee` creates the record, which would
+# otherwise report itself as an untracked file.
+worktree_clean="$([[ -z "$(git status --porcelain)" ]] && echo true || echo false)"
+
 status=0
 if [[ "${control_count}" -eq 0 ]]; then
   echo "e198_build: positive control '${control_needle}' absent; the string probe is broken" >&2
@@ -54,7 +58,7 @@ done
   echo "tree=${PWD}"
   echo "organizer_sha=$(git rev-parse upstream/main)"
   echo "assignment_head=$(git rev-parse HEAD)"
-  echo "worktree_clean=$([[ -z "$(git status --porcelain)" ]] && echo true || echo false)"
+  echo "worktree_clean=${worktree_clean}"
   echo "scored_diff_vs_organizer=$(git diff --numstat upstream/main -- Sources Vendor | awk '{a+=$1; d+=$2; n+=1} END {printf "%d files +%d -%d", n, a, d}')"
   echo "worker_sha256=$(shasum -a 256 "${worker}" | cut -d' ' -f1)"
   echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
