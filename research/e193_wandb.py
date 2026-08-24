@@ -38,6 +38,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 import statistics as st
 import subprocess
@@ -129,6 +130,65 @@ def publish_leg(leg: dict, base_sha: str, tokens: int) -> tuple[str, str]:
     return run_id, url
 
 
+def publish_confirmation(
+    score_path: pathlib.Path, base_sha: str, candidate_sha: str,
+    worker_sha256: str, entry_temps_c: list[float],
+) -> tuple[str, str]:
+    """The single 512-token gated --local-submit confirmation.
+
+    Unlike the Stage 1 screen legs this run IS gate-qualified: both timed legs
+    passed the real 40C cool gate. It carries no arm contrast, because there is
+    only one arm once the switch is deleted.
+    """
+    payload = json.loads(score_path.read_text())
+    metrics = payload["metrics"]
+
+    run = wandb.init(
+        entity=ENTITY,
+        project=PROJECT,
+        name="e193-stage2-confirmation-512",
+        job_type="e193-stage2-confirmation",
+        tags=["e193", "e165-retest", "harness=local", "gate-qualified",
+              "local-submit", "tokens=512"],
+        config={
+            "harness": "local",
+            "experiment": "e193-e165-round-start-prefetch-retest",
+            "stage": "stage2-confirmation",
+            "base_sha": base_sha,
+            "candidate_sha": candidate_sha,
+            "worker_sha256": worker_sha256,
+            "local_mode": "--local-submit",
+            "decode_tokens": metrics["decode_tokens"],
+            "mtp_depth": metrics["mtp_depth"],
+            "cool_gate_passed_real_gate": True,
+            "gate_qualified_for_timing": True,
+            "gpu_temp_entry_c_serial": entry_temps_c[0],
+            "gpu_temp_entry_c_mtp": entry_temps_c[1],
+            "arm": "on-unconditional",
+        },
+    )
+    run.summary.update({
+        "local_submit_passed": payload["passed"],
+        "local_decode_speedup": payload["score"],
+        "serial_seconds_per_token": metrics["serial_seconds_per_token"],
+        "mtp_seconds_per_token": metrics["mtp_seconds_per_token"],
+        "effective_mean_draft_len": metrics["effective_mean_draft_len"],
+        "accepted_draft_rate": metrics["accepted_draft_rate"],
+        "all_tokens_matched": metrics["all_tokens_matched"],
+        "residual_divergence_count": metrics["residual_divergence_count"],
+        "public_drift_tripwire_passed": metrics["public_drift_tripwire_passed"],
+        "uses_pinned_mtp_head": metrics["uses_pinned_mtp_head"],
+        "head_provenance_sha256": metrics["head_provenance_sha256"],
+        # The local ratio is NOT a ranked estimate: both legs run the candidate
+        # build and the reference rows are candidate-generated.
+        "rankable": metrics["rankable"],
+        "not_rankable_reason": metrics["not_rankable_reason"],
+    })
+    run_id, url = run.id, run.url
+    run.finish()
+    return run_id, url
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-name", required=True)
@@ -136,7 +196,20 @@ def main() -> int:
     parser.add_argument("--base-sha", required=True)
     parser.add_argument("--per-leg", action="store_true",
                         help="also publish one run per timed leg")
+    parser.add_argument("--confirmation-json", type=pathlib.Path,
+                        help="publish ONLY the 512-token gated confirmation")
+    parser.add_argument("--candidate-sha")
+    parser.add_argument("--worker-sha256")
+    parser.add_argument("--entry-temps-c", nargs=2, type=float,
+                        metavar=("SERIAL", "MTP"))
     args = parser.parse_args()
+
+    if args.confirmation_json:
+        run_id, url = publish_confirmation(
+            args.confirmation_json, args.base_sha, args.candidate_sha,
+            args.worker_sha256, args.entry_temps_c)
+        print(f"confirmation {run_id}  {url}")
+        return 0
 
     legs = load_legs(args.label)
     mtp = {a: [x["mtp"] for x in legs if x["arm"] == a] for a in ("off", "on")}
