@@ -70530,3 +70530,66 @@ walk-free-below-cap 5/111; fewer rows (548 vs 568) across MORE rounds (111 vs
   e173FInventory items 1+4, maintainedBaseChanges ship-pattern note,
   submissionQueue, FINDINGs 433–437, RULE 376, ADVISOR ERROR 237, ledgerEntry
   370.
+
+## Entry 371 — 2026-08-24T09:12Z — D's per-prompt table lands, the tree correction re-frames the confound, and E175 is amended before a bad build
+
+### FINDING 438 — receipt D decomposed at the prompt level, and the tree was not what the ladder said
+
+Thorfinn (interim 6, W&B `fdi6ute3`) pulled `officialMetrics.per_prompt` for
+`2c885d64` and reproduced the published median exactly (mean of 3.51403 and
+3.80239 = 3.658209010; head provenance `559b24ebca35` on all eight prompts).
+The 8-vector is now campaign property (frontier-state
+`perPromptReceiptTable2c885d64`).
+
+The bigger result is from the frozen object itself:
+`git diff 0863b06a 4ba44f82` = **five files** — BlockSession.swift (444 lines,
+incl. E165) plus the four quantized files — and **no `Qwen35.swift`**. So:
+
+- D **carries Q**; the strip removed the campaign x-sums sidecar.
+- **D vs C is a FOUR-factor difference** (Q present, sidecar removed,
+  BlockSession instrumentation removed, E165 on).
+- **Vs A the strip is not a factor at all**: D/A = −1.34 % =
+  Q-without-sidecar × E165 (× ~30 pre-existing BlockSession lines).
+  My Entry-370 "three-factor confound" framing undercounted; corrected.
+- **Leading suspect (Thorfinn):** the Qwen35.swift x-sums sidecar FEEDS the Q
+  kernels on M5, worth ~0.6 % of candidate leg. Receipt B — the only +1.00 %
+  Q evidence (B/C) — carried the sidecar; D did not. Second suspect: E165
+  negative on ranked M5. The split is E171 r2's deliverable.
+
+### E175 amended before Edward built the wrong candidate (F1, PR 174)
+
+My original E175 spec (organizer-pure + four Q files, no sidecar) is exactly
+D's failure combination. Amended: **Q-complete five-file candidate** =
+upstream/main + four quantized files + campaign `Qwen35.swift` with only its
+instrumentation counter deleted — receipt B's composition minus
+instrumentation minus E165. Precondition: Edward proves the coupling from
+source (do campaign kernels take an x-sums input organizer kernels do not?).
+Coupled → build five-file. Uncoupled → HOLD for ruling; an uncoupled sidecar
+that moves ranked time 0.6 % is a mechanism we do not understand, and we do
+not ship those. Central prediction 3.74 ± 0.01; decision rule unchanged.
+Askeladd's cap-4 is unaffected (carries no Q, no sidecar) and keeps the slot.
+
+### FINDING 439 — tau ≈ 0 ranked; powermetrics leg declined
+
+Both of Thorfinn's routes put the local host-per-round idle-window transfer at
+~0: local idle work does not convert into official score. Ruling delivered:
+skip the powermetrics residency leg (fresh clone = full release build +
+metallib rebuild for zero ranked value). Consequence recorded: e173 item-2
+(kernel-record cache, 1.284 ms/round host) must justify itself on absolute
+candidate-leg time, not on tau.
+
+### Protocol notes
+
+- PR 171 is at r2 (my 08:52Z request crossed his interims); ruling delivered:
+  fold the typed terminal result now — official score, per-prompt table, both
+  tau routes, E162 recommendation ("stays in", worth −0.575 % to remove per
+  FINDING 412), strip-package regression split, and predictions for both
+  queued receipts.
+- The frozen SHA `4ba44f82` is now in origin (F5 §1 closed by the typed-result
+  push channel).
+- research_base_changed events for PRs 166/168/171/173 from the 4bcdb0df merge
+  and bd58c55c record publish are informational — research/- and senpai/-only;
+  no replay owed.
+- Thorfinn flagged: the new-generation live workspaces are fresh clones with no
+  `.build`/`.build-worker`; every next GPU experiment pays one release build +
+  metallib rebuild before its first leg. Budget accordingly in briefs.
