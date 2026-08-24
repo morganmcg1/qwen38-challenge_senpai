@@ -70931,3 +70931,74 @@ prefill penalty (FINDING 447) transfers to M5.
   ruling follows.
 - Askeladd: E177 next — ranked depth-law recovery from the two paid controlled receipts
   (desk-first, organizer-pure workspace already built).
+
+## Entry 377 — 2026-08-24T10:35Z — FINDING 450: Q has no decode channel (E175 is now a three-model discriminator); FINDING 451: fill-cost bracket + Alphonse pivot ruling; ADVISOR ERROR 238
+
+### FINDING 450 — the Q-consuming decode set is empty (Thorfinn E176 interim 1; advisor source-verified)
+
+`get_qmv_batch_limit` (`quantized.cpp:84-125`) returns its 14/10/6 table only for
+`arch_gen 13/14`; g16s (gen 16) and every nax-capable host (gen ≥ 17) take 18/12/10 —
+minimum **10**. Decode width M = d+1 ≤ 9 never crosses it, so every transposed decode cell
+dispatches to `qmv`; no decode site folds M (all 257 wide QMV calls are x=[1,M,K], M ≤ 9);
+`qmm_t_splitk` is dead (entry 258). Q edits only the `qmm_t` family ⇒ **Q's ranked exposure
+is prefill-only** (the M≈512 seed). Probe: `research/e176_arch_probe.swift`. This completes
+ADVISOR-ERROR-225 and falsifies the decode half of the FINDING 440 Q attribution *if the
+E175 receipt confirms it*.
+
+Consequence: B−C = −0.6691 % mean7 candidate-leg cannot be Q-decode, and Q-prefill goes the
+wrong way (C→B prefill +2.17 % × 6.78 % share ⇒ B *slower* ~+0.15 %). B−C therefore needs a
+~−0.8 % non-code component in receipt C — converging with Edward's independent C/A −1.08 %
+anomaly. **Receipt-C-outlier hypothesis is live.** FINDING 444's cross-host corroboration is
+flagged as an UNRESOLVED CONFLICT (its derived local Q ≈ −0.88 % decode is forbidden by the
+same census); do not cite the 0.76 transfer ratio until a direct local pair with separated
+prefill/decode settles it.
+
+### Three-model registration at the E175 receipt (all frozen pre-receipt)
+
+| model | central | mechanism |
+|---|---|---|
+| advisor (B−C route) | 3.7328 / 3.7267 | B−C is a real Q decode gain |
+| edward (prefill-adjusted) | 3.7218 / 3.7157 | M4 prefill penalty transfers to M5 |
+| thorfinn (census, 10:24Z) | ~3.700–3.704 | Q prefill-only: A × (1 − 0.0678 × 1.936 %) |
+
+Reading rule updated (F7 on PR 174): ≥3.7291 promote and the census needs a named hole;
+3.71–3.729 compose band; **≤3.705 → Q leaves the ship set, receipt C declared an outlier,
+FINDING 440 re-opens, A-replay contingency prices the receipt channel itself.** Edward will
+extract the per-prompt prefill/decode split at the receipt — the three models separate there
+even if the scalar is ambiguous.
+
+### ADVISOR ERROR 238
+
+The E176 brief carried FINDING 390's `get_qmv_batch_limit = 6` arithmetic although
+ADVISOR-ERROR-225 had already corrected the routing fact; the arch-gen guard was never
+re-read. Caught by Thorfinn with a first-hand device probe. Lesson: when a finding is
+corrected, grep later briefs and findings for its residue.
+
+### FINDING 451 — standalone x-sums fill cost bracket (Alphonse E174 screen, W&B `7ueick4f`)
+
+Eight gated 512-token legs, all `gate_qualified_for_timing=true`, entry-temp spread 2.94 °C,
+tokens digit-identical across arms. **One standalone fill dispatch + host kernel record =
+4.0–5.3 µs** candidate MTP wall time (lower bound o−s: +0.3849 % leg, 699.1 µs/round, 127
+cells, 5.505 µs/cell; upper bound f−r: +0.5190 %, 981.9 µs/round, 257 cells, 3.820 µs/cell;
+bounds cross ⇒ bracket, not a point). RETRACTION accepted: f−r is grade C (different
+consumer pipeline objects — the E135/F41 caveat, rediscovered); o−s grade B; f−o grade A. My
+earlier ruling that f−r was the only admissible pricing path is struck.
+
+**Pivot ruling (feedback on PR 173):** dedup census first — count distinct activation
+identities among the ~257 standalone `xsumsTable(x)` calls/round (the machinery `Slot`/
+`take`/`publish` exists; several routed cells reading one normed activation each pay their
+own fill). ≥20 % dupes → smallest opt-in dedup arm + one ABBA gated pair; <20 % → CPU-side
+record-creation probe gates the item-2 record cache (dead by arithmetic if record-creation
+< 1 µs); BF16 gate parked. The sidecar/replica is organizer code, so this cost is paid on
+the shipped tree. Post-FINDING 449, LAW 377's 0.34× per-round-fixed transfer is suspect:
+price any local win as a mechanism result; a receipt prices ranked.
+
+### Board
+
+- E175 `15017ddf` validating (~11:00–11:30Z terminal expected); Edward holds the watcher.
+- Askeladd: E177 assigned (PR 176), depth-law recovery, desk-first.
+- Thorfinn: tasks 2–3 (null calibration, Q 8-vector fit) → typed result.
+- Alphonse: dedup census → probe/arm per ruling.
+- research_base_changed events for PRs 168/173/174/175 this cycle are advisor record-only
+  publishes plus the PR 168 merge; no experiment replay is required (reasoning recorded in
+  the PR 168 accept and here).

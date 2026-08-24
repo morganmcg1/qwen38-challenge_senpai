@@ -97,7 +97,8 @@
   "ADVISOR ERROR 234 - presented FINDING 413 as a three-regime identification. tablePays(m) = m >= 4 at :1758 is a second gate, so there are four regimes and rounds at m = 2 and m = 3 route without incrementing. Enumerate every guard on a path before claiming the path partitions the evidence.",
   "ADVISOR ERROR 235 - relayed 'the receipt is silent on per routed cell' to two students. Per-routed-cell and per-drafting-round are collinear at 257 to 1 and no receipt can separate them. A flat regression on a collinear predictor is a power statement, not a refutation. Withdrawn within the same turn.",
   "ADVISOR ERROR 236 - approved Thorfinn's four-leg s0 s1 s1 s0 schedule on the ship path while the campaign was three times behind on submission cadence. program.md's evidence ladder asks for ONE thermally gated 512-token --local-submit confirmation and places large timing matrices after the receipt. The second s1 and second s0 bought only timing replication, which could not change the ship decision because the stop branch had already been removed. General lesson: when a stop branch is removed, every measurement that could only have fed that branch must be removed with it. Leaving it in place is not caution; it is unpriced delay on the ship path.",
-  "237: assigned E174 onto the E160-closed epilogue axis without a ledger grep; caught by qwen-alphonse; RULE 376."
+  "237: assigned E174 onto the E160-closed epilogue axis without a ledger grep; caught by qwen-alphonse; RULE 376.",
+  "238: the E176 brief carried FINDING 390's get_qmv_batch_limit=6 arithmetic although ADVISOR-ERROR-225 had already corrected the routing fact; the arch-gen guard (13/14-only for the 14/10/6 table) was never re-read. Caught by qwen-thorfinn with a first-hand device probe. Lesson: when a FINDING is corrected, grep later briefs and findings for its residue."
  ],
  "b1Prize": {
   "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
@@ -1246,7 +1247,8 @@
   "routableGuards": "Qwen35.swift:1770-1794 \u2014 bits 4, groupSize 64, affine, bf16/uint32, w.dim(1)==k/8, k%512==0, n%8==0, n>=4096, m in widths, x.dim(-2)==m, row contiguity. NO device gate, no is_nax_available, no GPU generation test.",
   "seedPrefill": "M = 512 is outside widths, falls through to MLX quantizedMM and therefore qmm_nax on the M5. Receipt-only.",
   "source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
-  "widths": "2 ... 9 at Qwen35.swift:1704"
+  "widths": "2 ... 9 at Qwen35.swift:1704",
+  "census": "FINDING 450 (E176): complete decode cell census confirms ADVISOR-ERROR-225 and extends it to every arch_gen except 13/14; the E176 brief inherited FINDING 390's limit-6 arithmetic (ADVISOR ERROR 238)"
  },
  "rankedDecodeSeparation": {
   "conversionRecipe": "N=512/(1+A); decode=N*(16.1585+5.3350*(1+d)); leg=decode+512*1.031; raw=37.92/(leg/512)",
@@ -2245,8 +2247,8 @@
   "preparing": null,
   "frozenNext": null
  },
- "lastAdvisorUpdate": "2026-08-24T10:25Z ledger entry 376: receipt 90c131dc REJECTED 3.5474 (cap-4 single-factor, FINDINGs 448-449, RULE 378), PR 168 merged, E175 FIRED as 15017ddf",
- "ledgerEntry": 376,
+ "lastAdvisorUpdate": "2026-08-24T10:35Z ledger entry 377: FINDING 450 Q decode set empty (three-model E175 registration), FINDING 451 fill-cost bracket + pivot ruling, ADVISOR ERROR 238",
+ "ledgerEntry": 377,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2407,7 +2409,9 @@
   "446": "ORGANIZER-PURE SUITE BASELINE. swift test does not compile on organizer 0863b06a with this toolchain (QwenMTPVerbTests.swift:755 concatenated string literals cannot convert to Comment; campaign one-hunk fix applies, Tests/ is outside editablePaths). With the fix: 657 tests, 37 suites, 9 failing test functions, ALL pre-existing organizer state (8 already red on the campaign base; the 9th, theQwenMTPTrackIsArmedOnQwen38, is stale organizer test code expecting the QWEN38-PENDING-RELEASE placeholder in a fixture organizer main now ships armed). Cap-4 frozen tree 99959d49: no regression from the literal. Any failure OUTSIDE this set on an organizer-based tree is signal.",
   "447": "Q LOCAL PREFILL PENALTY. On Edward's M4-class host, the four-file Q edit makes the 512-token seed prefill SLOWER by +1.936% (8/8 same sign, spread 0.154) - the opposite sign of the naive 'Q serves prefill' prior. Plausible mechanism: doubled threadgroup allocations (Ws[2*BN*BK_padded]) hurting occupancy at large M on the smaller GPU. Ranked plutarch bounds the M5 prefill effect near zero, so the prefill term is host-dependent with its own sign per host, like E165's tau < 0. Feeds the E176 model. harness=local. W&B 8bc65oel.",
   "448": "CAP-4 SINGLE-FACTOR RANKED COST. Receipt 90c131dc (organizer-pure 0863b06a + segmentedVerifyDepthCap 7->4, frozen 99959d49, surface e044a583) REJECTED at 3.54742900664627 = -4.33 % published vs receipt A 3.70784519415395. A is itself organizer-pure, so the contrast is SINGLE-FACTOR: exactly one literal. ~23x the candidate-leg 1 sigma 0.189 %. The student-stated extras-removal confound does not exist (corrected in the accept record). The same frozen tree measured -3.97 % candidate time locally: the depth axis inverts between local M4 and ranked M5. Registered central 3.9847 missed by -11 %.",
-  "449": "STEP-LAW RANKED TRANSFER FALSIFIED. FINDING 407's step model priced cap-4 at worst-feasible 4.1637 published (roof 4.3058, already assuming h=2.5 ms); the controlled outcome 3.5474 is 15 % below worst-feasible. groups(M) weight-pass steps are directly measured on local M4 but do NOT price ranked M5 rounds; rough implied ranked ratio M~7/M<=5 = 1.3-1.4x, not 1.77x and not 1.0x. Every step-law-derived ranked verdict is unsupported, including the depth-cap-8 DEAD verdict (reopened, unpriced). The ranked depth law is UNKNOWN with exactly two controlled points; recovery is E177."
+  "449": "STEP-LAW RANKED TRANSFER FALSIFIED. FINDING 407's step model priced cap-4 at worst-feasible 4.1637 published (roof 4.3058, already assuming h=2.5 ms); the controlled outcome 3.5474 is 15 % below worst-feasible. groups(M) weight-pass steps are directly measured on local M4 but do NOT price ranked M5 rounds; rough implied ranked ratio M~7/M<=5 = 1.3-1.4x, not 1.77x and not 1.0x. Every step-law-derived ranked verdict is unsupported, including the depth-cap-8 DEAD verdict (reopened, unpriced). The ranked depth law is UNKNOWN with exactly two controlled points; recovery is E177.",
+  "450": "The Q-consuming decode set is EMPTY at every M on every host that matters. get_qmv_batch_limit (quantized.cpp:84-125) returns its 14/10/6 table only for arch_gen 13/14; g16s (gen 16) and every nax-capable host (gen >= 17, device.cpp:913-925) take 18/12/10, minimum 10. Decode width M = d+1 <= 9 < 10, so every transposed decode cell dispatches to qmv. No decode call site folds heads/chunks into M (all 257 wide QMV calls are x=[1,M,K], M<=9). qmm_t_splitk is dead code on this model (entry 258). Q edits touch only qmm_t/qmm_t_nax/qmm_t_splitk, therefore Q's ranked exposure is PREFILL-ONLY (the M~512 seed). B-C = -0.6691 % mean7 candidate-leg cannot be Q-decode. Q-prefill goes the wrong way (+2.17 % C->B prefill x 6.78 % share = B slower by ~+0.15 %). B-C therefore requires a ~-0.8 % non-code component in receipt C. Converges with Edward's C/A -1.08 % published anomaly: RECEIPT-C-OUTLIER hypothesis. FINDING 440 Q attribution is conditional on the E175 receipt.",
+  "451": "One standalone x-sums fill dispatch plus its host kernel record costs 4.0-5.3 us of candidate MTP wall time. Lower bound o-s (identical consumer): +0.3849 % leg, 699.1 us/round, 127 cells, 5.505 us/cell. Upper bound f-r (different consumer pipelines, grade C): +0.5190 %, 981.9 us/round, 257 cells, 3.820 us/cell. Bounds cross -> bracket, not a point."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2592,7 +2596,8 @@
   "wandb": [
    "u2g6yfjx",
    "f4np59rg"
-  ]
+  ],
+  "conflict": "FINDING 450 forbids the decode channel this cross-check priced: the derived local Q ~= -0.88 % needed ~-1.33 % of local decode, but Q has no decode consumer on g16s either. Status: UNRESOLVED CONFLICT, flagged by thorfinn (E176 interim 1). The settling measurement is a direct organizer-pure vs organizer-pure+Q local pair with prefill and decode logged separately. Do not cite the 0.76 transfer ratio until resolved."
  },
  "yukonTableTruncation": {
   "behaviour": "yukon submissions truncates the submission-ID column to 7 characters",
@@ -2606,19 +2611,6 @@
   "absoluteScale": "travel ~91 ms/leg saved vs botany ~12 ms/leg; not constant per round (650 vs 167 us/round)",
   "mechanismHypothesis": "Q edits qmm_t/qmm_t_nax only. Decode consumers must be non-replica-routable cells (e.g. kv projections n=1024 < 4096) that cross M >= get_qmv_batch_limit(K,N) into the qmm path. Consumption then depends on the per-round M distribution, which differs by prompt.",
   "compositionCritical": "Cap-4 truncates the schedule to M <= 5 ({2:1,4:4,5:106} local). If Q's decode consumers need M >= 6, Q's -0.67% does NOT survive under cap-4 and the cap4+Q composition is mispriced. E176 answers this before the next composition fires."
- },
- "e175TwoModelRegistration": {
-  "rankedRouteCentrals": {
-   "mean7": 3.7328,
-   "scoreSetting": 3.7267,
-   "basis": "B-C = Q = -0.6691% mean7 applied to A (FINDING 440)"
-  },
-  "localPrefillAdjustedCentrals": {
-   "mean7": 3.7218,
-   "scoreSetting": 3.7157,
-   "basis": "edward: local prefill penalty +1.936% (8/8 same sign, spread 0.154) models published Q effect -0.296% below the ranked route; W&B 8bc65oel"
-  },
-  "discriminator": "the E175 receipt: nearer 3.73 => prefill penalty is M4-local (nax vs non-nax qmm_t) and the plutarch bound holds; nearer 3.72 or below => the penalty transfers to M5 and the plutarch-bound reasoning has a hole"
  },
  "rankedDepthTwoPointLaw": {
   "harness": "ranked",
@@ -2637,5 +2629,39 @@
   "magnitude": "-4.33 % published for 7->4, ~+4.5 % candidate-leg, ~23 sigma",
   "localInversion": "same frozen tree was -3.97 % candidate time locally (a win) \u2014 the depth axis inverts between hosts",
   "recovery": "E177 (qwen-askeladd): recover the ranked round-cost law from per-prompt structure of the two receipts"
+ },
+ "qDecodeConsumerSetEmpty": {
+  "finding": 450,
+  "harness": "source",
+  "statement": "The Q-consuming decode set is EMPTY at every M on every host that matters. get_qmv_batch_limit (quantized.cpp:84-125) returns its 14/10/6 table only for arch_gen 13/14; g16s (gen 16) and every nax-capable host (gen >= 17, device.cpp:913-925) take 18/12/10, minimum 10. Decode width M = d+1 <= 9 < 10, so every transposed decode cell dispatches to qmv. No decode call site folds heads/chunks into M (all 257 wide QMV calls are x=[1,M,K], M<=9). qmm_t_splitk is dead code on this model (entry 258). Q edits touch only qmm_t/qmm_t_nax/qmm_t_splitk, therefore Q's ranked exposure is PREFILL-ONLY (the M~512 seed).",
+  "verifiedBy": "advisor first-hand source read 2026-08-24T10:30Z; completes ADVISOR-ERROR-225",
+  "owner": "qwen-thorfinn E176 interim 1 (PR 175), probe research/e176_arch_probe.swift",
+  "consequence": "B-C = -0.6691 % mean7 candidate-leg cannot be Q-decode. Q-prefill goes the wrong way (+2.17 % C->B prefill x 6.78 % share = B slower by ~+0.15 %). B-C therefore requires a ~-0.8 % non-code component in receipt C. Converges with Edward's C/A -1.08 % published anomaly: RECEIPT-C-OUTLIER hypothesis. FINDING 440 Q attribution is conditional on the E175 receipt."
+ },
+ "e175ThreeModelRegistration": {
+  "rankedRouteCentrals": {
+   "mean7": 3.7328,
+   "scoreSetting": 3.7267,
+   "basis": "B-C = Q = -0.6691% mean7 applied to A (FINDING 440)"
+  },
+  "localPrefillAdjustedCentrals": {
+   "mean7": 3.7218,
+   "scoreSetting": 3.7157,
+   "basis": "edward: local prefill penalty +1.936% (8/8 same sign, spread 0.154) models published Q effect -0.296% below the ranked route; W&B 8bc65oel"
+  },
+  "discriminator": "three-way: >=3.7291 promote and the census claim needs a named hole; 3.71-3.729 prefill-penalty-transfers (edward) / compose band; <=3.705 census model wins -> Q leaves the ship set, receipt C declared an outlier, FINDING 440 attribution re-opens, A-replay contingency prices the receipt channel",
+  "censusCentrals": {
+   "range": "3.700-3.704",
+   "basis": "thorfinn FINDING 450: Q is prefill-only, so A x (1 - 0.0678 x 1.936 %) ~= 3.703; registered pre-receipt at 10:24Z interim (E176 interim 1)"
+  }
+ },
+ "xsumsFillCostBracket": {
+  "finding": 451,
+  "harness": "local g16s",
+  "statement": "One standalone x-sums fill dispatch plus its host kernel record costs 4.0-5.3 us of candidate MTP wall time. Lower bound o-s (identical consumer): +0.3849 % leg, 699.1 us/round, 127 cells, 5.505 us/cell. Upper bound f-r (different consumer pipelines, grade C): +0.5190 %, 981.9 us/round, 257 cells, 3.820 us/cell. Bounds cross -> bracket, not a point.",
+  "retraction": "alphonse RETRACTION 1: f-r is NOT the clean contrast (replica never enters the table branch; different pipeline objects). Grades: f-o = A (USE_TABLE constant only), o-s = B, f-r = C. Advisor ruling that f-r was the only admissible path is struck.",
+  "wandb": "7ueick4f",
+  "artifacts": "research/out/e174-screen-s1.json, e174-decompose-s1.json, commit 007bd06c",
+  "pivotRuling": "dedup census first (count distinct activation identities among ~257 standalone fills); >=20 % dupes -> smallest dedup arm via existing Slot/take/publish + one ABBA gated pair; <20 % -> CPU-side record-creation probe gates item-2 record cache; BF16 gate parked. Sidecar/replica is organizer code, so the cost is paid on the shipped tree."
  }
 }
