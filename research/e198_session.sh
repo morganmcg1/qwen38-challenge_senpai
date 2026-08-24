@@ -93,6 +93,15 @@ for arm in "${legs[@]}"; do
   (
     export MLXFAST_LOCAL_COOL_GATE=0
     unset MLX_QWEN_MTP_TRACE MLX_QWEN_MTP_TRACE_PATH
+    # ARM WITNESS (RULE 391b). The liveness counters are the per-leg evidence
+    # that the arms executed different code. They need the sandbox lifted: the
+    # runtime-worker profile is (deny file-write*) except /dev/null, and the
+    # timed parent discards worker stderr, so a probe inside the worker is mute
+    # under the normal profile. Both arms carry this identically, so it cannot
+    # produce an arm effect; it does make the session incomparable with
+    # sandboxed history, which meta.txt records.
+    export MLXFAST_NO_SANDBOX=1
+    export DARKBLOOM_E198_LIVENESS_OUT="${out}/liveness.json"
     if [[ "${arm}" == "FUSED" ]]; then
       export DARKBLOOM_QWEN_FUSED_SDPA_ROWS="${rows}"
     else
@@ -130,8 +139,22 @@ for arm in "${legs[@]}"; do
     echo "head_provenance_sha256=${head_provenance_sha256}"
     echo "cool_gate_passed_real_gate=false"
     echo "gate_qualified_for_timing=false"
+    echo "worker_sandbox=disabled"
+    echo "comparable_with_sandboxed_history=false"
+    echo "arm_witness=$(
+      python3 -c 'import json,sys
+try:
+    d = json.load(open(sys.argv[1]))
+except OSError:
+    print("MISSING"); raise SystemExit
+s = d.get("served_by_rows", {})
+print("served:" + ",".join(f"{k}={v}" for k, v in sorted(s.items())) if s else "served:none")
+' "${out}/liveness.json" 2>/dev/null || echo MISSING)"
     echo "phase_trace=0"
-    echo "added_timing_instrument=none"
+    # Not "none": the liveness counter runs inside the timed worker. It is one
+    # dictionary update per attention call, with no string interpolation on
+    # either arm's hot path, and it is present in both arms.
+    echo "added_timing_instrument=e198-liveness-counter-both-arms"
     echo "timing_source=trusted-parent-report"
     echo "started_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "${out}/meta.txt"

@@ -64,7 +64,6 @@ public func attentionWithCacheUpdate(
     scale: Float,
     mask: MLXFast.ScaledDotProductAttentionMaskMode = .none
 ) -> MLXArray {
-    FusedRowAmortizedSDPA.Liveness.reached("awcu_entry")
     // ContinuousBatchingV2 hook — see the LIMITATION notes above.
     if let v2 = cache as? CBv2AttendingLayerCache {
         if let violation = cbv2CustomMaskViolation(mask: mask, layerIndex: v2.layerIndex) {
@@ -120,10 +119,6 @@ public func attentionWithCacheUpdate(
         // are read-only views of that single committed candidate window.
         let qL = queries.dim(2)
         let kL = cachedKeys.dim(2)
-        FusedRowAmortizedSDPA.Liveness.reached("awcu_else_qL\(qL)")
-        if case .causal = mask {
-            FusedRowAmortizedSDPA.Liveness.reached("causal_qL\(qL)")
-        }
         if queries.dim(0) == 1, qL >= 6, qL <= 9, kL >= qL,
            case .causal = mask
         {
@@ -226,8 +221,7 @@ public enum FusedRowAmortizedSDPA {
     /// that variable is set, and no timed arm sets it.
     public enum Liveness {
         nonisolated(unsafe) private static var servedCounts: [Int: Int] = [:]
-        nonisolated(unsafe) private static var declinedCounts: [String: Int] = [:]
-        nonisolated(unsafe) private static var reachedCounts: [String: Int] = [:]
+        nonisolated(unsafe) private static var declinedCounts: [String: [Int: Int]] = [:]
 
         /// The requested path, or a home-directory fallback. The fallback
         /// exists so that "no file" means "this code did not run" and can never
@@ -247,23 +241,6 @@ public enum FusedRowAmortizedSDPA {
             return true
         }()
 
-        /// Count a call site upstream of `attend`, so a missing `attend` call
-        /// is distinguishable from a declined one.
-        /// Set true for one research leg only. A crash is the only witness that
-        /// no file path, environment variable, or discarded stderr stream can
-        /// swallow, so it separates "this code never runs" from "the evidence
-        /// never reached me". It answered that question: the leg died with
-        /// `reached qwen35_attn_entry_L512`, proving the path is live and the
-        /// file channel was at fault. Never true in a timed or submitted build.
-        private static let abortOnFirstReach = false
-
-        public static func reached(_ key: String) {
-            if abortOnFirstReach { fatalError("E198 LIVENESS: reached \(key)") }
-            guard armed else { return }
-            reachedCounts[key, default: 0] += 1
-            flushIfDue()
-        }
-
         // The worker can be killed rather than exited, so `atexit` alone can
         // leave no evidence. Flush on the first call and then periodically.
         nonisolated(unsafe) private static var calls = 0
@@ -275,9 +252,14 @@ public enum FusedRowAmortizedSDPA {
             flushIfDue()
         }
 
+        // No string interpolation here. `declined` runs on every call in the
+        // arm where the kernel is off and never in the arm where it serves, so
+        // an allocation on this path would bias a timed contrast towards the
+        // fused arm by exactly the amount the experiment is trying to measure.
+        // The reason is a literal, and the row count keys a nested table.
         static func declined(reason: String, rows: Int) {
             guard armed else { return }
-            declinedCounts["\(reason)_m\(rows)", default: 0] += 1
+            declinedCounts[reason, default: [:]][rows, default: 0] += 1
             flushIfDue()
         }
 
@@ -293,13 +275,15 @@ public enum FusedRowAmortizedSDPA {
             let served = object(
                 servedCounts.sorted { $0.key < $1.key }.map { ("\($0.key)", $0.value) })
             let declined = object(
-                declinedCounts.sorted { $0.key < $1.key }.map { ($0.key, $0.value) })
-            let reached = object(reachedCounts.sorted { $0.key < $1.key })
+                declinedCounts.sorted { $0.key < $1.key }.flatMap { reason, byRows in
+                    byRows.sorted { $0.key < $1.key }
+                        .map { ("\(reason)_m\($0.key)", $0.value) }
+                })
             let rowsEnv = ProcessInfo.processInfo
                 .environment["DARKBLOOM_QWEN_FUSED_SDPA_ROWS"] ?? "<unset>"
             let json = """
                 {"served_by_rows": \(served), "declined_by_reason": \(declined), \
-                "reached": \(reached), "enabled_rows": \(enabledRows.sorted()), \
+                "enabled_rows": \(enabledRows.sorted()), \
                 "rows_env": "\(rowsEnv)", "out_env_set": \(envPath != nil), \
                 "pid": \(ProcessInfo.processInfo.processIdentifier)}
                 """
