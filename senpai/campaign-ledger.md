@@ -70428,3 +70428,105 @@ tree.
 - Students: edward 16-leg ABBA (W&B `e167-arms-20260824T075454Z`, ETA
   10:00–10:30Z); askeladd two-build cap confirmation running, freeze held;
   thorfinn watcher on `2c885d64`; alphonse starting E174.
+
+## Entry 370 — 2026-08-24T09:05Z — Receipt D rejected at 3.6582: composition CANCELLED, the slot goes to cap-4 on organizer-pure, E167 merged, E174 premise dead
+
+### The receipt
+
+`2c885d64` is terminal: **REJECTED, 3.65820901018537** (fired 07:11Z by Thorfinn,
+terminal ~08:47Z; frozen SHA `4ba44f8251960eaf79ec4f05135485442438f5ef` =
+organizer main + Q (four quantized kernel files) + E165 head-prefetch default +
+instrumentation strip; five-file scored surface).
+
+The receipt ladder, `harness=ranked`:
+
+| receipt | tree | score |
+|---|---|---|
+| A `5a9f130a` | organizer-pure | **3.70784519** |
+| B `180db842` | organizer + Q + instrumentation | 3.70465399 |
+| C `fda590bb` | organizer + instrumentation (Q reverted) | 3.66784731 |
+| D `2c885d64` | organizer + Q + E165 + strip | **3.65820901** |
+
+Pairwise: instrumentation tax C/A = **−1.08 %**; Q given instrumentation B/C =
+**+1.00 %**; D/A = **−1.34 %** — a THREE-factor confound (Q-without-instr, E165,
+strip), ~10σ below the 3.7527 projection and ~5× receipt noise (sd 0.271 %)
+below A. Prime suspects: (a) E165 is negative on ranked M5; (b) a Q×instr
+interaction, i.e. B/C overstated Q. Edward's local arms (FINDING 435) read
+Q-analog and strip flat-to-slightly-negative, supporting (b) without excluding
+(a). The transfer coefficient tau remains **UNMEASURED** — the pair that was to
+measure it does not exist in the ladder. → **FINDING 433**
+
+### Decisions taken this cycle
+
+1. **Composition of `4ba44f82` onto the campaign base is CANCELLED.** The
+   Entry-355/E171-r1 composition plans (3.7318 / 3.7527) are refuted by D.
+2. **Ship pattern changed:** ranked candidates ride organizer-pure
+   `upstream/main` (`0863b06a`) plus single measured levers until the Q and
+   E165 factors are priced. The maintained campaign base (instrumentation:
+   −1.08 % ranked) is a research base, not a ship base.
+3. **The free slot goes to Askeladd's cap-4** — E168 r1 ship brief sent 08:52Z:
+   upstream/main + `segmentedVerifyDepthCap 7→4` (one literal + doc comment),
+   512-token real-gate local-submit, scope/budget/boundary, freeze, submit vs
+   base `770a3ff2`, he owns the read-only receipt watcher. Reading bands vs A:
+   ≥3.9 step transfers (crown); 3.65–3.9 partial (fit within-group slope);
+   3.55–3.65 step absent (pivot declamp-deeper). Promote line 3.7291100106.
+4. **Thorfinn E171 r2 assigned (desk, no GPU):** decompose the three-factor
+   confound from per-prompt raw_p vectors of A/B/C/D; recommend keep/drop for
+   Q and E165; state what D predicts for the cap-4 receipt (shares no factor).
+5. **E174 premise rejected, Alphonse vindicated** (F5 sent): merged E160
+   already measured the identical epilogue mechanism null at 128/130 cells
+   with cause. **ADVISOR ERROR 237** (assigned onto a closed axis without a
+   ledger grep) and **RULE 376** (grep the ledger for the mechanism axis before
+   assigning; a merged null closes the axis absent a recorded reopening
+   reason). His point-4 coefficient screen is approved; pivot ruling after it.
+   Cross-inference: E160's null invalidates the 4.7 µs/dispatch pricing —
+   e173 item-4 norm fusion demoted to UNPRICED. → **FINDING 436**
+
+### E167 reviewed and MERGED (PR 166, typed result succeeded, merge 4bcdb0df)
+
+Surface: 8 additive `research/`-only files; base moved only by advisor record
+commits → accept_result_on_current_base then merge. Primary metric: receipt B
+3.70465399 vs A 3.70784519 = −0.086 % ≈ half a draw sd — resolves NEITHER E162
+arm. By-products are the value → **FINDING 437**:
+
+- Crown `ec24d591` 3.7291 is a **max-of-74 order statistic with no code
+  advantage** (byte-identical null pair 0.5735 % apart; serial resample n=965
+  typical 3.7104, floor sd 0.179 %; pack sd 0.172 %; 90 % confidence).
+- E165 audit: no per-round/per-routed-cell side effect; the one real find
+  (preflushBacklogHidden alias defeating removeAll(keepingCapacity:)) is
+  ~0.01 % and was correctly not shipped on a frozen branch.
+- **FINDING 435** (four-arm strip session, local gen16, 16/16 gated legs,
+  witnesses digit-identical 3× across a host reprovision): strip B2 is
+  behaviourally identical to the maintained base; tax-removed Welch vs B0:
+  B1 +0.139 % ns, B2 +0.252 % [−0.163,+0.668] ns, B3 +0.208 % p=0.016.
+  Transfer-model test: "~1 % of decode leg" EXCLUDED; "592 µs per drafting
+  round" CONSISTENT (predicts 0.373 % at 6.31 drafting rounds/s; −1σ 0.250 %
+  vs measured 0.252 %). Writes-vs-linkage open (needs n=39/arm, ~6.2 h —
+  correctly not spent). Palindrome-curvature caveat recorded; thermal record
+  argues against the position artifact.
+- W&B: e167-arms-20260824T075454Z, gy849f1o, cqfa2d6n.
+
+### Askeladd cap-4 qualification → FINDING 434
+
+harness=local g16s, two independent builds: base 31.535 ms/tok (31.545/31.526)
+vs cap 30.082 (30.046/30.117) = **−4.61 %**, combined half-range 0.149 % → 31×
+margin; 4 legs real-gated, exact, ledger closed. Census: base 68/77 rounds
+M≥6 = 0.883 (reproduces Thorfinn's 88.3 % two-pass); cap 0/111 M≥6,
+walk-free-below-cap 5/111; fewer rows (548 vs 568) across MORE rounds (111 vs
+77); acceptance 0.886→0.920. Diff = one literal + doc comment, growth
+1728/262144. W&B `vdwazhu1`, `k18flizk`.
+
+### Queue and next actions
+
+- In prep: askeladd cap-4 fire (slot committed).
+- Frozen-next behind it: **E175 organizer-pure + Q single factor (Edward)** —
+  the decisive Q receipt AND crown-plausible (no-interaction route
+  3.7078×1.0100 = 3.745 > crown 3.7291; interaction route ≤3.708). Being
+  assigned now; holds until the cap-4 receipt lands; Thorfinn r2 may re-order.
+- Alphonse: coefficient screen, then pivot ruling (item 2 kernel-record cache
+  vs item 3 BF16 gate leading).
+- frontier-state: officialSlot, latestOfficialReceipt, threeReceiptFactorial+D,
+  compositionPlanForFreeSlot (cancelled/replaced), crownAttempt (terminal),
+  e173FInventory items 1+4, maintainedBaseChanges ship-pattern note,
+  submissionQueue, FINDINGs 433–437, RULE 376, ADVISOR ERROR 237, ledgerEntry
+  370.
