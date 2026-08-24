@@ -69377,3 +69377,121 @@ same. Askeladd recovered it from data he already owned at zero GPU cost, and
 Thorfinn judged that ninety seconds was worth it and was right. Both
 instructions were wrong. When a measurement would settle a law the campaign is
 about to bet on, price the run against the bet, not against the run.
+
+## Entry 363 — 2026-08-24T06:50Z — E170 closed refuted; occupancy killed by an inversion control; and the campaign's entire ranked contribution, priced
+
+### FINDING 416 — `rows_per_simd = 2` is refuted, and occupancy is not the cause
+
+Alphonse, E170, PR #170, **CLOSED not merged**. W&B `9nrfbf2p`, `hlmlbor4`,
+`cviyplw0`, `1enyko3j`.
+
+`rows_per_simd = 2` is slower in **21 of 21** shape-by-width cells. The stop rule
+required `T(5)` to improve by 4 %; it regressed 5.76 %. Scored path unchanged
+(`halvedRowWidths = []`). Bit-exactness closed over 56 cells with **both
+positive controls firing**. Twin audit green, scope one path, budget
+2,623,976 / 3,000,000, `verify-ranked-score-boundary.sh` PASS.
+
+```
+harness=local, applegpu_g16s / M4 Pro, ABBA, MLXFAST_LOCAL_COOL_GATE=0,
+cool_gate_passed_real_gate=false, gate_qualified_for_timing=false
+
+  M  qmv rows4  qmv rows2   delta   implied dT   dT % of T(M)
+  5    87.555     93.425   +6.70%    +4.81 ms      +5.76%
+  4    75.812     79.301   +4.60%    +2.82 ms      +3.86%
+  3    68.889     74.052   +7.49%    +4.04 ms      +6.15%
+```
+
+**Occupancy is not the cause.** Resident simdgroups at `ROWS=4` on g16s:
+`NA`=2 43, 3 35, 4 34, 5 33. **80 % of the efficiency loss has happened by
+`NA`=3**, the width at the highest roof fraction (98.1 %). From `NA` 3 to 5
+residency falls 5.7 % while roof fraction falls 24.5 points. **Inversion
+control**: `rows2` at `NA`=5 reaches 37 resident simdgroups, more than the 35
+that `NA`=3 has at 98.1 % of roof, and is still 6.70 % slower.
+
+**Register-demand law**, read off the template source and reconciled against the
+compiled per-thread allocation:
+
+```
+R_data(NA, ROWS) = 2*ROWS*NA + 5*NA + 6*ROWS
+headroom = compiled - R_data
+```
+
+Headroom is a median of 21 (g16s) and 27 (g17s) in every cell except `NA`=5 with
+`ROWS`=4, where it collapses to **3 and 9**. One cell, and it is the dip.
+Halving rows does not exploit it: arithmetic predicts 89 -> 57 registers at
+`NA`=5, the backend delivers 92 -> 82, only 10 recovered, while `sums` and
+`a0..a3` stage once per simdgroup per k-block independent of `ROWS`, so doubling
+the simdgroups doubles that traffic.
+
+**AIR is clean.** `llvm.fmuladd.v5f32` emitted natively, exactly 4 calls at every
+width, lane issues 8/12/16/20 = 4*NA, no discontinuity. AIR identical between
+`ROWS`=4 and `ROWS`=2, so every register difference comes from the AGX backend,
+not the source. This rules out a family of source-level rewrites without GPU time.
+
+**Transfer verdict** (static compilation via `xcrun metal-tt` for g16s and
+**g17s, the M5 generation**, zero GPU seconds): source-fixed in mechanism,
+hardware-scaled in magnitude. g17s keeps 9 registers of headroom where g16s
+keeps 3, and its 507,904 B/core register file is 1.003x what g16s would need to
+restore `NA`=5 residency. Inference, static only: **the occupancy component is
+largely absent on M5, the headroom component persists in reduced form.**
+Alphonse withdrew his own -21.4 % ranked figure. This independently confirms
+FINDING 410 from a completely different direction.
+
+**Noise floor retired.** The 0.039 % figure is gone. Adjacent-replicate spread
+0.057-0.160 % median per width, worst cell 2.03 %. Session drift A1->A2 is
+-0.04 to -0.26 %, i.e. **faster despite 36.33 -> 47.08 C**. Effect over noise
+3.7x to 12.9x.
+
+**Reopening conditions**: do not retry `rows_per_simd = 2` unless the duplicated
+per-simdgroup staging of `sums` and `a0..a3` is eliminated first, or unless an
+M5 measurement contradicts the g17s static headroom figure of 9. Folding
+`partial` into `acc` gives `R_data` 69 and headroom 23 at `ROWS`=4 but changes
+summation association and is very unlikely to be bit-exact; shelved.
+
+### Why E170 was closed rather than merged
+
+The mechanism is refuted, so there is no performance change to compound. What
+the branch would carry onto the base is 4,720 bytes of new **inert** switch on
+the submitted surface, inside the same `Qwen35CustomQMV` router, behind the same
+`widths = 2 ... 9` guard, that FINDING 413 measures at +1.0929 % of the
+candidate decode leg. Merging an inert routed-path switch now has a measured
+cost and no measured benefit. **New standing rule: an inert research switch is
+never merged onto the submitted surface.**
+
+### FINDING 417 — the campaign's entire ranked contribution, priced
+
+The three receipts price every part of the campaign delta against organizer main:
+
+```
+A  5a9f130a  organizer main byte for byte              3.707845194
+B  180db842  A + campaign kernels + instrumentation    3.704653995
+C  fda590bb  A + instrumentation only                  3.667847308
+```
+
+- **B against A is -0.086 %**, inside the 0.24 % drift of FINDING 414. At receipt
+  B the campaign's entire accumulated delta was **performance-neutral on ranked**.
+- It was neutral because two large effects cancelled: the instrumentation cost
+  **-1.09 %** of decode and the kernels bought **+0.64 %** of decode while
+  costing **-2.17 %** of prefill.
+- Removing the tax and keeping the kernels projects to **3.741253**, which is
+  **+0.90 % over organizer main** and **+0.33 % over the crown**.
+
+**The campaign's kernel work is worth about +0.90 % once its own instrumentation
+is removed from the submitted surface. Until now that gain has been spent
+entirely on carrying the instruments that measured it.**
+
+### Standing decision: sequential, not composed
+
+The instrumentation strip (Thorfinn, E171 r1, projected 3.7388 to 3.7520) and the
+depth cap (Askeladd, E168, projected 4.16 to 4.31) compose multiplicatively but
+live on different hosts and different students. Fire them **sequentially**, not
+composed. Reasons: clean attribution on a rejected receipt, one-hypothesis
+discipline, and the official slot admits one candidate at a time while the
+number of submissions is not limited. Thorfinn first, being the shorter path
+with a provably unchanged ledger; Askeladd rebases onto whatever base results.
+
+### Operational note
+
+An assignment `head_branch` must be prefixed with the **exact configured student
+name**, for example `qwen-alphonse/...`. `alphonse/...` is refused by
+`SENPAI-GIT-GUARD`, and `senpai/...` is refused as an advisor-owned namespace.
