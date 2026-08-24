@@ -75,13 +75,13 @@ def main() -> int:
         session = json.loads(session_path.read_text())
 
     round_ms: dict[int, float] = {}
-    eval_ms: dict[int, float] = {}
+    verify_pipeline_ms: dict[int, float] = {}
     if session:
         for share in session["round_cost_shares"]:
             if share["arm_key"].startswith("shipped@"):
                 width = share["verify_width"]
                 round_ms[width] = share["R_ms"]
-                eval_ms[width] = share["R_ms"] * share["gpu_eval_share_of_round"]
+                verify_pipeline_ms[width] = share["R_ms"] * share["verify_pipeline_share_of_round"]
 
     out: dict[str, object] = {
         "experiment": "e163-routed-matvec-share-of-a-verify-round",
@@ -118,15 +118,15 @@ def main() -> int:
         if width in round_ms:
             r_us = round_ms[width] * 1e3
             entry["round_us_measured"] = r_us
-            entry["gpu_eval_us_measured"] = eval_ms[width] * 1e3
+            entry["verify_pipeline_us_measured"] = verify_pipeline_ms[width] * 1e3
             entry["matvec_share_of_round_isolated"] = shipped / r_us
             entry["matvec_share_of_round_in_situ_projection"] = (
                 shipped * ISOLATED_TO_IN_SITU / r_us
             )
-            entry["matvec_share_of_gpu_eval_isolated"] = shipped / (eval_ms[width] * 1e3)
+            entry["matvec_share_of_verify_pipeline_isolated"] = shipped / (verify_pipeline_ms[width] * 1e3)
             print(
                 f"  measured round R {round_ms[width]:.2f} ms, GPU eval "
-                f"{eval_ms[width]:.2f} ms"
+                f"{verify_pipeline_ms[width]:.2f} ms"
             )
             print(
                 f"  matvec share of the round: isolated "
@@ -135,7 +135,7 @@ def main() -> int:
             )
             print(
                 f"  matvec share of the GPU eval, isolated: "
-                f"{entry['matvec_share_of_gpu_eval_isolated']:.3f}"
+                f"{entry['matvec_share_of_verify_pipeline_isolated']:.3f}"
             )
             for arm in sorted(payloads):
                 if arm == "shipped":

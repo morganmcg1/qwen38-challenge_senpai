@@ -1,0 +1,64 @@
+{
+ "answer_includes_group64_scales": true,
+ "answer_includes_vocab_readout": true,
+ "dense_bf16_bytes_in_stream": 5291008,
+ "disproportion_factor": -0.018290525799567484,
+ "harness": "local bytes, ranked timings quoted",
+ "head_bytes_per_draft_step": 1132606464,
+ "local_second_stream_effective_gb_per_s": 504.0251860863485,
+ "local_second_stream_over_measured_peak": 1.9728171363733624,
+ "local_stream_share_of_round": 0.22347481660299529,
+ "official_or_ranked_score": false,
+ "packed_bytes_in_stream": 12810977280,
+ "ranked_box": "m5-max-128gb-3",
+ "ranked_box_source": ".github/workflows/qwen-mtp-ranked-benchmark.yml:196 and :1370",
+ "ranked_essays_round_ms": 48.93,
+ "ranked_essays_round_ms_from_finding_352": 48.632753699999995,
+ "ranked_essays_width": 6.087,
+ "ranked_ms_measured": -0.2,
+ "ranked_ms_predicted_by_equal_share": 10.93462277638456,
+ "ranked_one_stream_gb_per_s": 294.6585008788065,
+ "ranked_shipped_two_stream_gb_per_s": 589.317001757613,
+ "ranked_shipped_two_stream_with_heads_gb_per_s": 707.0682603386061,
+ "scales_biases_bytes_in_stream": 1601372160,
+ "target_stream_bytes": 14417640448,
+ "target_stream_variants": [
+  {
+   "bytes": 14417640448,
+   "gb": 14.417640448,
+   "includes_group64_scales": true,
+   "includes_vocab_readout": true,
+   "local_one_stream_percent_of_measured_peak": 44.08749477422835,
+   "ranked_one_stream_gb_per_s": 294.6585008788065,
+   "variant": "with vocab readout, with scales/biases"
+  },
+  {
+   "bytes": 12810977280,
+   "gb": 12.81097728,
+   "includes_group64_scales": false,
+   "includes_vocab_readout": true,
+   "local_one_stream_percent_of_measured_peak": 39.17450264638186,
+   "ranked_one_stream_gb_per_s": 261.8225481299816,
+   "variant": "with vocab readout, packed 4-bit only"
+  },
+  {
+   "bytes": 13702478848,
+   "gb": 13.702478848,
+   "includes_group64_scales": true,
+   "includes_vocab_readout": false,
+   "local_one_stream_percent_of_measured_peak": 41.90061243266583,
+   "ranked_one_stream_gb_per_s": 280.0424861639076,
+   "variant": "no vocab readout, with scales/biases"
+  },
+  {
+   "bytes": 12175278080,
+   "gb": 12.17527808,
+   "includes_group64_scales": false,
+   "includes_vocab_readout": false,
+   "local_one_stream_percent_of_measured_peak": 37.23060723165962,
+   "ranked_one_stream_gb_per_s": 248.83053505007152,
+   "variant": "no vocab readout, packed 4-bit only"
+  }
+ ],
+ "vocab_readout_bytes": 715161600
+}

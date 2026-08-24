@@ -1,0 +1,52 @@
+==============================================================================
+F5 ITEM 3 - DOES 14.418 GB INCLUDE THE VOCABULARY READOUT AND THE
+            GROUP-64 SCALES?   Answer: YES to both.
+==============================================================================
+  Source: safetensors headers of the pinned target checkpoint.
+  The streamed set is the whole checkpoint minus embed_tokens, which is
+  GATHERED (M rows of 5,120) and never streamed. lm_head is not tied
+  (tie_word_embeddings=false) and IS streamed, because the verify pass
+  needs exact top-two evidence over all 248,320 vocabulary rows.
+
+  variant                                            bytes       GB  ranked GB/s
+  with vocab readout, with scales/biases    14,417,640,448   14.418        294.7
+  with vocab readout, packed 4-bit only     12,810,977,280   12.811        261.8
+  no vocab readout, with scales/biases      13,702,478,848   13.702        280.0
+  no vocab readout, packed 4-bit only       12,175,278,080   12.175        248.8
+
+  storage kinds inside the streamed set
+    packed 4-bit      12,810,977,280   12.811 GB
+    scales+biases      1,601,372,160    1.601 GB
+    dense bf16             5,291,008    0.005 GB
+
+  ranked essays round 48.93 ms at width 6.087   (FINDING 352 predicts 48.63 ms)
+  ONE stream                          294.7 GB/s   <- the 295 figure
+  shipped TWO streams, weights only   589.3 GB/s
+  shipped TWO streams, plus 5.087 head passes   707.1 GB/s
+
+==============================================================================
+IS 295 GB/s REAL?  Yes, and it is not even stressed on that box.
+==============================================================================
+  The ranked box is m5-max-128gb-3 (.github/workflows/qwen-mtp-ranked-benchmark.yml:196 and :1370).
+  That is an M5 MAX with 128 GB, not a base M5. Its predecessor part
+  already reaches several hundred GB/s, so neither 295 GB/s nor
+  590 GB/s is self-evidently impossible there. The F5 section 3
+  implausibility argument therefore does not carry, but FINDING 375
+  does not need it. Use the disproportion test instead:
+
+  local  second stream = 28.605 ms of a 128.001 ms round = 22.35 % of it
+  equal-share prediction for the ranked round        10.93 ms
+  measured ranked effect                             -0.20 ms
+  disproportion                                     -0.018 x
+
+  No uniform bandwidth scaling can turn 22 % of a round into 0 %.
+  A faster bus shrinks the stream and the rest of the round together.
+  Only a change in WHERE the second stream is served can remove it,
+  so FINDING 375's cache-absorption reading survives on stronger
+  evidence than the 590 GB/s figure.
+
+  The same effect is already visible on my own host, at half strength:
+  a second 14.418 GB stream costs 28.605 ms, an effective 504.0 GB/s,
+  which is 1.97 x my MEASURED 255.5 GB/s DRAM peak. Roughly half
+  of the second pass is already cache-served on an M4 Pro. The M5 Max
+  finishes the job.

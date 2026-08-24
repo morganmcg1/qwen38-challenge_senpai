@@ -118,6 +118,25 @@ def log_bandwidth(run) -> dict:
             summary["row_channel_local_over_ranked"] = (
                 budget["row_b_ms"] / budget["ranked_per_row_ms"])
 
+    stream = load("e163_ranked_stream.json")
+    if stream:
+        columns = ["variant", "includes_vocab_readout",
+                   "includes_group64_scales", "bytes", "gb",
+                   "ranked_one_stream_gb_per_s"]
+        run.log({"ranked_stream_variants":
+                 flat_table(stream["target_stream_variants"], columns)})
+        for key in ("ranked_box", "vocab_readout_bytes",
+                    "scales_biases_bytes_in_stream", "packed_bytes_in_stream",
+                    "ranked_one_stream_gb_per_s",
+                    "ranked_shipped_two_stream_gb_per_s",
+                    "ranked_shipped_two_stream_with_heads_gb_per_s",
+                    "local_second_stream_effective_gb_per_s",
+                    "local_second_stream_over_measured_peak",
+                    "local_stream_share_of_round",
+                    "ranked_ms_predicted_by_equal_share",
+                    "ranked_ms_measured", "disproportion_factor"):
+            summary[key] = stream[key]
+
     if recon:
         for key, value in recon["two_band"].items():
             summary[f"two_band_{key}"] = value
