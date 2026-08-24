@@ -1,0 +1,330 @@
+
+============================================================================================================
+STAGE 1a  CONSTRAINT TABLE: per prompt x per paid receipt (harness=ranked)
+============================================================================================================
+  prompt    rcp rounds      edl     Mbar     abar      R_ms sigma_ms   weight
+  plutarch  C4     488   0.1557   1.1557   0.0492   30.4873    0.033   910.32
+  plutarch  E5     488   0.1557   1.1557   0.0492   30.4811    0.033   909.31
+  plutarch  A7     488   0.1557   1.1557   0.0492   30.5222    0.033   908.18
+  drama     C4     252   2.2976   3.2976   1.0317   34.1661    0.334     8.97
+  drama     E5     252   2.2976   3.2976   1.0317   34.5340    0.338     8.77
+  drama     A7     252   2.2976   3.2976   1.0317   34.2406    0.335     8.93
+  travel    C4     215   2.5907   3.5907   1.3814   34.7664    0.355     7.93
+  travel    E5     213   2.6479   3.6479   1.4038   35.5756    0.363     7.57
+  travel    A7     213   2.6479   3.6479   1.4038   35.1092    0.359     7.78
+  beagle    C4     137   3.2920   4.2920   2.7372   37.7919    0.314    10.17
+  beagle    E5     125   3.7200   4.7200   3.0960   41.2748    0.343     8.49
+  beagle    A7     110   4.3818   5.3818   3.6545   44.9835    0.375     7.12
+  republic  C4     121   3.5620   4.5620   3.2314   38.7396    0.251    15.85
+  republic  E5     108   4.1574   5.1574   3.7407   43.5763    0.283    12.48
+  republic  A7      93   4.9892   5.9892   4.5054   47.7229    0.311    10.32
+  essays    C4     122   3.5246   4.5246   3.1967   38.8129    0.268    13.93
+  essays    E5     108   4.1481   5.1481   3.7407   44.2309    0.306    10.71
+  essays    A7      92   5.0870   6.0870   4.5652   48.9320    0.339     8.68
+  medicine  C4     119   3.5966   4.5966   3.3025   38.9036    0.280    12.72
+  medicine  E5     105   4.2190   5.2190   3.8762   43.6230    0.315    10.05
+  medicine  A7      90   5.2556   6.2556   4.6889   49.3505    0.357     7.84
+  botany    C4     110   3.8273   4.8273   3.6545   39.9849    0.282    12.57
+  botany    E5      99   4.7172   5.7172   4.1717   46.8411    0.329     9.22
+  botany    A7      81   6.1481   7.1481   5.3210   54.4743    0.384     6.77
+
+  E159 round-count cross-check on receipt A: PASS
+  replicate instrument (FINDING 506): prompts whose edl is identical
+  across all three receipts measure the channel directly
+    plutarch  R = 30.487 30.481 30.522 ms   spread 0.041 ms   FINDING 503 sigma 0.033 ms
+    drama     R = 34.166 34.534 34.241 ms   spread 0.368 ms   FINDING 503 sigma 0.335 ms
+
+============================================================================================================
+STAGE 1b  SCHEDULE IDENTIFICATION: exact tail masses and acceptance (harness=ranked)
+============================================================================================================
+  prompt         t0    edl4     t4*   t5+t6*       t5       t6      t7~      S5* mu(5:7)*
+  plutarch   0.0799  0.1557  0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000
+  drama      1.0000  2.2976  0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000
+  travel     1.0000  2.5907  0.0572   0.0000   0.0000   0.0000   0.0000   0.3910   0.0000
+  beagle     1.0000  3.2920  0.4280   0.6618   0.3794   0.2824   0.2057   0.8382   0.8440
+  republic   1.0000  3.5620  0.5954   0.8318   0.4753   0.3566   0.2571   0.8554   0.9192
+  essays     1.0000  3.5246  0.6236   0.9388   0.5179   0.4209   0.3359   0.8724   0.8782
+  medicine   1.0000  3.5966  0.6224   1.0365   0.5659   0.4706   0.3850   0.9217   0.7841
+  botany     1.0000  3.8273  0.8899   1.4310   0.7567   0.6742   0.5890   0.5812   0.8031
+  * = exact, family-free. ~ = extrapolated.
+
+  PRIMARY acceptance model: measured rates. S5 and mu(5:7) are the
+  measured values, so abar(5) and abar(7) reproduce exactly; only S8
+  is extrapolated (flat continuation of the measured deep rate).
+  prompt         S4     S5*     S6*     S7*     S8~ |   d abar4   d abar5   d abar7
+  plutarch   0.0364  0.0000  0.0000  0.0000  0.0000 |  -0.00000  -0.00000  -0.00000
+  drama      0.1338  0.0000  0.0000  0.0000  0.0000 |  -0.00000  -0.00000  -0.00000
+  travel     0.2533  0.3910  0.0000  0.0000  0.0000 |  -0.00000  -0.00000  -0.00000
+  beagle     0.7210  0.8382  0.8440  0.8440  0.8440 |  -0.00000  -0.00000  -0.00000
+  republic   0.8473  0.8554  0.9192  0.9192  0.9192 |  -0.00000  -0.00000  -0.00000
+  essays     0.8468  0.8724  0.8782  0.8782  0.8782 |  -0.00000  -0.00000   0.00000
+  medicine   0.8659  0.9217  0.7841  0.7841  0.7841 |  -0.00000  -0.00000  -0.00000
+  botany     0.9272  0.5812  0.8031  0.8031  0.8031 |   0.00000   0.00000   0.00000
+
+  CONSERVATIVE acceptance model: monotone S_k = exp(-(k/theta)^eta)
+  fitted to the same three abar values. Its abar residuals show how
+  far the measured cells are from an admissible nested schedule: a
+  cap change perturbs the trajectory, so S6 > S5 can appear.
+  prompt         S4      S5      S6      S7      S8 |   d abar4   d abar5   d abar7 | note
+  plutarch   0.1670  0.1400  0.1197  0.1039  0.0912 |  -0.00000  -0.00000  -0.00000 | 
+  drama      0.4220  0.4155  0.4101  0.4056  0.4017 |  -0.00000  -0.00000  -0.00000 | 
+  travel     0.4255  0.3945  0.3690  0.3475  0.3289 |  -0.00023  -0.00003  -0.00003 | 
+  beagle     0.7821  0.7503  0.7215  0.6952  0.6708 |   0.06419   0.02656  -0.06192 | measured S6>S5
+  republic   0.8704  0.8414  0.8134  0.7865  0.7605 |   0.04864   0.04027  -0.05736 | measured S6>S5
+  essays     0.8700  0.8409  0.8128  0.7858  0.7598 |   0.04839   0.02871  -0.04403 | measured S6>S5
+  medicine   0.8762  0.8472  0.8189  0.7915  0.7650 |   0.02522  -0.02118   0.00205 | 
+  botany     0.8612  0.8046  0.7443  0.6820  0.6195 |  -0.09457   0.10426  -0.02193 | measured S6>S5
+
+======================================================================================================================
+STAGE 1c  FIT COMPARISON on 24 paid observations (harness=ranked)
+======================================================================================================================
+  family         par      chi2      AICc     wRMSE     maxres |    cap4 med    cap5 med    cap7 med |    dR6 ms   R(1) ms
+  smooth-step      5     16.42     29.76    0.2677      0.646 |    3.534864    3.533444    3.718646 |     7.926    30.261
+  step2+step6      4     47.32     57.42    0.4624      0.868 |    3.475716    3.467725    3.770918 |     8.255    30.352
+  sat-exp          4     86.90     97.01    0.5829      1.342 |    3.502095    3.591365    3.747201 |     5.723    30.331
+  quadratic        3    123.99    131.19    0.7220      1.734 |    3.533531    3.632901    3.719831 |     5.437    30.252
+  step6            3    303.61    310.81    1.2133      2.588 |    3.448027    3.354831    3.796543 |    10.558    30.115
+  localshape       2    591.65    596.22    1.5236      3.171 |    3.627439    3.393792    3.643279 |    13.677    30.481
+  affine           2   1236.00   1240.57    2.3926      5.369 |    3.204701    3.400669    4.060124 |     3.113    29.967
+  grouppass        3   1235.85   1243.05    2.3963      5.392 |    3.205546    3.398147    4.059066 |     3.206    29.963
+  paid medians: cap4 3.547429  cap5 3.523636  cap7 3.707845
+  mandatory checks: dR6 must land in [8.345, 9.544] ms (FINDING 505);
+  R(1) is a held-out anchor at 30.252 ms (FINDING 330)
+
+  MANDATORY CHECK TABLE
+  family          cap4 err%   cap5 err%   cap7 err%     dR6 dev    R(1) err     verdict
+  smooth-step        -0.354       0.278       0.291       -1.01       0.009    marginal
+  step2+step6        -2.022      -1.587       1.701       -0.68       0.100        fail
+  sat-exp            -1.278       1.922       1.061       -3.22       0.079        fail
+  quadratic          -0.392       3.101       0.323       -3.50      -0.000        fail
+  step6              -2.802      -4.791       2.392       +1.62      -0.137        fail
+  localshape          2.255      -3.685      -1.741       +4.74       0.229        fail
+  affine             -9.661      -3.490       9.501       -5.83      -0.285        fail
+  grouppass          -9.637      -3.561       9.472       -5.73      -0.289        fail
+  median errors are judged against the 1-sigma receipt channel (+-0.689%)
+  PASS = all three checks; marginal = medians and R(1) pass and dR6 sits within 1.0 ms of the FINDING 505 band; fail otherwise
+
+============================================================================================================
+STAGE 1d  LEAVE-ONE-RECEIPT-OUT EXTRAPOLATION (harness=ranked)
+============================================================================================================
+  Fit the law on two paid caps, predict the third published median.
+  The C+E -> A row is the direction cap-8 pricing needs: fit shallow,
+  predict deep.
+
+  train C+E -> predict A (cap 7, paid 3.70784519)
+    family             chi2     predicted       err %  err sigma
+    step2+step6        8.20    3.79766920       2.423       3.52
+    smooth-step        9.48    3.90040095       5.193       7.54
+    quadratic         35.00    3.48055987      -6.130      -8.90
+    sat-exp           47.30    3.54815756      -4.307      -6.25
+    step6             68.96    3.88086365       4.666       6.77
+    grouppass        400.62    3.94160866       6.305       9.15
+    localshape       516.80    3.84678624       3.747       5.44
+    affine           519.45    3.85128638       3.869       5.61
+
+  train C+A -> predict E (cap 5, paid 3.52363580)
+    family             chi2     predicted       err %  err sigma
+    quadratic          7.77    3.63181569       3.070       4.46
+    step2+step6        8.21    3.44475302      -2.239      -3.25
+    sat-exp            8.97    3.61356740       2.552       3.70
+    smooth-step        7.65    3.61205598       2.509       3.64
+    step6             92.81    3.35259352      -4.854      -7.05
+    localshape       247.18    3.40692678      -3.312      -4.81
+    grouppass       1036.73    3.42806687      -2.712      -3.94
+    affine          1046.47    3.39794300      -3.567      -5.18
+
+  train E+A -> predict C (cap 4, paid 3.54742901)
+    family             chi2     predicted       err %  err sigma
+    smooth-step       10.29    3.66841396       3.410       4.95
+    step2+step6       17.17    3.41748449      -3.663      -5.32
+    sat-exp           17.52    3.41123078      -3.839      -5.57
+    quadratic         82.30    3.49022521      -1.613      -2.34
+    step6            252.26    3.47521267      -2.036      -2.95
+    localshape       271.33    3.60022626       1.488       2.16
+    grouppass        298.10    3.19267192     -10.000     -14.51
+    affine           572.84    3.23170519      -8.900     -12.92
+
+  mean |err| across the three held-out receipts, per family
+    step2+step6     2.775 %   (C+E +2.42% C+A -2.24% E+A -3.66%)
+    localshape      2.849 %   (C+E +3.75% C+A -3.31% E+A +1.49%)
+    sat-exp         3.566 %   (C+E -4.31% C+A +2.55% E+A -3.84%)
+    quadratic       3.604 %   (C+E -6.13% C+A +3.07% E+A -1.61%)
+    smooth-step     3.704 %   (C+E +5.19% C+A +2.51% E+A +3.41%)
+    step6           3.852 %   (C+E +4.67% C+A -4.85% E+A -2.04%)
+    affine          5.445 %   (C+E +3.87% C+A -3.57% E+A -8.90%)
+    grouppass       6.339 %   (C+E +6.30% C+A -2.71% E+A -10.00%)
+
+============================================================================================================
+STAGE 1e  ROUND COST AND MARGINAL ROW COST BY WIDTH (harness=ranked)
+============================================================================================================
+  R(m) ms
+  family            m=1     m=2     m=3     m=4     m=5     m=6     m=7     m=8     m=9
+  smooth-step     30.26   31.67   33.28   35.68   40.44   48.36   55.23   58.80   60.76
+  step2+step6     30.35   28.09   32.39   36.69   40.99   49.24   53.54   57.84   62.14
+  sat-exp         30.33   30.21   32.49   36.38   41.37   47.09   53.31   59.87   66.66
+  quadratic       30.25   31.26   33.37   36.59   40.92   46.36   52.90   60.55   69.32
+  step6           30.11   32.47   34.82   37.18   39.53   50.09   52.44   54.80   57.15
+  localshape      30.48   31.04   31.30   33.93   38.44   52.12   55.56   57.97   72.43
+  affine          29.97   33.08   36.19   39.31   42.42   45.53   48.64   51.76   54.87
+  grouppass       29.96   33.17   36.24   39.30   42.37   45.58   48.64   51.71   54.92
+
+  marginal ms for the m-th row, dR(m) = R(m) - R(m-1)
+  family            dR2     dR3     dR4     dR5     dR6     dR7     dR8     dR9
+  smooth-step      1.41    1.61    2.40    4.76    7.93    6.87    3.57    1.96
+  step2+step6     -2.27    4.30    4.30    4.30    8.26    4.30    4.30    4.30
+  sat-exp         -0.12    2.28    3.89    4.98    5.72    6.22    6.56    6.79
+  quadratic        1.00    2.11    3.22    4.33    5.44    6.55    7.65    8.76
+  step6            2.35    2.35    2.35    2.35   10.56    2.35    2.35    2.35
+  localshape       0.56    0.25    2.63    4.52   13.68    3.44    2.41   14.46
+  affine           3.11    3.11    3.11    3.11    3.11    3.11    3.11    3.11
+  grouppass        3.21    3.07    3.07    3.07    3.21    3.07    3.07    3.21
+  local (E186)     1.55    0.70    7.25   12.44   37.67    9.48    6.64   39.83
+  harness=local row is E186's measured round reconstruction; it is a
+  SHAPE reference only and is never used to price ranked value.
+
+  ranked/local transfer ratio per cell, dR_ranked / dR_local
+  smooth-step     0.908   2.315   0.331   0.382   0.210   0.725   0.537   0.049
+  step2+step6    -1.463   6.176   0.593   0.346   0.219   0.454   0.647   0.108
+  sat-exp        -0.076   3.269   0.537   0.401   0.152   0.657   0.987   0.170
+  quadratic       0.648   3.034   0.444   0.348   0.144   0.691   1.152   0.220
+  step6           1.520   3.381   0.325   0.189   0.280   0.248   0.354   0.059
+  localshape      0.363   0.363   0.363   0.363   0.363   0.363   0.363   0.363
+  affine          2.010   4.471   0.429   0.250   0.083   0.328   0.469   0.078
+  grouppass       2.070   4.406   0.423   0.247   0.085   0.324   0.462   0.080
+
+============================================================================================================
+STAGE 1f  PER-PROMPT BREAK-EVEN FOR THE 9-ROW CELL (harness=ranked)
+============================================================================================================
+  Raising the cap 7 -> 8 pays on a prompt when the 9-row marginal is
+  below Rbar * S8 / (1 + abar) at that prompt's cap-7 state.
+  prompt      Rbar_ms     abar      t7~      S8~   break-even
+  plutarch     30.522   0.0492   0.0000   0.0000        0.000
+  drama        34.241   1.0317   0.0000   0.0000        0.000
+  travel       35.109   1.4038   0.0000   0.0000        0.000
+  beagle       44.983   3.6545   0.2057   0.8440        8.156
+  republic     47.723   4.5054   0.2571   0.9192        7.968
+  essays       48.932   4.5652   0.3359   0.8782        7.722
+  medicine     49.350   4.6889   0.3850   0.7841        6.802
+  botany       54.474   5.3210   0.5890   0.8031        6.921
+
+  predicted 9-row marginal dR9 by family, against that band [0.00, 8.16] ms
+    smooth-step   dR9 =    1.962 ms   pays on 5 of 8 prompts
+    step2+step6   dR9 =    4.300 ms   pays on 5 of 8 prompts
+    sat-exp       dR9 =    6.786 ms   pays on 5 of 8 prompts
+    quadratic     dR9 =    8.762 ms   pays on 0 of 8 prompts
+    step6         dR9 =    2.354 ms   pays on 5 of 8 prompts
+    localshape    dR9 =   14.459 ms   pays on 0 of 8 prompts
+    affine        dR9 =    3.113 ms   pays on 5 of 8 prompts
+    grouppass     dR9 =    3.206 ms   pays on 5 of 8 prompts
+
+============================================================================================================
+STAGE 1g  PRICED CELLS: published median by cap (harness=ranked)
+============================================================================================================
+  walked from the paid cap-7 receipt A; leg vectors from A
+  family               cap 4        cap 5        cap 6        cap 7        cap 8
+  smooth-step     3.53819557   3.55156058   3.59635590   3.70784519   3.81997883
+  step2+step6     3.47898947   3.48537026   3.61478376   3.70784519   3.77492791
+  sat-exp         3.50539422   3.60991243   3.67268536   3.70784519   3.72819590
+  quadratic       3.53686297   3.65175770   3.70145894   3.70784519   3.69189633
+  step6           3.45127290   3.36862392   3.56638213   3.70784519   3.81235635
+  localshape      3.63087085   3.41036285   3.56780013   3.70784519   3.57111017
+  affine          3.20769623   3.41783327   3.58510349   3.70784519   3.79766547
+  grouppass       3.20854270   3.41529289   3.58397369   3.70784519   3.79587490
+  paid anchors:  cap4 3.54742901   cap5 3.52363580   cap7 3.70784519
+  crown 3.72911001   receipt A 3.70784519   1 sigma 0.02555
+
+============================================================================================================
+STAGE 1g2  THE 9-ROW CELL IS INVISIBLE TO EVERY PAID RECEIPT
+============================================================================================================
+  A cap-7 receipt verifies at most 8 rows per round, so no ranked
+  observation contains R(9). Each family's cap-8 price is therefore
+  its own smooth continuation. E186 measured a second weight-pass
+  step exactly at 9 rows (harness=local, dR9 = 39.83 ms vs dR6 = 37.67
+  ms). Transferring it with the ratio measured at the 6-row cell,
+  dR6_ranked / dR6_local = 0.237, gives dR9_ranked = 9.45 ms.
+  family          dR9 flat     cap8 flat |   dR9 step     cap8 step |       swing
+  smooth-step        1.962    3.81997883 |      9.451    3.67941423 |  0.14056460
+  step2+step6        4.300    3.77492791 |      9.451    3.67941423 |  0.09551368
+  sat-exp            6.786    3.72819590 |      9.451    3.67941423 |  0.04878168
+  quadratic          8.762    3.69189633 |      9.451    3.67941423 |  0.01248210
+  step6              2.354    3.81235635 |      9.451    3.67941423 |  0.13294212
+  localshape        14.459    3.57111017 |      9.451    3.67941423 | -0.10830406
+  affine             3.113    3.79766547 |      9.451    3.67941423 |  0.11825125
+  grouppass          3.206    3.79587490 |      9.451    3.67941423 |  0.11646067
+  crown 3.72911001   receipt A 3.70784519
+
+============================================================================================================
+STAGE 1g3  SINGLE-CELL INVERSION OF THE OPEN CAPS (harness=ranked)
+============================================================================================================
+
+  cap 8 as a function of dR9 = R(9) - R(8)  (falling in the cell cost)
+    cell ms         0.0      2.0      4.0      6.0      8.0     10.0     12.0     15.0
+    cap 8       3.85867  3.81924  3.78064  3.74284  3.70581  3.66953  3.62670  3.55913
+    cap 8 equals receipt A (3.70784519) at dR9 =   +7.889 ms
+    cap 8 equals crown     (3.72911001) at dR9 =   +6.737 ms
+    ranked-fit estimates of that cell: smooth-step 1.96  step2+step6 4.30  sat-exp 6.79  quadratic 8.76  step6 2.35  localshape 14.46  affine 3.11  grouppass 3.21
+    E186 local cell 39.83 ms (harness=local); transferred at the 6-row ratio 0.237 -> 9.45 ms
+
+  cap 6 as a function of dR8 = R(8) - R(7)  (rising in the cell cost)
+    cell ms         0.0      2.0      4.0      6.0      8.0     10.0     12.0     15.0
+    cap 6       3.50497  3.55773  3.60724  3.65819  3.71064  3.76466  3.82031  3.90703
+    cap 6 equals receipt A (3.70784519) at dR8 =   +7.895 ms
+    cap 6 equals crown     (3.72911001) at dR8 =   +8.691 ms
+    ranked-fit estimates of that cell: smooth-step 3.57  step2+step6 4.30  sat-exp 6.56  quadratic 7.65  step6 2.35  localshape 2.41  affine 3.11  grouppass 3.07
+    E186 local cell 6.64 ms (harness=local); transferred at the 6-row ratio 0.237 -> 1.58 ms
+
+============================================================================================================
+STAGE 1h  PER-PROMPT ORACLE CAP under smooth-step (harness=ranked)
+============================================================================================================
+  prompt      cap*        raw*    raw@cap7    rank@7
+  plutarch       4     1.26070     1.26070         1
+  drama          4     2.12219     2.12219         2
+  travel         4     2.43602     2.42773         3
+  beagle         8     3.63496     3.54530         4
+  republic       8     4.03168     3.91990         7
+  essays         8     4.00500     3.87039         5
+  medicine       8     4.03581     3.90647         6
+  botany         8     4.11665     3.93321         8
+  oracle per-prompt-cap median 3.81997883  (paid cap-7 3.70784519, +3.024%)
+
+============================================================================================================
+STAGE 1i  WIN PROBABILITY vs the crown 3.729110 (harness=ranked), weights=mixed
+============================================================================================================
+  AICc weights (in-sample): smooth-step 1.000  step2+step6 0.000  sat-exp 0.000  quadratic 0.000  step6 0.000  localshape 0.000  affine 0.000  grouppass 0.000
+  LOO weights (one-cap extrapolation): smooth-step 0.133  step2+step6 0.197  sat-exp 0.142  quadratic 0.140  step6 0.124  localshape 0.192  affine 0.047  grouppass 0.024
+  sampled weights: smooth-step 0.567  step2+step6 0.099  sat-exp 0.071  quadratic 0.070  step6 0.062  localshape 0.096  affine 0.024  grouppass 0.012
+  one-cap extrapolation systematic per family (RMS leave-one-out): smooth-step 3.87%  step2+step6 2.85%  sat-exp 3.64%  quadratic 4.07%  step6 4.06%  localshape 3.01%  affine 5.97%  grouppass 7.00%
+  cap 6  median 3.61072772  90% band [3.37643005, 3.84950939]  P(beat crown) 0.209  P(beat receipt A) 0.248
+  cap 8  median 3.71534617  90% band [3.46632894, 3.99403524]  P(beat crown) 0.465  P(beat receipt A) 0.521
+
+============================================================================================================
+STAGE 1i  WIN PROBABILITY vs the crown 3.729110 (harness=ranked), weights=aicc
+============================================================================================================
+  AICc weights (in-sample): smooth-step 1.000  step2+step6 0.000  sat-exp 0.000  quadratic 0.000  step6 0.000  localshape 0.000  affine 0.000  grouppass 0.000
+  LOO weights (one-cap extrapolation): smooth-step 0.133  step2+step6 0.197  sat-exp 0.142  quadratic 0.140  step6 0.124  localshape 0.192  affine 0.047  grouppass 0.024
+  sampled weights: smooth-step 1.000  step2+step6 0.000  sat-exp 0.000  quadratic 0.000  step6 0.000  localshape 0.000  affine 0.000  grouppass 0.000
+  one-cap extrapolation systematic per family (RMS leave-one-out): smooth-step 3.87%  step2+step6 2.85%  sat-exp 3.64%  quadratic 4.07%  step6 4.06%  localshape 3.01%  affine 5.97%  grouppass 7.00%
+  cap 6  median 3.60302772  90% band [3.37158162, 3.83727437]  P(beat crown) 0.190  P(beat receipt A) 0.230
+  cap 8  median 3.73588939  90% band [3.47661991, 4.01184131]  P(beat crown) 0.518  P(beat receipt A) 0.570
+
+============================================================================================================
+STAGE 2  CONDITIONAL REPRICING: shave the 6-row step by X ms (harness=ranked)
+============================================================================================================
+  A shave of X reduces R(m) for every m >= 6, so it also lowers the
+  paid cap-7 anchor by X * P(rows >= 6) on each prompt. Both effects
+  are applied; the depth optimum is then re-solved.
+  family          shave        cap 5        cap 6        cap 7        cap 8     cap*
+  smooth-step       0.0   3.55156058   3.59635590   3.70784519   3.81997883        8
+  smooth-step       2.0   3.63266551   3.67260835   3.78403574   3.89732267        8
+  smooth-step       5.0   3.76170148   3.79339345   3.90450961   4.01951952        8
+  smooth-step       8.9   3.94422454   3.96313323   4.07336830   4.19058431        8
+  step2+step6       0.0   3.48537026   3.61478376   3.70784519   3.77492791        8
+  step2+step6       2.0   3.56339638   3.69184665   3.78403574   3.85039187        8
+  step2+step6       5.0   3.68738468   3.81395374   3.90450961   3.96953610        8
+  step2+step6       8.9   3.86245287   3.98563120   4.07336830   4.13615658        8
+  sat-exp           0.0   3.60991243   3.67268536   3.70784519   3.72819590        8
+  sat-exp           2.0   3.69381604   3.75232510   3.78403574   3.80173673        8
+  sat-exp           5.0   3.82745286   3.87863990   3.90450961   3.91776162        8
+  sat-exp           8.9   4.01679836   4.05649423   4.07336830   4.07984826        8
+
+  wrote research/out/e197/refit.json
