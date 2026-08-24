@@ -1423,7 +1423,7 @@ private let qwen35CompiledFusedSwiGLU:
 /// `qwen35CustomAffine4XSumsKernel`. The table entry is the same float
 /// accumulation of the same BF16 expression tree, in the same `i` order, so the
 /// two paths agree bit for bit.
-private let qwen35E120QMVHeader = """
+let qwen35E120QMVHeader = """
     template <int NA, bool USE_TABLE>
     inline void qwen_e120_qmv_wide(
         const device uint32_t* w,
@@ -1558,14 +1558,104 @@ private let qwen35E120QMVHeader = """
     }
     """
 
+/// How a compiled QMV kernel partitions its input rows across threadgroups.
+///
+/// One threadgroup streams the whole weight matrix, so a cell pays
+/// `G(m) = ceil(m / IPG)` weight passes. `staged` is the plan E120 shipped: it
+/// keeps `IPG <= 5`, so m = 6, 7 and 8 pay two passes. `singlePass` sets
+/// `IPG = m` at those widths, so the weights stream once and the kernel holds
+/// `rows_per_simd * m` live accumulators instead.
+///
+/// The two forms compile different sources, so each needs its own JIT kernel
+/// name. Both are built lazily, so a process that never selects `singlePass`
+/// never compiles it.
+enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
+    case staged
+    case singlePass = "singlepass"
+
+    /// `(width, inputs per group)`. The Metal body maps group `g` to
+    /// `first_m = g * IPG`, so the pair fixes both the template instantiation
+    /// and the launched x-extent.
+    var pairs: [(m: Int, ipg: Int)] {
+        switch self {
+        case .staged:
+            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
+        case .singlePass:
+            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 3)]
+        }
+    }
+
+    var kernelNameSuffix: String { self == .staged ? "" : "_sp" }
+}
+
+/// The distinct wide affine-4/group-64 shapes a decode round routes here.
+/// Identity is `(k, n)` only: the model geometry is fixed, so the map is a
+/// compile-time property of the checkpoint and never depends on the request,
+/// the prompt or the benchmark phase. `gdn.out_proj` and `fa.o_proj` share
+/// `(6144, 5120)` and are therefore one entry.
+enum Qwen35QMVCell: String, Sendable {
+    case mlpGateUp = "mlp.gate_up"
+    case mlpDown = "mlp.down"
+    case gdnInProj = "gdn.in_proj"
+    /// `gdn.out_proj` and `fa.o_proj`.
+    case outProj = "out_proj"
+    case faQKV = "fa.qkv"
+    case lmHead = "lm_head"
+    /// Any routable shape outside the decode round's seven fused cells.
+    case unlisted
+
+    static func identify(k: Int, n: Int) -> Qwen35QMVCell {
+        switch (k, n) {
+        case (5120, 34816): return .mlpGateUp
+        case (17408, 5120): return .mlpDown
+        case (5120, 16480): return .gdnInProj
+        case (6144, 5120): return .outProj
+        case (5120, 14336): return .faQKV
+        case (5120, 248_320): return .lmHead
+        default: return .unlisted
+        }
+    }
+}
+
+/// The shipped QMV width plan: which kernel variant each `(cell, width)` uses.
+///
+/// The `singlePass` kernels are bit-exact against `staged` (E195 gate: 42 cell
+/// configurations, 13,831,104 elements, zero differing, zero ULP), so the plan
+/// changes only how the work is dispatched, never what the model decides.
+///
+/// The plan is per `(cell, width)` because neither dimension alone predicts the
+/// winner. At m = 6 single-pass wins on six of the seven decode cells but loses
+/// on `mlp.down`, and holding that one cell staged nearly doubles the end-to-end
+/// gain (7.31 ms/round against 3.81 ms/round for an all-cells switch). At m = 7
+/// and m = 8 the kernel leaves the weight-streaming regime and becomes
+/// register/occupancy bound, so an all-cells switch costs 23.62 ms/round at
+/// m = 7. An `lm_head`-only switch at m = 7 also failed end to end (+0.60
+/// ms/round) despite winning by 18 % as an isolated cell, so m = 7 stays staged.
+///
+/// `m` is the verified width of the round, not the configured draft depth: tail
+/// rounds propose fewer drafts and land at lower widths, so every row here is
+/// live. The plan is a function of checkpoint geometry and width only. It cannot
+/// depend on the request, the prompt or the benchmark phase.
+@inline(__always)
+func qwen35QMVVariant(m: Int, cell: Qwen35QMVCell) -> Qwen35QMVKernelVariant {
+    guard m == 6, cell != .mlpDown, cell != .unlisted else { return .staged }
+    return .singlePass
+}
+
+/// Compile-time witness that a build carries the plan above. Fixed string, no
+/// runtime state: the trace can prove which dispatch plan shipped.
+public let qwen35QMVWidthPlanWitness = "selective-m6"
+
 /// Geometry and width switch shared by both QMV pipelines. `table` decides
 /// whether the chunk-sum table is a bound buffer at all: the four-input
 /// pipeline has no such buffer and passes a null pointer that `USE_TABLE =
 /// false` never reads.
-private func qwen35E120QMVSource(table: Bool) -> String {
+func qwen35E120QMVSource(
+    table: Bool, variant: Qwen35QMVKernelVariant = .staged
+) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
-    let cases = [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
+    let cases = variant.pairs
         .map { m, ipg in
             """
                     case \(m):
@@ -1761,6 +1851,33 @@ private let qwen35CachedAffine4QMVTableKernel = Qwen35CachedKernel(
     header: qwen35E120QMVHeader
 )
 
+private let qwen35CachedAffine4QMVKernelSinglePass = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_sp",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false, variant: .singlePass),
+    header: qwen35E120QMVHeader
+)
+
+private let qwen35CachedAffine4QMVTableKernelSinglePass = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_sp",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true, variant: .singlePass),
+    header: qwen35E120QMVHeader
+)
+
+private func qwen35CachedQMVKernel(
+    table: Bool, variant: Qwen35QMVKernelVariant
+) -> Qwen35CachedKernel {
+    switch (table, variant) {
+    case (false, .staged): return qwen35CachedAffine4QMVKernel
+    case (true, .staged): return qwen35CachedAffine4QMVTableKernel
+    case (false, .singlePass): return qwen35CachedAffine4QMVKernelSinglePass
+    case (true, .singlePass): return qwen35CachedAffine4QMVTableKernelSinglePass
+    }
+}
+
 private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
     name: "qwen35_custom_affine4_g64_qmv_wide_v1",
     inputNames: ["w", "scales", "biases", "x"],
@@ -1778,6 +1895,35 @@ private let qwen35CustomAffine4QMVTableKernel = MLXFast.metalKernel(
     header: qwen35E120QMVHeader,
     ensureRowContiguous: true
 )
+
+private let qwen35CustomAffine4QMVKernelSinglePass = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_sp",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false, variant: .singlePass),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVTableKernelSinglePass = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_sp",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true, variant: .singlePass),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
+private func qwen35UncachedQMVKernel(
+    table: Bool, variant: Qwen35QMVKernelVariant
+) -> MLXFast.MLXFastKernel {
+    switch (table, variant) {
+    case (false, .staged): return qwen35CustomAffine4QMVKernel
+    case (true, .staged): return qwen35CustomAffine4QMVTableKernel
+    case (false, .singlePass): return qwen35CustomAffine4QMVKernelSinglePass
+    case (true, .singlePass): return qwen35CustomAffine4QMVTableKernelSinglePass
+    }
+}
 
 /// Produces the activation chunk-sum table consumed by
 /// `qwen35CustomAffine4QMVTableKernel`.
@@ -1881,26 +2027,32 @@ public enum Qwen35CustomQMV {
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
-    /// Number of input-row threadgroups that can execute real work for the
-    /// current shared QMV width table. The Metal body maps group `g` to
-    /// `first_m = g * IPG` and returns before any read or write when
-    /// `first_m >= M`; launching `M` groups therefore submitted 67--80 %
-    /// no-op groups at every routed width. Keep the table explicit so a future
-    /// width-plan edit must update this launch witness deliberately.
-    static func activeInputGroups(_ m: Int) -> Int {
-        let inputsPerGroup: Int
-        switch m {
-        case 2: inputsPerGroup = 2
-        case 3: inputsPerGroup = 3
-        case 4: inputsPerGroup = 4
-        case 5: inputsPerGroup = 5
-        case 6: inputsPerGroup = 3
-        case 7: inputsPerGroup = 4
-        case 8: inputsPerGroup = 4
-        case 9: inputsPerGroup = 3
-        default: preconditionFailure("Qwen wide QMV has no width plan for \(m)")
+    /// Input rows one threadgroup serves at this width, read from the same
+    /// table the kernel source compiles. The launch witness and the kernel's own
+    /// switch therefore cannot desynchronise.
+    static func inputsPerGroup(_ m: Int, variant: Qwen35QMVKernelVariant) -> Int {
+        guard let entry = variant.pairs.first(where: { $0.m == m }) else {
+            preconditionFailure("Qwen wide QMV has no width plan for \(m)")
         }
-        return (m + inputsPerGroup - 1) / inputsPerGroup
+        return entry.ipg
+    }
+
+    /// Number of input-row threadgroups that can execute real work. The Metal
+    /// body maps group `g` to `first_m = g * IPG` and returns before any read or
+    /// write when `first_m >= M`; launching `M` groups therefore submitted
+    /// 67--80 % no-op groups at every routed width.
+    static func activeInputGroups(_ m: Int, variant: Qwen35QMVKernelVariant) -> Int {
+        let ipg = inputsPerGroup(m, variant: variant)
+        return (m + ipg - 1) / ipg
+    }
+
+    /// The compiled kernel form this `(cell, width)` uses under the shipped
+    /// width plan.
+    static func kernelVariant(_ cell: (m: Int, k: Int, n: Int))
+        -> Qwen35QMVKernelVariant
+    {
+        qwen35QMVVariant(
+            m: cell.m, cell: Qwen35QMVCell.identify(k: cell.k, n: cell.n))
     }
 
     /// The chunk-sum table costs one fill dispatch, measured at 4 to 6 us and
@@ -2012,20 +2164,22 @@ public enum Qwen35CustomQMV {
         else { return nil }
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
+        let variant = Self.kernelVariant(cell)
+        let groups = Self.activeInputGroups(cell.m, variant: variant)
         if Qwen35KernelConfigCache.enabled {
-            return qwen35CachedAffine4QMVTableKernel(
+            return qwen35CachedQMVKernel(table: true, variant: variant)(
                 [w, scales, biases, x, xsums],
                 Qwen35KernelLaunch(
-                    grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1),
+                    grid: (groups * 32, (cell.n / 8) * 2, 1),
                     threadGroup: (32, 2, 1),
                     outputShape: outShape.map(Int32.init),
                     outputDType: .bfloat16,
                     useTable: consume))
         }
-        return qwen35CustomAffine4QMVTableKernel(
+        return qwen35UncachedQMVKernel(table: true, variant: variant)(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
-            grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1),
+            grid: (groups * 32, (cell.n / 8) * 2, 1),
             threadGroup: (32, 2, 1),
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]
@@ -2075,18 +2229,20 @@ public enum Qwen35CustomQMV {
 
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
+        let variant = Self.kernelVariant(cell)
+        let groups = Self.activeInputGroups(cell.m, variant: variant)
         if Qwen35KernelConfigCache.enabled {
-            return qwen35CachedAffine4QMVKernel(
+            return qwen35CachedQMVKernel(table: false, variant: variant)(
                 [w, scales, biases, x],
                 Qwen35KernelLaunch(
-                    grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1),
+                    grid: (groups * 32, (cell.n / 8) * 2, 1),
                     threadGroup: (32, 2, 1),
                     outputShape: outShape.map(Int32.init),
                     outputDType: .bfloat16))
         }
-        return qwen35CustomAffine4QMVKernel(
+        return qwen35UncachedQMVKernel(table: false, variant: variant)(
             [w, scales, biases, x],
-            grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1),
+            grid: (groups * 32, (cell.n / 8) * 2, 1),
             threadGroup: (32, 2, 1),
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]

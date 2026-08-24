@@ -1206,18 +1206,6 @@ public final class Qwen36MTPBlockSession {
     private var prefetchHitCount = 0
     private var prefetchUndoCount = 0
 
-    /// E165 ARM SWITCH. `MLX_E165_HEAD_PREFETCH=1` runs the prefetch. Every
-    /// other value, including unset, keeps the shipped order in which the head
-    /// flush is built at the top of the round that uses it. Both arms live in
-    /// one binary, so an ABBA session needs no rebuild between legs.
-    ///
-    /// The switch is opt-in on purpose. No existing leg script sets it, so an
-    /// unset environment has to reproduce the shipped order exactly; otherwise
-    /// rebuilding the worker would silently retime every earlier census leg
-    /// against a different schedule.
-    private static let headPrefetchEnabled =
-        ProcessInfo.processInfo.environment["MLX_E165_HEAD_PREFETCH"] == "1"
-
     /// Flush every committed row the head has not seen, ending on
     /// `(hidden, primary)`, and propose one draft from the final row.
     ///
@@ -1774,14 +1762,11 @@ public final class Qwen36MTPBlockSession {
         // This depends only on the verify output, so it may run BEFORE the
         // target cache work rather than after it. That is what lets the next
         // round's first head step be issued while the device is still idle.
-        if Self.headPrefetchEnabled {
-            runHeadUpkeep(
-                headCache: headCache, validHistoryOffset: validHistoryOffset,
-                acceptedCount: acceptedCount, drafts: drafts,
-                verifyHidden: verifyHidden, verifyNormed: verifyNormed)
-            prefetchHeadStep(
-                hidden: pendingHidden!, primary: pendingPrimary!)
-        }
+        runHeadUpkeep(
+            headCache: headCache, validHistoryOffset: validHistoryOffset,
+            acceptedCount: acceptedCount, drafts: drafts,
+            verifyHidden: verifyHidden, verifyNormed: verifyNormed)
+        prefetchHeadStep(hidden: pendingHidden!, primary: pendingPrimary!)
 
         if acceptedCount == drafts.count {
             // FULL ACCEPTANCE: the verify state IS the committed state. No
@@ -1837,12 +1822,6 @@ public final class Qwen36MTPBlockSession {
 
         if Self.traceRounds { tCommitDone = DispatchTime.now().uptimeNanoseconds }
 
-        if !Self.headPrefetchEnabled {
-            runHeadUpkeep(
-                headCache: headCache, validHistoryOffset: validHistoryOffset,
-                acceptedCount: acceptedCount, drafts: drafts,
-                verifyHidden: verifyHidden, verifyNormed: verifyNormed)
-        }
         fullAcceptStreak =
             acceptedCount == drafts.count ? fullAcceptStreak + 1 : 0
         recordAcceptOutcome(acceptedCount: acceptedCount, drafts: drafts)
@@ -1930,6 +1909,9 @@ public final class Qwen36MTPBlockSession {
                 // standalone fill.
                 + "xs_hit=\(qwen35XSumsSidecarHits) "
                 + "xs_fill=\(qwen35XSumsStandaloneFills) "
+                // Fixed build witness for the compiled QMV width plan. No
+                // runtime state, no hot-path counter.
+                + "qmv_plan=\(qwen35QMVWidthPlanWitness) "
                 // E174 step 1. `xs_uniq` counts DISTINCT activations among
                 // those fills, so `xs_fill - xs_uniq` per round is the number
                 // of fills that rebuilt a table an earlier cell in the same
@@ -1945,11 +1927,13 @@ public final class Qwen36MTPBlockSession {
                 + "cfg=\(Qwen35KernelConfigCache.enabled ? 1 : 0) "
                 + "cfg_hit=\(qwen35KernelConfigCacheHits) "
                 + "cfg_miss=\(qwen35KernelConfigCacheMisses) "
-                // Head-chain prefetch witness. `pf` is the arm this process
-                // compiled for, `pf_hit` says this round consumed a step the
-                // PREVIOUS round submitted, and the running counts show what
-                // the leg actually did rather than what it was asked to do.
-                + "pf=\(Self.headPrefetchEnabled ? 1 : 0) "
+                // Head-chain prefetch census. The prefetch is unconditional, so
+                // `pf` is a build witness rather than an arm flag: a trace
+                // without it came from a build that predates the mechanism.
+                // `pf_hit` says this round consumed a step the PREVIOUS round
+                // submitted, and the running counts show what the leg actually
+                // did rather than what it was asked to do.
+                + "pf=1 "
                 + "pf_hit=\(usedPrefetch ? 1 : 0) "
                 + "pf_made=\(prefetchMadeCount) "
                 + "pf_hits=\(prefetchHitCount) "

@@ -542,9 +542,8 @@
   "scope": "english only, 5 of 18 census legs, provisional until the 9-prompt pool lands"
  },
  "depthPriceIdentity": {
-  "status": "WITHDRAWN by FINDING 407",
-  "wasFinding": 385,
-  "reason": "c* = h/(s+h) assumed a linear marginal row cost; b = 5.3350 is a mixture-smoothed slope, not a physical marginal row"
+  "status": "CLOSED by FINDING 519 (static price axis); remaining depth value = per-prompt information (E201)",
+  "ledgerEntry": 408
  },
  "designatedCandidate": {
   "armAEvidence": "local seed_prefill_seconds -1.9471 % over 8 gated ABBA legs, p = 0.0286, W&B o2hditxg, about 78 ms local, 10.3 ms ranked at the 7.593x prefill transfer factor",
@@ -723,22 +722,7 @@
   "keyResult": "FINDINGs 504-506: both laws falsified; dR6 = +8.940 ms = 15.77 MUE",
   "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zhs21ryd"
  },
- "liveSubmittedSurface": {
-  "afterRevert": "organizer main plus exactly two files, 30 and 88 changed lines",
-  "ledgerEntry": 358,
-  "predictedReceipt": 3.71209,
-  "predictedVsCrown": "-0.46 %, will be rejected on score",
-  "twoDeltaValue": "about +0.11 % over 5a9f130a organizer main at 3.70784519",
-  "upstreamShiftDstCount": 0,
-  "vsUpstreamMain": {
-   "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": 30,
-   "Vendor/.../MLXLLM/Models/Qwen35.swift": 88,
-   "Vendor/.../kernels/quantized.h": 138,
-   "Vendor/.../kernels/quantized_nax.h": 80,
-   "Vendor/.../mlx-generated/quantized.cpp": 138,
-   "Vendor/.../mlx-generated/quantized_nax.cpp": 80
-  }
- },
+ "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
  "localToRankedAmplification": {
   "byArmShape": {
    "per_draft_step": {
@@ -2201,9 +2185,9 @@
   "ledger": 361,
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
- "submissionQueue": "In flight: 2681c3ac (E193 prefetch, frozen e50b1511/measured 67662100, watcher Alphonse). Next: E199 cap-8 paid receipt (Thorfinn, freezing after width-9 gate). Later: E195 selective-QMV winner iff ranked width-frequency weighting clears MUE (advisor review note); E198 Route-1 kernel winner (m6..9); E192+E194 composition.",
- "lastAdvisorUpdate": "2026-08-24T18:50Z Entry 401: E197 MERGED (FINDINGs 514-515) - cap-8 priced crown-relevant P(crown)=0.465, cap-6 dead, dR9 receipt-only; E199 cap-8 candidate assigned to Thorfinn, queued behind 2681c3ac",
- "ledgerEntry": 401,
+ "submissionQueue": "In flight: 2681c3ac (E193 prefetch, validating ~2h20m, watcher Alphonse). Next: E199 cap-8 paid receipt (frozen 4b967648, Thorfinn holding on slot trigger e0516d5b). Merged riders for the next composition: E195 selective QMV plan (0.181 ms/round ranked). Pending: E198 fused-SDPA terminal (Stage 4 null, liveness diagnosis); E192+E194 composition; E200 depth pricing (assigned).",
+ "lastAdvisorUpdate": "2026-08-24T22:55Z Entry 411: E203 merged (FINDING 524 within-prompt family closed 16-57x below break-even; FINDING 525/RULE 392 closed-loop traces manufacture phantom structure; FINDING 526 shipped-rule +2.27% credit is not within-prompt prediction - EMA-subtraction question queued). Board unstuck 22:16Z, 2681c3a heads the draining queue. E202 statistic ruling (inner upper-bound; FINDING 522(b) PROVISIONAL pending complete census). E192 rollback slot assigned to Askeladd.",
+ "ledgerEntry": 411,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2425,7 +2409,18 @@
   "512": "Route-1 prize concentration (E196 census, 81 rounds, depth hist {3:1,4:29,5:2,6:3,7:46}): m=8 carries 92.8% (1124.7|1078.6 of 1212.5|1161.2 us/round); m=6-only kernel tops out at 0.032 ms/round = 0.057 MUE, 16x below the Stage 4 gate. E198 width scope expanded (feedback e198-fb-width-scope-402): Stage 4 arm and shipped compile-time default may enable every m in 6..9 that passes per-width register, dispatch (>=50% of pair-minus-floor, decision width m=8, both kL cells, no interpolation across kL=1024) and numerics gates. m=6 spill stops the line; m=8 spill => skip Stage 4, report register wall as Route-1 closure. m=9 in curves only (feeds E197 cap-8 repricing).",
   "513": "E195 m=7 ladder (mislabelled arms, corrected: arm suffix = draft depth, m = depth+1; plan table keys on verified width, unaffected): all-cells single-pass +23.62 ms/round (+17.2%, MTP s/token +9.47%) at m=7 vs staged 137.33; selective is a verified cross-width no-op (+0.03 ms inside the +/-0.24 FINDING 503 floor); RULE 179 identity exact (38/223/218). With lm_head-alone -1538 us probe, other six cells lose ~25 ms/round combined at m=7 => per-(cell,m) plan is necessary. qmv_sp census (staged 0 / singlepass 14392 / selective 386): fixed depth does not fix width \u2014 tail rounds land at lower m, so every per-width plan row is live at ranked cap-7. Corrected m=6 primary relaunched; true m=5 null is depth 4.",
   "514": "E197 ranked law refit (24 paid per-prompt constraints, 8 families): smooth-step is the only family reproducing all 3 paid medians inside the 0.689% channel (chi2 16.4/AICc 29.8); dR6 revised to 7.93-8.26 ms (still super-quadratic); LOO shows no family extrapolates a held-out paid median within the channel (3-9 sigma) so MC weights = 1/2 AICc + 1/2 LOO. cap-6 DEAD in every family (needs dR8 >= 7.895 ms vs estimates 2.35-7.65). cap-8 priced 3.7153 [3.466,3.994], P(beat crown)=0.465, P(beat A)=0.521. dR9 unobservable on ranked (cap-7 verifies <=8 rows); a paid cap-8 receipt is the only dR9 measurement and a 5.5-sigma flat-vs-stepped discriminator (3.82 vs 3.68). Predeclared 35% rule CLEARED -> paid cap-8 receipt queued (E199).",
-  "515": "Depth-axis upper bound: oracle per-prompt cap (shallow at 4, deep at 8) = 3.81998 = +3.02% vs A under smooth-step; within-request depth adaptation is legal. Shipped greedy depth rule uses makeUniformDepthPrice (.ship) and is blind to the width-6 step -> non-uniform depth-price arm is a distinct queued lever. Conditional repricing: a >=6-row-cell shave X corrects the anchor by X*P(rows>=6) and never moves the optimum back to cap 7 - depth and m>=6 width mechanisms compound."
+  "515": "CORRECTED by E201/FINDING 523: the depth-axis upper bound is +3.28% vs A (3.829386), not +3.02% (old value was biased-chain arithmetic), and it is a GLOBAL cap-8 effect, not per-prompt information - the oracle per-prompt cap and the static global cap 8 are the same schedule in median terms. Within-request depth adaptation remains legal. Conditional repricing corollary retained: a >=6-row-cell shave X corrects the anchor by X*P(rows>=6) and never moves the optimum back to cap 7 - depth and m>=6 width mechanisms compound. The cap-8 receipt (E199) resolves a two-sided +/-4% swing: smooth continuation +3.28% vs E186 step transferred at 0.237 -> -0.71%.",
+  "516": "E195 MERGED at cd3e7688 (composition): cell-selective single-pass QMV plan wins -7.31 ms/round (-5.8%, -3.46% MTP s/token) at m=6 vs staged; beats all-cells by 3.50 ms/round with 45% FEWER single-pass dispatches (8685 vs 15934) - declined mlp.down is actively harmful under single-pass at m=6. Bit-exact 42 configs/13.8M elements/0 ULP; m=5 null +0.045. Census-weighted ranked value 0.181 ms/round = 0.32 MUE -> sub-MUE solo, merged to ride the next natural submission. Recompute weighting from per-prompt rows if cap-8 promotes (mass moves to m=8/9 where plan stays staged).",
+  "517": "Probe-level dispatch wins do not survive end-to-end: selective7 (lm_head-only single-pass at m=7) reversed from -1538 us/round projected (12/12 ABBA probe blocks, FINDING 501) to +0.60 ms/round end-to-end; enum deleted per quarantine. Same pattern as E198 Stage 4 null (+0.184 ms/round vs -0.51..-0.61 projected, refuted >=4 sigma, liveness diagnosis pending). RULE: isolated-dispatch microbenchmarks on an idle GPU can invert in a saturated 64-layer decode round; every per-dispatch or dispatch-count price must be confirmed end-to-end before entering a freeze decision.",
+  "518": "Null-control calibration of the ungated 8-leg ABBA (M4 Pro, 512 tokens, harness=local): leg dispersion 0.04-0.09% of round time (contrast 2-sigma ~0.17 ms/round, so the 0.5 ms/round bar has ~3x margin), but a zero-true-effect contrast still produced an apparent -0.184 ms/round at 2-sigma 0.169 \u2014 a ~0.18-0.2 ms/round systematic artifact floor from uncancelled drift (leg-1 cold entry). Reading rule: |effect|<~0.2 ms/round is artifact-indistinguishable regardless of nominal sigma; 0.2-0.5 is NEGATIVE, never a near-miss; >0.5 is trustworthy. Complements FINDING 503's leg-level +/-0.24 ms/round floor. Source: E198 abba1 (arm switch sanitized away, both arms identical code). Ledger Entry 407.",
+  "519": "Static depth-price axis CLOSED: honest width-6 step pricing in the greedy rule is self-blocking (bar depends only on 1+expected, larger for strong rounds; deep prompts collapse to the paid cap-4 schedule, -4.3%); desk walk -3.49%/-5.13%, global argmin -0.36%, shape sweep max +0.17% < +0.2% floor; exact per-round replay agrees (rstep 0.937x, rstepnat 0.974x); EMA loop adds only +0.057 edl so frozen-state replay is faithful. FINDING 515 oracle ceiling (+3.02%) is worth exactly the per-prompt information \u2014 depth value moves to online/per-prompt adaptation. E200, Entry 408.",
+  "520": "E197 chain-convention S_k has depth-selection bias (measured on rounds the shipped rule chose for depth k; false +3.91% sweep). Corrected desk instrument: survival-pinned latent-q (paid per-prompt survival pins P(q>Q_k) at seven knots, family-free); out-of-sample error vs paid cap-4/cap-5 receipts -0.44%/+0.24%, inside the 0.689% receipt channel. Standing caveat on desk pricing of schedule changes. E200, Entry 408.",
+  "521": "RULE 79 quantitative proof: local M4 Pro vs ranked cost tables give the SAME depth policy OPPOSITE signs \u2014 8->5 saves 37.87% of the round locally vs 31.23% ranked (R(8)/R(5) 1.6095 vs 1.4541); the E200 candidate arm ran FASTER locally while pricing -3.5% ranked. Re-measures FINDING 484 from a real schedule. E200, Entry 408.",
+  "522": "E198 terminal negative (PR 195 CLOSED unmerged, W&B vlqqgc44): the fused row-amortized SDPA kernel serving qL 6..9 is correct and live (exact at 512 tokens, 0 differing bf16 elements at unit level, positive control fired) but gives zero end-to-end gain - steady-state legs 5-8 improvement -0.059 ms/round, 2sigma [-0.271,+0.154]; the >=0.5 ms/round bar excluded at the optimistic edge. Mechanism: recoverable cost is dispatch-fixed (~25us/dispatch) and MLX OVERLAPS the 5 dispatches, so the isolated 59.9us/layer saving is never on the critical path; custom metal_kernel adds ~10us fixed call cost x16 layers ~ 160us/round pure overhead (MLXFastKernel.callAsFunction rebuilds config/template/output objects every call - standing tax on ANY custom kernel here). Corollaries: FINDING 507 dispatch-count family nearly dead pending E202 eval()-barrier settlement; m=9 contributed ZERO census rounds - re-derive depth histogram before any width work. [PROVISIONAL AMENDMENT per E202 interim: the E198 width census covered only the first 128 warm-up split-cell calls; the {6:16,7:16,8:80,9:16} mix and the m=9-zero claim may be warm-up-contaminated. E202 delivers the complete 512-token census; correct on its terminal result.]",
+  "523": "E201 decisive NOT USEFUL, desk-only (PR 198 MERGED, W&B 0jv1k3gt): NO per-prompt depth-cap lever exists. On the corrected FINDING 520 instrument, best online observe-then-commit = best static global cap 8 = oracle per-prompt cap = 3.829386 (+3.28% vs A); online-static = +0.000%, robust to 9-row treatment and all 8 LOO mixes; family maximiser is the degenerate member (c0=8, lo=hi=8) that ignores its observation. Cap is INERT on shallow prompts (P(depth>=4)=1.8e-6 plutarch; identical raw ratio at caps 4-8) and every binding prompt wants it maximal. Misclassification not the obstacle (error <1e-7 by r=16). Reusable exact-median pricing instrument research/e201_online_cap.py (cap_state, accepted_pmf, enumerate_median); modelling limit: rounds exchangeable within prompt - lookahead/drift rules need traced per-round state first (E203 Stage 0).",
+  "524": "E203 decisive NOT USEFUL, desk-only, zero build (PR 200 MERGED, W&B rlv5exao): the within-prompt lookahead/drift/EMA depth family is CLOSED. Open-loop fixed-depth-7 traces (9 prompts, 1741 rounds, ~1% censoring): 95% upper bounds on causally predictable accepted-length variance psi <= 0.2324% (lag 1) / 0.8033% (best of 16 lags); pooled rho1 +0.0014 (null sd 0.0239); EMA and causal AR one-step skill NEGATIVE everywhere. Ceiling vs static cap 8 (3.829386): +0.009% to +0.031%. Break-even: +0.2% needs psi>=5.26%, +0.5% needs psi>=13.29% - 16-57x shortfall. Oracle envelopes for reference: oracle_q (perfect latent rate) +3.51% vs cap 8; oracle_a (told realized run) +14.09%. Validation gate passed at the FINDING 520 bar before pricing.",
+  "525": "E203 positive control: the shipped closed loop (E128 costModelDepth + recordAcceptOutcome) MANUFACTURES phantom within-prompt structure from provably exchangeable input - rho1 0.0980 and tracker corr 0.1725 manufactured vs 0.1168/0.1662 observed on the adaptive arm (84% of the autocorrelation, ALL of the tracker correlation; depth feedback + censoring). Basis of RULE 392.",
+  "526": "Open puzzle (E203): the shipped EMA tracker predicts nothing within-prompt (forecast corr +0.0085, band +/-0.047) yet the corrected instrument credits the shipped greedy price rule +2.27% over the best constant depth (3.829386 vs 3.744526; per-prompt constant = global). The rule's value is NOT within-prompt prediction. Queued: EMA-subtraction test (constant or between-prompt-only policy on the cap-8 base) - desk-neutral-or-better, needs GPU confirmation; HELD until the E199 receipt resolves the cap-8 anchor."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2447,7 +2442,9 @@
   "387": "Never anchor a worker-certification needle on a Swift require/precondition/fatalError message literal, or any literal of the same kind, mechanism, or file as an existing require literal: failure-path strings can survive in a stale binary whose live path differs. Use a dedicated >=16-byte literal on the live code path (FINDING 474 sizing applies).",
   "388": "Any experiment predicting |effect| < 0.5 ms/round must not use one-arm-per-leg ABBA as its decisive contrast (FINDING 503 floor ~ +/-0.24 ms/round). Use an in-process arm switch alternating within one leg plus a causally unreachable null control in the same session, or raise the effect by composition first. A leg-level result below the floor is Unclear, not a negative.",
   "389": "Head identity: every timed leg, confirmation, and result must record head_provenance_sha256; for candidate evidence it must equal the head the candidate declares (declared-run digest dadbfb80-lineage when mtp-head.manifest.json is tracked; pinned 3a7fed84 otherwise). A confirmation under any other head is auxiliary correctness evidence only and must be re-run under the declared head before freeze/terminal. Clean-env run_job legs must export MLXFAST_QWEN_MTP_HEAD_DIR explicitly. Never infer head identity from uses_pinned_mtp_head or wrapper defaults.",
-  "390": "Head-identity comparison semantics (extends RULE 389): a pinned-cache head_provenance_sha256 is host-local and time-local (HARNESS DEFECT 45 \u2014 .mlxfast-reference-cache.lock with timestamps/inodes/ns-mtimes is inside the hashed tree); two differing pinned digests are NOT evidence of a head change. Digest-vs-screen identity comparisons are defined only for DECLARED heads (dadbfb80 stable across 52 legs, 3 experiments, fleet reprovision). Every leg records head class (declared|pinned) alongside the digest. Nobody edits computeQwenMTPHeadProvenance; the lock-file exclusion is a known upstream limitation."
+  "390": "Head-identity comparison semantics (extends RULE 389): a pinned-cache head_provenance_sha256 is host-local and time-local (HARNESS DEFECT 45 \u2014 .mlxfast-reference-cache.lock with timestamps/inodes/ns-mtimes is inside the hashed tree); two differing pinned digests are NOT evidence of a head change. Digest-vs-screen identity comparisons are defined only for DECLARED heads (dadbfb80 stable across 52 legs, 3 experiments, fleet reprovision). Every leg records head class (declared|pinned) alongside the digest. Nobody edits computeQwenMTPHeadProvenance; the lock-file exclusion is a known upstream limitation.",
+  "391": "(a) Model-side runtime switches must use a sanitizer-allowlisted name (DARKBLOOM_ standard; allowlist also passes MLX_, METAL_, MTL_, DYLD_, LC_ prefixes and the exact keys in sanitizedRuntimeWorkerEnvironment); anything else is dropped in silence (HARNESS DEFECT 28). (b) No multi-arm timed session is priced without a pre-registered positive arm witness (liveness counter, build witness string like qmv_plan=, or a counter delta only the changed path produces) proving the arms executed different code. A contrast without an arm witness is VOID by default, not a null. Raised by E198's void Stage-4 ABBA (Edward). (c) The arm witness must be arm-cost-symmetric: compiled into both arms with identical per-call cost (no per-arm-only allocations \u2014 E198's declined() string interpolation ran only in the OFF arm at roughly the size of the effect under test), and every added instrument must be declared in the identity tuple, never recorded as none.",
+  "392": "Any claim of within-prompt (round-serial) structure in acceptance streams must be measured from open-loop fixed-depth traces. Closed-loop adaptive traces are inadmissible for that question: the depth-feedback loop plus censoring manufactures autocorrelation and tracker correlation from exchangeable input (FINDING 525)."
  },
  "crownAttempt": {
   "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
@@ -2819,5 +2816,57 @@
   "evidence": "WITH lock: 5 files/849407066 B/3a7fed84; WITHOUT: 4 files/849406438 B/157f750e (matches lock file_count=4/byte_count); 62516c6f-vs-3a7fed84 = lock churn across 2026-08-24 fleet reprovision",
   "rankedImpact": "none \u2014 candidate leg uses declared head, whose directories contain no lock file and whose digest is stable",
   "foundBy": "qwen-alphonse, E193 desk audit, Entry 400"
- }
+ },
+ "harnessDefect28SanitizerRecurrence": {
+  "status": "RECURRED in E198 (2026-08-24); both ABBA arms ran shipped code",
+  "mechanism": "sanitizedRuntimeWorkerEnvironment (QwenRuntimeWorker.swift:2566-2655) rebuilds the worker env from an allowlist; MLXFAST_* is excluded by design, so MLXFAST_QWEN_FUSED_SDPA_ROWS and MLXFAST_E198_LIVENESS_OUT were dropped silently",
+  "voidedEvidence": [
+   "E198 Stage-4 8-leg ABBA (comment 5400726916)",
+   "E198 iterate FUSED 512 live-path exactness (comment 5400192216)"
+  ],
+  "stillStanding": [
+   "E198 Stage-1 register gate",
+   "E198 Stage-2 in-process pricing + FINDING 507 falsification",
+   "E198 Stage-3 unit exactness (swift test in-process)"
+  ],
+  "upstreamFixFlaggedNotImplemented": [
+   "log dropped names in sanitizer",
+   "fail loudly when MLXFAST_-suffixed twin of a DARKBLOOM_ opt-in is set"
+  ],
+  "guard": "RULE 391",
+  "ledgerEntry": 403
+ },
+ "e200DeskPriceNegative": {
+  "status": "PROVISIONAL \u2014 exact offline replay of real per-round ema=/m= trace pending (E200 steps 1-3)",
+  "harness": "ranked",
+  "anchor": "receipt A 3.70784519415395, cap 7",
+  "result": {
+   "smoothStepLevelHeld": "-5.13%",
+   "smoothStepMeasuredLevel": "-3.49%",
+   "globalArgmin": "-0.36%",
+   "shapeSweepMax": "+0.17% at w=0.1 (< +0.2% floor)"
+  },
+  "mechanism": "honest width-6 step price makes the depth-4 guard bar ~0.99 (depends only on 1+expected, larger for strong rounds); one-step hill climb blocks strong rounds hardest; deep prompts collapse to the paid cap-4 schedule. Price side cannot express selective step-jumping; needs lookahead.",
+  "consequence": "FINDING 515 oracle ceiling (+3.02%) unreachable via price-side greedy; lookahead scheduler queued",
+  "instrumentCaveat": "E197 chain-convention S_k over-values added depth (selection bias; biased sweep +3.91%). Survival-pinned latent-q is the corrected desk instrument for schedule-change pricing. Softens desk cap-8 expectation; E199 receipt decides regardless.",
+  "ledgerEntry": 404
+ },
+ "e198EvidenceChannel": {
+  "trap": "timed worker profile denies all file writes except /dev/null AND mtp-timed installs a swallowing stderr drain (forwardsWorkerStderr unset) \u2014 an in-worker probe has no reporting channel under the timed profile",
+  "documentedAt": "Qwen36MTPBlockSession.swift:750-760 (MLX_QWEN_MTP_TRACE sink)",
+  "escape": "MLXFAST_NO_SANDBOX=1, refused when MLXFAST_OFFICIAL_BENCHMARK_RUN=1 (cannot reach ranked)",
+  "caveat": "sessions run with the sandbox lifted are within-session evidence only: comparable_with_sandboxed_history=false",
+  "livenessGate": "PASSED: served_by_rows {6:96,7:92,8:48,9:32}, zero declines, exact 64-token screen, declared head",
+  "ledgerEntry": 405
+ },
+ "rankedQueueStall20260824": {
+  "observedAt": "2026-08-24T21:31Z (Thorfinn board read)",
+  "evidence": "eight validating submissions from seven solvers; newest terminal row created 17:35Z; ours 2681c3ac at 3h33m",
+  "pattern": "stopped ranked worker rather than slow queue",
+  "ruling": "E199 keeps holding; one receipt in flight; no stall action available beyond patience",
+  "frontier": "crown ec24d591 newjordan 3.7291100105909 unchanged",
+  "ledgerEntry": 409
+ },
+ "depthValueAxis": "CLOSED except two items: (1) E199 cap-8 receipt (frozen, HELD behind 2681c3a - which now heads the draining Yukon queue); (2) FINDING 526 EMA-subtraction question (held behind E199). Closed: static price axis (FINDING 519), per-prompt cap (FINDING 523), within-prompt lookahead/drift/EMA (FINDING 524, 16-57x below break-even).",
+ "assignmentQueue": "Live: E193 (Alphonse, receipt 2681c3ac heads the draining queue), E199 (Thorfinn, frozen cap-8, HOLD), E202 (Edward, 14-leg session running, inner-statistic ruling issued), E192 (Askeladd, persistent in-place rollback slot, FINDING 495 lever, sub-MUE composition material). Queued: FINDING 526 EMA-subtraction (behind E199 receipt)."
 }

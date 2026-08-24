@@ -71981,3 +71981,228 @@ Oracle per-prompt cap under smooth-step (three shallow prompts at cap 4, five de
 Candidate: `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1067`, `segmentedVerifyDepthCap` 7 → 8; nothing else on the submitted surface. Cap 8 is legal (`Qwen36MTPLimits.maxDepth` = 8; receipt A reports `mtp_max_draft_depth: 8`) and `warmAllDepths` warms verify widths 1..9. Open risk: no ranked receipt has ever exercised width 9, and the file records a historical width>5 bit-exactness wall (resolved by the sdpa 6..9-row causal split, which covers width 9). Gate: one 512-token `--local-submit` run that is simultaneously the width-9 exactness gate and the standard confirmation, with proof that 9-row rounds actually occurred. Submit when the official slot frees (receipt `2681c3ac` terminal); at most one frozen candidate ready behind it.
 
 **State.** Receipt `2681c3ac` (E193) still validating. E195 corrected m=6 primary ladder running. E198 Stages 1–3 in progress under the width ruling. E197 CLOSED-MERGED. Advisor note for E195 review: per-width ladder effects must be weighted by ranked width frequencies (FINDING 512 census method) before any freeze decision.
+
+---
+
+## Entry 402 — 2026-08-24T20:20Z — E195 MERGED (selective QMV plan, FINDINGs 516–517): first submitted-surface base change this round; E198 Stage 4 null under liveness diagnosis; E199 frozen and holding; E200 assigned
+
+**Review.** E195 (PR #192, Askeladd, head `b7ac9a02`) terminal `succeeded`; W&B `6r5y4e4y` advisor-validated (all headline numbers reproduce as summary keys). Diff = 2 submitted paths (`Qwen36MTPBlockSession.swift` +3 build-witness lines, `Vendor/.../Qwen35.swift` +218/−33 plan function and selective dispatch) + E195 test suite + research tooling. RULE 198 ship state verified: `MLX_E195_QMV_WIDTH_PLAN` env read deleted from Sources/ (grep-confirmed), enum and census/trace instruments deleted, one free function `qwen35QMVVariant(m:cell:)`, `qmv_plan=` build witness retained per the E193 `pf` precedent. Gates: scope OK, growth 6,926/262,144, ranked-boundary PASS, twin audit OK, swift test at the documented pre-existing floor, one 512-token `--local-submit` with REAL 40 C gate (all tokens matched, ledger closed 512/512 + 574/574, head `dadbfb80…`). Base validity recorded on `5dec966e`; **MERGED at `cd3e7688`** as a composition candidate.
+
+### FINDING 516 — cell-selective single-pass QMV plan wins −7.31 ms/round at m=6; fewer dispatches, faster; mlp.down is actively harmful under single-pass
+
+At m=6 (harness=local, 12-leg palindrome, σ 0.04–0.06, 12/12 band separation, RULE 179 identity exact): selective 118.73 ms/round vs staged 126.04 (−7.31, −5.8 %, MTP s/token −3.46 %) vs all-cells single-pass 122.23. Selective issues 45 % FEWER single-pass dispatches than all-cells (8685 vs 15934) yet runs 3.50 ms/round faster: the declined dispatches are exactly `mlp.down`, which is actively harmful under single-pass at m=6 and was cancelling about half the available gain. Bit-exactness: 42 cell configurations, 13,831,104 elements, 0 differing, 0 max ULP, positive control fires (ULP to 52). m=5 null control +0.045 ms/round (one fifth of the FINDING 503 floor) — the instrument does not manufacture effects. **Ranked pricing (harness=ranked): census-weighted value 7.31×(2/81) = 0.181 ms/round ≈ 0.32 MUE — sub-MUE solo, so merged as composition; no dedicated receipt.** If E199's cap-8 receipt promotes, mass moves toward m=8/9 where the plan is deliberately staged, and the weighting must be recomputed from that receipt's per-prompt rows.
+
+### FINDING 517 — probe-level dispatch wins do not survive end-to-end: selective7 failed (+0.60/+0.67 ms/round) despite an 18 % isolated-cell win
+
+FINDING 501's m=7 lm_head anomaly (−1538 µs/round projected, 12/12 ABBA probe blocks) REVERSED end-to-end to +0.60 ms/round (σ 0.04, RULE 179 identity exact); the `selectiveSeven` enum case was deleted per the pre-agreed quarantine. Together with E198's Stage 4 (below), this is a repeating pattern: isolated-dispatch microbenchmarks on an idle GPU can invert in a saturated 64-layer decode round. Any per-dispatch or dispatch-count pricing must be confirmed end-to-end before it enters a freeze decision.
+
+### E198 Stage 4 — null, under mandatory liveness diagnosis before any terminal claim
+
+8-leg ABBA at 512 tokens: FUSED +0.101 % s/token vs OFF (+0.184 ms/round, 2σ 0.169) against a Stage 2 projection of −0.51…−0.61 ms/round — refuted ≥4σ. All legs exact in both arms. Edward correctly refuses to file a terminal result until a research-only, env-gated liveness counter distinguishes (1) kernel ran and the microbenchmark saving is an artefact (which would generalize FINDING 517 and invalidate dispatch-count arguments in the FINDING 507 family) from (2) a silent guard decline (dtype/stride/width-set) meaning the kernel never ran. Counter is inert in timing arms and marked for deletion before any submission.
+
+### State
+
+Receipt `2681c3ac` (E193) still validating (~2 h 20 m). E199 frozen at `4b967648`, note ready, watcher `e0516d5b` as slot trigger; swift-test accounting accepted (five pre-existing environmental failures, base rerun declined — feedback `e199-fb-swifttest-ack-405`). NOTE: E199's frozen tree predates the E195 merge by design — it submits its own tree; post-receipt compositions ride the new base. E200 (width-aware non-uniform depth pricing, FINDING 515 lever) assigned to Askeladd. Feedbacks this cycle: `e195-fb-m6-continue-404`, `e199-fb-swifttest-ack-405`.
+
+---
+
+## Entry 403 — 2026-08-24T20:35Z — E198 Stage-3 live-path and Stage-4 ABBA results RETRACTED (HARNESS DEFECT 28 recurrence); RULE 391 arm-witness requirement; repair session approved
+
+**Retraction (Edward, PR #195, comment `e198-stage4-retraction-defect28`).** The E198 Stage-4 8-leg ABBA and the Stage-3 `iterate FUSED 512` live-path exactness claim are both VOID. The arm switch `MLXFAST_QWEN_FUSED_SDPA_ROWS` and the liveness path `MLXFAST_E198_LIVENESS_OUT` were silently dropped by `sanitizedRuntimeWorkerEnvironment` (`QwenRuntimeWorker.swift:2566-2655`), which rebuilds the worker environment from an allowlist (exact keys + prefixes `DARKBLOOM_`, `DYLD_`, `LC_`, `METAL_`, `MLX_`, `MTL_`). `MLXFAST_*` is excluded by design so the trusted parent cannot leak a benchmark-phase oracle. `enabledRows` was empty in all eight legs: the session compared the shipped split against itself. The reported "+0.184 ms/round FUSED regression" was single-arm noise (whole magnitude one 2σ interval wide — the signature of one arm, not two). This is a recurrence of HARNESS DEFECT 28, already documented in `research/e134_warm_session.sh:38`, `research/e154_r2_session.sh:33`, `research/e128_session.sh:26`; every prior model-side session switch uses the `DARKBLOOM_` prefix for this reason.
+
+**Correction to Entry 402.** The Entry 402 E198 section ("Stage 4 — null, under mandatory liveness diagnosis") described a measurement that in fact had no arm contrast; treat it as VOID, not null. FINDING 517's supporting cross-reference to "E198's Stage 4" is withdrawn; FINDING 517 itself stands unchanged on E195's own evidence (selective7 end-to-end reversal with a working `qmv_plan=` arm witness).
+
+**Still standing from E198** (none goes through the runtime worker): Stage-1 register gate (m=6..9 reach 1024 threads/threadgroup), Stage-2 in-process pricing including the FINDING 507 falsification (recoverable qL6..9 cost is dispatch-fixed, not KV-re-read; Stage-2 gate fails at m=8 in the kL≈1020 cell), Stage-3 unit exactness (0 differing bf16 elements at m=6..9, kL 518-521 and 1020-1023, positive control fires on 24k-41k elements).
+
+### RULE 391 — allowlisted switch names and mandatory arm witness
+
+(a) Every model-side runtime switch must use a sanitizer-allowlisted name; `DARKBLOOM_` is the standard prefix for research switches. A switch outside the allowlist is dropped in silence (HARNESS DEFECT 28).
+(b) No multi-arm timed session may be priced without a positive arm witness: per-arm evidence captured inside the session that the arms executed different code — a liveness counter, a build witness string (E195's `qmv_plan=` pattern), or a counter delta only the changed path can produce. A contrast without an arm witness is VOID by default, not a null. Pre-register the witness before the session runs.
+
+**Retroactive audit under RULE 391(b):** E195 sessions carried the `qmv_plan=` build witness (valid). E193 and E199 arms are selected by commit/build, not env (valid). No other live evidence is exposed.
+
+**Repair approved** (feedback `e198-fb-retraction-rerun-406`, ~1 h GPU): commit `54ccf3df` renames both variables to `DARKBLOOM_QWEN_FUSED_SDPA_ROWS` / `DARKBLOOM_E198_LIVENESS_OUT`, probe now flushes on first call and every 128 calls. Order: (1) `research/e198_liveness.sh 6,7,8,9 64` — no timing reported until `served_by_rows > 0` at each width; if declines dominate, the reason histogram names the failing guard; (2) rerun `iterate FUSED 512` for genuine live-path exactness; (3) rerun the 8-leg ABBA at 512 tokens. Decision rule unchanged: recovery − 2σ ≥ 0.5 ms/round → freeze path (rebuild + confirm on the live tip, which now carries E195's QMV plan — different subsystem); otherwise terminal NEGATIVE, and a valid witnessed null becomes real evidence that in-process per-dispatch pricing does not transfer to the saturated decode round (FINDING 507 family).
+
+**DEFECT 28 upstream escalation (flagged, not implemented — trusted surface):** (i) have `sanitizedRuntimeWorkerEnvironment` log dropped names; (ii) make opt-ins fail loudly when an identically-suffixed `MLXFAST_` name is set in the parent. Recorded as the preferred organizer-side fix.
+
+**Base-change events.** research_base_changed notices for PRs #190/#195/#196 against `cd3e7688` (E195 merge, submitted-surface) and `fb67c8a7` (Entry 402, ledger-only) require no in-flight action: E193 froze and submitted before the merge (receipt decides; base validity assessed at terminal review); E199 submits its own tree by design (conditional re-confirmation only if E193 promotes); E198's ABBA is internally valid on its own tree, and any freeze rebases onto the live tip.
+
+**State.** Receipt `2681c3ac` (E193) still validating (~2 h 21 m). E199 frozen, holding, watcher live. E200 screen in progress (no interim yet). E198 repair session running on Edward's Mac.
+
+---
+
+## Entry 404 — 2026-08-24T20:55Z — E200 desk pricing decisively negative (step-priced greedy depth rule is self-blocking); no timed ABBA; E193 routing marked blocked-on-receipt; E199 latency ruling
+
+**E200 interim 1 (Askeladd, PR #197).** Desk-first inversion approved retroactively: RULE 79 makes the offline replay against a measured cost table the only admissible decision instrument for a depth-price contrast, and the walk cost 11 seconds.
+
+**Desk result (harness=ranked, cap 7, anchored on receipt A 3.70785):** E197 smooth-step dR(m) priced into the greedy rule scores −5.13 % (level held at 1.26), −3.49 % (measured level), −0.36 % (global argmin variant). Shape sweep from uniform (w=0) to the full measured law (w=1) peaks at +0.17 % (w=0.1) — nothing on the axis clears the +0.2 % assignment floor.
+
+**Mechanism (provisional finding; formal numbering at terminal review).** The width-6 step is real, and pricing it honestly is what breaks the rule: with `marginal[4]` = 0.35 the depth-4 guard bar becomes ≈0.99 for deep prompts and closes for EVERY round, because the bar depends only on (1+expected), which is larger for strong rounds — a one-step hill climb blocks strong rounds hardest. Deep prompts collapse from edl 4.4–6.1 to 3.2–3.7, i.e. the cap-4 schedule, which is a PAID receipt at 3.54743 (−4.3 %); the desk number is receipt-anchored, not model freedom. Consequence: the price side of the greedy rule cannot express "weak rounds stop before the step, strong rounds jump it" — that mechanism needs LOOKAHEAD. This closes the price-side path to the FINDING 515 oracle ceiling (+3.02 %); lookahead scheduling is the surviving direction (queued idea).
+
+**Instrument caveat (provisional).** The merged E197 `chain` convention S_k carries depth-selection bias: S_k was measured on rounds the shipped rule selected for depth k, so it over-values added depth when pricing schedule changes (Askeladd's biased sweep ran monotone to +3.91 %). Corrected instrument: survival-pinned latent-q — paid per-prompt survival t_k pins P(q > Q_k) at seven knots with no family assumed, and a different price is a different Q'_k on the same pinned curve. Standing caveat on future desk pricing of schedule changes; softens the desk cap-8 expectation but changes nothing for E199 (the receipt was bought under a predeclared rule because the desk could not settle it, and the receipt answers).
+
+**Rulings (feedback `e200-fb-desk-approve-408`):** No full timed ABBA (RULE 79 — zero admissible evidence at nonzero GPU cost). Approved continuation: (1) live-feed validation via printed `sched=` thresholds vs closed form = RULE 391(b) arm witness; (2) exact offline replay of the real per-round `ema=`/`m=` trace under each candidate table — decisive, removes the latent-q proxy; (3) one live candidate leg behind `MLX_E200_DEPTH_PRICE` (RULE 391(a)-compliant prefix) for exactness, row-ledger closure, and EMA-loop confirmation only. Stop-rule mapping agreed: replay confirms the walk → terminal NOT USEFUL, no table iteration (failure is structural). RULE 198 at terminal: measurement arm deleted, research-only diff.
+
+**E193 routing.** Controller flagged PR #190 `stale_wip`; repaired to wip + blocked. The assignment is intentionally idle awaiting official receipt `2681c3ac` (validating since 17:58Z); Alphonse's watcher wakes him at terminal. No student work is expected until then.
+
+**E199.** Interim latency question answered (feedback `e199-fb-receipt-latency-407`): ~61 min validating is normal (E190 precedent ~2 h 23 m); escalation threshold set at ~21:30Z (~3.5 h), after which the advisor treats the board as possibly stalled. Thorfinn acknowledged; posture unchanged, frozen tip `4b967648` closed.
+
+**State.** Receipt `2681c3ac` validating (~2 h 50 m at entry time). E198 witnessed repair session running (liveness → exactness → ABBA). E200 replay steps 1–3 in progress. E199 holding.
+
+---
+
+## Entry 405 — 2026-08-24T21:10Z — E198 liveness gate PASSED (fused kernel live at all widths 6–9); evidence-channel root cause; RULE 391(c) arm-cost symmetry; witnessed ABBA2 running with pre-registered NEGATIVE expectation
+
+**Root cause of the silent liveness legs (Edward, PR #195).** The fused path was never dead — the evidence channels were. The timed worker profile is `(deny file-write*)` except `/dev/null` (`benchmark.sh:write_runtime_worker_sandbox_profile`), and `mtp-timed` installs a swallowing stderr drain (`QwenRuntimeWorker.swift:2046`, `forwardsWorkerStderr` unset). An in-worker probe therefore has no reporting channel under the timed profile. The trap and its escape are already documented at `Qwen36MTPBlockSession.swift:750-760` for the `MLX_QWEN_MTP_TRACE` sink: `MLXFAST_NO_SANDBOX=1`, refused when `MLXFAST_OFFICIAL_BENCHMARK_RUN=1`, so it cannot reach a ranked run. Edward broke the "no observation vs no execution" tie with a `fatalError` witness that crashed on `qwen35_attn_entry_L512` — proof the probe code executes in the scored worker. Cross-reference recorded so future probes find the documented trap first (second time this experiment lost legs to a hazard already written down; the first was DEFECT 28).
+
+**Liveness gate PASSED.** With the sandbox lifted: `served_by_rows {6:96, 7:92, 8:48, 9:32}` — 268 served calls, zero declines, `enabled_rows [6,7,8,9]` intact, 64-token screen exact (`all_tokens_matched` true, 0 divergences, declared head `dadbfb80…`). Settled: the fused kernel executes on the live scored path at every width 6–9; `DARKBLOOM_` delivery works; every `attend` guard passes in production. The retracted Stage-4 question resolves to "the kernel will run; the prior sessions simply had no contrast".
+
+### RULE 391(c) — the arm witness must be arm-cost-symmetric
+
+Edward caught a bias that would have been measured as a win: `declined(reason:rows:)` built its key by string interpolation, a per-call allocation that runs on every qL 6–9 attention call in the OFF arm and never in the FUSED arm (FUSED serves instead of declining) — a one-arm cost of roughly the size of the effect under test. Fixed: literal reason keys + integer row counts, no allocation; `reached()` diagnostics deleted after answering their question; the remaining instrument is one dictionary update per attention call, present in BOTH arms and declared as `added_timing_instrument=e198-liveness-counter-both-arms` in the identity tuple. Rule: the witness instrument must be compiled into both arms with identical per-call cost, and any added instrument must be declared in the identity tuple, never recorded as `none`.
+
+**Witness form 2 approved** (feedback `e198-fb-witness-form2-410`): `MLXFAST_NO_SANDBOX=1` identical in both arms preserves the internal validity of the contrast; `worker_sandbox=disabled` and `comparable_with_sandboxed_history=false` recorded — absolute s/token from this session is within-session evidence only. Two-tree build-arm witness (form 1) declined: extra build cycle buys no additional validity for this decision.
+
+**ABBA2 running.** `research/e198_session.sh submit OFF,FUSED,FUSED,OFF,FUSED,OFF,OFF,FUSED 512 abba2`, recertified worker `d6e48686`, metallib `5d6e3f9f`, twin audit OK, digest asserted around every leg, ungated with per-leg entry/exit temperatures and gate fields verbatim false. **Pre-registered expectation: NEGATIVE** — Stage 2 prices the fused saving at 59.9 µs/layer (m=8, kL≈517) → 614 µs/round independent / 513 µs/round serial over the 81-round census, below the 0.5 ms/round promotion threshold before subtracting 2σ; the fraction gate already fails at m=8 in the kL≈1020 cell. The session's scientific value is the transfer test for the FINDING 507 dispatch-count family (is in-process per-dispatch pricing valid in the saturated 64-layer decode round?). Terminal structured result follows immediately after the ABBA, no further characterization; an against-expectation win stops before freeze work for advisor re-scoping (rebase onto live tip + fresh confirmation).
+
+**Other events.** Controller re-surfaced `blocked` on PR #190 — reflects the label applied in Entry 404, no action.
+
+**State.** Receipt `2681c3ac` validating (~3 h 04 m; stall-judgement threshold 21:30Z). E199 holding, watcher live. E200 exact-replay steps 1–3 in progress. E198 ABBA2 ~50 min to terminal.
+
+---
+
+## Entry 406 — 2026-08-24T21:15Z — Correction to Entry 405: E198 Stage-2 projection is ABOVE the 0.5 ms/round bar, not below; directional expectation withdrawn
+
+**Correction (Edward, PR #195; propagated into Entry 405).** The recorded Stage-2 projection in `research/e198-analysis.json` is 613.92 µs/round (indep) / 512.99 µs/round (serial) — both ABOVE the 0.5 ms/round promotion threshold, and the indep figure is above the 567 µs/round MUE. Entry 405's sentence "below the 0.5 ms/round promotion threshold" is WRONG and is corrected here. Per-width contribution (indep): m=8 carries 551.26 of 613.92 µs/round over 46 of 81 census rounds; m=6 25.77, m=7 36.89, m=9 zero (no census rounds at m=9 on this trace).
+
+**What still fails:** the Stage-2 fraction gate — `stage2_gate_passing_widths` is empty in both modes; no width recovers 50 % of (pair − floor); measured range 0.35–0.44.
+
+**Consequence.** The two Stage-2 statements point in opposite directions (absolute projection above the terminal bar; fraction gate fails everywhere), so Edward withdrew the pre-registered NEGATIVE expectation and the ABBA proceeds with no directional prior. The stop rule is unchanged and mechanical: recovery − 2σ ≥ 0.5 ms/round → freeze path; otherwise terminal NEGATIVE. Calibration (feedback `e198-fb-projection-correction-ack-411`): at the void session's leg noise (2σ ≈ 0.169 ms/round for an 8-leg contrast), freeze requires measured recovery ≥ ~0.67 ms/round — the indep projection (0.614) sits below that, so the outcome is open but leaning negative. The fraction-gate failure will be recorded in the terminal result as a Stage-2 observation; the end-to-end ABBA decides.
+
+**Other events.** Four research_base_changed notices from the Entry 405 publish (`8af36b2a`, ledger-only): standing disposition, no action.
+
+**State.** Receipt `2681c3ac` validating (~3 h 06 m). E198 ABBA2 running. E199 holding. E200 replay in progress.
+
+---
+
+## Entry 407 — 2026-08-24T21:20Z — FINDING 518: the void abba1 session is a true null control; ungated 8-leg ABBA contrasts carry a ~0.18 ms/round systematic artifact floor
+
+**Provenance (Edward, PR #195).** abba1 (2026-08-24T19:33Z, worker `877b1e20…`) predates the `DARKBLOOM_` rename, so the sanitizer dropped the arm switch and both nominal arms executed identical code: one binary, one head, 8 ABBA-counterbalanced legs, labels carrying zero code difference — a textbook null control. Edward's new reducer (`research/e198_session_reduce.py`, commit `99ff8f91`) correctly refuses to price it: VOID on RULE 391(b), all 8 arm witnesses MISSING. RULE 391(b) is now mechanically enforced in tooling, not just in prose.
+
+### FINDING 518 — null-control calibration of the ungated 8-leg ABBA (harness=local, M4 Pro, 512 tokens)
+
+Measured on a contrast whose true effect is exactly zero:
+
+- Leg-to-leg dispersion is 0.04–0.09 % of round time (~182 ms/round); the 8-leg contrast 2σ is ≈ 0.17 ms/round. The design therefore resolves the 0.5 ms/round promotion bar with ~3× margin — Edward's measurement-power caveat was withdrawn as too pessimistic.
+- The null produced an APPARENT arm effect of −0.184 ms/round with 2σ = 0.169 — nominally significant at 2σ with zero true effect. Four legs per arm does not fully cancel drift; the visible mechanism is leg 1 entering 11 °C cooler than every later leg, which counterbalancing cannot undo.
+- Reading rule (adopted, feedback `e198-fb-null-calibration-412`): |effect| < ~0.2 ms/round is indistinguishable from harness artifact regardless of nominal σ; a result in 0.2–0.5 ms/round is NEGATIVE under the stop rule, never a "promising near-miss"; a result clearing 0.5 ms/round is trustworthy. The 0.5 bar sits ~3× above the artifact floor — set correctly, though not chosen with this calibration in hand.
+- Consistency: FINDING 503 gave a ±0.24 ms/round leg-level instrument floor; FINDING 518 adds the contrast-level floor for 8-leg ungated sessions. Retrospective note: the retracted abba1 "+0.184 ms/round FUSED regression" was exactly this artifact — magnitude at the floor, sign set by drift.
+
+**Statistics ruling.** E198's terminal decision stays on absolute ms/round as the stop rule states; `mtp_decode_speedup` ratio and `min_detectable_effect_2sigma` are reported alongside as supporting evidence. Edward's causal argument for ratio legitimacy is sound here (fused kernel reachable only from the qL 6–9 branch; the serial leg is an untouched within-leg control), but the ratio remains secondary.
+
+**Other events.** Edward's crossing flag on feedback item 3 was already resolved by Entry 406 + feedback 411. Four research_base_changed notices from the Entry 406 publish (`41ee2648`, ledger-only): standing disposition, no action.
+
+**State.** Receipt `2681c3ac` validating (~3 h 08 m; stall threshold 21:30Z). E198 ABBA2 running (~40 min remaining). E199 holding. E200 replay in progress.
+
+---
+
+## Entry 408 — 2026-08-24T21:30Z — E200 MERGED as a decisive NOT USEFUL (FINDINGs 519–521): the static depth-price axis is closed; per-prompt information is the remaining depth value; E201 assigned
+
+**Review.** E200 (PR #197, Askeladd, head `9cd92d38`) terminal `failed` / verdict NOT USEFUL; W&B `toe1vajv` advisor-validated (desk medians 3.5176/3.7078, shape-sweep max +0.172 %, replay depth agreement 35/35 = 1.0, field max 2 ULP vs positive control 680,783 ULP, live edl 3.942). Diff vs assignment base `fb67c8a7`: exactly 7 research-only files (`research/e200_*`, `research/e200-artifacts/*`), submitted-surface diff EMPTY, budget growth 0/262144, ranked-boundary PASS, swift test at the documented 41-issue floor with zero new issues. Base validity recorded on `1969567f` (moves were ledger-only). **MERGED at `ad8ce73f`** for the durable instruments (corrected desk price, exact trace replay, W&B logger) per the E197 research-only precedent.
+
+### FINDING 519 — the static depth-price axis is CLOSED: honestly pricing the width-6 step into the greedy rule is self-blocking, and even the global optimum is negative
+
+Two independent admissible instruments agree in sign and size. Desk walk (harness=ranked, receipt-A anchored, 8 prompts, survival-pinned latent-q): step table −3.49 % (measured level) / −5.13 % (level held); global argmin instead of the hill climb −0.36 %; shape sweep peaks at +0.17 % (w=0.1), below the +0.2 % floor. Exact per-round replay of a real traced leg (real `ema=`/`m=`/`cap=`, zero up-shifts so acceptance is exact by the prefix rule): rstep 0.93687×, rstepnat 0.97400×, best blend +0.37 % on one prompt. Mechanism: with an honest step price the depth-4 guard's bar depends only on (1+expected), which is LARGER for strong rounds — a one-step hill climb blocks strong rounds hardest and collapses deep prompts to the paid cap-4 schedule (receipt-anchored −4.3 %). Live candidate leg (4-leg palindrome, declared head, exact, ledgers close 261=261/257=257) shows the EMA feedback loop adds only +0.057 edl, so the frozen-state replay is faithful. Consequence: the FINDING 515 oracle ceiling (+3.02 %) is NOT reachable by any static per-round price — the gap is worth exactly the per-prompt information the oracle uses. Depth-value work moves to per-prompt/online adaptation (E201).
+
+### FINDING 520 — the merged E197 `chain` S_k convention has depth-selection bias; the survival-pinned latent-q construction is the corrected desk instrument, validated out-of-sample against paid receipts
+
+S_k was measured on rounds the shipped rule selected for depth k, so it over-values added depth when pricing schedule changes: its uniform-level sweep runs monotone to a false +3.91 %. The corrected construction pins P(q > Q_k) at seven knots from paid per-prompt survival with no family assumed; a different price is a different Q'_k on the same pinned curve. Out-of-sample validation: reprices the paid cap-4 and cap-5 receipts at −0.44 % and +0.24 % error, both inside the 0.689 % receipt channel. Standing caveat on every future desk pricing of a schedule change; softens the desk cap-8 expectation (E199's paid receipt decides regardless).
+
+### FINDING 521 — quantitative proof of RULE 79: the local and ranked cost tables give the SAME depth policy OPPOSITE signs
+
+Local M4 Pro (measured this session): R(8)/R(5) = 1.6095, 8→5 saves 37.87 % of the round, dR6 share 0.3346. Ranked (merged E197 law): 1.4541, 31.23 %, 0.2778. The candidate schedule (26/35 rounds at width 8 → 32/35 at width 5) loses the same accepted tokens on both machines but buys back 6.6 pp more locally — the candidate arm ran FASTER locally while pricing −3.5 % ranked. A student who trusted the local timing leg would have shipped a −5 % ranked regression. This re-measures FINDING 484 ("two-thirds of the step is already hidden on M5") from a real schedule rather than a width ladder, and is recorded as an observation, not a published contrast.
+
+**E201 assigned (Askeladd) — online per-prompt depth-cap adaptation, desk feasibility first.** The oracle ceiling conditions on per-prompt outcomes; within-request adaptation is legal. Stage 1 is desk-only: price an observe-then-commit cap rule on the corrected instrument and per-prompt receipt anchors; GPU only if the desk clears the floor. Brief in PR.
+
+**State.** Receipt `2681c3ac` validating (~3 h 32 m — STALL THRESHOLD 21:30Z reached; advisor watching for Thorfinn/Alphonse reports). E198 ABBA2 running. E199 holding. Feedbacks this cycle: `e198-fb-null-calibration-412` (Entry 407), E200 review actions.
+
+---
+
+## Entry 409 — 2026-08-24T21:45Z — Board-wide ranked-queue stall (8 validating, nothing terminal since 17:35Z); E199 HOLD ruling: one receipt in flight stands
+
+**Observation (Thorfinn's 21:30Z threshold report, PR #196, verified board read at 21:31Z).** Receipt `2681c3ac` is at 3 h 33 m validating. The stall is board-wide, not ours: EIGHT submissions from seven solvers are `validating` simultaneously (hadakang 17:38Z, ours 17:58Z, ofou 18:00Z, jungjipdo 18:38Z, Carme99 18:59Z, vibecodooor 20:02Z, scarletbright 20:42Z, newjordan 21:30Z). The newest terminal row is `e38b32a` (newjordan, rejected 3.56133, created 17:35Z) — every submission created after 17:35Z is unresolved. Pattern is consistent with a stopped ranked worker rather than a slow queue. Promoted frontier unchanged: crown `ec24d591` newjordan 3.72911; next rows 684821e 3.71960, 3ba6ee9 3.70576, 1760479 3.70355, 08b67f1 3.69072. E199's conditional-hold trigger has NOT fired.
+
+**Ruling (feedback `e199-fb-hold-ruling-413`): KEEP HOLDING — do not queue E199 as a second in-flight receipt.**
+
+1. The hold preserves the composition option: if E193 promotes (~coin flip on P(beat A)), E199's cap-8 line is re-applied on the new promoted base (then including prefetch), re-confirmed, and submitted as a strictly stronger candidate. A pre-queued E199 would be burned on the old tree with no withdrawal path.
+2. Yukon's per-solver concurrency policy is undocumented and its dedup has already behaved restrictively (FINDING 467); a second concurrent receipt during a backlog is an unbounded administrative risk.
+3. If the worker is stopped, queue position gains nothing until an operator restarts it; on restart, receipts resolve in order and the standing conditional handles both E193 outcomes.
+4. The one-receipt-in-flight discipline is written into the campaign and E199's brief; a backlog does not change its logic.
+
+**New report condition for Thorfinn (replaces time thresholds):** report on material change only — any new terminal row on the board, or `2681c3ac` resolving. Advisor takes no stall action beyond patience: we cannot accelerate the organizer's runner, resubmission is forbidden, and all four Macs remain productive.
+
+**Other events.** Controller re-surfaced `blocked` on PR #190 — reflects the Entry 404 label, no action.
+
+**State.** E198 ABBA2 running (~25 min remaining). E201 desk stage starting (PR #198). E193/E199 gated on the stalled board. Advisor tip `e1afcf3e` + this entry.
+
+## Entry 410 — E198 CLOSED unmerged (fused SDPA kernel does not pay); E201 MERGED (per-prompt cap lever does not exist); E202/E203 assigned
+
+**Date:** 2026-08-24 ~22:15Z. **Base:** aaa42f84 → 44dfe5d0 (E201 merge, research-only files). Receipt `2681c3ac` (E193) still VALIDATING (~4.5 h); board-wide stall of Entry 409 persists — no action available, one-in-flight rule stands, E199 HOLD unchanged.
+
+### E198 (PR 195, Edward) — CLOSED UNMERGED, decisive negative — FINDING 522
+
+Form-2 witnessed ABBA2 (all 8 RULE 391(b) witnesses valid; FUSED served {6:16,7:16,8:80,9:16}/leg; MLXFAST_NO_SANDBOX=1 both arms):
+
+- All 8 legs: improvement −0.571 ms/round, 2σ [−1.274, +0.132] — headline distorted by legs 1/4 cold entry (FINDING 518 artifact).
+- Steady state (legs 5–8, balanced 2v2): **−0.059 ms/round, 2σ [−0.271, +0.154]** — the ≥0.5 ms/round bar is excluded at the optimistic edge. Conclusive negative, not an underpowered null.
+- Exactness: all_tokens_matched=true, residual_divergence_count=0 in every leg; edl 6.35897 and accept rate 0.87702 identical both arms; Stage-3 unit exactness 0 differing bf16 elements with firing positive control.
+
+**FINDING 522 (mechanism):** The kernel is correct; the money is not there. Stage 2 falsified the FINDING 507 premise — recoverable cost is dispatch-fixed (~25 µs/dispatch) and MLX overlaps the 5 dispatches, so the isolated 59.9 µs/layer saving is never on the critical path. A custom `metal_kernel` adds ~10 µs fixed call cost (`MLXFastKernel.callAsFunction` rebuilds config/template/output objects every call) × 16 layers ≈ 160 µs/round of pure overhead. Corollaries: (a) the FINDING 507 dispatch-count family is nearly dead — one cheap eval()-barrier measurement settles it for good (→ E202); (b) m=9 contributed ZERO census rounds while costing register pressure — re-derive the depth histogram before any width work; (c) MLXFastKernel call overhead is a standing ~10 µs/call tax on any future custom kernel.
+
+Closed per RULE 198 / E194 precedent: diff adds 330-line kernel to `AttentionUtils.swift` + `Qwen35.swift` switch (submitted editable paths). W&B: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/vlqqgc44 (vlqqgc44).
+
+### E201 (PR 198, Askeladd) — MERGED, decisive NOT USEFUL, desk-only — FINDING 523 + FINDING 515 corrected
+
+Accepted on moved base (e1afcf3e→aaa42f84 ledger-only). On the corrected FINDING 520 survival-pinned latent-q instrument (validated in-report: receipt A exact in-sample; cap-4/5 receipts −0.44%/+0.24% out-of-sample, inside the 0.689% channel), the full observe-then-commit family (r∈{4..64}, c0∈{7,8}, all 25 (cap_lo,cap_hi) pairs, 9 thresholds, exploration/misclassification/EMA charges, exact published-median enumeration over the joint decision law):
+
+**FINDING 523:** best online = best static global cap 8 = oracle per-prompt cap = **3.829386 (+3.28% vs A); online − static = +0.000%**, robust to both 9-row treatments and all 8 LOO prompt mixes. The maximiser is the degenerate member (c0=8, cap_lo=cap_hi=8) that ignores its own observation. Mechanism: the cap is INERT where prompts differ (P(depth≥4)=1.8e-6 plutarch, 5.0e-4 drama; raw ratio identical at caps 4–8 for the three shallow prompts) and every prompt on which it binds wants it maximal — the per-prompt argmax is degenerate. Misclassification is NOT the obstacle (class error <1e-7 by r=16). **No per-prompt depth-cap lever exists.**
+
+**FINDING 515 CORRECTED:** the recorded +3.02% "oracle per-prompt cap" was biased-chain arithmetic; corrected value is **+3.28%** and it is a **global cap-8 effect**, not per-prompt information. E199's cap-8 receipt now resolves a genuinely two-sided ±4% swing (smooth continuation +3.28% vs E186 step transferred at 0.237 → −0.71%).
+
+Merged: reusable exact-median pricing instrument `research/e201_online_cap.py` (cap_state, accepted_pmf, enumerate_median). Modelling limit: rounds exchangeable within prompt — cannot price within-prompt-autocorrelation rules without traced per-round state (→ E203 Stage 0). W&B: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0jv1k3gt (0jv1k3gt).
+
+### Depth-value axis status after E200+E201
+
+Static price axis closed (FINDING 519). Per-prompt cap axis closed (FINDING 523). Remaining open on this axis: (1) the cap-8 receipt itself (E199, frozen, HELD behind 2681c3ac); (2) within-prompt lookahead/drift-tracking rules — open only if acceptance is autocorrelated within a prompt (E203 tests this first at zero build cost); (3) per-prompt PRICE lever — only jointly with lookahead (FINDING 519 self-blocking result), not standalone.
+
+### Assignments
+
+- **E202 (Edward): eval()-barrier dispatch-count settlement.** One ungated ABBA session, 512 tokens, RULE 391 witnesses. If barriers add ≈16×dispatch-count×25 µs/round, overlap is confirmed and the FINDING 507 family is DEAD (no fusion can ever recover overlapped latency). If barriers add ≈0, the family dies differently (isolated probe does not transfer). Either way the route closes for good on one cheap measurement.
+- **E203 (Askeladd): within-prompt acceptance autocorrelation → lookahead feasibility, desk-first.** Stage 0: measure ACF of per-round accepted length in existing RULE 386 traces; if compatible with exchangeability, terminal NOT USEFUL at zero build cost. Stage 1 (only if ACF material): traced-state replay instrument + price the lookahead/drift family incl. per-prompt price lever, standard desk stop rule.
+- E192 persistent in-place rollback slot (FINDING 495) remains queued for the next free slot.
+
+## Entry 411 — E203 MERGED (within-prompt lookahead family closed at zero build cost); board unstuck, our receipt heads the queue; E202 statistic ruling; E192 assigned to Askeladd
+
+**Date:** 2026-08-24 ~22:55Z. **Base:** 7f10e147 → 31bd06ed (E203 merge, research-only files). Receipt `2681c3ac` (E193) still validating, but the board unstuck at 22:16Z: hadakang's `dcf0527` (created 17:38Z) resolved terminal after ~4 h 38 m, the queue drains in creation order, and **`2681c3a` is now the oldest unresolved row — next in line**. E199 HOLD stands (composition option + one-in-flight); Thorfinn re-armed a single-event watcher (`024f2038`) on `2681c3a`.
+
+### E203 (PR 200, Askeladd) — MERGED, decisive NOT USEFUL, desk-only, ~30 minutes assignment-to-terminal
+
+W&B: https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rlv5exao (rlv5exao; harness=ranked instrument, gpu_used=false, base_sha=7f10e147 — no base drift, no accept step needed). Corpus: `research/out/e168` open-loop p7 arm (fixed depth 7, ~1% censoring, 9 prompts, 1741 rounds) — timing never read, only accepted-length streams; head byte-identical to current base; local prose fixtures caveat recorded. Validation gate passed at the FINDING 520 bar before any pricing.
+
+**FINDING 524 — the within-prompt lookahead/drift/EMA family is CLOSED.** Structure budget (95% upper bounds on causally predictable accepted-length variance): ψ ≤ 0.2324% (lag 1), ψ ≤ 0.8033% (best of 16 lags, max-over-lags null). Pooled ρ1 = +0.0014 (null σ 0.0239); EMA one-step skill NEGATIVE at every α ∈ [0.05, 0.70]; causal AR(L) skill negative at every order. Ceiling on the cap-8 base: +0.009% (ψ lag-1) to +0.031% (ψ any-lag) vs static cap 8 = 3.829386. Break-even: +0.2% needs ψ ≥ 5.26%, +0.5% needs ψ ≥ 13.29% — a 16–57× shortfall. Stage 1 never entered. With FINDING 519 (static price axis) and FINDING 523 (per-prompt cap axis), the depth-value axis is now closed except for (a) the E199 cap-8 receipt and (b) FINDING 526 below.
+
+**FINDING 525 — closed-loop traces manufacture phantom within-prompt structure.** The adaptive arm looks structured (ρ1 +0.1167, tracker corr +0.2512), but feeding the replayed shipped closed loop (E128 costModelDepth + recordAcceptOutcome) a provably exchangeable input manufactures ρ1 0.0980 and tracker corr 0.1725 under correct carry accounting — 84% of the observed autocorrelation and ALL of the tracker correlation are artifacts of the rule's own depth feedback plus censoring. **RULE 392: any claim of within-prompt (round-serial) structure must be measured from open-loop fixed-depth traces; closed-loop adaptive traces are inadmissible for that question.**
+
+**FINDING 526 — open puzzle, queued question.** The shipped EMA tracker's forecast correlates +0.0085 with realized accepted length (predicts nothing), yet the instrument credits the shipped greedy price rule +2.27% over the best constant depth (3.829386 vs 3.744526; per-prompt constant identical to global). Whatever the shipped rule earns, it does not earn it by within-prompt prediction. Queued follow-up (Askeladd's proposal): EMA-subtraction test — replace within-prompt EMA adaptation with a constant or purely between-prompt policy; desk says ~neutral-or-better; it is a subtraction on the E199 cap-8 axis and needs GPU confirmation. Held until the E199 receipt resolves the cap-8 anchor.
+
+### E202 interim rulings (PR 199, Edward; feedback 415)
+
+Edward's smoke leg falsified the additivity assumption in my declared `net` statistic (group-boundary eval() drain ≈ 631 µs/call vs ≈ 77 µs marginal barriers — `4×sync` over-subtracts ~10×). Ruled: decision statistic is `inner = BARRIER-ALL − BARRIER-LAST` as a conservative upper bound; `inner ≪ 1.6 ms/round` confirms non-transfer decisively; `inner ≥ 1.6` is labeled "not separable from marginal-sync cost" — the FINDING 507 family closes DEAD either way, no session extension. **FINDING 522(b) marked PROVISIONAL**: E198's width census covered only the first 128 (warm-up) split-cell calls; E202 delivers the complete 512-token census. The ~631 µs group-drain number is durable (no eval() ever belongs inside the per-layer scored path). 14-leg session running.
+
+### E193/Alphonse standing order (feedback 414)
+
+On watcher budget exhaustion: relaunch read-only watcher indefinitely, one short note, never resubmit, never file the terminal result while the receipt is non-terminal. Triggers that change posture: receipt terminal (file), row disappearance (report only; advisor rules live), organizer stall news. Host stays idle while the frozen candidate holds the official slot.
+
+### E192 assigned (Askeladd) — persistent in-place rollback slot (FINDING 495 lever)
+
+clearRecurrentRollback (Qwen36MTPBlockSession.swift:2147, called at :481/:1790) is 89.4% of the ordinary commit phase: 397 of 444 µs on full-acceptance rounds, 48 releases/round, per-reference cost stepping 2.53× (3.27 → 8.27 µs/ref) one-time. Expected ≤ 0.27%/round local — sub-MUE alone (MUE 0.39%), explicit composition material for the cap-8/E194 stack. Stage 0 runs the 3.5-minute barrier-timing diagnostic (in-flight-reference vs allocator-free account) before any fix is built; timing via RULE 388 in-process arm switch; merge tip must be unconditional (RULE 198).

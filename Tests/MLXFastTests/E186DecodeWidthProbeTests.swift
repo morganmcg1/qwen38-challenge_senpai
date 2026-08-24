@@ -231,7 +231,7 @@ struct E186DecodeWidthProbeTests {
                     "cell": cell.name, "k": cell.k, "n": cell.n, "m": m,
                     "replica_taken": routed != nil,
                     "active_input_groups": (2 ... 9).contains(m)
-                        ? Qwen35CustomQMV.activeInputGroups(m) : 0,
+                        ? Qwen35CustomQMV.activeInputGroups(m, variant: .staged) : 0,
                     "table_pays": Qwen35CustomQMV.tablePays(m: m),
                     "counter_delta": e186CounterDelta(before, e186Counters()),
                 ])
@@ -549,7 +549,7 @@ struct E186DecodeWidthProbeTests {
         payload["active_input_groups"] = Dictionary(
             uniqueKeysWithValues: e186Widths.map {
                 ("\($0)", (2 ... 9).contains($0)
-                    ? Qwen35CustomQMV.activeInputGroups($0) : 0)
+                    ? Qwen35CustomQMV.activeInputGroups($0, variant: .staged) : 0)
             })
         try e186Write(payload, to: "MLXFAST_E186_OUT")
     }
