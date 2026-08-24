@@ -327,6 +327,93 @@ def census_shares(arms):
 # --------------------------------------------------------- bottom-up input
 
 
+def analyze_deconfound(payload):
+    """Separate the output-width effect from the reduction-depth effect.
+
+    The scored shape set cannot do this: every fast scored shape has k=5120 and
+    every slow one has k>5120. Two arms share the k=5120, n=5120 anchor. If
+    throughput tracks `n` and is flat in `k`, the deficit is a launch-geometry
+    effect, because the Y grid is `n/8` threadgroups (`Qwen35.swift:1834`) and
+    each threadgroup owns 8 output rows (`Qwen35.swift:1590`). If it tracks `k`
+    and is flat in `n`, the deficit is in the reduction and the output mapping
+    is innocent.
+    """
+    records = payload.get("deconfound_shapes")
+    if not records:
+        return None
+
+    out = {"arms": {}, "threadgroups_y_formula": "n / 8", "anchor": None}
+    for record in records:
+        arm = out["arms"].setdefault(record["family"], {})
+        cells = {}
+        for row in record["rows"]:
+            cells.setdefault(row["m"], []).append(row)
+        widths = {}
+        for m, rows in sorted(cells.items()):
+            seconds = statistics.fmean(r["seconds_per_call"] for r in rows)
+            routed = all(r["routed_to_custom_qmv"] for r in rows)
+            widths[str(m)] = {
+                "seconds_per_call": seconds,
+                "tflops": rows[0]["flops_per_call"] / seconds / 1e12,
+                "routed_to_custom_qmv": routed,
+                "pass_spread_frac": (
+                    (max(r["seconds_per_call"] for r in rows)
+                     - min(r["seconds_per_call"] for r in rows)) / seconds
+                ),
+            }
+        arm[record["name"]] = {
+            "k": record["k"],
+            "n": record["n"],
+            "threadgroups_y": record["n"] // 8,
+            "widths": widths,
+        }
+        if record["k"] == 5120 and record["n"] == 5120:
+            out["anchor"] = record["name"]
+
+    # Verdict per width: does throughput move more along n or along k?
+    verdicts = {}
+    sweep_n = out["arms"].get("sweep_n", {})
+    sweep_k = out["arms"].get("sweep_k", {})
+    all_widths = set()
+    for group in (sweep_n, sweep_k):
+        for cell in group.values():
+            all_widths.update(cell["widths"])
+    for width in sorted(all_widths, key=int):
+        def span(group):
+            values = [
+                cell["widths"][width]["tflops"]
+                for cell in group.values() if width in cell["widths"]
+            ]
+            return (min(values), max(values)) if values else None
+
+        # The anchor cell (k=5120, n=5120) belongs to both arms: it is the
+        # k=5120 end of the k sweep and the n=5120 end of the n sweep.
+        anchor_cell = sweep_n.get(out["anchor"]) if out["anchor"] else None
+        anchor = (
+            anchor_cell["widths"][width]["tflops"]
+            if anchor_cell and width in anchor_cell["widths"] else None
+        )
+        n_span, k_span = span(sweep_n), span(sweep_k)
+        if not n_span or not k_span:
+            continue
+        if anchor is not None:
+            k_span = (min(k_span[0], anchor), max(k_span[1], anchor))
+        n_range = n_span[1] / n_span[0]
+        k_range = k_span[1] / k_span[0]
+        verdicts[width] = {
+            "sweep_n_tflops_min": n_span[0],
+            "sweep_n_tflops_max": n_span[1],
+            "sweep_n_ratio": n_range,
+            "sweep_k_tflops_min": k_span[0],
+            "sweep_k_tflops_max": k_span[1],
+            "sweep_k_ratio": k_range,
+            "dominant_axis": "n" if n_range > k_range else "k",
+            "axis_ratio": max(n_range, k_range) / min(n_range, k_range),
+        }
+    out["verdict_by_width"] = verdicts
+    return out
+
+
 def analyze_bottom_up(payload):
     entries = list(payload.get("shapes", []))
     for key in ("gated_delta_recurrence", "top_two_readout"):
@@ -436,8 +523,11 @@ def main():
         }
 
     if args.bottom_up:
-        report["bottom_up"] = analyze_bottom_up(
-            json.loads(Path(args.bottom_up).read_text()))
+        payload = json.loads(Path(args.bottom_up).read_text())
+        report["bottom_up"] = analyze_bottom_up(payload)
+        deconfound = analyze_deconfound(payload)
+        if deconfound:
+            report["deconfound"] = deconfound
 
     static_path = Path(args.static_budget)
     if static_path.exists():
