@@ -1,0 +1,4358 @@
+{
+  "cells" : [
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=(24,1,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=(24,1,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 71,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,262144,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,262144,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(131072,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(131072,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(131072,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(131072,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,3072,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(6144,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(6144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(6144,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(1536,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=(24,1,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 518,
+      "kSplit" : 517,
+      "kv" : 512,
+      "m" : 6,
+      "n_simds_A" : 30,
+      "n_simds_B" : 6
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,2,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,2,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 71,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,262144,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,262144,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(131072,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(131072,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(131072,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(131072,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,3584,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(7168,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(7168,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(7168,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1792,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(1792,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,2,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 519,
+      "kSplit" : 517,
+      "kv" : 512,
+      "m" : 7,
+      "n_simds_A" : 30,
+      "n_simds_B" : 12
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,3,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,3,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 71,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,262144,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,262144,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(131072,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(131072,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(131072,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(131072,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,4096,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(8192,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(8192,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(8192,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(2048,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(2048,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,3,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 520,
+      "kSplit" : 517,
+      "kv" : 512,
+      "m" : 8,
+      "n_simds_A" : 30,
+      "n_simds_B" : 18
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,4,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,4,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 71,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,262144,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,262144,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(131072,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(131072,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(131072,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(131072,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,4608,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(9216,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(9216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(9216,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(2304,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(2304,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,4,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 521,
+      "kSplit" : 517,
+      "kv" : 512,
+      "m" : 9,
+      "n_simds_A" : 30,
+      "n_simds_B" : 24
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=(24,1,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=(24,1,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 71,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,393216,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,393216,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(196608,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(196608,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(196608,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(196608,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,3072,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(6144,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(6144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(6144,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(1536,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=(24,1,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 774,
+      "kSplit" : 773,
+      "kv" : 768,
+      "m" : 6,
+      "n_simds_A" : 30,
+      "n_simds_B" : 6
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,2,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,2,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 71,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,393216,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,393216,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(196608,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(196608,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(196608,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(196608,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,3584,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(7168,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(7168,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(7168,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1792,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(1792,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,2,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 775,
+      "kSplit" : 773,
+      "kv" : 768,
+      "m" : 7,
+      "n_simds_A" : 30,
+      "n_simds_B" : 12
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,3,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,3,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 71,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,393216,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,393216,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(196608,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(196608,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(196608,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(196608,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,4096,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(8192,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(8192,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(8192,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(2048,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(2048,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,3,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 776,
+      "kSplit" : 773,
+      "kv" : 768,
+      "m" : 8,
+      "n_simds_A" : 30,
+      "n_simds_B" : 18
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 2,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,4,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 1,
+          "grids" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,4,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 71,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,393216,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,393216,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(393216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(196608,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(196608,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(196608,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(196608,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,4608,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(9216,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(9216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(9216,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(2304,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(2304,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,4,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 777,
+      "kSplit" : 773,
+      "kv" : 768,
+      "m" : 9,
+      "n_simds_A" : 30,
+      "n_simds_B" : 24
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128 grid=(4,1,128) tg=(32,6,1)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,1,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128 grid=(4,1,128) tg=(32,6,1)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,1,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 73,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,524288,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,524288,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(262144,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(262144,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,3072,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(6144,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(6144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(6144,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(1536,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128 grid=(4,1,128) tg=(32,6,1)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,1,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 1030,
+      "kSplit" : 1029,
+      "kv" : 1024,
+      "m" : 6,
+      "n_simds_A" : 30,
+      "n_simds_B" : 6
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,2)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,2,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,2)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,2,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 73,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,524288,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,524288,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(262144,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(262144,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,3584,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(7168,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(7168,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(7168,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1792,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(1792,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,2)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,2,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 1031,
+      "kSplit" : 1029,
+      "kv" : 1024,
+      "m" : 7,
+      "n_simds_A" : 30,
+      "n_simds_B" : 12
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,3)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,3,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,3)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,3,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 73,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,524288,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,524288,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(262144,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(262144,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,4096,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(8192,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(8192,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(8192,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(2048,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(2048,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,3)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,3,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 1032,
+      "kSplit" : 1029,
+      "kv" : 1024,
+      "m" : 8,
+      "n_simds_A" : 30,
+      "n_simds_B" : 18
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,4)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,4,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,4)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,4,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 73,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,524288,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,524288,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(262144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(262144,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(262144,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(262144,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,4608,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(9216,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(9216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(9216,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(2304,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(2304,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,4)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,4,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 1033,
+      "kSplit" : 1029,
+      "kv" : 1024,
+      "m" : 9,
+      "n_simds_A" : 30,
+      "n_simds_B" : 24
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128 grid=(4,1,128) tg=(32,6,1)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,1,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128 grid=(4,1,128) tg=(32,6,1)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,1,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 73,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,1048576,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,1048576,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(524288,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(524288,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,3072,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(6144,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(6144,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(6144,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(6144,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(1536,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128 grid=(4,1,128) tg=(32,6,1)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,1,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(256,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 2054,
+      "kSplit" : 2053,
+      "kv" : 2048,
+      "m" : 6,
+      "n_simds_A" : 30,
+      "n_simds_B" : 6
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,2)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,2,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,2)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,2,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 73,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,1048576,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,1048576,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(524288,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(524288,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,3584,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(7168,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(7168,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(7168,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(7168,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1792,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(1792,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,2)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,2,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(512,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 2055,
+      "kSplit" : 2053,
+      "kv" : 2048,
+      "m" : 7,
+      "n_simds_A" : 30,
+      "n_simds_B" : 12
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,3)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,3,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,3)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,3,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 73,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,1048576,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,1048576,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(524288,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(524288,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,4096,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(8192,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(8192,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(8192,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(8192,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(2048,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(2048,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,3)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,3,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(768,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 2056,
+      "kSplit" : 2053,
+      "kv" : 2048,
+      "m" : 8,
+      "n_simds_A" : 30,
+      "n_simds_B" : 18
+    },
+    {
+      "calls" : [
+        {
+          "call" : "A_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_shipped_slices",
+          "dispatches" : 3,
+          "grids" : [
+            "g2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,4)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,4,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 1,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "A_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "B_isolated",
+          "dispatches" : 2,
+          "grids" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,4)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,4,1) tg=(1024,1,1)"
+          ],
+          "kernel_counts" : {
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+          },
+          "kernel_sequence" : [
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256"
+          ]
+        },
+        {
+          "call" : "today_full_form",
+          "dispatches" : 73,
+          "grids" : [
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,1048576,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,1048576,1) tg=(1,1024,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "rbitsc grid=(1,8192,1) tg=(1,1024,1)",
+            "vn_copyuint32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "v_copyuint32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Dividefloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vsn_Minimumfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Minimumfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vsn_Addfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_ErfInvfloat32float32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(16384,1,1) tg=(1024,1,1)",
+            "svn_Multiplyfloat32 grid=(1048576,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(524288,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(16384,1,1) tg=(1024,1,1)",
+            "vn_copyfloat32bfloat16 grid=(524288,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(16384,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "sn_copybfloat16bfloat16 grid=(65536,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(524288,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(524288,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(65536,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(4096,4,1) tg=(256,4,1)",
+            "rbitsc grid=(1,2,1) tg=(1,2,1)",
+            "rbitsc grid=(1,4608,1) tg=(1,1024,1)",
+            "v_copyuint32float32 grid=(9216,1,1) tg=(1024,1,1)",
+            "vs_Dividefloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "ss_Subtractfloat32 grid=(1,1,1) tg=(1,1,1)",
+            "vs_Minimumfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "vs_Addfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "v_ErfInvfloat32float32 grid=(9216,1,1) tg=(1024,1,1)",
+            "sv_Multiplyfloat32 grid=(9216,1,1) tg=(1024,1,1)",
+            "v_copyfloat32bfloat16 grid=(9216,1,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(2304,4,1) tg=(256,4,1)",
+            "gg2_copybfloat16bfloat16 grid=(2304,4,1) tg=(256,4,1)",
+            "g2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,4)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,4,1) tg=(1024,1,1)",
+            "g2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+            "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)",
+            "gg2_copybfloat16bfloat16 grid=(1280,24,1) tg=(64,16,1)",
+            "gg2_copybfloat16bfloat16 grid=(1024,24,1) tg=(64,16,1)"
+          ],
+          "kernel_counts" : {
+            "g2_copybfloat16bfloat16" : 2,
+            "gg2_copybfloat16bfloat16" : 10,
+            "rbitsc" : 10,
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 2,
+            "sdpa_vector_2pass_2_bfloat16_t_256" : 2,
+            "sn_copybfloat16bfloat16" : 2,
+            "ss_Subtractfloat32" : 5,
+            "sv_Multiplyfloat32" : 6,
+            "svn_Multiplyfloat32" : 4,
+            "v_copyfloat32bfloat16" : 3,
+            "v_copyuint32float32" : 3,
+            "v_ErfInvfloat32float32" : 3,
+            "vn_copyfloat32bfloat16" : 2,
+            "vn_copyuint32float32" : 2,
+            "vn_ErfInvfloat32float32" : 2,
+            "vs_Addfloat32" : 3,
+            "vs_Dividefloat32" : 3,
+            "vs_Minimumfloat32" : 3,
+            "vsn_Addfloat32" : 2,
+            "vsn_Dividefloat32" : 2,
+            "vsn_Minimumfloat32" : 2
+          },
+          "kernel_sequence" : [
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "rbitsc",
+            "vn_copyuint32float32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "v_copyuint32float32",
+            "vsn_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vsn_Minimumfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "vs_Minimumfloat32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "sv_Multiplyfloat32",
+            "vsn_Addfloat32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "vs_Addfloat32",
+            "vn_ErfInvfloat32float32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "v_ErfInvfloat32float32",
+            "svn_Multiplyfloat32",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "sv_Multiplyfloat32",
+            "vn_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "v_copyfloat32bfloat16",
+            "sn_copybfloat16bfloat16",
+            "sn_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "rbitsc",
+            "rbitsc",
+            "v_copyuint32float32",
+            "vs_Dividefloat32",
+            "ss_Subtractfloat32",
+            "vs_Minimumfloat32",
+            "sv_Multiplyfloat32",
+            "vs_Addfloat32",
+            "v_ErfInvfloat32float32",
+            "sv_Multiplyfloat32",
+            "v_copyfloat32bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "g2_copybfloat16bfloat16",
+            "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+            "sdpa_vector_2pass_2_bfloat16_t_256",
+            "gg2_copybfloat16bfloat16",
+            "gg2_copybfloat16bfloat16"
+          ]
+        }
+      ],
+      "gqa" : 6,
+      "kL" : 2057,
+      "kSplit" : 2053,
+      "kv" : 2048,
+      "m" : 9,
+      "n_simds_A" : 30,
+      "n_simds_B" : 24
+    }
+  ],
+  "full_attention_layers" : 16,
+  "gqa_factor" : 6,
+  "host_architecture" : "applegpu_g16s",
+  "ladder" : [
+    {
+      "call" : "ladder_R1",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=(24,1,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks"
+      ],
+      "kL" : 517,
+      "kv" : 512,
+      "R" : 1
+    },
+    {
+      "call" : "ladder_R2",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,2,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "kL" : 517,
+      "kv" : 512,
+      "R" : 2
+    },
+    {
+      "call" : "ladder_R3",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,3,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "kL" : 517,
+      "kv" : 512,
+      "R" : 3
+    },
+    {
+      "call" : "ladder_R4",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,4,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "kL" : 517,
+      "kv" : 512,
+      "R" : 4
+    },
+    {
+      "call" : "ladder_R5",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "kL" : 517,
+      "kv" : 512,
+      "R" : 5
+    },
+    {
+      "call" : "ladder_R1",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks grid=(24,1,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_nc_nosinks"
+      ],
+      "kL" : 773,
+      "kv" : 768,
+      "R" : 1
+    },
+    {
+      "call" : "ladder_R2",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,2,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "kL" : 773,
+      "kv" : 768,
+      "R" : 2
+    },
+    {
+      "call" : "ladder_R3",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,3,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "kL" : 773,
+      "kv" : 768,
+      "R" : 3
+    },
+    {
+      "call" : "ladder_R4",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,4,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "kL" : 773,
+      "kv" : 768,
+      "R" : 4
+    },
+    {
+      "call" : "ladder_R5",
+      "dispatches" : 1,
+      "grids" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks grid=(24,5,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_bfloat16_t_256_256_nomask_qnt_c_nosinks"
+      ],
+      "kL" : 773,
+      "kv" : 768,
+      "R" : 5
+    },
+    {
+      "call" : "ladder_R1",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128 grid=(4,1,128) tg=(32,6,1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,1,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 1029,
+      "kv" : 1024,
+      "R" : 1
+    },
+    {
+      "call" : "ladder_R2",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,2)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,2,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 1029,
+      "kv" : 1024,
+      "R" : 2
+    },
+    {
+      "call" : "ladder_R3",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,3)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,3,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 1029,
+      "kv" : 1024,
+      "R" : 3
+    },
+    {
+      "call" : "ladder_R4",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,4)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,4,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 1029,
+      "kv" : 1024,
+      "R" : 4
+    },
+    {
+      "call" : "ladder_R5",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 1029,
+      "kv" : 1024,
+      "R" : 5
+    },
+    {
+      "call" : "ladder_R1",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128 grid=(4,1,128) tg=(32,6,1)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,1,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_nc_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 2053,
+      "kv" : 2048,
+      "R" : 1
+    },
+    {
+      "call" : "ladder_R2",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,2)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,2,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 2053,
+      "kv" : 2048,
+      "R" : 2
+    },
+    {
+      "call" : "ladder_R3",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,3)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,3,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 2053,
+      "kv" : 2048,
+      "R" : 3
+    },
+    {
+      "call" : "ladder_R4",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,4)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,4,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 2053,
+      "kv" : 2048,
+      "R" : 4
+    },
+    {
+      "call" : "ladder_R5",
+      "dispatches" : 2,
+      "grids" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128 grid=(4,1,128) tg=(32,6,5)",
+        "sdpa_vector_2pass_2_bfloat16_t_256 grid=(24,5,1) tg=(1024,1,1)"
+      ],
+      "kernel_counts" : {
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128" : 1,
+        "sdpa_vector_2pass_2_bfloat16_t_256" : 1
+      },
+      "kernel_sequence" : [
+        "sdpa_vector_2pass_1_bfloat16_t_256_256_nomask_qnt_c_nosinks_128",
+        "sdpa_vector_2pass_2_bfloat16_t_256"
+      ],
+      "kL" : 2053,
+      "kv" : 2048,
+      "R" : 5
+    }
+  ],
+  "probe" : "e196-kernel-identity-census",
+  "probe_needle" : "E196-SECOND-SDPA-PASS-PRICING-LIVE-PATH-2026-08-24",
+  "split_row" : 5
+}
