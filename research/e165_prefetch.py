@@ -7,12 +7,13 @@ usage:
   research/e165_prefetch.py report --label LABEL
 
 WITNESS. The arm is not taken on trust. Every traced round writes `pf=`, the
-arm the process compiled in, and `pf_hit=` / `pf_made=`, what the round
-actually did with it. The `on` arm must consume a prefetched head step on
-essentially every drafting round after the first; the `off` arm must never
-make or consume one. Each check is run against the arm it expects AND against
-the other arm, and the second run has to fail, so a witness that cannot fail
-is caught before it certifies anything.
+arm the process compiled in, `pf_hit=`, whether this round consumed a stashed
+head step, and the cumulative session counters `pf_made=`, `pf_hits=` and
+`pf_undo=`. The `on` arm must satisfy `made == hits + undo + pending`, where
+at most one step may still be stashed at the end; the `off` arm must leave
+every counter at zero. Each check is run against the arm it expects AND
+against the other arm, and the second run has to fail, so a witness that
+cannot fail is caught before it certifies anything.
 
 EXACTNESS. `mtp-row` dumps every declared row's top-2 ids and its logit values
 as `%a` hexfloats, so the two arms are compared BIT FOR BIT by token position
@@ -59,28 +60,61 @@ def rounds(path: Path) -> list[dict]:
 
 
 def witness(args) -> int:
+    """Prove which arm ran, from the trace rather than from the launcher.
+
+    `pf` and `pf_hit` are per-round flags. `pf_made`, `pf_hits` and `pf_undo`
+    are cumulative session counters, so the last traced round carries the
+    session totals. Skip rounds return before the trace emit, so they can
+    raise `pf_undo` without adding a record here; the accounting identity
+    below is written to survive that.
+    """
     recs = rounds(Path(args.trace))
     if not recs:
         print("witness: no traced rounds")
         return 1
-    missing = [r for r in recs if "pf" not in r]
+    required = ("pf", "pf_hit", "pf_made", "pf_hits", "pf_undo")
+    missing = [r for r in recs if any(k not in r for k in required)]
     if missing:
-        print(f"witness: {len(missing)} rounds carry no pf field; this build "
+        print(f"witness: {len(missing)} rounds lack a pf field; this build "
               "predates the instrument")
         return 1
-    drafting = [r for r in recs if r["d"] >= 1]
+
+    for name in ("pf_made", "pf_hits", "pf_undo"):
+        series = [r[name] for r in recs]
+        if any(b < a for a, b in zip(series, series[1:])):
+            print(f"witness: {name} is not monotone; it is not a counter")
+            return 1
+
+    last = recs[-1]
+    made, hits, undo = int(last["pf_made"]), int(last["pf_hits"]), int(last["pf_undo"])
     arm_on = sum(1 for r in recs if r["pf"] == 1)
-    made = sum(1 for r in drafting if r.get("pf_made") == 1)
-    hit = sum(1 for r in drafting if r.get("pf_hit") == 1)
-    print(f"rounds={len(recs)} drafting={len(drafting)} pf_on={arm_on} "
-          f"pf_made={made} pf_hit={hit}")
+    hit_rounds = sum(1 for r in recs if r["pf_hit"] == 1)
+    hit_rate = hit_rounds / len(recs)
+    print(f"rounds={len(recs)} pf_on={arm_on} pf_made={made} pf_hits={hits} "
+          f"pf_undo={undo} hit_rounds={hit_rounds} hit_rate={hit_rate:.4f}")
+
+    checks: list[tuple[str, bool]] = []
     if args.want == "on":
-        ok = (arm_on == len(recs) and made == len(drafting)
-              and hit >= len(drafting) - 1 and len(drafting) >= 2)
+        # Every step made is consumed, undone, or still stashed at the end.
+        checks = [
+            ("arm compiled on in every round", arm_on == len(recs)),
+            ("counter agrees with per-round flag", hits == hit_rounds),
+            ("made == hits + undo + pending<=1", 0 <= made - hits - undo <= 1),
+            ("steps were actually made", made >= 1),
+            (f"hit_rate >= {args.min_hit_rate}", hit_rate >= args.min_hit_rate),
+        ]
     else:
-        ok = arm_on == 0 and made == 0 and hit == 0
-    print(f"want={args.want} verdict={'ok' if ok else 'FAIL'}")
-    return 0 if ok else 1
+        checks = [
+            ("arm compiled off in every round", arm_on == 0),
+            ("no step made", made == 0),
+            ("no step consumed", hits == 0 and hit_rounds == 0),
+            ("no step undone", undo == 0),
+        ]
+    for label, ok in checks:
+        print(f"  [{'ok' if ok else 'FAIL'}] {label}")
+    verdict = all(ok for _, ok in checks)
+    print(f"want={args.want} verdict={'ok' if verdict else 'FAIL'}")
+    return 0 if verdict else 1
 
 
 def read_rows(path: Path) -> list[tuple[int, int, int, tuple[float, ...]]]:
@@ -254,6 +288,7 @@ def main() -> int:
     w = sub.add_parser("witness")
     w.add_argument("trace")
     w.add_argument("--want", choices=["on", "off"], required=True)
+    w.add_argument("--min-hit-rate", type=float, default=0.75)
 
     r = sub.add_parser("rows")
     r.add_argument("left")
