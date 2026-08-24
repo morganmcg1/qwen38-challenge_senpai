@@ -99,14 +99,14 @@ def main():
                     default="wandb-applied-ai-team/qwen38-mlx-challenge-senpai")
     ap.add_argument("--wandb-name", default=None)
     ap.add_argument("--no-wandb", action="store_true")
-    ap.add_argument("--keep-eval-floor", action="store_true",
-                    help="do not subtract the measured per-eval floor")
+    ap.add_argument("--subtract-eval-floor", action="store_true",
+                    help="subtract the measured per-eval floor (off by default: several cells cost less than the floor, so it is not additive)")
     args = ap.parse_args()
 
     with open(args.probe) as f:
         payload = json.load(f)
 
-    fits, floor = summarize(payload, not args.keep_eval_floor)
+    fits, floor = summarize(payload, args.subtract_eval_floor)
 
     # Layer-level reconstruction: mixers + MLPs + readout, no double counting.
     layer_total = np.zeros(3)
@@ -166,7 +166,7 @@ def main():
         "gate_qualified_for_timing": payload.get("gate_qualified_for_timing"),
         "official_or_ranked_score": False,
         "eval_floor_microseconds": payload.get("eval_floor_microseconds"),
-        "eval_floor_subtracted": not args.keep_eval_floor,
+        "eval_floor_subtracted": args.subtract_eval_floor,
         "qmv_arm": payload.get("qmv_arm"),
         "active_input_groups": payload.get("active_input_groups"),
         "blocks": payload.get("blocks"),

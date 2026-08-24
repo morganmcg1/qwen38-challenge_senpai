@@ -474,6 +474,7 @@ struct E186DecodeWidthProbeTests {
 
         // --- warmup ---------------------------------------------------------
         recordTemperature("session_entry")
+        let floorEntry = e186EvalFloor(reps: 200)
         for family in families {
             for m in e186Widths {
                 for _ in 0 ..< warmup { eval(family.call[m]!()) }
@@ -488,6 +489,11 @@ struct E186DecodeWidthProbeTests {
             recordTemperature("block_\(block)_entry")
             for family in families {
                 for m in order {
+                    // Session s2 showed the first width timed in each family
+                    // paying a family-switch penalty of ~0.6 ms, which lands on
+                    // m = 1 in ascending blocks and m = 9 in descending ones.
+                    // A uniform untimed re-warm removes it at every cell.
+                    for _ in 0 ..< 2 { eval(family.call[m]!()) }
                     let us = e186Timed(reps: family.reps, family.call[m]!)
                     samples.append(
                         E186Sample(
@@ -509,6 +515,7 @@ struct E186DecodeWidthProbeTests {
             "gate_qualified_for_timing": false,
             "official_or_ranked_score": false,
             "eval_floor_microseconds": floor,
+            "eval_floor_entry_microseconds": floorEntry,
             "widths": e186Widths,
             "blocks": blocks,
             "warmup_evals_per_cell": warmup,
