@@ -75,9 +75,8 @@ def paired(a: dict, b: dict, field: str) -> tuple[int, float, float, int]:
     )
 
 
-def main() -> dict:
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    rows = ours(load(args[0] if args else None))
+def main(board_path: str | None = None) -> dict:
+    rows = ours(load(board_path))
     index = {r["id"][:8]: r for r in rows}
     out: dict = {}
 
@@ -190,17 +189,4 @@ def main() -> dict:
 
 
 if __name__ == "__main__":
-    summary = main()
-    if "--wandb" in sys.argv:
-        import wandb
-
-        run = wandb.init(
-            project="qwen38-mlx-challenge-senpai",
-            entity="wandb-applied-ai-team",
-            name="e175-board-q-decomposition",
-            job_type="analysis",
-            config={"harness": "ranked", "source": "board snapshot officialMetrics"},
-        )
-        run.log(summary)
-        run.finish()
-        print(f"\nW&B: {run.url}")
+    main(sys.argv[1] if len(sys.argv) > 1 else None)
