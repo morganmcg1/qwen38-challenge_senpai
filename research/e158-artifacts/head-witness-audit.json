@@ -1,0 +1,99 @@
+{
+  "question": "Which fields in a sealed report identify WHICH head drafted, and what structural contract must a declared head satisfy?",
+  "harness": "local",
+  "gpu_seconds": 0,
+  "method": "source read plus re-inspection of the twelve E158 island-curve legs already on disk",
+
+  "non_witness_fields": {
+    "summary": "Three head-related fields appear in every sealed report. None of them identifies the head. One of them looks like a census result and is a compile-time constant.",
+    "uses_native_mtp_head": {
+      "source": "Sources/MLXFastCLI/main.swift:1965",
+      "expression": "report.usesNativeMTPHead",
+      "definition": "Sources/MLXFastTrustedHarness/QwenRuntimeMTP.swift:434 -> acceptedDraftTotal + rejectedDraftTotal > 0",
+      "actual_meaning": "the leg drafted at least one row",
+      "identifies_head": false
+    },
+    "uses_pinned_mtp_head": {
+      "source": "Sources/MLXFastCLI/main.swift:1966",
+      "expression": "report.usesNativeMTPHead",
+      "actual_meaning": "identical predicate to uses_native_mtp_head; the name is a misnomer",
+      "enforced_equal_by": [
+        "Tests/MLXFastTests/QwenMTPOpenSurfaceTests.swift:627",
+        "Tests/MLXFastTests/QwenMTPVerbTests.swift:529"
+      ],
+      "identifies_head": false
+    },
+    "mtp_head_tensor_count": {
+      "source": "Sources/MLXFastCLI/main.swift:1971",
+      "expression": "MLXFastConstants.qwenMTPHeadTensorCount",
+      "constant_definition": "Sources/MLXFastCore/Constants.swift:311 -> 15",
+      "actual_meaning": "a hardcoded literal; it is never derived from the loaded head",
+      "hazard": "15 is the PINNED head's true tensor count, so the field reads like a correct census whichever head loaded",
+      "identifies_head": false
+    },
+    "head_provenance.origin": {
+      "actual_meaning": "copied from the DECLARATION when source == remote, not from the loaded tree",
+      "identifies_head": false
+    },
+    "head_provenance.sha256": {
+      "actual_meaning": "digest of the head tree actually handed to the run",
+      "identifies_head": true,
+      "note": "the only witness"
+    }
+  },
+
+  "empirical_proof": {
+    "artifact": "research/e158-artifacts/island-curve.json",
+    "legs": 12,
+    "head_loaded_every_leg": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "head_loaded_identity": "declared q2/q4, 40 tensors",
+    "mtp_head_tensor_count_reported_every_leg": 15,
+    "uses_pinned_mtp_head_reported_every_leg": true,
+    "conclusion": "Twelve legs loaded a 40-tensor head. All twelve reported 15 tensors and uses_pinned_mtp_head=true. Both fields are demonstrated non-witnesses on data, not by argument."
+  },
+
+  "declared_head_structural_contract": {
+    "note": "The exact-tensor-count check was REMOVED for the 2026-08-14 declared-head contract. expectedHeadTensorCount now appears only inside an error message string and in the reported constant; it never gates a load.",
+    "removal_evidence": "Sources/MLXFastModel/Qwen36MTPHeadAttachment.swift:315-322",
+    "binding_requirements": [
+      {
+        "requirement": "weight_map names at least 3 tensors",
+        "site": "Qwen36MTPHeadAttachment.swift:325",
+        "upper_bound": null
+      },
+      {
+        "requirement": "bare tensor namespace, no 'mtp.' prefix",
+        "site": "Qwen36MTPHeadAttachment.swift:328"
+      },
+      {
+        "requirement": "weight_map contains fc.weight, norm.weight, pre_fc_norm_hidden.weight",
+        "site": "Qwen36MTPHeadAttachment.swift:335"
+      },
+      {
+        "requirement": "head config.json model_type has prefix qwen3_5 or qwen3_6",
+        "site": "Qwen36MTPHeadAttachment.swift:357"
+      },
+      {
+        "requirement": "head config.json text_config.mtp_num_hidden_layers == 1, exactly",
+        "site": "Qwen36MTPHeadAttachment.swift:366",
+        "binding": true,
+        "consequence": "a declared head may not be made DEEPER; only wider or differently quantized"
+      },
+      {
+        "requirement": "backbone runtime config.json declares mtp_num_hidden_layers > 0, else the head silently does not attach",
+        "site": "QwenRuntimeMTPWorker.swift:180"
+      },
+      {
+        "requirement": "tree digest matches mtp-head.manifest.json and bytes <= max_bytes",
+        "max_bytes": 2147483648
+      }
+    ],
+    "capacity_verdict": "No tensor-count ceiling and no width ceiling. The single binding shape constraint is exactly one MTP layer. The advisor's 1.72 GB of unused declared capacity is reachable in WIDTH and in tensor count, not in DEPTH."
+  },
+
+  "consequences": [
+    "RULE 173 is the correct rule: only head_provenance.sha256 answers which head drafted.",
+    "Any prior census that reported '15 tensors' from a sealed report rather than from the artifact itself carries no information about which head was loaded.",
+    "A head-capacity experiment cannot add layers. It can add width, tensors, and precision."
+  ]
+}
