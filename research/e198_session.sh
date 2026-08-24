@@ -49,7 +49,7 @@ digest_of() { shasum -a 256 "${worker}" | cut -d' ' -f1; }
 # `mtp-head.manifest.json` DECLARES to the candidate leg. Both arms here must
 # load that declared head, so resolve it explicitly and never let the wrapper
 # fall back to the pinned cache.
-export MLXFAST_QWEN_MTP_HEAD_DIR="${MLXFAST_QWEN_MTP_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared}"
+export MLXFAST_QWEN_MTP_HEAD_DIR="${MLXFAST_QWEN_MTP_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
 [[ -s "${MLXFAST_QWEN_MTP_HEAD_DIR}/model.safetensors" ]] || {
   echo "e198_session: declared head missing at ${MLXFAST_QWEN_MTP_HEAD_DIR}; run research/fetch-declared-head.sh" >&2
   exit 2
