@@ -2407,12 +2407,30 @@ public enum Qwen35XSumsDedupCensus {
         let m: Int
     }
 
-    private struct Key: Hashable {
-        let id: ObjectIdentifier
-        let shape: Shape
-    }
+    /// Two references to ONE array and one separately allocated array must key
+    /// as 2 distinct identities with exactly one 2x bucket. A build where
+    /// `ObjectIdentifier` cannot match or cannot separate activations reports
+    /// `FAIL` here, so an all-distinct census cannot be read as "no duplicates"
+    /// when the instrument was simply incapable of finding one.
+    public static let selfCheck: String = {
+        let a = MLXArray([Float(1), 2, 3, 4])
+        let alias = a
+        let other = MLXArray([Float(1), 2, 3, 4])
+        var counts: [ObjectIdentifier: Int] = [:]
+        for array in [a, alias, other] {
+            counts[ObjectIdentifier(array), default: 0] &+= 1
+        }
+        let pairs = counts.values.filter { $0 == 2 }.count
+        return counts.count == 2 && pairs == 1
+            ? "ok" : "FAIL(distinct=\(counts.count),pairs=\(pairs))"
+    }()
 
-    nonisolated(unsafe) private static var callsPerActivation: [Key: Int] = [:]
+    /// `xsumsTable(x)` reads its `k` and `m` out of `x` itself, so the table it
+    /// returns is a pure function of the activation and nothing else. Identity
+    /// alone is therefore the correct memo key; the cell shape is carried only
+    /// to report WHERE the duplicates sit.
+    nonisolated(unsafe) private static var callsPerActivation:
+        [ObjectIdentifier: Int] = [:]
     /// Strong references for the CURRENT round only. A released `MLXArray` can
     /// have its address reused by a later allocation, which would merge two
     /// distinct activations into one identity and overstate the duplicate
@@ -2429,7 +2447,7 @@ public enum Qwen35XSumsDedupCensus {
         if held.count >= heldBound { clearLocked() }
         let shape = Shape(k: k, m: m)
         shapeCalls[shape, default: 0] &+= 1
-        let key = Key(id: ObjectIdentifier(x), shape: shape)
+        let key = ObjectIdentifier(x)
         let previous = callsPerActivation[key] ?? 0
         callsPerActivation[key] = previous &+ 1
         if previous == 0 {
@@ -2439,9 +2457,10 @@ public enum Qwen35XSumsDedupCensus {
         }
     }
 
-    /// `calls/distinct;K x M:calls/distinct,...;Nx=<activations>,...` for the
-    /// round: the totals, the per-cell-shape split, and the histogram of how
-    /// many fills share one activation. `off` when the census is disabled.
+    /// `selfcheck:calls/distinct;KxM:calls/distinct,...;Nx=<activations>,...`
+    /// for the round: the positive control, the totals, the per-cell-shape
+    /// split, and the histogram of how many fills share one activation. `off`
+    /// when the census is disabled.
     public static func roundSummary() -> String {
         guard enabled else { return "off" }
         lock.lock()
@@ -2453,7 +2472,7 @@ public enum Qwen35XSumsDedupCensus {
             .sorted { ($0.k, $0.m) < ($1.k, $1.m) }
             .map { "\($0.k)x\($0.m):\(shapeCalls[$0] ?? 0)/\(shapeUniq[$0] ?? 0)" }
         let bars = histogram.keys.sorted().map { "\($0)x=\(histogram[$0] ?? 0)" }
-        return "\(calls)/\(callsPerActivation.count);"
+        return "\(selfCheck):\(calls)/\(callsPerActivation.count);"
             + shapes.joined(separator: ",") + ";" + bars.joined(separator: ",")
     }
 
