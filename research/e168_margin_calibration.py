@@ -252,6 +252,56 @@ def signal_auc(rounds: list[dict], position: int) -> dict:
     }
 
 
+def outcome_autocorrelation(legs: list[dict], position: int, lags: int = 5) -> dict:
+    """Is acceptance at `position` predictable from its own recent history?
+
+    The EMA and the streak are both history summaries, so they can only work
+    if the outcome sequence is autocorrelated. If the sequence is
+    indistinguishable from independent draws, then no history-based signal can
+    rank anything, and the AUC null has a mechanism rather than just a value.
+
+    Rounds are taken in leg order and the legs are kept separate, so no lag
+    ever spans two prompts.
+    """
+    series = []
+    for leg in legs:
+        sequence = [
+            1 if record["acc"] > position else 0
+            for record in leg["rounds"]
+            if record["d"] > position and record["acc"] >= position
+        ]
+        if len(sequence) > lags + 1:
+            series.append(sequence)
+    total = sum(len(s) for s in series)
+    if total < 30:
+        return {}
+    mean = sum(sum(s) for s in series) / total
+    variance = sum((v - mean) ** 2 for s in series for v in s) / total
+    out = {"n": total, "mean": mean, "lags": {}}
+    if variance <= 0:
+        return out
+    for lag in range(1, lags + 1):
+        covariance = 0.0
+        pairs = 0
+        for sequence in series:
+            for index in range(len(sequence) - lag):
+                covariance += (sequence[index] - mean) * (sequence[index + lag] - mean)
+                pairs += 1
+        if pairs < 10:
+            continue
+        rho = covariance / pairs / variance
+        # Bartlett's band for white noise; a lag inside it is not evidence of
+        # structure at that lag.
+        band = 1.959963985 / math.sqrt(pairs)
+        out["lags"][lag] = {
+            "rho": rho,
+            "pairs": pairs,
+            "band": band,
+            "significant": abs(rho) > band,
+        }
+    return out
+
+
 def oracle_ceiling(legs: list[dict]) -> list[dict]:
     """The best any per-round depth rule could do, given perfect foresight.
 
@@ -1169,6 +1219,10 @@ def main() -> int:
             position: signal_auc(pooled_pinned, position) for position in (0, 1, 2)
         }
         report["oracle_ceiling"] = oracle_ceiling(pinned_legs)
+        report["autocorrelation"] = {
+            position: outcome_autocorrelation(pinned_legs, position)
+            for position in (0, 1)
+        }
         report["policy_sweep"] = policy_sweep(
             adapt_legs,
             profiles,
@@ -1265,6 +1319,23 @@ def main() -> int:
                 f"{position:<9}{block['n']:>5}{block['base_rate']:>7.3f}   {cells}"
             )
         print("0.5 is chance; a useful controller signal needs clearly more.")
+        print()
+
+    if report.get("autocorrelation"):
+        print("=== is acceptance predictable from its own history? ===")
+        for position, block in report["autocorrelation"].items():
+            if not block:
+                continue
+            cells = "  ".join(
+                f"lag{lag} {row['rho']:+.3f}{'*' if row['significant'] else ' '}"
+                f"(+-{row['band']:.3f})"
+                for lag, row in block["lags"].items()
+            )
+            print(f"  position {position}  n={block['n']}  {cells}")
+        print(
+            "  An EMA or a streak can only work on an autocorrelated sequence.\n"
+            "  * marks a lag outside Bartlett's white-noise band."
+        )
         print()
 
     if report.get("oracle_ceiling"):
