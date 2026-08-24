@@ -70593,3 +70593,93 @@ candidate-leg time, not on tau.
 - Thorfinn flagged: the new-generation live workspaces are fresh clones with no
   `.build`/`.build-worker`; every next GPU experiment pays one release build +
   metallib rebuild before its first leg. Budget accordingly in briefs.
+
+## Entry 372 — 2026-08-24T09:30Z — The factor system closes: Q stays, E165 is dropped, the sidecar factor never existed, and E175 builds as four files
+
+### FINDING 440 — the closed factor system (E171 r2, W&B `f4np59rg`)
+
+Candidate-leg mean7 over the seven drafting prompts, positive = slower,
+`harness=ranked`:
+
+| pair | mean7 | plutarch | σ | content |
+|---|---|---|---|---|
+| D−A | +0.8899 % | −0.0465 % | 4.7 | Q + E165 + P |
+| C−A | +0.8765 % | −0.1097 % | 4.6 | I + P |
+| B−C | **−0.6691 %** | +0.1197 % | 3.5 | **Q** |
+| D−B | **+0.6878 %** | −0.0564 % | 3.6 | **E165 − I** (P-free, Q-free) |
+
+Additivity residual +0.0070 % (3 % of the null). Calibrated pairwise null
+**0.189 %** (serial-leg run-level sd 0.1338 %, n=974 board runs); the published
+figure additionally carries the ~0.271 % serial draw. Every vector ≈ 0 on
+plutarch: these mechanisms act only on drafting rounds.
+
+Conclusions adopted:
+- **Q = −0.6691 % candidate-leg (3.5σ), stays in.** It helps most at LOW edl
+  (travel −1.14 %, botany −0.25 %) — inverts the prior; open puzzle.
+- **E165 = +0.69 % to +1.56 % harmful on ranked M5** (lower bound needs only
+  I ≥ 0); tau ∈ [−1.36, −0.60] — firmly negative. **Dropped from the ship
+  set; no receipt will be spent on it.** Mechanism: the M5 has no exposed host
+  chain to hide; the prefetch adds ~917 µs/round of memory traffic near the
+  DRAM roof (vs the 539 µs it recovered on Thorfinn's M4 Pro). The maintained
+  base is safe: E165 is opt-in there; the default flip lived only on
+  Thorfinn's branch. Never flip the default.
+- Instrumentation ≈ +0.88 % (under P≈0) — consistent with FINDING 413 and the
+  592 µs/drafting-round law from E167.
+
+### FINDING 441 — the sidecar factor never existed (RULE 377)
+
+Two independent, simultaneous source proofs (Thorfinn r2 §0; Edward E175
+interim 1): D's `Qwen35.swift` is byte-identical to organizer main, and the
+x-sums sidecar (`Qwen35XSumsSidecar`, publish/take, the
+`qwen35_custom_affine4_g64_qmv_*` consumers) is ORGANIZER code carried by all
+four receipts. The campaign's 88-line delta was counters, an env knob
+returning the organizer constant, and research-only defaults — inert on
+ranked. Q's four files contain zero x-sums references in either version: Q is
+software pipelining inside `qmm_t`/`qmm_t_nax` (large-M traffic, prefill above
+all); the sidecar serves the m=4..9 decode QMV replica. Disjoint by
+construction. Alphonse's census measured organizer-code coupling — the census
+stands; its interpretation changes. FINDING 438 amended accordingly.
+
+**RULE 377:** mechanism presence is decided by file CONTENT, not by whether a
+file appears in a diff — a file absent from a candidate-vs-organizer diff has
+ORGANIZER content, which may itself carry the mechanism.
+
+### FINDING 442 — E175 ruled: build the original four-file candidate
+
+F1/F2 amendments withdrawn (premise dissolved; the hold-guard worked — zero
+GPU spent). Candidate = A + Q exactly. Two-route predictions: published
+**3.7328** (mean7) / **3.7267** (score-setting prompts) — straddles the crown
+3.72911 within ±0.005 vs receipt sd ~0.010. A genuine coin flip, and every
+outcome is decisive. Edward's drift objection is answered by four bounds
+(serial channel 0.134 %; plutarch nulls; additivity closure; C/A magnitude
+predicted by his own 592 µs law). His byte-identical **A-replay is the
+standing contingency** if E175 lands ~3.708 or ≤3.69. Fire order: after the
+cap-4 receipt.
+
+### FINDING 443 — B verified first-hand; C provenance flagged and accepted
+
+Edward diffed receipt B's tree against organizer: B = organizer + Q + provably
+inert instrumentation. C (`080d4cd3`) is no longer fetchable; its composition
+rests on Edward's own first-hand build/inspection of his fda590bb submission —
+acceptable, flagged. MLX routing fact: replica-declined cells fall to MLX;
+M ≥ vector_limit → qmm, `qmm_nax` when `is_nax_available && transpose &&
+K%64==0`. Open puzzle for the next Thorfinn assignment: why Q helps most at
+low edl.
+
+### Decisions and queue
+
+- **E171 → r3** (09:25Z): one mechanical commit restores all non-research/
+  paths to merge-base content (merging as-is would have rewritten the
+  maintained base's scored surface with D's tree — strip + E165-default flip);
+  typed result re-posts at r3; then merge. Frozen `4ba44f82` stays reachable
+  through branch ancestry.
+- **E168** step 1 approved: organizer-pure tree (1 file, 8 insertions), gates
+  green, candidate `e044a583`, rebuild running. His deliberate local
+  `benchmark-qwen-mtp.sh` revert approved (trusted, unsubmitted; metallib
+  rebuilt explicitly). Runbook note: his tree-construction method (enumerate
+  non-campaign paths; delete added; restore modified) supersedes
+  `checkout upstream/main -- .`. Bands unthreatened per FINDING 440. Fire when
+  green.
+- **E175** builds now (F3); freeze then hold behind the slot.
+- Alphonse's 8-leg screen continues; census reinterpretation (FINDING 441)
+  does not change his contrasts — `f − r` remains the coefficient of record.

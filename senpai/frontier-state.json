@@ -2212,20 +2212,21 @@
    "candidate": "upstream/main 0863b06a + segmentedVerifyDepthCap 7->4 (one literal + doc comment)",
    "gates": "rebuild, 512-token --local-submit real gate, scope/budget/boundary, freeze, submit vs base 770a3ff2",
    "readingRule": "bands vs A 3.70784519: >=3.9 step transfers/crown; 3.65-3.9 partial -> within-group-slope model; 3.55-3.65 step absent -> pivot declamp-deeper. Promote line 3.7291100106.",
-   "prediction": "askeladd registered central 3.9847 (+4-8 % band)"
+   "prediction": "askeladd registered central 3.9847 (+4-8 % band)",
+   "status": "step 1 done 09:15Z: organizer-pure tree built (1 file, 8 insertions), 3 gates green, candidate e044a583, release rebuild running; next: 512-token local-submit, gates on final HEAD, freeze, fire. benchmark-qwen-mtp.sh local revert approved (trusted, unsubmitted; metallib rebuilt explicitly)."
   },
   "frozenNext": {
-   "name": "Q-complete on organizer-pure (E162 kernels + x-sums sidecar minus counter)",
+   "name": "A + Q four-file single factor",
    "owner": "qwen-edward",
-   "assignment": "E175 r0 (PR 174), AMENDED by F1 09:08Z",
-   "candidate": "upstream/main 0863b06a + four quantized files + campaign Qwen35.swift with only its instrumentation counter deleted = receipt B's composition minus instrumentation minus E165. FIVE files, pending Edward's source-level coupling proof (do campaign kernels take an x-sums input organizer kernels do not?). If uncoupled: HOLD for advisor ruling; do not fall back to four files silently.",
-   "role": "decisive Q-system receipt AND crown-plausible: central 3.74 +/- 0.01 (A x 1.0100, B/C nets sidecar cost)",
-   "decisionRule": ">=3.7291 promote/crown; 3.70-3.73 compose with cap-4 outcome; <=3.70 Q system leaves the ship set",
-   "holdRule": "fires when the cap-4 receipt lands; Thorfinn r2 split may re-order"
+   "assignment": "E175 r0 (PR 174), F3 build ruling 09:25Z",
+   "candidate": "upstream/main 0863b06a + exactly quantized{,_nax}.{h,cpp} at campaign versions; sidecar question dissolved (FINDING 441)",
+   "predictions": "published 3.7328 (mean7) / 3.7267 (score-setting); coin flip at crown 3.72911; receipt sd ~0.010",
+   "decisionRule": ">=3.7291 promote/crown; 3.71-3.729 Q real, compose with cap-4 outcome; ~3.708 Q null on ranked -> A-replay contingency fires; <=3.69 channel broken -> A-replay immediately",
+   "holdRule": "fires when the cap-4 receipt lands"
   }
  },
- "lastAdvisorUpdate": "2026-08-24T09:12Z",
- "ledgerEntry": 371,
+ "lastAdvisorUpdate": "2026-08-24T09:30Z",
+ "ledgerEntry": 372,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2253,13 +2254,44 @@
    "score": 3.65820901,
    "tree": "CORRECTED from the frozen object (FINDING 438): diff 0863b06a->4ba44f82 = 5 files (BlockSession.swift 444 lines incl. E165 + the four quantized files). Qwen35.swift x-sums sidecar ABSENT. D = organizer + Q-WITHOUT-sidecar + E165; the strip is not a factor vs A."
   },
-  "inferences": {
-   "instrTax_CoverA": "-1.08 %",
-   "QgivenInstr_BoverC": "+1.00 %",
-   "DoverA": "-1.34 % = Q-without-sidecar x E165 x (~30 pre-existing BlockSession lines). Strip is NOT a factor vs A (A never carried instrumentation or sidecar).",
-   "suspects": "LEADING (Thorfinn interim 6): the Qwen35.swift x-sums sidecar feeds the Q kernels on M5, ~0.6 % of candidate leg; receipt B (the +1.00 % Q evidence) carried the sidecar, D did not. SECOND: E165 negative on ranked M5. Split assigned to E171 r2 typed result via per-prompt vectors.",
-   "tauStatus": "tau ~ 0 (Thorfinn interim 6, both routes): local host per-round idle work does not convert into official score. Powermetrics residency leg DECLINED (fresh clone = full build cost, no ranked value).",
-   "DvsC": "FOUR factors, not three: Q present (C had it reverted), Qwen35.swift sidecar removed, BlockSession instrumentation removed, E165 default on."
+  "inferences": "SUPERSEDED by closedFactorSystem (Entry 372). The interim-6 sidecar suspect and the four-factor DvsC framing were refuted by source: see FINDING 441.",
+  "closedFactorSystem": {
+   "harness": "ranked",
+   "source": "E171 r2 (W&B f4np59rg), candidate-leg mean7 over the seven drafting prompts, positive = slower",
+   "pairs": {
+    "DvsA": {
+     "mean7": "+0.8899 %",
+     "plutarch": "-0.0465 %",
+     "sigma": 4.7,
+     "content": "Q + E165 + P"
+    },
+    "CvsA": {
+     "mean7": "+0.8765 %",
+     "plutarch": "-0.1097 %",
+     "sigma": 4.6,
+     "content": "I + P"
+    },
+    "BvsC": {
+     "mean7": "-0.6691 %",
+     "plutarch": "+0.1197 %",
+     "sigma": 3.5,
+     "content": "Q"
+    },
+    "DvsB": {
+     "mean7": "+0.6878 %",
+     "plutarch": "-0.0564 %",
+     "sigma": 3.6,
+     "content": "E165 - I (P-free, Q-free)"
+    }
+   },
+   "additivityResidual": "+0.0070 % (3 % of the null)",
+   "null": "pairwise mean7 1 sd = 0.189 % (serial-leg run-level sd 0.1338 %, n=974); published adds serial draw ~0.271 %",
+   "conclusions": {
+    "Q": "-0.6691 % candidate-leg (3.5 sd), STAYS IN; helps most at LOW edl (travel -1.14 %, botany -0.25 %) - inverts prior, open puzzle",
+    "E165": "+0.69 % to +1.56 % harmful on ranked M5 (lower bound P-free, needs only I>=0); tau in [-1.36,-0.60] NEGATIVE; DROPPED from ship set; no dedicated receipt",
+    "I": "instrumentation ~ +0.88 % (under P~0), consistent with the 592 us/drafting-round law and FINDING 413",
+    "driftHypothesis": "bounded out by serial channel (0.134 %), plutarch nulls, additivity closure, and the predicted C/A magnitude"
+   }
   }
  },
  "findings": {
@@ -2344,8 +2376,12 @@
   "435": "E167 FOUR-ARM STRIP SESSION, harness=local gen16, 16/16 gated 512-token legs, witnesses digit-identical 3x across a host reprovision: strip arm B2 is BEHAVIOURALLY IDENTICAL to the maintained base (one B0 reference, all_tokens_matched all legs, ledger 568=435+56+77 sd 0). Tax-removed pooled Welch vs B0: B1 writes-removed +0.139 % ns; B2 full strip +0.252 % [-0.163,+0.668] ns; B3 linkage-internal +0.208 % p=0.016. Transfer-model test: 'tax ~1 % of decode leg' EXCLUDED (0.985 % outside B2 CI); '592 us per drafting round' CONSISTENT (predicts 0.373 % at this fixture's 6.31 drafting rounds/s; -1 sd predicts 0.250 % vs measured 0.252 %). Writes-vs-linkage needs n=39/arm (~6.2 h) - unaffordable; open. Caveats: palindrome equalises first moment not curvature (thermal record argues against the artifact); prefill common-mode correction collapses all arms to 0.083-0.091 % - both readings recorded.",
   "436": "E174 PREMISE REJECTED (Alphonse objection CORRECT): merged E160 already implemented the identical xsums-epilogue mechanism for 64/130 cells and measured null with cause; coverage mlp.down 64 + gdn.out_proj 48 + fa.o_proj 16 = 128/130 cells closes the axis. Cross-inference: removing a standalone dispatch bought ~0 wall time, so any 'dispatch count x 4.7 us' pricing is invalid until measured first-hand; e173 item-4 norm fusion demoted to UNPRICED. E174 pivots after Alphonse's per-fill/per-record coefficient screen.",
   "437": "E167 MERGED (8 research-only files; typed result succeeded). Receipt B 180db842 was -0.086 % vs A = half a draw sd: resolves NEITHER E162 arm. Crown ec24d591 3.7291 is a max-of-74 order statistic with no code advantage (byte-identical null pair published 0.5735 % apart; serial resample n=965 typical 3.7104, floor sd 0.179 %; 13-solver pack sd 0.172 %; 90 % confidence). E165 audit: no per-round or per-routed-cell side effect; preflushBacklogHidden alias ~0.01 % deliberately unshipped. MLX_E159_FIXED_DRAFT_DEPTH proven inert from source and non-integer edl 6.3766.",
-  "438": "RECEIPT D PER-PROMPT TABLE + TREE CORRECTION (Thorfinn interim 6, harness=ranked, W&B fdi6ute3). 8-vector raw: plutarch-class 1.25563 (edl 0.156), 2.11442 (2.298), 2.40515 (2.648), 3.51403 (4.382), 3.80239 (5.087), 3.84545 (4.989), 3.86586 (5.256), 3.88436 (6.148); median 3.658209010 reproduced exactly; head provenance 559b24ebca35 all prompts. Frozen-object diff 0863b06a->4ba44f82 = 5 files; Qwen35.swift sidecar ABSENT. D vs C = FOUR factors; D/A = Q-without-sidecar x E165 (strip not a factor vs A) - advisor 'three-factor' framing corrected. Leading suspect: sidecar feeds Q kernels on M5 (~0.6 %); B, the only +1.00 % Q evidence, carried the sidecar. E175 amended to the Q-complete five-file composition; Edward proves the coupling from source before building.",
-  "439": "tau ~ 0 ranked (Thorfinn interim 6, both routes): local host per-round idle-window work does not convert into official score. Powermetrics residency leg declined (fresh-clone build cost, no ranked value). Kernel-record-cache pricing (e173 item 2) must now justify itself on candidate-leg absolute time, not on tau."
+  "438": "RECEIPT D PER-PROMPT TABLE + TREE CORRECTION (Thorfinn interim 6, harness=ranked, W&B fdi6ute3). 8-vector raw: plutarch-class 1.25563 (edl 0.156), 2.11442 (2.298), 2.40515 (2.648), 3.51403 (4.382), 3.80239 (5.087), 3.84545 (4.989), 3.86586 (5.256), 3.88436 (6.148); median 3.658209010 reproduced exactly; head provenance 559b24ebca35 all prompts. Frozen-object diff 0863b06a->4ba44f82 = 5 files; Qwen35.swift sidecar ABSENT. D vs C = FOUR factors; D/A = Q-without-sidecar x E165 (strip not a factor vs A) - advisor 'three-factor' framing corrected. Leading suspect: sidecar feeds Q kernels on M5 (~0.6 %); B, the only +1.00 % Q evidence, carried the sidecar. E175 amended to the Q-complete five-file composition; Edward proves the coupling from source before building. [AMENDED Entry 372: the 'sidecar ABSENT' reading was WRONG - the sidecar mechanism lives in ORGANIZER Qwen35.swift; D carried it. See FINDINGs 440-441 and RULE 377.]",
+  "439": "tau ~ 0 ranked (Thorfinn interim 6, both routes): local host per-round idle-window work does not convert into official score. Powermetrics residency leg declined (fresh-clone build cost, no ranked value). Kernel-record-cache pricing (e173 item 2) must now justify itself on candidate-leg absolute time, not on tau.",
+  "440": "CLOSED FACTOR SYSTEM (E171 r2, harness=ranked, W&B f4np59rg): D-A=+0.8899 (4.7sd), C-A=+0.8765 (4.6sd), B-C=-0.6691 (3.5sd), D-B=+0.6878 (3.6sd, P-free Q-free); additivity residual +0.0070 %; calibrated pairwise null 0.189 % (serial sd 0.1338 %, n=974); every vector ~0 on plutarch. Q = -0.6691 % candidate-leg, STAYS IN. E165 = +0.69..+1.56 % HARMFUL on ranked M5; tau NEGATIVE [-1.36,-0.60]; DROPPED from ship set, no receipt to be spent on it. Mechanism: M5 has no exposed host chain to hide, prefetch only adds ~917 us/round memory traffic near the DRAM roof (vs 539 us recovered on M4 Pro). Maintained base is safe: E165 is opt-in there; the default flip lived only on Thorfinn's branch.",
+  "441": "SIDECAR FACTOR NEVER EXISTED (Thorfinn r2 \u00a70 + Edward E175 interim 1, independent simultaneous source proofs): D's Qwen35.swift is byte-identical to organizer main; Qwen35XSumsSidecar/publish/take and the qwen35_custom_affine4_g64_qmv_* consumers are ORGANIZER code present in all four receipts. The campaign 88-line Qwen35.swift delta = counters + an env knob returning the organizer constant + research-only defaults - inert on ranked. Q's four files contain zero xsums references in both versions; Q = qmm_t software pipelining (shift_dst, pipelined k-loop, double-width Ws, _nax 32KiB predicate) serving large-M traffic (prefill above all); the sidecar serves the m=4..9 decode QMV replica. DISJOINT by construction. Alphonse's census measured organizer-code coupling.",
+  "442": "E175 RULING: original four-file candidate = A + Q; F1/F2 amendments withdrawn (premise dissolved). Predictions (two routes, Thorfinn r2): published 3.7328 (mean7) / 3.7267 (score-setting prompts) - straddles crown 3.72911 within +/-0.005 vs receipt sd ~0.010, genuine coin flip, every outcome decisive. Edward's drift objection answered by four bounds; his byte-identical A-replay recorded as STANDING CONTINGENCY if E175 lands ~3.708 or <=3.69. Fire order: after cap-4 receipt.",
+  "443": "Edward first-hand B-tree verification: B = organizer + Q + provably inert instrumentation (BlockSession +30 = unset E159 env knob + trace fields; Qwen35.swift 88 inert). C provenance rests on Edward's own first-hand fda590bb build+inspection (commit 080d4cd3 no longer fetchable) - flagged, accepted. MLX routing: cells the m=2..9 replica declines fall to MLX; M>=vector_limit -> qmm, qmm_nax when is_nax_available && transpose && K%64==0. OPEN PUZZLE: why Q helps most at LOW edl - leading next-assignment candidate (Thorfinn), connects to Q-serves-prefill."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2355,7 +2391,8 @@
   "201": "When a stop branch is removed from an experiment, remove every measurement that could only have fed that branch. Re-derive the minimum evidence the ship decision still needs, and cut the schedule to it. Retaining an obsolete measurement on the ship path is unpriced delay, not caution.",
   "202": "Never leave the official slot empty. Keep one distinct frozen candidate queued behind the one in flight. Duplicate submissions are forbidden, so cadence is answered by a pipeline of distinct justified candidates, not by re-rolling.",
   "374": "per-leg W&B logging for any timed session over one hour; a reprovision then costs only the remaining legs",
-  "376": "Before assigning an implementation experiment, grep the campaign ledger for the mechanism axis. A merged null on the same mechanism closes the axis absent a recorded reopening reason (program.md already requires the recorded reason). Raised by ADVISOR ERROR 237 (E174 assigned onto the E160-closed epilogue axis)."
+  "376": "Before assigning an implementation experiment, grep the campaign ledger for the mechanism axis. A merged null on the same mechanism closes the axis absent a recorded reopening reason (program.md already requires the recorded reason). Raised by ADVISOR ERROR 237 (E174 assigned onto the E160-closed epilogue axis).",
+  "377": "Mechanism presence is decided by file CONTENT, not by whether a file appears in a diff. Organizer code carries mechanisms too: a file absent from candidate-vs-organizer diff means ORGANIZER content, which may include the mechanism. Raised by the FINDING 438 'sidecar ABSENT' misreading (file-level diff inference)."
  },
  "crownAttempt": {
   "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
@@ -2363,7 +2400,7 @@
   "postMortem": "three-factor confound; per-prompt decomposition assigned as E171 r2 (desk, no GPU)",
   "nextCrownPaths": {
    "cap4": "askeladd E168 r1 on organizer-pure; bands vs A=3.70784519: >=3.9 step transfers (crown), 3.65-3.9 partial (within-group-slope model), 3.55-3.65 step absent (pivot declamp-deeper); promote line 3.7291100106",
-   "qSingleFactor": "E175 AMENDED: Q-complete five-file composition (kernels + sidecar-minus-counter) on organizer-pure; central 3.74; D tested half the Q system, E175 tests all of it"
+   "qSingleFactor": "E175 four-file A+Q (FINDING 442): 3.7328/3.7267 two-route prediction, coin flip at the crown; fire after cap-4"
   }
  },
  "submitGuardMainSideBase": {
@@ -2510,5 +2547,7 @@
    }
   ],
   "medianCheck": "mean of 3.51403 and 3.80239 = 3.658209010 reproduces the published score exactly"
- }
+ },
+ "e165RankedHarm": "E165 head-prefetch: +0.69..+1.56 % candidate-leg harm on ranked M5 (FINDING 440); DROPPED from ship set; maintained base keeps it opt-in (default-off); mechanism deletion is cleanup backlog; never flip the default.",
+ "e171MergePlan": "r3 requested 09:25Z: one commit restores all non-research/ paths to merge-base content so the PR merges only the analysis files; frozen 4ba44f82 stays reachable through branch history; typed result re-posted at r3; then merge."
 }
