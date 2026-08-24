@@ -940,14 +940,15 @@
   "E186 (Thorfinn, assigned)": "DONE - merged Entry 387: staircase confirmed isolated + admissible on ranked anchors (0.90 MUE); dispatch proofs; widthSixWall priced 2.5-4.9 MUE (FINDINGs 487-489)",
   "E187 (Edward, assigned)": "DONE - closed Entry 388: exactness gate FAIL for every storage precision; GDN state has zero ulp slack (FINDINGs 490-491, RULE 383); closed unmerged (default-off instrument in submitted Qwen35.swift)",
   "E188 (Alphonse, next)": "DONE - merged Entry 389 (1bed320f): Stage 1 FINDING 486 (FINDING 440 UNCONFIRMED, seam axis reopened, E165 official retest adopted); Stage 2 FINDINGs 493-495 (commit growth not a merge regression, common-mode host growth 2.4-4.0x; eec2c14b rejection seam +1107us z=3.33, 0.113% local < MUE; clearRecurrentRollback 397/444us = 89.4% of ordinary commit phase, regime step begins at first rejection round)",
-  "E189 (Askeladd, assigned)": "Single-weight-pass QMV at rows 6-8 (FINDING 485 lever): exactness gate (real float values + positive control) then ABBA absolute candidate time at pinned rows 5/6/7/8; local prediction ~35.6 ms/round saving at rows 6-8; ceiling +5.7% published, realistic ~1.9%+",
+  "E189 (Askeladd, assigned)": "DONE - CLOSED unmerged Entry 395 (RULE 198/E187: research switch on submitted surface, default flipped back to staged). Decisive negative: FINDING 500 (all-cells single-pass Not useful, register/occupancy mechanism, step law double-confirmed) + FINDING 501 (m=6 all-cells e2e win -3.92 ms/round, 26x cell-sum projection). Branch preserved as E195 starting point. W&B 5cofya4l verified.",
   "E190 (Thorfinn, assigned)": "Cap-5 paid ranked receipt: discriminates staircase vs parabola by ~12.6 MUE at M=5, measures how much of the weight-pass step M5 hides (calibrates E189's prize), tests _nax step boundaries; expected score ~3.55-3.65, production measurement not promotion; owns the receipt watcher",
   "widthSixWall-two-append-fix": "assigned as E191 (Edward, PR pending) - see E191 entry",
   "E191 (Edward, assigned)": "DONE - merged Entry 392 (6c11b86c): decisive negative. M1 refuted (FINDING 496: census shows zero KV-sized copies on shipped path; two-append manufactures the copy, -1.903 ms/round regression, 16/16 rows). widthSixWall repriced (FINDING 497: dispatch count + extra SDPA call, +1.58..+3.04 ms/round = 2.8-5.4 MUE; split saves 1.14-2.31 ms/round vs composed fallback; FINDING 489 measured the wrong arm). Tests/+research/ only.",
   "gdnStateTrafficFusion (unassigned)": "Value-preserving GDN state traffic reduction (E187 follow-up 1): fuse state read+write into the recurrence kernel or keep state resident across the layer chunk. Ceiling <=2.087 ms/round GPU = 3.7 MUE; avoidable fraction unmeasured. HARD constraint: bit-identical values only (RULE 383); celllate detector available as the corruption gate (FINDING 491).",
   "E192 (Alphonse, assigned)": "RE-QUEUED UNASSIGNED (Entry 390): persistent in-place rollback slot (FINDING 495 lever). Stage 0 = 3.5-min barrier-timing discriminator (in-flight-reference vs allocator-free), then the slot only if in-flight-reference survives. Up to 0.27%/round local full-acceptance pricing = below single-mechanism MUE; composition material. Bit-identical state values mandatory. Goes to the next free student.",
   "E193 (Alphonse, assigned)": "E165-prefetch retest build: Stage 0 accepted (one-line default flip, machinery byte-identical to receipt D snapshot). First screen session aborted (bash 3.2 + HARNESS DEFECT 43); corrected session relaunched job bf8c107e (2 witness + 8 timed palindrome legs, 256 tokens, ungated, worker 091625e0). Witness observation: prefetch fires every drafting round, zero undos. Stop rule: STOP if 2sigma contains zero; CONTINUE iff effect+2sigma<0 (expected ~-0.29%). Stage 3 official submit preauthorized after E190 receipt, using FIXED submit-official.sh from fetched advisor tip.",
-  "E194 (Edward, assigned)": "Route 2-prime BUILD APPROVED (Entry 394): sequence-major query materialization in AttentionUtils.swift split branch. Stage 1 gates: barrier census (STOP if inter-SDPA barrier does not disappear), bf16 value gate m=6,7,8 kv>=1024 with positive control, end-to-end exact-token + row-ledger, RULE 384. Stage 2 ABBA; stop rule: STOP if recovery-2sigma <= 0.5 ms/round (then label Not useful standalone / composition material); CONTINUE to Stage 3 iff recovery-2sigma > 0.5. Scope check ordered before build. FINDINGs 498/499 closed the stream and vector-call axes."
+  "E194 (Edward, assigned)": "Route 2-prime BUILD APPROVED (Entry 394): sequence-major query materialization in AttentionUtils.swift split branch. Stage 1 gates: barrier census (STOP if inter-SDPA barrier does not disappear), bf16 value gate m=6,7,8 kv>=1024 with positive control, end-to-end exact-token + row-ledger, RULE 384. Stage 2 ABBA; stop rule: STOP if recovery-2sigma <= 0.5 ms/round (then label Not useful standalone / composition material); CONTINUE to Stage 3 iff recovery-2sigma > 0.5. Scope check ordered before build. FINDINGs 498/499 closed the stream and vector-call axes.",
+  "E195 (Askeladd, assigned)": "Cell-selective QMV width plan: per-(cell,m) plan - m=6 single-pass everywhere except mlp.down; m=7 lm_head-only IFF the non-monotone staged column replicates as real; m<=5 and m=8 staged (identical to shipped). Arms at m=6: staged / all-cells / selective. Frozen candidate ships winning plan as DEFAULT, research switch removed (RULE 198). CONTINUE iff selective m=6 >= 6 ms/round better than staged AND >= all-cells arm, clean gates. Cap-5 composition decision is the advisor's after the E190 receipt."
  },
  "organizer": {
   "branch": "main",
@@ -2030,41 +2031,7 @@
   "reading": "rows 1-4 share one weight pass at 0.96 ms each and break even at 3-11 % acceptance; row 5 buys a second full backbone pass and needs acceptance above 1",
   "supersedes": "FINDING 403 q*(d) ladder, which assumed a linear marginal row"
  },
- "stepLawConfirmed": {
-  "ledger": 361,
-  "claim": "the ranked round is a step function in M; the linear interpolant is refuted by measurement",
-  "measuredRankedDepth0RoundMs": 30.402,
-  "stepLawPredictionMs": 30.372,
-  "linearLawPredictionMs": 21.494,
-  "modelFreeUpperBoundMs": 30.781,
-  "modelFreeBoundSource": "plutarch mean round; 449/488 rounds do not draft; a drafting round cannot cost less than a depth-0 round",
-  "weightStreamFloorMs": 23.473,
-  "weightStreamGB": 14.41235,
-  "groupsTable": {
-   "2": 1,
-   "3": 1,
-   "4": 1,
-   "5": 1,
-   "6": 2,
-   "7": 2,
-   "8": 2,
-   "9": 3
-  },
-  "sourceAnchors": [
-   "Qwen35.swift:1709-1728 activeInputGroups",
-   "Qwen35.swift:1834 and :1883 launch grid",
-   "Qwen35.swift:1543 first_m = group_x*IPG",
-   "Qwen35.swift:1770-1794 routable n >= 4096"
-  ],
-  "bIsNotARowCost": "B = 5.3350 is a regression slope of an interpolant over M in 3..8; never price a saving by multiplying rows by B",
-  "directMeasurementAskeladd": "Round-cost table recovered from per-round block_request_seconds paired with effective_draft_lengths in 04-mtp-timed.json, eight untimed ABBA legs, g16s host. median ms by M: 2=69.27, 3=70.71, 4=77.65, 5=90.83, 6=125.79, 7=136.28, 8=145.44. M=5->6 increment 34.97 ms is 2.65x any other, then increments FALL BACK to 10.48 and 9.17. Doubling identities recover the fixed term as 16.58 and 10.81 ms.",
-  "withinGroupCostIsNotFlat": "g16s draft increments 2->3, 3->4, 4->5 are 1.43, 6.94, 13.18 ms, so the one-pass optimum is prompt-dependent: 2, 3 or 4, never >=5. Steepness does not transfer to M5 (FINDING 410).",
-  "shipSurfaceDecision": "Ship min(adaptive, 4) as a literal CAP on segmentedVerifyDepthCap and the costModelDepth entry point. Do NOT pin, and do NOT ship MLX_E159_FIXED_DRAFT_DEPTH.",
-  "rankedMeanWidth": "M = 1 + edl: plutarch 1.156, drama 3.298, travel 3.648, beagle 5.382, republic 5.989, essays 6.087, medicine 6.256, botany 7.148. Five of eight above the boundary, including both median-pair prompts (beagle, essays). The ranked pool behaves like Askeladd's longcopy fixture (multi-pass 87.2 %), not his english fixture (0.0 %).",
-  "thorfinnLocalHistogram": "512-token local fixture, 77 rounds: d histogram {2:1,3:2,4:6,5:5,6:7,7:56}; M>=6 88.31 %, M>=7 81.82 %, M=8 72.73 %. Independent host, independent fixture.",
-  "scope": "confirmed at the ranked M=1 anchor and locally per-round/per-arm (FINDING 429); the ranked M>=6 crossing is OPEN (FINDING 428), discriminated by the cap-4 receipt.",
-  "rankedTransferStatus": "FALSIFIED as a ranked pricing tool by receipt 90c131dc (FINDING 449). The M=1/plutarch anchor (30.402 vs 30.372 predicted) still holds; the groups=2 step at M in 6..8 does not price ranked rounds."
- },
+ "stepLawConfirmed": "DOUBLE-CONFIRMED (Entries 389/395): FINDING 484 step law R=18.92+6.51m+36.03G(m) reproduced by E189 per-cell instrument (staged QMV ms/round 89.2->124.7 at 5->6 = +35.5 vs +35.56; then +10.3, +6.7). The +35.5 ms group-pass step is real but NOT removable by all-cells single-pass tiling (FINDING 500 register/occupancy mechanism).",
  "depthFourLever": {
   "ledger": 361,
   "finding": 408,
@@ -2248,8 +2215,8 @@
   "frozenNext": "E193 E165-prefetch retest (PR 190): Stage 1 palindrome screen running; freeze after 512-token confirmation; preauthorized autonomous submit behind the E190 receipt",
   "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
  },
- "lastAdvisorUpdate": "2026-08-24T16:25Z Entry 394: E194 Stage 0 accepted - Route 2-prime (one sequence-major query materialization in AttentionUtils.swift split branch; removes g2_copy x2 and the inter-SDPA barrier, net -1 dispatch + single-stream overlap). Predeclared 0.10-0.65 ms/round, point 0.30 (~0.53 MUE). Ruling: written stop rule stands, sub-threshold clean positive = \"Not useful (standalone) - composition material\" with full Stage-1 gate chain archived. FINDING 498 closes the two-stream axis; FINDING 499 closes the single-vector- call axis for m>=6.",
- "ledgerEntry": 394,
+ "lastAdvisorUpdate": "2026-08-24T16:40Z Entry 395: E189 CLOSED unmerged (decisive negative, RULE 198/E187 precedent - width-plan switch on submitted surface with default flipped back). FINDING 500: Route 1 all-cells single-pass QMV Not useful (m=8 +53.96 ms/round e2e, m=7 +30.81 probed; mechanism = register/occupancy exit at NA>=7; _sp kernels proven bit-exact 0 ULP with firing positive control; step law double-confirmed +35.5 vs +35.56). FINDING 501: e2e m=6 all-cells WIN -3.92 ms/round = 26x cell-sum projection; cell sums understate; selective plan needs own ladder. E195 (cell-selective plan, ships winning default, switch removed) assigned to Askeladd.",
+ "ledgerEntry": 395,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2455,7 +2422,9 @@
   "491": "E187 instrument dataflow: earliest GDN state stores belong to a warm-up/prefill frame the decode chain never reads back - one-shot FIRST-store probes are blind at every site even at 1e30 (512/512 bit-identical) while whole-store arms change 423/512 rows. celllate (1e30 once at ~decode row 21) IS detected: corruption from row 21, 209 argmax flips by row 302. The ~280-row corruption-to-flip gap is a cheap silent-corruption detector for future GDN kernel work. Inert one-shot modes must be deleted before instrument reuse.",
   "492": "E190 predeclaration (Thorfinn): FINDING 488 fitted the staircase against a SHIFTED quadratic - FINDING 456 coefficients are in ROW form (R(rows=1)=30.277 reproduces the zero-draft anchor) but e186_analyze.py re-expressed them one row low; the +7.14 ms M=5 headline was not like-for-like. Corrected 6-row-cell gaps: staircase-corrected +8.27 ms = 14.6 MUE, refit +7.51 ms = 13.2 MUE - cap-5 discriminator STRONGER. Predeclared cap-5 published predictions: quadratic 3.66501433; staircase-published 3.41814272; corrected 3.37087944; refit 3.37992915 (9.78-11.65 sigma separation). Model-free primary boundary: receipt >3.5474 -> quadratic band; <3.5474 -> staircase band. Caveat: quadratic fits all 16 ranked obs far better (wRMSE 0.2435 vs 0.8760; AIC -176.61 vs -137.63). FINDING 485 ceiling range inherits the row-form question until the receipt lands.",
   "498": "STREAM AXIS CLOSED (E194 Stage 0, Edward). Two-stream SDPA overlap is unreachable on this base: StreamOrDevice.stream(_:) discards its argument (Vendor/mlx-swift/Source/MLX/Stream.swift:54-56) so per-call stream routing is a silent no-op; Stream.swift is not in editablePaths; withNewDefaultStream is unsafe (MLX 0.32 thread-local command encoder, campaign pins one process-global stream, Stream.swift:84-110); cross-stream Event join forces a command-buffer boundary per FA layer (16x/round). Correct overlap form is single-stream barrier removal (Route 2-prime).",
-  "499": "SINGLE-VECTOR-CALL AXIS CLOSED for m>=6 (E194 Stage 0, Edward). supports_sdpa_vector requires qL<=8 && qL*gqa<=32 with gqa = q.shape(1)/k.shape(1) = 24/4 = 6, a ratio no reshape lowers. Batch-major moves keep 6 query heads per KV head; broadcasting keys materializes; a stride-0 batch axis fails kv_copy_unless strides[0]==strides[1]*shape[1] and reintroduces the whole-KV copy priced at -1.903 ms/round (FINDING 496); qL<=8 excludes m=9. Route 4 cannot be made copy-free."
+  "499": "SINGLE-VECTOR-CALL AXIS CLOSED for m>=6 (E194 Stage 0, Edward). supports_sdpa_vector requires qL<=8 && qL*gqa<=32 with gqa = q.shape(1)/k.shape(1) = 24/4 = 6, a ratio no reshape lowers. Batch-major moves keep 6 query heads per KV head; broadcasting keys materializes; a stride-0 batch axis fails kv_copy_unless strides[0]==strides[1]*shape[1] and reintroduces the whole-KV copy priced at -1.903 ms/round (FINDING 496); qL<=8 excludes m=9. Route 4 cannot be made copy-free.",
+  "500": "ROUTE 1 ALL-CELLS SINGLE-PASS QMV NOT USEFUL (E189, Askeladd, closed Entry 395). Bit-exact: 0/8,043,904 diffs, 0 ULP, all 7 fused cells x m=6,7,8, positive control fires - _sp single-pass kernels proven exact and reusable. Timing (12-leg palindrome ladder, 256 tokens, harness=local M4 Pro): m=8 +53.96 ms/round (+37.0%, s/token +19.86%); m=7 +30.81 probed; m=6 -3.92. Mechanism: acc/partial/a0..a3 = rows_per_simd x NA live floats; NA>=7 is register/occupancy-bound (mlp.down m=8 single-pass ~4x its bandwidth bound). Step law double-confirmed: staged arm reproduces FINDING 484 +35.56 step at +35.5 from an independent instrument. Null controls collapsed (-0.05 probe, -0.16 ladder). Needle note: inputsPerGroup inlined away (0 hits); use Qwen35QMVWidthPlan.",
+  "501": "CELL-SUM PROJECTIONS UNDERSTATE ROUND EFFECTS; M=6 ALL-CELLS IS A REAL E2E WIN (E189). End-to-end m=6 all-cells single-pass: -3.92 ms/round (-3.1%, s/token -1.92%, -6.9 MUE) vs cell-sum projection -0.15 ms/round: 26x gap. Direction agrees at every width, magnitude does not - selective candidates need their own e2e ladder. Selective plan (single-pass at 6 of 7 winning cells at m=6, staged mlp.down) projects ~-7.5 ms/round from cell sums, plausibly more e2e. m=7 lm_head-only (~-1.3) rests on an unreplicated non-monotone staged column (8541@m7 vs 6175@m8) - replicate before pricing. Under cap-5 every drafting round runs m=6 (~100% duty cycle): cap-5 x selective composition is potentially crown-relevant; E190 receipt prices the cap-5 side."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",

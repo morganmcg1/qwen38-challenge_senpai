@@ -71804,3 +71804,54 @@ rebase, no replay. Scope precondition ordered before build: `validate-assignment
 `check-editable-budget.sh` must confirm `AttentionUtils.swift` on the editable surface.
 
 Numbering next free: FINDING 500, Entry 395, RULE 387, HARNESS DEFECT 44.
+
+## Entry 395 — 2026-08-24T16:40Z — E189 CLOSED unmerged (decisive negative, FINDINGs 500–501); E195 cell-selective width plan assigned
+
+**E189 (PR 187, Askeladd, candidate 51c8015d) CLOSED unmerged** per the written stop rule and
+RULE 198 / E187 precedent. W&B run `5cofya4l` (finished) verified: every headline metric
+matches the report verbatim. accept_result_on_current_base recorded at 9113bfb3 (diff from
+e0c0dec7 is ledger/Tests/research/tooling only). Why close, not merge: the diff ships the
+`Qwen35QMVWidthPlan` research switch (`MLX_E189_QMV_WIDTH_PLAN`) and `_sp` JIT kernel variants
+on the submitted surface with the default flipped back to `staged` — inert research machinery
+with zero scored-behavior change. Branch preserved as the E195 starting point.
+
+**FINDING 500 (Route 1 all-cells single-pass QMV: NOT USEFUL; mechanism = register/occupancy
+exit from the weight-streaming regime).** Bit-exactness PASSED: 0 differing of 8,043,904
+outputs, max ULP 0, across all seven fused affine-4/g64 cells × m=6,7,8 × both USE_TABLE arms,
+with a firing positive control (260/306/361 diffs at ×1.0000305 perturbation) — the `_sp`
+single-pass kernels are PROVEN bit-exact and reusable. Timing: end-to-end 12-leg palindrome
+ladder (256 tokens, ungated, worker sha256 be48866b stable, head provenance identical,
+all_tokens_matched on every leg): m=8 **+53.96 ms/round (+37.0%, s/token +19.86%)**; probe
+prices m=7 at +30.81 ms/round; m=6 −3.92 ms/round (below the 10 ms threshold). Mechanism:
+`acc`/`partial`/`a0..a3` are `rows_per_simd × NA` live floats; at NA≥7 the kernel is
+register/occupancy-bound (mlp.down m=8 single-pass 970 µs ≈ 4× its 44.6 MB bandwidth bound
+that staged 2×NA=4 already achieves at 233 µs/pass). The saved weight pass cannot repay the
+occupancy loss. FINDING-grade side result: the staged arm reproduces FINDING 484's group-pass
+step from an independent instrument — +35.5 ms (5→6) vs the published +35.56, then +10.3,
++6.7. Two unrelated instruments now agree on the step law. m=5 null control collapsed in both
+instruments (−0.05 probe, −0.16 ladder). All numbers harness=local, M4 Pro.
+
+**FINDING 501 (cell-sum projections UNDERSTATE round-level effects; m=6 all-cells single-pass
+is a real end-to-end WIN).** The end-to-end m=6 effect (−3.92 ms/round, −6.9 MUE, s/token
+−1.92%) is **26× the isolated cell-sum projection (−0.15 ms/round)**. Direction agrees at
+every width; magnitude does not. Consequences: (a) per-cell probe sums are directional
+screens only — every selective-plan candidate needs its own end-to-end ladder; (b) the
+cell-selective plan (single-pass where it wins: 6 of 7 cells at m=6, only mlp.down loses at
++116 µs/call) projects ≈ −7.5 ms/round at m=6 from cell sums and plausibly MORE end-to-end;
+(c) m=7 lm_head-only (≈ −1.3 ms/round projected) rests on a non-monotone, unreplicated staged
+lm_head column (8541 µs @m7 vs 6175 @m8; single invocation/round, 69.6 °C session) and must be
+replicated before pricing. Under cap-5 every drafting round runs m=6, so the selective win
+applies at ~100% duty cycle — the cap-5 × selective composition is potentially crown-relevant
+(E190's in-flight receipt prices the cap-5 side).
+
+**Needle note (RULE 197 practice):** `inputsPerGroup` is inlined/mangled away (0 symbol hits);
+the working `--require-symbol` needle for this area is `Qwen35QMVWidthPlan` (90 hits).
+
+**E195 assigned to Askeladd:** cell-selective width plan, one hypothesis: the per-(cell,m)
+plan beats both staged and all-cells at m=6 end-to-end, bit-exactly; m=7 lm_head-only decided
+after replicating the flagged column. RULE 198 handling built in: the frozen candidate ships
+the winning plan as the DEFAULT with the research switch removed from the submitted surface.
+No official submission from E195; the advisor owns composition and the slot queue (E190
+receipt → E193 → strongest next).
+
+Numbering next free: FINDING 502, Entry 396, RULE 387, HARNESS DEFECT 44.
