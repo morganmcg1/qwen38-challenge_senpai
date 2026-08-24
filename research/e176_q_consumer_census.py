@@ -42,7 +42,14 @@ ALL8 = sorted(PROMPT_NAMES.values())
 DRAFTING = ["drama", "travel", "beagle", "republic", "essays", "medicine",
             "botany"]
 RECEIPTS = {"A": "5a9f130a", "B": "180db842", "C": "fda590bb",
-            "crown": "ec24d591"}
+            "D": "2c885d64", "crown": "ec24d591", "K": "90c131dc"}
+# What each receipt carries beyond organizer-pure A.
+#   Q     software-pipelined qmm_t / qmm_t_nax (4 kernel files)
+#   I     candidate instrumentation, per drafting round
+#   E165  head prefetch
+#   K     organizer main with segmentedVerifyDepthCap 7 -> 4, nothing else
+CONTENT = {"A": "-", "B": "Q + I", "C": "I", "D": "Q + I + E165",
+           "crown": "- (organizer main, other solver)", "K": "cap-4"}
 DECODE_TOKENS = 512
 MAD_TO_SD = 1.4826
 
@@ -314,12 +321,13 @@ def main():
     print("=" * 78)
     print("3b. DIRECT CHANNEL SPLIT FROM THE RECEIPTS (no model)")
     print("=" * 78)
-    vB, vC, vA = vec(rows["B"]), vec(rows["C"]), vec(rows["A"])
-    pre = {t: {p: DECODE_TOKENS * v[p]["prefill_seconds_per_token"]
-               for p in ALL8} for t, v in (("B", vB), ("C", vC), ("A", vA))}
-    lg = {t: {p: DECODE_TOKENS * v[p]["mtp_seconds_per_token_mean"]
-              for p in ALL8} for t, v in (("B", vB), ("C", vC), ("A", vA))}
-    dec = {t: {p: lg[t][p] - pre[t][p] for p in ALL8} for t in lg}
+    tags = ("A", "B", "C", "D", "crown", "K")
+    vv = {t: vec(rows[t]) for t in tags}
+    pre = {t: {p: DECODE_TOKENS * vv[t][p]["prefill_seconds_per_token"]
+               for p in ALL8} for t in tags}
+    lg = {t: {p: DECODE_TOKENS * vv[t][p]["mtp_seconds_per_token_mean"]
+              for p in ALL8} for t in tags}
+    dec = {t: {p: lg[t][p] - pre[t][p] for p in ALL8} for t in tags}
     print("  prefill share of the candidate leg (receipt C):")
     for p in sorted(ALL8, key=lambda x: edl[x]):
         print("    %-9s leg %6.3f s  prefill %6.4f s  share %5.2f %%"
@@ -340,15 +348,123 @@ def main():
                        for p in DRAFTING)
     print("    mean8 prefill %+.4f %%   mean7 decode %+.4f %%"
           % (pre_pct, dec7_pct))
+    # Prefill is a pure Q instrument: neither the instrumentation nor the E165
+    # head prefetch runs during the seed.  The four pairs below therefore test
+    # C's flagged provenance (FINDING 443) on a channel where C must read zero.
+    print()
+    print("  FACTOR SYSTEM BY CHANNEL, mean over prompts (negative = faster)")
+    print("    pair   content            prefill mean8   decode mean7"
+          "   leg mean7")
+    pairs = [("B", "A", "Q + I"), ("C", "A", "I"), ("B", "C", "Q"),
+             ("D", "B", "E165 - I"), ("D", "A", "Q + I + E165"),
+             ("crown", "A", "null, byte-identical")]
+    out["factor_by_channel"] = {}
+    for hi, lo, what in pairs:
+        pp = st.mean(100.0 * (pre[hi][p] - pre[lo][p]) / pre[lo][p]
+                     for p in ALL8)
+        dd = st.mean(100.0 * (dec[hi][p] - dec[lo][p]) / dec[lo][p]
+                     for p in DRAFTING)
+        ll = st.mean(100.0 * (lg[hi][p] - lg[lo][p]) / lg[lo][p]
+                     for p in DRAFTING)
+        print("    %-6s %-18s %+10.4f %% %+13.4f %% %+10.4f %%"
+              % ("%s-%s" % (hi, lo), what, pp, dd, ll))
+        out["factor_by_channel"]["%s-%s" % (hi, lo)] = {
+            "content": what, "prefill_mean8_pct": pp,
+            "decode_mean7_pct": dd, "leg_mean7_pct": ll}
+
+    # Closure test.  If a factor acts only on the seed prefill, its leg effect
+    # must equal its prefill effect times the measured prefill share.  This
+    # form does not depend on the subtracted decode residual being exact, so
+    # it survives the `prefill_seconds_per_token` probe caveat.
+    print()
+    print("  PREFILL-ONLY CLOSURE TEST, mean7")
+    print("    pair   content         prefill%% x share   leg%%      residual")
+    for hi, lo, what in pairs:
+        share = st.mean(pre[lo][p] / lg[lo][p] for p in DRAFTING)
+        pp = st.mean(100.0 * (pre[hi][p] - pre[lo][p]) / pre[lo][p]
+                     for p in DRAFTING)
+        ll = st.mean(100.0 * (lg[hi][p] - lg[lo][p]) / lg[lo][p]
+                     for p in DRAFTING)
+        print("    %-6s %-16s %+10.4f %%   %+8.4f %% %+8.4f %%"
+              % ("%s-%s" % (hi, lo), what, pp * share, ll, ll - pp * share))
+        out["factor_by_channel"]["%s-%s" % (hi, lo)]["prefill_only_"
+                                                     "prediction_pct"] = (
+            pp * share)
+        out["factor_by_channel"]["%s-%s" % (hi, lo)]["closure_residual_pct"] = (
+            ll - pp * share)
+
+    # B - A is the clean Q instrument: both trees were inspected first hand and
+    # only A is free of the instrumentation that contaminates C.
+    ba_pre = {p: 100.0 * (pre["B"][p] - pre["A"][p]) / pre["A"][p]
+              for p in ALL8}
+    ba_dec = {p: 100.0 * (dec["B"][p] - dec["A"][p]) / dec["A"][p]
+              for p in ALL8}
     out["channel_split"] = {
         "prefill_share_pct": {p: 100.0 * pre["C"][p] / lg["C"][p]
                               for p in ALL8},
-        "q_prefill_pct": {p: 100.0 * (pre["B"][p] - pre["C"][p]) / pre["C"][p]
+        "bc_prefill_pct": {p: 100.0 * (pre["B"][p] - pre["C"][p]) / pre["C"][p]
+                           for p in ALL8},
+        "bc_decode_pct": {p: 100.0 * (dec["B"][p] - dec["C"][p]) / dec["C"][p]
                           for p in ALL8},
-        "q_decode_pct": {p: 100.0 * (dec["B"][p] - dec["C"][p]) / dec["C"][p]
-                         for p in ALL8},
-        "q_prefill_mean8_pct": pre_pct,
-        "q_decode_mean7_pct": dec7_pct,
+        "bc_prefill_mean8_pct": pre_pct,
+        "bc_decode_mean7_pct": dec7_pct,
+        "q_prefill_pct": ba_pre,
+        "q_decode_pct": ba_dec,
+        "q_prefill_mean8_pct": st.mean(ba_pre[p] for p in ALL8),
+        "q_decode_mean7_pct": st.mean(ba_dec[p] for p in DRAFTING),
+    }
+
+    # --------------------------------------------------- cap-4 composition
+    # Receipt K is organizer main with the one segmentedVerifyDepthCap literal
+    # changed.  Q and cap-4 act on disjoint channels, so the composed leg is
+    # K's own prefill and decode each scaled by the measured B - A factor.
+    print()
+    print("=" * 78)
+    print("4. CAP-4 COMPOSITION RULING")
+    print("=" * 78)
+    vk = vec(rows["K"])
+    print("    prompt      A edl   K edl   prefill %%   decode %%     leg %%")
+    for p in sorted(ALL8, key=lambda x: edl[x]):
+        print("    %-9s %6.3f  %6.3f %+10.4f %+10.4f %+10.4f"
+              % (p, vv["A"][p]["effective_mean_draft_len"],
+                 vk[p]["effective_mean_draft_len"],
+                 100.0 * (pre["K"][p] - pre["A"][p]) / pre["A"][p],
+                 100.0 * (dec["K"][p] - dec["A"][p]) / dec["A"][p],
+                 100.0 * (lg["K"][p] - lg["A"][p]) / lg["A"][p]))
+
+    def median8(xs):
+        xs = sorted(xs)
+        return 0.5 * (xs[3] + xs[4])
+
+    composed = {}
+    for tag in ("A", "K"):
+        base = median8(vv[tag][p]["raw_ratio_of_means"] for p in ALL8)
+        with_q = median8(
+            vv[tag][p]["serial_seconds_per_token_mean"] * DECODE_TOKENS
+            / (pre[tag][p] * (1.0 + ba_pre[p] / 100.0)
+               + dec[tag][p] * (1.0 + ba_dec[p] / 100.0))
+            for p in ALL8)
+        composed[tag] = {"published": rows[tag]["officialScore"],
+                         "reconstructed": base, "plus_q": with_q,
+                         "plus_q_delta_pct": 100.0 * (with_q - base) / base}
+        print("    %-6s published %.6f  reconstructed %.6f  + Q %.6f"
+              "  %+.4f %%" % (CONTENT[tag], rows[tag]["officialScore"], base,
+                              with_q, composed[tag]["plus_q_delta_pct"]))
+    out["cap4"] = {
+        "receipt": rows["K"]["id"],
+        "status": rows["K"]["status"],
+        "published": rows["K"]["officialScore"],
+        "vs_A_pct": 100.0 * (rows["K"]["officialScore"]
+                             - rows["A"]["officialScore"])
+        / rows["A"]["officialScore"],
+        "prefill_mean8_pct": st.mean(
+            100.0 * (pre["K"][p] - pre["A"][p]) / pre["A"][p] for p in ALL8),
+        "decode_mean7_pct": st.mean(
+            100.0 * (dec["K"][p] - dec["A"][p]) / dec["A"][p]
+            for p in DRAFTING),
+        "edl_A": {p: vv["A"][p]["effective_mean_draft_len"] for p in ALL8},
+        "edl_K": {p: vk[p]["effective_mean_draft_len"] for p in ALL8},
+        "composed": composed,
     }
 
     out["q_vector"] = {"pct": q_pct, "ms": q_ms, "leg_s": leg, "edl": edl,
