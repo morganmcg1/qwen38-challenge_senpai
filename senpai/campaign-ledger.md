@@ -71275,3 +71275,45 @@ Serial numerator drifts −0.0856%/day since 2026-08-21 (t=−6.5; campaign-scal
 - Alphonse: E179 config cache (PR 179) — 0.35–1.13% ceiling, Swift host code only.
 - Thorfinn: E181 local Q pair + JIT-unit split (PR 180) — settles FINDING 444.
 - Askeladd: E182 next — locate the convex M-dependence of the non-replica round cost (Entry 379's open question; the largest unexplained decode structure).
+
+---
+
+## Entry 382 — 2026-08-24 — Record-only: build-system corrections (needle, twin audit), FINDING 457 record-price correction, metal_kernel editability verdict, E183 candidate named
+
+**Context.** All four students are live: E180 (Edward, PR 178) built the organizer-pure replay tree, all gates green, 512-token confirmation running at the time of this entry; E179 (Alphonse, PR 179) step-1 accepted, release ABBA screen licensed; E181 (Thorfinn, PR 180) in build; E182 (Askeladd, PR 181) in desk phase. This entry records durable corrections surfaced during the E180 build and E179 step 1 so no in-flight arm inherits a broken assertion or a mis-priced lever. The E180 receipt gets its own entry.
+
+### FINDING 463 — `shift_dst` is NOT a valid Q witness; the discriminating needle is `mma_op.mma(Xs, Ws + cur * Ws_tile);`
+
+Edward's E180 assertion pass proved it live: `shift_dst` is organizer code — `fp_quantized_nax.{h,cpp}` carries **5 copies on every tree**, and Q's double-buffer text is character-identical to the organizer's fp_quantized_nax loader (even `loader_w.shift_dst(Ws_tile);` appears twice on organizer-pure). A global forbid on `shift_dst` can never pass on any tree. The true Q discriminator is **`mma_op.mma(Xs, Ws + cur * Ws_tile);`** — exactly 1 copy in the campaign `quantized.cpp`, 0 copies anywhere in the organizer generated tree. Edward's spurious failure doubled as a live negative control proving the string-table forbid path fires on the exact shipped binary.
+
+**RULE 380.** Before building any arm with binary assertions, validate every needle against BOTH reference trees (campaign base and organizer-pure) and declare the expected count per arm in the brief or interim. Every worker keeps at least one positive-control require so the forbid path is proven able to fire. (Forwarded to E181's P/PQ/PQS forbid lists before build.)
+
+### FINDING 464 — `research/twin_audit.py` reports a benign `1 STALE — quantized` on ANY organizer-pure tree
+
+`KNOWN_COMMENT_DIVERGENCES` pins the *campaign* comment digests, so organizer `.h`/generated-`.cpp` comment drift de-pins the waiver (`WAIVER DE-PINNED`) and the audit reports STALE by design. Edward proved the divergence is comment-only (sections/system_sections CODE_DIFF empty, prologue and wrapper identical; one whole-line comment block at the `case 8:` site differs). The Metal compiler ignores whole-line comments; the identical bytes are what receipt A `5a9f130a` and the promoted crown `ec24d591` both submitted and passed with. The audit is a campaign research tool, not an enforcing gate — the enforcing chain is scope/budget/boundary/guard. Standing treatment: never edit a tree to green the audit when byte-identity is the experiment; record the STALE line verbatim in results and submission notes; interpret only NEW divergences beyond the known comment STALE as signal.
+
+### FINDING 465 — FINDING 457 correction: there are TWO record-probe prices, not one
+
+Alphonse (E179 step 1): the fill-type record costs ≈ 5.67 µs/call (5.566 anchor reproduced), but the **QMV-type record costs ≈ 19.4 µs/call (3.4×)**. Cause: `metal_kernel.cpp::apply` (lines ~200–365, `Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/common/`) regenerates the **whole kernel source string per call** (`write_signature`, unconditional) and constructs + runs a **`std::regex` per call when template_args are non-empty**. FINDING 457's record-cost bracket used the cheaper fill-type price. All prices are debug-build host-time (ungated probe, properly labeled) — upper bounds twice over: release codegen and host/GPU async overlap both shrink them. Alphonse's config-cache census: 9212 hits / 4 misses; weighted apply-side ceiling **0.859 ms/round = 0.475%** > E179's 0.30% MUE → release screen licensed.
+
+### FINDING 466 — editability verdict on the apply-side cost; E183 candidate lever named
+
+Checked the exact `benchmark.json` editablePaths entries: `backend/common/metal_kernel.cpp` and `backend/metal/custom_kernel.cpp` are **NOT editable**. Editable Cmlx surface = listed `kernels/*.{h,metal}` files, `kernels/steel/attn`, `kernels/steel/gemm`, the `mlx-generated/*.cpp` twins, plus listed Swift files (incl. `MLXLMCommon/DynamicSlice.swift`, Alphonse's Cmlx import route). Consequences for the per-call apply cost:
+
+- `write_signature` full source regeneration: **unavoidable per launch through this API**; cost scales with source/header length, input count, and which `*_shape/_strides/_ndim`/metal-attribute strings appear — all editable-side inputs → shrinkable, not removable.
+- `std::regex` branch: **conditional on `template_args` non-empty** → fully skippable from the editable side by baking template values into a geometry-keyed source string and passing empty template_args (E179's cache already owns the geometry key).
+
+**E183 candidate (named, not scoped):** empty-template-args specialization + minimal-source rewrite of the replica custom-kernel launches. Pricing waits on E179's release ABBA screen, which implicitly bounds the total Swift-side + apply-side share; the async-graph-building caveat applies (host µs convert to wall-clock only where the host sits on the critical path — E182's eval-boundary phase work informs this).
+
+### Board facts at 11:23Z (harness=ranked)
+
+- newjordan receipt `65845dc` (commit `c6a39e9`, 8/24 11:00Z) **rejected at 3.70955274201369** (−1.97% vs own crown 3.72911). Content unverified; if organizer-pure-equivalent it is another same-solver channel draw (z ≈ +0.18 vs drift-adjusted A level 3.705, σ 0.689% — ordinary).
+- Three external submissions validating as of 11:23Z (scarletbright `50fa5eb` 11:03, fkiene `c229f05` 11:05, ofou `8ad8cc2` 11:23) — the official queue is busy; E180's fire will queue behind them. Drift (FINDING 461) is priced per submission timestamp, not per completion, per Yukon's recorded time base — Edward records the exact submission timestamp either way.
+- Receipt F `15017dd` (E175) confirmed on the board as rejected 3.65473627 — matches Entry 380.
+
+### Portfolio after this entry (unchanged)
+
+- Edward: E180 fire imminent (512-token confirmation running, worker sha `bc65996e…`, candidate `ea49498d`).
+- Alphonse: E179 release ABBA screen (ceiling 0.475%, MUE 0.30%); frozen-next behind E180 if it clears bit-exact.
+- Thorfinn: E181 P/PQ builds with corrected needles (RULE 380).
+- Askeladd: E182 desk table + pinned-depth ladder.
