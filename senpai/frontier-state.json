@@ -450,11 +450,7 @@
   "syncBudget": "Qwen36MTPBlockSession.swift:1483-1489 builds the whole head chain with no host read; :1541 is the single blocking eval, comment says 1 sync/cycle; every .item() after it waits on nothing.",
   "whyOnDeviceIsImpossible": "The verify tensor shape must be host-known, so the width decision cannot stay on device, and there is no existing host transfer before the verify forward to ride on."
  },
- "depthCapEightOpenLever": {
-  "status": "REOPENED-BY-E190",
-  "finding": 505,
-  "statement": "The convex law that priced cap-8 dead (3.67148; width-9 marginal row 8.848 ms vs break-evens 6.19-8.13 ms) is falsified. A saturating form with the big step at width 6 and flattening after (local FINDING 484 shape) could put the width-9 marginal row below the break-evens. E197 refit prices cap-8 before any paid receipt; parent offers depth 8 (receipt metadata mtp_max_draft_depth=8), so cap-8 is a one-line candidate (segmentedVerifyDepthCap 7->8)."
- },
+ "depthCapEightOpenLever": "E199 QUEUED (Entry 401): candidate = Qwen36MTPBlockSession.swift:1067 segmentedVerifyDepthCap 7->8; legal (maxDepth=8, parent offers 8, warmAllDepths warms widths 1..9); risk = width 9 never exercised on ranked + historical width>5 bit-exactness wall (covered by sdpa 6..9-row split); gate = one 512-token --local-submit that proves 9-row rounds occurred + exact tokens + row-ledger closure. Submit behind receipt 2681c3ac.",
  "depthControllerHasNoSignal": {
   "aucPosition0": {
    "baseRate": 0.687,
@@ -1298,10 +1294,7 @@
   "naiveDesign": "within-prompt slope of decode s/tok on edl is the A-to-B build gap re-signed by whichever cluster drafts deeper on that prompt",
   "status": "superseded in part: two controlled ranked depth points now exist \u2014 cap-7 (A) 3.70784519415395 and cap-4 (90c131dc) 3.54742900664627, single-factor. Board-only inference remains unidentifiable; law recovery from the paid receipts is E177 (qwen-askeladd)."
  },
- "rankedDepthOptimum": {
-  "finding": 504,
-  "statement": "Cap-7 remains the empirical best paid cell (3.70785 > 3.54743 cap-4 > 3.52364 cap-5), but the FINDING 456 convex law that declared the depth axis closed is falsified at cap-5. Depth axis REOPENED pending the E197 saturating refit; RULE 378 stands until the refit prices cap-6/cap-8."
- },
+ "rankedDepthOptimum": "PRICED-AWAITING-RECEIPT (E197, Entry 401): cap-8 median 3.7153 [3.466,3.994], P(beat crown)=0.465 >= predeclared 35% -> one paid cap-8 receipt queued (E199, one-line segmentedVerifyDepthCap 7->8, width-9 exactness gate). cap-6 DEAD in every family. Oracle per-prompt cap 3.820 is the axis ceiling.",
  "rankedNoiseFloor": {
   "bestCaseCvPercent": 0.086,
   "finding": "FINDING 324",
@@ -2208,14 +2201,9 @@
   "ledger": 361,
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
- "submissionQueue": {
-  "ledger": 397,
-  "inFlight": "E193 E165-prefetch retest (PR 190, Alphonse): submission 2681c3ac validating. Receipt UNAFFECTED by HARNESS DEFECT 44 (trusted worker resolves the declared head fail-closed). Alphonse re-runs the 512-token confirmation under the declared head and holds the terminal result until both it and the receipt are in; he also runs the bounded head-provenance desk audit of prior confirmations.",
-  "frozenNext": "none",
-  "decision": "Next slot: strongest of E195 selective-QMV winner (if the m=6 ladder wins), E197-priced cap-8 paid receipt (if the saturating refit predicts crown-relevance), or the E192+E194 composition."
- },
- "lastAdvisorUpdate": "2026-08-24T18:40Z Entry 400: DEFECT 45 + RULE 390 (head identity), E193 declared confirmation PASSED (awaiting receipt 2681c3ac only), E198 width scope m6..9 (FINDING 512), FINDING 508 corrected (eval instrument-only), E195 m=7 ladder (FINDING 513), audit FINDINGs 510-511",
- "ledgerEntry": 400,
+ "submissionQueue": "In flight: 2681c3ac (E193 prefetch, frozen e50b1511/measured 67662100, watcher Alphonse). Next: E199 cap-8 paid receipt (Thorfinn, freezing after width-9 gate). Later: E195 selective-QMV winner iff ranked width-frequency weighting clears MUE (advisor review note); E198 Route-1 kernel winner (m6..9); E192+E194 composition.",
+ "lastAdvisorUpdate": "2026-08-24T18:50Z Entry 401: E197 MERGED (FINDINGs 514-515) - cap-8 priced crown-relevant P(crown)=0.465, cap-6 dead, dR9 receipt-only; E199 cap-8 candidate assigned to Thorfinn, queued behind 2681c3ac",
+ "ledgerEntry": 401,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2435,7 +2423,9 @@
   "510": "Head-provenance desk audit (E193, Entry 400): 12 prior 512-token confirmations = 4 DECLARED (E121/E129/E130/E193-redo), 2 PINNED (E65 PR#68 merged submitted-surface \u2014 full DEFECT 44 signature; E193-first, demoted), 6 UNRECORDED (incl. E190 ship confirmation). All 52 --local-iterate legs used the declared head (shared runner safe). E65 and E190 exposures DISCHARGED by official receipts (trusted worker resolves declared head fail-closed; exactness passed on all 8 hidden prompts). No re-runs; record-quality gap closed by RULE 389/390 + wrapper guard.",
   "511": "Declared head (dadbfb80) is ~8.5%/token faster than pinned (3a7fed84) on candidate build 67662100 at slightly lower acceptance (0.877 vs 0.886) \u2014 head step cost, not acceptance; local ratio 2.5563 vs 2.3382. Auxiliary base characterization, not an E193 claim. Serial legs agree to 0.008% across two gated sessions ~80 min apart: clean thermal-stability null channel (serial never consults the head).",
   "512": "Route-1 prize concentration (E196 census, 81 rounds, depth hist {3:1,4:29,5:2,6:3,7:46}): m=8 carries 92.8% (1124.7|1078.6 of 1212.5|1161.2 us/round); m=6-only kernel tops out at 0.032 ms/round = 0.057 MUE, 16x below the Stage 4 gate. E198 width scope expanded (feedback e198-fb-width-scope-402): Stage 4 arm and shipped compile-time default may enable every m in 6..9 that passes per-width register, dispatch (>=50% of pair-minus-floor, decision width m=8, both kL cells, no interpolation across kL=1024) and numerics gates. m=6 spill stops the line; m=8 spill => skip Stage 4, report register wall as Route-1 closure. m=9 in curves only (feeds E197 cap-8 repricing).",
-  "513": "E195 m=7 ladder (mislabelled arms, corrected: arm suffix = draft depth, m = depth+1; plan table keys on verified width, unaffected): all-cells single-pass +23.62 ms/round (+17.2%, MTP s/token +9.47%) at m=7 vs staged 137.33; selective is a verified cross-width no-op (+0.03 ms inside the +/-0.24 FINDING 503 floor); RULE 179 identity exact (38/223/218). With lm_head-alone -1538 us probe, other six cells lose ~25 ms/round combined at m=7 => per-(cell,m) plan is necessary. qmv_sp census (staged 0 / singlepass 14392 / selective 386): fixed depth does not fix width \u2014 tail rounds land at lower m, so every per-width plan row is live at ranked cap-7. Corrected m=6 primary relaunched; true m=5 null is depth 4."
+  "513": "E195 m=7 ladder (mislabelled arms, corrected: arm suffix = draft depth, m = depth+1; plan table keys on verified width, unaffected): all-cells single-pass +23.62 ms/round (+17.2%, MTP s/token +9.47%) at m=7 vs staged 137.33; selective is a verified cross-width no-op (+0.03 ms inside the +/-0.24 FINDING 503 floor); RULE 179 identity exact (38/223/218). With lm_head-alone -1538 us probe, other six cells lose ~25 ms/round combined at m=7 => per-(cell,m) plan is necessary. qmv_sp census (staged 0 / singlepass 14392 / selective 386): fixed depth does not fix width \u2014 tail rounds land at lower m, so every per-width plan row is live at ranked cap-7. Corrected m=6 primary relaunched; true m=5 null is depth 4.",
+  "514": "E197 ranked law refit (24 paid per-prompt constraints, 8 families): smooth-step is the only family reproducing all 3 paid medians inside the 0.689% channel (chi2 16.4/AICc 29.8); dR6 revised to 7.93-8.26 ms (still super-quadratic); LOO shows no family extrapolates a held-out paid median within the channel (3-9 sigma) so MC weights = 1/2 AICc + 1/2 LOO. cap-6 DEAD in every family (needs dR8 >= 7.895 ms vs estimates 2.35-7.65). cap-8 priced 3.7153 [3.466,3.994], P(beat crown)=0.465, P(beat A)=0.521. dR9 unobservable on ranked (cap-7 verifies <=8 rows); a paid cap-8 receipt is the only dR9 measurement and a 5.5-sigma flat-vs-stepped discriminator (3.82 vs 3.68). Predeclared 35% rule CLEARED -> paid cap-8 receipt queued (E199).",
+  "515": "Depth-axis upper bound: oracle per-prompt cap (shallow at 4, deep at 8) = 3.81998 = +3.02% vs A under smooth-step; within-request depth adaptation is legal. Shipped greedy depth rule uses makeUniformDepthPrice (.ship) and is blind to the width-6 step -> non-uniform depth-price arm is a distinct queued lever. Conditional repricing: a >=6-row-cell shave X corrects the anchor by X*P(rows>=6) and never moves the optimum back to cap 7 - depth and m>=6 width mechanisms compound."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
