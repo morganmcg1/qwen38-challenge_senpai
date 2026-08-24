@@ -65556,3 +65556,402 @@ G >= 3. If E164 shows the ranked A/B error bar is wide enough to swallow
 FINDING 259, then one pass at width 6 reopens and RULE 194 was built on noise.
 Those two outcomes are mutually exclusive, both are decided by zero-GPU
 arithmetic, and edward has both of them.
+
+## Entry 348 — 2026-08-24T01:05Z — The board says our per-row cost is the best on it, our per-round cost is the worst, and 80 % of our real gap is prefill. RULE 194 is retracted.
+
+`harness=ranked` for every board number in this entry. Nothing here is an
+official score of ours except where a receipt id is named.
+
+### ADVISOR ERROR 213 — RULE 194 was built on an under-determined inference
+
+In entry 347 I turned the ranked refutation of one-pass-at-width-6
+(`c47b45be`, +1.0583 % candidate leg) into "minimise the accumulator width
+`NA`", and I issued a min-NA width table as live guidance to alphonse. That
+was wrong. I had not read the kernel contract.
+
+`Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h:967-969`:
+
+> "the frozen host launches M x-groups for each 8-output tile, so a group that
+> claims NA adjacent input rows lets the remaining host groups **return without
+> reading weights**"
+
+`quantized.h:1163`:
+
+> "IPG = ceil(M / ceil(M / 4)): **the fewest weight streams** reachable at NA <= 4"
+
+`Qwen35.swift:1715-1729` returns `ceil(m / inputsPerGroup)` and that value is
+the grid x-extent at `:1834` and `:1883`. Each surviving x-group streams the
+entire weight tile over the full K, because `first_m = tid.x * IPG` selects
+only which activation rows the group serves. Therefore:
+
+```
+activeInputGroups(m) == number of full DRAM passes over all 257 routed
+                        quantized weight matrices
+```
+
+The shipped table is already stream-minimal wherever the register cap allows:
+
+```
+M      2    3    4    5    6    7    8    9
+IPG    2    3    4    5    3    4    4    3
+G      1    1    1    1    2    2    2    3     <- weight streams
+NA     2    3    4    5    3    4    4    3
+regs  87   90   94  102   90   94   94   90
+```
+
+My min-NA table raised `G` at every entry: w4 1->2, w5 1->2, w6 2->3, w8 2->4.
+It bought 7 to 12 registers with 50 % to 100 % more weight traffic across the
+whole model.
+
+```
+CAMPAIGN LAW 354 (replaces RULE 194)
+Minimise the weight-stream count ceil(M/IPG), subject to staying below the
+register-occupancy cliff between NA=5 and NA=6. The shipped width plan already
+satisfies this for every M <= 8.
+```
+
+Two in-tree prices for one stream, both `harness=local`, Apple M4 Pro:
+
+- `Sources/MLXFastModel/Qwen36MTPBlockSession.swift:1050-1051` — "pays a
+  **second full weight pass (~25 ms)**" for a serialised second forward.
+- `Qwen36MTPBlockSession.swift:960-961`, E68 rung-1 job `21ac5458` — "the step
+  into verify width 6 costs **27.308 ms** against **13.405 ms** for the step
+  into width 5".
+
+`27.308 - 13.405 = 13.9 ms` is the marginal price of the second **concurrent**
+stream, about 56 % of a serialised full pass.
+
+The two-term model that reconciles both observations is
+`cost ~ a*G + b*f(NA)` with `f` smooth to NA=5 and a hard jump at NA=6
+(102 -> 114 registers):
+
+- `c47b45be`: `G` 2->1 saves `a`, `NA` 3->6 crosses the cliff. Net loss.
+- alphonse's `minna5@w5`: `G` 1->2 costs `a`, `NA` 5->3 stays below the cliff.
+  Predicted net loss of about `a`.
+
+Both existing observations predict a loss for two different reasons, so the
+axis is not closed by assertion — it is closed by two live measurements.
+
+### FINDING 358 — every M>=6 conditional on the scored decode path
+
+Exhaustive source enumeration. Three source-level M>=6 boundaries exist and
+only two of them can fire on our hosts.
+
+| site | location | what changes | fires per round |
+|---|---|---|---|
+| 1 | `Qwen35.swift:1722` and its Metal twin `Qwen35.swift:1567` | `activeInputGroups` 1 -> 2, i.e. weight streams double | 257 routed projections |
+| 2 | `AttentionUtils.swift:122` | one causal sdpa becomes 2 launches + 1 concat | 16 full-attention layers |
+| 3 | `quantized.cpp:1417` with `get_qmv_batch_limit` at `:102-104` | qmv -> `qmm_splitk` when `M >= vector_limit`, and the limit is exactly **6** on `arch_gen` 13 or 14 | **0 on M4 Pro and M5** (limit 10 or 12) |
+
+Site 3 is the trap worth recording: on an `arch_gen` 13/14 Mac it would produce
+a second, independent step at exactly M=6 and would be perfectly confounded
+with site 1. Any future width-boundary measurement must state the host
+architecture generation. Ours do not have it; a borrowed one might.
+
+`sumsStride` steps at 9, not 6. The GDN prework mixer, fused in-proj,
+prefix-stash recurrence and post-norm gates are all smooth across 5 -> 6.
+No M=6 branch exists in the conv, mask, matmul or depthwise paths.
+
+Two source inconsistencies noted: `quantized.h:1163` says "NA <= 4" while
+`:988` asserts `NA <= 5` and `case 5` instantiates `<T,5,5>`; and
+`quantized.h:2013-2022` argues for "3+3+2, not 4+4" at M=8 while the code below
+it instantiates IPG=4.
+
+### FINDING 352 — the ranked round-cost law
+
+Rebuilt per prompt from receipt `5a9f130a`:
+`R = (mtp_spt*512 - prefill_spt*512) / N` ms, `rows = 1 + edl`.
+
+```
+all 8 prompts        R = 22.505 + 4.2423 * rows     SSE 26.35   worst residual 3.11 ms
+7 drafting prompts   R = 16.158 + 5.3351 * rows     SSE  0.82   worst residual 0.51 ms
+```
+
+`plutarch` is excluded: it drafts on only 39 of 488 rounds and is a different
+operating regime, not a point on the drafting cost curve.
+
+Round counts: drama 252, travel 213, beagle 110, republic 93, essays 92,
+medicine 90, botany 81, plutarch 488.
+
+Ranked per-prompt `R` in ms: plutarch 30.52 @1.156 rows, drama 34.24 @3.298,
+travel 35.11 @3.648, beagle 44.98 @5.382, republic 47.72 @5.989,
+essays 48.93 @6.087, medicine 49.35 @6.256, botany 54.47 @7.148.
+
+Conversion constants, verified by recomputing `officialScore`
+3.70784519415395 exactly:
+
+```
+ranked per-verified-row term  -1 %  ->  published +0.5892 %
+ranked per-round intercept    -1 %  ->  published +0.3104 %
+both                          -1 %  ->  published +0.9033 %
+```
+
+Caveat that must travel with these: the s/h split is a linearisation valid on
+rows in [3.30, 7.15]. Extrapolating to rows=1 gives 21.5 ms, below the physical
+floor of one full weight pass. `plutarch` at rows 1.156 measures 30.5 ms.
+
+Method notes for reuse. `effective_mean_draft_len` is an exact rational `P/N`
+with `N` the round count; `N + A = 512`; `A <= P = edl*N`. Smallest-feasible-`N`
+is wrong (drama 168, travel 142, negative intercept). SSE-minimisation alone is
+also wrong (drama `N=504`, alpha 0.007). The disambiguator is that the
+`N`-vector must make `R = s + h*rows` affine with `h > 0` and physically
+plausible. `prefill_seconds_per_token` is per **seed** token. The scored field
+is `mtp_decode_speedup_raw_median`, not `mtp_decode_speedup_median`.
+
+### FINDING 353 — the crown is held on a lucky draw and our real gap is small
+
+Published median recomputed with the board-mean serial as denominator, so the
+serial draw is neutralised:
+
+```
+                     neutral     actual      draw %
+vibecodooor         3.728940    3.71979     -0.245   <- fastest implementation
+scarletbright       3.724190    3.72298     -0.032
+Amal-David          3.721470    3.71654     -0.132
+ofou                3.717770    3.70222     -0.418
+newjordan (CROWN)   3.716782    3.72911     +0.332   <- 7th fastest; lucky draw
+ours 5a9f130a       3.709075    3.707845    -0.033
+```
+
+True implementation gap to the crown **+0.2078 %**, not the published
++0.5735 %. 64 % of the published gap is draw. Gap to the fastest
+implementation **+0.5356 %**. Only 16 of 291 standard-ledger receipts beat our
+candidate leg on both beagle and essays.
+
+### FINDING 354 — the published-median draw distribution
+
+Over 291 standard-ledger receipts: mean **-0.0489 %**, sd **0.1881 %**,
+min -0.526 %, max +0.907 %, right-skewed. Per-prompt serial-leg sd over 943
+receipts is 0.212 % to 0.245 %, range -0.67 % to +1.55 %. This supersedes the
+0.67 % figure in FINDING 346 and quantifies RULE 195.
+
+B1 win probability against a fresh frontier draw:
+
+```
+candidate leg -0.2052 %  ->  neutral 3.716702, edge -0.0022 %,  P(win) 50 %
+candidate leg -0.4163 %  ->  neutral 3.724581, edge +0.2098 %,  P(win) 78 %
+candidate leg -0.5670 %  ->  neutral 3.730226, edge +0.3617 %,  P(win) 91 %
+```
+
+B1 measured -0.4163 % whole-leg and -0.5813 % decode-only, so **P(win) is 78 %
+to 91 %**, not the coin flip it was framed as.
+
+### FINDING 355 — custom heads have been tried and every one of them loses
+
+943 receipts carry full per-prompt arrays. 46 distinct
+`head_provenance_sha256`; 607 use the pinned `559b24eb`; 336 use something
+else. My E158 premise "nobody has ever changed the head" was wrong in letter
+and right in substance:
+
+```
+head          n      best score
+559b24eb    607      3.72911     <- pinned; holds the frontier
+21275947      2      3.66055     <- best custom head ever
+02bf4795      1      3.61182
+477ba726     46      3.16766
+```
+
+All top-15 receipts use `559b24eb` and the identical accept ledger
+(beagle edl 4.3818, essays 5.0870).
+
+igneous-prose ran a controlled pair on one solver. Custom head `21275947` with
+a deeper ledger (plutarch edl 2.7778 against 0.1557, essays 5.3563) scored
+3.66055. The pinned head scored 3.71243. That is **-1.40 %**. The deeper head
+lifted essays 3.857 -> 3.965 and plutarch 1.264 -> 2.565 but dropped republic
+3.908 -> 3.779, botany 3.931 -> 3.851 and medicine 3.913 -> 3.874. The 5th
+order statistic moved from essays to republic.
+
+```
+CAMPAIGN LAW 355
+The median rule punishes uneven gains. Only lifting the 4th and 5th order
+statistics pays. Improving your best prompts is worth exactly zero.
+```
+
+189 distinct edl vectors exist. The by-count dominant one (n=268, beagle
+4.5327, essays 5.4253) is a worse older configuration, best essays raw 3.4341
+against 3.9206 on the standard ledger. The acceptance and head axis is closed
+at board level.
+
+### FINDING 356 — our per-prompt deficit against the best-ever leg
+
+Within the 291 standard-ledger receipts:
+
+```
+plutarch +0.309 %   drama +0.773 %   travel +0.644 %   beagle +0.550 %
+republic +0.449 %   essays +0.523 %  medicine +0.416 % botany +0.427 %
+```
+
+A composite of every best-ever leg on a mean draw scores 3.728940, which is
+exactly vibecodooor's neutral score. Nobody is leaving a free composite on the
+table.
+
+### FINDING 357 — we have the best per-row cost on the board and the worst per-round cost
+
+```
+                       s (ms/round)   h (ms/row)
+ours 5a9f130a             16.122         5.3408    <- lowest h on the board
+frontier ec24d591         15.833         5.3739
+fastest impl              15.820         5.3880
+```
+
+Regressing the per-round decode **difference** on rows:
+
+```
+vs frontier        delta_s = +0.2883 ms/round   delta_h = -0.0331 ms/row   worst residual 0.023 ms
+vs fastest impl    delta_s = +0.3018 ms/round   delta_h = -0.0472 ms/row
+```
+
+Removing +0.30 ms/round, which is 1.87 % of `s`, is worth **+0.58 % published**
+and matches the +0.5356 % neutral gap. 0.302 ms ranked is about 0.89 ms local
+at RULE 192's 2.947x.
+
+Transfer is **not uniform across the two terms**. Against askeladd's band-aware
+local fit inside the one-pass band (`s = 57.83`, `h = 12.47`):
+
+```
+                 local     ranked    local/ranked
+intercept  s     57.83     16.158       3.58x
+per row    h     12.47      5.3351      2.34x
+```
+
+The ranked M5 is relatively much better at fixed per-round work. A CPU
+graph-build saving therefore converts at about 3.58x and a GPU eval saving at
+about 2.34x. **Using the blended 2.947x on a single-channel effect is wrong in
+both directions.** Our +0.288 ms/round ranked deficit is about **1.03 ms/round
+of fixed local work**.
+
+Consequence, and the reason this entry exists: **every experiment I had in
+flight attacked `h`, the term where we already lead.** Candidate per-round
+overheads to hunt instead: the once-per-round part of the head chain
+(FINDING 334: 1.2288 ms local), cache snapshot, rollback and state management
+across 48 GDN layers, MLX graph build and evaluation boundaries, command-buffer
+submission, block-session bookkeeping, and row-ledger accounting.
+
+This claim is not yet independently replicated. `se(s)` for a **single-receipt**
+fit is about 0.647 ms, more than twice the claimed delta; I believe the paired
+difference regression escapes that, but it is unproven. Edward is red-teaming
+it under E164 F2 and the result is due before any GPU is spent on it.
+
+### PREFILL — the other half, and it is larger than the decode half
+
+```
+                     prefill ms/leg, mean over the 7 drafting prompts
+ours                 527.37   (z = +0.28)
+frontier ec24d591    526.38
+vibecodooor          504.79   <- 22.6 ms, 4.3 % faster than us
+board                mean 526.58, sd 2.784 ms (0.529 %), min 504.61, max 537.22
+lowest               scarletbright 504.61 ms, score 3.72298
+```
+
+Three-way split of the leg gap against the fastest implementation:
+
+```
+                     beagle        essays
+leg gap             +0.5467 %     +0.5199 %
+  prefill share     +0.4335 %     +0.4525 %    <- 79 % and 87 % of the gap
+  decode share      +0.1132 %     +0.0673 %
+```
+
+A 4.2 % step against a 0.529 % board sd is eight sigma. Two solvers have found
+a prefill mechanism worth about +0.43 % published on the median-setting
+prompts, and we do not have it.
+
+This forces a re-read of merged PR 162 arm A, which measured
+`seed_prefill_seconds` **-1.9471 %** (8 gated ABBA legs, 0.1 C entry spread,
+p=0.0286, W&B https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/o2hditxg ,
+run id `o2hditxg`) and which I judged ranked-inert because `quantized.cpp:697`
+routes prefill to `qmm_nax` on a NAX host. That judgement priced only the
+kernel channel. **Prefill work that is eliminated or restructured rather than
+made faster per FLOP transfers to M5 regardless of NAX.** FINDING 343's prefill
+lever is 0.10098 published % per 1 % of prefill, so a 4.2 % prefill cut is
++0.42 % published.
+
+Edward is testing the load-bearing assumption first: that
+`prefill_spt*512 + decode_seconds` reconstructs `mtp_spt*512` exactly. If
+prefill is not inside the same timed leg the whole split is invalid.
+
+### E160 closed — producer fusion is a decisive measured null
+
+Thorfinn's replicate 2. W&B
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/13xnxqh8 ,
+run id `13xnxqh8`. `harness=local`.
+
+The mechanism is live and witnessed: the census tuple
+`(sg_cand, xs_fill, xs_hit)` moves from `(0, 130, 127)` to `(64, 66, 191)`, so
+64 of 130 standalone chunk-sum fills per round (49.2 %) do disappear. Bit-exact
+with both positive controls firing at m in {4,5,8,9}. Twelve gated 512-token
+legs in two ABBA palindromes, worker digest `f4afb1ac` before and after every
+leg, real 40 C gate on all twelve, identical accept ledger (78 rounds, 496
+proposed, 435 accepted) reconstructed from the exact rationals `496/78` and
+`435/496`, so RULE 179 contamination is excluded.
+
+```
+fuse - off      -0.0015 %   2se 0.2044 pp, 9 dof, [-0.2059, +0.2029] %
+replica - off   -0.0731 %                        [-0.2775, +0.1312] %
+```
+
+The predeclared +0.06 % rule is not met; all three contrasts change sign
+between replicates; the replicate-1 +0.0340 % was noise and the
+hand-written-kernel hypothesis is also unsupported.
+
+```
+FINDING 359
+One standalone chunk-sum fill is worth less than about 6 us at 2 sigma, central
+estimate zero (-0.045 us per removed fill from fuse - off, +2.113 us from the
+isolated fuse - replica contrast), against a predicted 2.6 to 8.8 us. Fill
+count is not a first-order cost axis on this host and an epilogue costs about
+what the fill it deletes costs. The producer-fusion axis is CLOSED for
+mlp.down, gdn.out_proj (48 sites) and fa.o_proj (16 sites). Reopen only for a
+producer whose grid already matches (32, kBlocks, m) at full occupancy.
+```
+
+Two harness hazards recorded:
+
+- `MLX_E120_QMV_PIPELINE_LOG` no longer exists in the tree, while about
+  fourteen research scripts still read the `pipelines.json` it used to write.
+  **Those scripts now read stale data silently.**
+- The release xctest bundle needs `tools/build-mlx-metallib.sh
+  --all-build-roots` before any MLX-gated test can run.
+
+### RULE 197 — the remote head route does not check head depth
+
+From askeladd. `Qwen36MTPHeadAttachment.swift` branches on the presence of
+`model.safetensors.index.json`. The ranked runner resolves a `remote`
+declaration by fetching exactly `model.safetensors`, with no index, so the
+index-absent branch runs and `verifyHeadConfiguration` is never called.
+`mtp_num_hidden_layers == 1` is therefore **not** checked against the head
+artifact.
+
+The one-layer constraint is enforced by construction instead:
+`Qwen35Config.swift:269` reads the **backbone** config and
+`Qwen35TextModel.init` attaches exactly one MTP layer on that value. A deeper
+remote head loads without error, has its surplus tensors silently dropped by
+`update(parameters:)` (`:301-306`), drafts as a one-layer head, and reports
+exact. "Wider and richer, not deeper" is right, but the failure mode is silent.
+
+Staged trees on the student host: `mtp-head/` 810 MB with all three files;
+`mtp-head-declared/` 408 MB, `model.safetensors` only;
+`mtp-head-declared-run/` 408 MB with a `config.json` that is never read.
+
+Also closed: every E158 island leg reported `uses_pinned_mtp_head: true` and
+`mtp_head_tensor_count: 15` while drafting with a 40-tensor remote head
+resolved to `dadbfb80`. That is an observed contradiction, not an argument from
+the expression. **`head_provenance.sha256` is the only field that identifies
+the head.**
+
+### Board and submission state at 00:45Z
+
+Frontier unchanged: `ec24d591` newjordan `3.7291100105909`, srcRef `0863b06a`.
+Our best `5a9f130a` = `3.70784519415395`, published gap +0.5735 %.
+`35a8a9de` (B1, askeladd, BASE_SHA `770a3ff2`) still `validating` since
+23:31:28Z, oldest of 7 validating rows. Receipt watcher `49f0f177` is owned by
+askeladd and healthy.
+
+### Assignment board after this entry
+
+| student | PR | state |
+|---|---|---|
+| askeladd | 158 | E159 pinned per-width curve `R(M)`, M=2..8, running. Now the decisive test of LAW 354 with a mandated band split at the G boundary. |
+| alphonse | 163 | Session `c6063e2e` running, six gated legs. Reframed from "expected win" to a signed prediction test that prices one weight stream. Widths 4 and 6 held. |
+| edward | 164 | Red-teaming FINDING 357 and the prefill claim. B1 and A1 answers due first. |
+| thorfinn | — | Free. E160 closed. Next assignment is prefill, pending the source scope and Edward's B1 reconciliation. |
