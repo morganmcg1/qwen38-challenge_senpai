@@ -72206,3 +72206,33 @@ On watcher budget exhaustion: relaunch read-only watcher indefinitely, one short
 ### E192 assigned (Askeladd) — persistent in-place rollback slot (FINDING 495 lever)
 
 clearRecurrentRollback (Qwen36MTPBlockSession.swift:2147, called at :481/:1790) is 89.4% of the ordinary commit phase: 397 of 444 µs on full-acceptance rounds, 48 releases/round, per-reference cost stepping 2.53× (3.27 → 8.27 µs/ref) one-time. Expected ≤ 0.27%/round local — sub-MUE alone (MUE 0.39%), explicit composition material for the cap-8/E194 stack. Stage 0 runs the 3.5-minute barrier-timing diagnostic (in-flight-reference vs allocator-free account) before any fix is built; timing via RULE 388 in-process arm switch; merge tip must be unconditional (RULE 198).
+
+## Entry 412 — E193 receipt REJECTED (3.6746), mechanism merged as composition material; E199 stale-base blocker ruled (rebase to composed tip, re-gate, preauthorized submit); RULE 393; E204 assigned
+
+**Date:** 2026-08-24 ~23:30Z. **Base:** 55b34155 → b9ee228c (E193 merge — scored surface now composes E195 selective-m6 QMV + E193 round-start prefetch on the receipt-A lineage; officially unpriced until the E199 receipt).
+
+### E193 (PR 190, Alphonse) — terminal reviewed, MERGED — FINDING 527
+
+Receipt `2681c3ac` went terminal at 23:06:22Z after 5 h 08 m (board-wide validation stall 17:35–23:05Z, broke in creation order): **rejected, 3.67457094706895**, crown unchanged (`ec24d59` newjordan 3.7291100105909). Best official score of the day but −0.897% below receipt A (3.70785) ≈ 1.3σ on the 0.689% channel.
+
+**FINDING 527 — two separate statements, per Alphonse's correct reading:** (1) PROMOTION FAILED — the frozen pre-E195 candidate scored below crown and below receipt A; weak-moderate single-draw evidence (1.3σ) that the prefetch did not help officially, but the channel is ~25× too noisy to resolve a +0.2%-of-score effect and the same-day cross-candidate spread is ~5%. (2) MECHANISM LOCAL WINNER, officially unresolved — Stage-1 matched screen −0.2165% (2σ 0.0848%), complete arm separation (exact p=0.0143), serial null opposite-signed, reproduces E165's −545.3 µs/drafting-round to 1.2%; 512-token confirmation exact under the real 40°C gate. Yukon's board `commit` column (`504a7bd`) is Yukon's own snapshot commit, not our candidate SHA — recurring pattern, recorded.
+
+Review actions: accept_result_on_current_base at 55b34155 (E195 is mechanistically orthogonal and textually disjoint; the receipt is base-immune); stale `blocked` label cleared by routing repair (it was mine, Entry 404, correct until the receipt went terminal); **MERGED at b9ee228c** as sub-MUE composition material per the E192-standard (clean unconditional diff: `Qwen36MTPBlockSession.swift` +12/−31, zero other editable paths, RULE 198 verified). Caveat carried: if the E199 composed receipt lands well below the desk prediction, the prefetch is a named subtraction suspect. W&B: mtcsfj3s (screen), cyb9bm5d (confirmation), 9 auxiliary runs validated in the result.
+
+### E199 (PR 196, Thorfinn) — stale-base blocker ruled (feedback 416)
+
+Thorfinn stopped a wrong submission: frozen tip `4b967648` predates E195's 218-line `Qwen35.swift` change, so the archive would have shipped a pre-E195 scored surface and discarded a merged winner. Ruling: (1) rebase and re-gate, do NOT drop — the cap-8 receipt is still the maximal discriminator (E197: 5.5σ separation between depth laws; P(beat crown) 0.465) and E195's marginal-row-price change makes the receipt MORE necessary since no desk instrument is anchored on the E195 tree; (2) rebase target = **b9ee228c** so the receipt prices the full composed frontier (E195 + prefetch + cap-8); (3) `4b967648` preserved in the record, new SHA refrozen; (4) bounded re-gate = width-9 liveness gate + ONE 512-token `--local-submit` + full pre-submit chain; NO local cap-8-vs-cap-7 timing contrast (RULE 79 / FINDING 521); (5) slot reserved, submission preauthorized on green checks + live crown check.
+
+**RULE 393 (from Thorfinn's near-miss):** every submitted-surface scope check must diff the FULL `editablePaths` set from benchmark.json — including `Vendor/` — not just `Sources/`, the manifest, `mtp-head/`, and `Package.swift`. The same gap existed in the advisor's own review template (E198's Vendor-side kernel was caught only by an unfiltered diff). Use validate-assignment-scope.sh or the complete editablePaths list as the filter.
+
+### E192 (PR 201, Askeladd) — Stage-0 design note, no ruling needed
+
+Askeladd's source reading adds a decision-critical third account: the 48 released references are the GDN verify forward's own intermediates (PrefixReplayTape views), so **(c) relocation-not-removal** — retaining the tape may only defer frees the verify eval would pay anyway — can falsify Stage 1 even if the in-flight test clears. His CPU-clock-vs-wall-clock discriminator beside the same release is cleaner than the barrier (immune to the ~250–631 µs blocking-eval floor) and both instruments are compiled into every arm (RULE 391(c)). Temporary instrumentation committed (`8c27f0aa`, revert script provided) because run_job refuses dirty worktrees; tip will not carry it. He returns before Stage 1 if (b) holds, since "preallocate the 48 snapshot arrays" has no referent in this source — the live lever is WHEN references drop, not WHERE they live.
+
+### E204 assigned (Alphonse) — round-end seam overlap (FINDING 483 named mechanism)
+
+Round-end seam measured at 959.3 µs/round = 0.66% (commit 455.8 + inter_round_gap 451.6 + readout 44.8 + upkeep_pre 7.1; 95–100% idle; seam host work converts ~100%). Mechanism: submit the next round's head chain once acceptance is decided, overlapping GPU work with accept/rollback bookkeeping. Stage 0 re-measures the seam decomposition on b9ee228c (E195 + prefetch changed the window contents; E192 may remove 397 µs of it). Coordination boundary: E192 owns release-cost REMOVAL; E204 owns OVERLAP; the two compose but must not double-count the same idle window — both briefs say so. M5-transfer risk labeled (round-start analogue never proven on ranked; FINDING 486 z=1.28). Sub-MUE-to-borderline composition material.
+
+### Board
+
+Receipt ladder unchanged (A 3.70785 paid best; crown 3.7291). Queue drains in creation order post-stall. Slot reserved for E199's refrozen composed candidate.
