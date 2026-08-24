@@ -45,6 +45,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import agx_crossarch  # noqa: E402
+import air_kernel_stats  # noqa: E402
 
 REPO = HERE.parent
 QWEN35 = REPO / "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift"
@@ -203,6 +204,174 @@ def simdgroups(arch: str, registers: int | None) -> int | None:
     return REGISTER_FILE[arch] // (128 * registers)
 
 
+def air_vector_census(source: str, workdir: pathlib.Path) -> dict:
+    """Per-kernel histogram of fused-multiply-add vector widths in AIR.
+
+    The inner product is written over `vec<float, NA>`, so the width the
+    compiler actually emits says whether a given NA maps onto the native
+    four-wide lane group or has to be split. AIR is architecture-independent,
+    so a split here is a property of the source and the front end, not of the
+    host, and it therefore transfers to the ranked generation.
+    """
+    src = workdir / "air_probe.metal"
+    src.write_text(source)
+    listing = workdir / "air_probe.ll"
+    done = subprocess.run(
+        ["xcrun", "-sdk", "macosx", "metal", "-std=metal4.0", "-O2",
+         "-fno-fast-math", "-S", "-emit-llvm", str(src), "-o", str(listing)],
+        capture_output=True, text=True)
+    if done.returncode != 0:
+        return {"error": done.stderr.strip()[-600:]}
+    # The Metal front end lowers the inner product to `llvm.fmuladd`, not to
+    # the `llvm.fma` that air_kernel_stats looks for. At this stage the probe
+    # entry points are thin wrappers, so the arithmetic sits in the mangled
+    # template instantiation and has to be keyed off its template arguments.
+    muladd = re.compile(r"@llvm\.fmuladd\.(v\d+f32|f32)\b")
+    targs = re.compile(r"_Z\d+(qwen_e120_qmv_wide|qwen_e120_qmv_m)"
+                       r"ILi(\d+)ELb([01])E(?:Li(\d+)E)?")
+    out = {}
+    for name, body in air_kernel_stats.kernels(listing).items():
+        hit = targs.match(name)
+        if not hit:
+            continue
+        template, first, table, rows = hit.groups()
+        label = (f"wide_na{first}_r{rows}" if template.endswith("wide")
+                 else f"entry_m{first}_r{rows}")
+        label += "_tbl" if table == "1" else "_rec"
+        widths: dict[str, int] = {}
+        for line in body:
+            found = muladd.search(line)
+            if found:
+                widths[found.group(1)] = widths.get(found.group(1), 0) + 1
+        peak, allocas = air_kernel_stats.peak_live_registers(body)
+        out[label] = {"fma_widths": widths, "fma_total": sum(widths.values()),
+                      "lane_issues": sum(
+                          (int(k[1:-3]) if k.startswith("v") else 1) * v
+                          for k, v in widths.items()),
+                      "air_peak_live_regs": peak, "allocas": allocas,
+                      "mangled": name}
+    return out
+
+
+#: Live values the kernel body itself demands, read off the template source.
+#: `acc[ROWS]` and `partial[ROWS]` are each ROWS copies of a `vec<float, NA>`
+#: and are live together at the accumulate step; `sums` and the four staged
+#: activation vectors `a0..a3` are NA wide once; `scale_local[ROWS]`,
+#: `bias_local[ROWS]` and `packed[ROWS][4]` are ROWS wide with no NA factor.
+ARITH_EXPRESSION = "R_data(NA, ROWS) = 2*ROWS*NA + 5*NA + 6*ROWS"
+
+
+def arithmetic_registers(na: int, rows: int) -> dict:
+    acc_partial = 2 * rows * na
+    staged = 5 * na
+    per_row_scalars = 6 * rows
+    return {
+        "acc_plus_partial": acc_partial,
+        "sums_plus_a0_a3": staged,
+        "scale_bias_packed": per_row_scalars,
+        "total": acc_partial + staged + per_row_scalars,
+    }
+
+
+def arithmetic_reconciliation(law: dict, nas: list[int]) -> dict:
+    """Compare the source-derived register demand with the compiled count.
+
+    The gap is the budget the backend still has for addressing, unrolling and
+    keeping loads in flight. Where that gap collapses, the kernel has stopped
+    being able to hide memory latency, which is a different failure from
+    simply losing resident simdgroups.
+    """
+    out = {}
+    for arch, block in law.items():
+        cells = []
+        for na in nas:
+            cell = block["per_na_table_pipeline"][f"na{na}"]
+            for rows, key in ((4, "registers_rows4"), (2, "registers_rows2")):
+                compiled = cell[key]
+                if compiled is None:
+                    continue
+                demand = arithmetic_registers(na, rows)
+                cells.append({
+                    "na": na, "rows": rows,
+                    "data_registers_from_source": demand["total"],
+                    "compiled_registers": compiled,
+                    "scaffolding_headroom": compiled - demand["total"],
+                    "breakdown": demand,
+                })
+        if not cells:
+            continue
+        headrooms = [c["scaffolding_headroom"] for c in cells]
+        others = [c["scaffolding_headroom"] for c in cells
+                  if not (c["na"] == max(nas) and c["rows"] == 4)]
+        squeezed = [c for c in cells if c["na"] == max(nas) and c["rows"] == 4]
+        out[arch] = {
+            "expression": ARITH_EXPRESSION,
+            "cells": cells,
+            "median_headroom": sorted(headrooms)[len(headrooms) // 2],
+            "widest_rows4_headroom":
+                squeezed[0]["scaffolding_headroom"] if squeezed else None,
+            "other_cells_min_headroom": min(others) if others else None,
+        }
+    return out
+
+
+def register_model(law: dict, nas: list[int]) -> dict:
+    """Least-squares fit of R = base + per_row * ROWS * NA + per_input * NA.
+
+    `acc` and `partial` are each `ROWS` copies of an `NA`-wide vector, and the
+    four staged activation vectors plus `sums` are `NA` wide once. The fit
+    checks that arithmetic against the compiled counts instead of asserting it.
+    """
+    out = {}
+    for arch, block in law.items():
+        rows_a: list[list[float]] = []
+        rhs: list[float] = []
+        observed = []
+        for na in nas:
+            cell = block["per_na_table_pipeline"][f"na{na}"]
+            for rows, key in ((4, "registers_rows4"), (2, "registers_rows2")):
+                value = cell[key]
+                if value is None:
+                    continue
+                rows_a.append([1.0, float(rows * na), float(na)])
+                rhs.append(float(value))
+                observed.append({"na": na, "rows": rows, "registers": value})
+        n = len(rhs)
+        if n < 3:
+            continue
+        # Normal equations for a three-parameter fit; no numpy dependency.
+        ata = [[sum(rows_a[i][p] * rows_a[i][q] for i in range(n))
+                for q in range(3)] for p in range(3)]
+        atb = [sum(rows_a[i][p] * rhs[i] for i in range(n)) for p in range(3)]
+        for col in range(3):
+            pivot = max(range(col, 3), key=lambda r: abs(ata[r][col]))
+            ata[col], ata[pivot] = ata[pivot], ata[col]
+            atb[col], atb[pivot] = atb[pivot], atb[col]
+            for r in range(3):
+                if r == col or ata[col][col] == 0:
+                    continue
+                factor = ata[r][col] / ata[col][col]
+                for c in range(3):
+                    ata[r][c] -= factor * ata[col][c]
+                atb[r] -= factor * atb[col]
+        beta = [atb[i] / ata[i][i] if ata[i][i] else 0.0 for i in range(3)]
+        for i, record in enumerate(observed):
+            predicted = sum(beta[p] * rows_a[i][p] for p in range(3))
+            record["predicted"] = round(predicted, 2)
+            record["residual"] = round(record["registers"] - predicted, 2)
+        out[arch] = {
+            "expression": "R(NA, ROWS) = base + per_row_per_input * ROWS * NA "
+                          "+ per_input * NA",
+            "base": round(beta[0], 2),
+            "per_row_per_input": round(beta[1], 3),
+            "per_input": round(beta[2], 3),
+            "max_abs_residual": round(
+                max(abs(r["residual"]) for r in observed), 2),
+            "observed": observed,
+        }
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=pathlib.Path,
@@ -231,10 +400,12 @@ def main() -> None:
         "bytes_per_simdgroup_register": 128,
         "cells": {},
         "local_occupancy": {},
+        "air_vector_census": {},
     }
 
     with tempfile.TemporaryDirectory() as tmp:
         workdir = pathlib.Path(tmp)
+        result["air_vector_census"] = air_vector_census(source, workdir)
         lib = agx_crossarch.build_metallib(source, workdir)
         records: dict[str, dict] = {}
         for arch in ARCHES:
@@ -273,6 +444,10 @@ def main() -> None:
             per_na[f"na{na}"] = {
                 "registers_rows4": regs4,
                 "registers_rows2": regs2,
+                "text_bytes_rows4": row["rows4"].get("text_bytes"),
+                "text_bytes_rows2": row["rows2"].get("text_bytes"),
+                "spill_bytes_rows4": row["rows4"].get("spill_bytes"),
+                "spill_bytes_rows2": row["rows2"].get("spill_bytes"),
                 "resident_simdgroups_rows4": sg4,
                 "resident_simdgroups_rows2": sg2,
                 "occupancy_ratio_rows2_over_rows4":
@@ -307,6 +482,8 @@ def main() -> None:
                     REGISTER_FILE[arch] // (128 * want),
             }
     result["occupancy_law"] = law
+    result["register_model"] = register_model(law, nas)
+    result["arithmetic_reconciliation"] = arithmetic_reconciliation(law, nas)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=1) + "\n")
@@ -337,6 +514,49 @@ def main() -> None:
                   f"({threshold['required_over_actual']}x short). Equivalently the "
                   f"backend would have to fit NA=5 in "
                   f"{threshold['equivalent_max_registers_at_actual_file']} registers.")
+
+    for arch, rec in sorted(result["arithmetic_reconciliation"].items()):
+        print(f"\n=== {arch} source register demand vs compiled allocation ===")
+        print(f"  {rec['expression']}")
+        print(f"  {'NA':>3s} {'ROWS':>5s} {'2*R*NA':>7s} {'5*NA':>5s} {'6*R':>5s}"
+              f" {'R_data':>7s} {'compiled':>9s} {'headroom':>9s}")
+        for cell in rec["cells"]:
+            parts = cell["breakdown"]
+            print(f"  {cell['na']:>3d} {cell['rows']:>5d}"
+                  f" {parts['acc_plus_partial']:>7d}"
+                  f" {parts['sums_plus_a0_a3']:>5d}"
+                  f" {parts['scale_bias_packed']:>5d}"
+                  f" {cell['data_registers_from_source']:>7d}"
+                  f" {cell['compiled_registers']:>9d}"
+                  f" {cell['scaffolding_headroom']:>9d}")
+        print(f"  widest rows4 headroom={rec['widest_rows4_headroom']}"
+              f" vs min headroom elsewhere={rec['other_cells_min_headroom']}"
+              f" (median {rec['median_headroom']})")
+
+    for arch, fit in sorted(result["register_model"].items()):
+        print(f"\n=== {arch} register arithmetic vs compiled counts ===")
+        print(f"  {fit['expression']}")
+        print(f"  base={fit['base']}  per_row_per_input={fit['per_row_per_input']}"
+              f"  per_input={fit['per_input']}"
+              f"  max|residual|={fit['max_abs_residual']}")
+        print(f"  {'NA':>3s} {'ROWS':>5s} {'compiled':>9s} {'predicted':>10s}"
+              f" {'residual':>9s}")
+        for record in fit["observed"]:
+            print(f"  {record['na']:>3d} {record['rows']:>5d}"
+                  f" {record['registers']:>9d} {record['predicted']:>10.2f}"
+                  f" {record['residual']:>9.2f}")
+
+    air = result["air_vector_census"]
+    if air and "error" not in air:
+        print("\n=== AIR fused-multiply-add width census (architecture free) ===")
+        for name, rec in sorted(air.items()):
+            widths = " ".join(f"{k}x{v}" for k, v in sorted(rec["fma_widths"].items()))
+            print(f"  {name:20s} fma={rec['fma_total']:<4d} lanes="
+                  f"{rec['lane_issues']:<5d} [{widths}]"
+                  f"  air_peak_live={rec['air_peak_live_regs']}"
+                  f"  allocas={rec['allocas']}")
+    elif air:
+        print("\nAIR census unavailable:", air["error"][:300])
 
     occ = result["local_occupancy"]
     if occ and "error" not in occ:

@@ -281,22 +281,82 @@ def log_occupancy(path: pathlib.Path) -> str:
     return url
 
 
+def log_transfer(path: pathlib.Path) -> str:
+    """Does the NA = 5 deficit come from the source or from this host?"""
+    census = json.loads(path.read_text())
+    recon = census["arithmetic_reconciliation"]
+    air = census["air_vector_census"]
+    run = start(
+        "e170-transfer", "static_compile",
+        "Is the wide-QMV NA = 5 deficit fixed by the Metal source, and so "
+        "carried to the ranked M5, or fixed by this host's register file?",
+        {"expression": next(iter(recon.values()))["expression"],
+         "register_file_bytes": census["register_file_bytes"],
+         "ipg_table": census["ipg_table_read_live"],
+         "gpu_seconds": 0},
+        gate_qualified=False)
+
+    for arch, block in recon.items():
+        for cell in block["cells"]:
+            run.log({
+                "transfer/na": cell["na"],
+                "transfer/rows_per_simd": cell["rows"],
+                f"transfer/{arch}/data_registers_from_source":
+                    cell["data_registers_from_source"],
+                f"transfer/{arch}/compiled_registers":
+                    cell["compiled_registers"],
+                f"transfer/{arch}/scaffolding_headroom":
+                    cell["scaffolding_headroom"],
+            })
+        run.summary[f"{arch}/widest_rows4_headroom"] = \
+            block["widest_rows4_headroom"]
+        run.summary[f"{arch}/other_cells_min_headroom"] = \
+            block["other_cells_min_headroom"]
+        run.summary[f"{arch}/median_headroom"] = block["median_headroom"]
+
+    for name, rec in sorted(air.items()):
+        run.summary[f"air/{name}/fma_total"] = rec["fma_total"]
+        run.summary[f"air/{name}/lane_issues"] = rec["lane_issues"]
+        run.summary[f"air/{name}/widths"] = json.dumps(rec["fma_widths"])
+
+    run.summary["air_emits_native_v5f32"] = any(
+        "v5f32" in rec["fma_widths"] for rec in air.values())
+    run.summary["air_identical_rows4_vs_rows2"] = all(
+        air[name]["fma_widths"] == air[name.replace("_r4_", "_r2_")]["fma_widths"]
+        and air[name]["lane_issues"] == air[name.replace("_r4_", "_r2_")]["lane_issues"]
+        for name in air if "_r4_" in name)
+    run.summary["verdict"] = (
+        "Source-fixed in mechanism, hardware-scaled in magnitude: the same "
+        "register demand collapses the scaffolding headroom at NA = 5 and "
+        "rows_per_simd = 4 on both architectures, but the M5 architecture "
+        "keeps three times the residual headroom.")
+    url = run.url
+    run.finish()
+    return url
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--screen", type=pathlib.Path, required=True)
-    parser.add_argument("--exactness", type=pathlib.Path, required=True)
+    parser.add_argument("--screen", type=pathlib.Path)
+    parser.add_argument("--exactness", type=pathlib.Path)
     parser.add_argument("--census", type=pathlib.Path,
                         default=pathlib.Path("research/e170-artifacts/register_census.json"))
+    parser.add_argument("--only", default="",
+                        help="comma separated subset of run names to log")
     args = parser.parse_args()
 
-    urls = {
-        "e170-exactness": log_exactness(args.exactness / "exactness.json"),
-        "e170-screen": log_screen(args.screen / "screen.json",
-                                  args.screen / "identity.txt"),
-        "e170-occupancy": log_occupancy(args.census),
+    wanted = {v.strip() for v in args.only.split(",") if v.strip()}
+    plan = {
+        "e170-exactness": lambda: log_exactness(args.exactness / "exactness.json"),
+        "e170-screen": lambda: log_screen(args.screen / "screen.json",
+                                          args.screen / "identity.txt"),
+        "e170-occupancy": lambda: log_occupancy(args.census),
+        "e170-transfer": lambda: log_transfer(args.census),
     }
-    for name, url in urls.items():
-        print(f"{name}  {url}")
+    for name, make in plan.items():
+        if wanted and name not in wanted:
+            continue
+        print(f"{name}  {make()}")
     return 0
 
 
