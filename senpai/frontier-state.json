@@ -693,19 +693,30 @@
   "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance."
  },
  "latestOfficialReceipt": {
-  "submissionId": "90c131dc-c3e4-4022-b00c-038cf928bbb7",
-  "frozenSha": "99959d49a388cf77f5cd6d30d63b5159fde805b4",
-  "candidateSurfaceCommit": "e044a583",
-  "yukonCommitShown": "4937373",
-  "officialScore": 3.54742900664627,
+  "submissionId": "15017ddf-cfba-4f07-adb1-8c67e6e79a95",
+  "benchmarkId": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
+  "frozenSha": "9c4fefe847dc088817034c8644f59b3dda4da748",
+  "candidateSurfaceCommit": "cba4307b",
+  "yukonCommitShown": "d5dfc76c",
+  "officialScore": 3.65473627339988,
   "status": "rejected",
   "rejectionReason": "score did not improve current best",
-  "firedAt": "2026-08-24T09:24Z",
-  "terminalAt": "2026-08-24T10:07Z (43 min validation)",
-  "tree": "organizer main 0863b06a + segmentedVerifyDepthCap 7->4 (one literal + 7 doc lines)",
-  "predicted": 3.9847,
-  "predictionErrorPct": -11.0,
-  "reading": "SINGLE-FACTOR vs receipt A (A is itself organizer-pure): cap-4 ranked penalty -4.33 % published, ~+4.5 % candidate-leg, ~23x the 0.189 % candidate-leg 1 sigma. Outcome sits 15 % below the step model worst-feasible cell 4.1637 -> step law does not transfer to ranked (FINDING 449). Yukon prices rejects against the promoted crown: 3.54742900664627 + 0.181681 = 3.729110."
+  "parityAllOk": true,
+  "firedAt": "2026-08-24T10:10Z",
+  "terminalAt": "2026-08-24T~11:15Z",
+  "tree": "organizer-pure upstream/main 0863b06a + exactly the four Q kernel files (ladder letter F)",
+  "deltaVsA": "-1.43% (A=3.70784519415395)",
+  "perPromptVsA": {
+   "prefill": "+1.9705% sd 0.153 8/8",
+   "decode": "+1.0984% sd 0.578 8/8",
+   "serial": "-0.2527% sd 0.240 7/8",
+   "published": "-1.3332% sd 0.673 8/8"
+  },
+  "wandb": [
+   "6ig6677q",
+   "8bc65oel"
+  ],
+  "ledger": "Entry 380, FINDINGs 457-459"
  },
  "liveSubmittedSurface": {
   "afterRevert": "organizer main plus exactly two files, 30 and 88 changed lines",
@@ -858,7 +869,7 @@
  },
  "observedAt": "2026-08-24T05:50:00Z",
  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
- "officialSlot": "OCCUPIED since 2026-08-24T10:11Z: receipt 15017ddf-cfba-4f07-adb1-8c67e6e79a95 (qwen-edward E175 A+Q four-file single factor, frozen 9c4fefe8) status validating. Edward owns the read-only receipt watcher (job 95233da4).",
+ "officialSlot": "FREE since 2026-08-24T~11:15Z: receipt 15017ddf terminal (rejected 3.65473627339988). Next: E180 A-replay (Edward) \u2014 pre-registered byte-identical organizer-pure resubmission.",
  "onlyExactRoundCostOnBoard": {
   "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
   "optimised": {
@@ -893,33 +904,20 @@
    }
   ]
  },
- "openQueue": [
-  "E171 r1 (Thorfinn, PR 171): strip the instrumentation tax from the submitted surface, keep the E165 default flip. Projected 3.7388 (2 sigma low) to 3.7520 (central) against crown 3.7291. One gated 512-token ABBA, then freeze and fire. HIGHEST PRIORITY, shortest path.",
-  "E168 (Askeladd, PR 168): gated adapt/d4/d3/d5 ladder; ship min(adaptive, 4) as a literal cap, not a pin. Modelled 4.16-4.31 published. Fires second, rebased onto whatever base results.",
-  "E167 (Edward, PR 166): audit the 443-line E165 delta on the submitted surface for per-round or per-routed-cell side effects. GATES the crown submission. Plus the prediction card and the search for an instrumentation-only replicate pair.",
-  "E173 (Alphonse, PR 172): decompose F, 6.90 ms and 20.2 % of a depth-4 round. Routed-cell call census, host against GPU split, named line items, stated residual.",
-  "Mechanism of the 592 us per drafting round. Edward three-arm ABBA on g16s: B0 base, B1 counters only, B2 full strip, optional B3 making the globals internal to separate 'the write costs' from 'the declaration costs'. Prediction on record: B1 flat, B2 near 1 %.",
-  "F decomposition, Alphonse E173, starting from the free tablePays natural experiment against Askeladd's existing per-round trace at constant routed-cell exposure and constant groups(M).",
-  "E165 preflush* lazy build under !headPrefetchEnabled, next round. About 0.01 %; two allocations plus a delayed GPU-buffer release per drafting round."
- ],
+ "openQueue": {
+  "E178 (Askeladd, in flight)": "receipt-channel statistics from the 1333-row board \u2014 decision-critical after F",
+  "E179 (Alphonse, next)": "kernel-record/config cache in the replica path \u2014 largest priced open lever 0.35-1.13% (E174 item 2)",
+  "E180 (Edward, next)": "A-replay official submission \u2014 channel pricing + crown draw",
+  "E181 (Thorfinn, next)": "local Q pair organizer-pure vs +Q, ABBA, prefill/decode split (+JIT-unit split arm) \u2014 settles FINDING 444 and the compilation-unit channel",
+  "parked": "prefill levers (~9-10% of leg, no lever priced); xsums producer-side fill elimination ceiling 0.286-0.398% held-dead (FINDING 359 tail)"
+ },
  "organizer": {
   "branch": "main",
   "syncedCommit": "80021bc03e4b270f7dfef5b4425107bfc57b8d70",
   "syncedCommitNote": "FINDING 283, ledger 319. The previously recorded value c0dbec05 was never merged into the tree. 80021bc0 is the verified merge-base of the advisor branch and upstream/main. The advisor branch is 28 organizer commits behind 0863b06a, and 0863b06a is NOT an ancestor of it. Three separately-promoted mechanisms worth +1.075 % combined are absent from every tree we have submitted: qwen_mtp_e87_probe_select (+0.72 %), qwen35_fused_residual_rms_norm_xsums_v1 with Qwen35XSumsSidecar (+0.175 %), and the qL{2,3} SDPA warm extension (+0.18 %). RULE 162 now requires a kernel-name-level diff against the promoted source before pricing any gap to the bar.",
   "url": "https://github.com/Layr-Labs/qwen-3.8-mtp-challenge"
  },
- "organizerBaselineIsOurBest": {
-  "claim": "5a9f130a declared every editable path to be organizer main at 0863b06a byte for byte and remains our highest official score 3.70784519; that is also the crown promotedSourceRef",
-  "corroborates": 379,
-  "edlClusters": {
-   "n204_best": 3.68622,
-   "n268_best": 3.25464,
-   "n98_best": 3.72911
-  },
-  "finding": 392,
-  "implication": "no Senpai mechanism has yet produced a ranked receipt above the unmodified organizer surface; each mechanism in the base must earn its place individually",
-  "scheduleUntouched": "effective_mean_draft_len is identical to 4 dp across 5a9f130a, 180db842, ec24d591, 8b84c190, ac89ef87; the entire top of the board runs the organizer's unmodified drafting schedule"
- },
+ "organizerBaselineIsOurBest": "FINDING 458: organizer-pure 0863b06a is the strongest known ranked tree. A=3.70785 tops every campaign-mechanism receipt; cap-7 (organizer default) is the depth optimum (FINDING 456). RULE 379: build official candidates as organizer-pure + the single mechanism under test; the campaign tree is a research tree.",
  "ourBestSubmission": {
   "candidateLegDeltaNeededPercent": -0.575,
   "gapToPromotedAbsolute": 0.02126482,
@@ -2195,32 +2193,13 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": {
-  "ledger": 376,
-  "inFlight": {
-   "receipt": "15017ddf-cfba-4f07-adb1-8c67e6e79a95",
-   "benchmark": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
-   "owner": "qwen-edward",
-   "assignment": "E175 r0 (PR 174)",
-   "frozenSha": "9c4fefe847dc088817034c8644f59b3dda4da748",
-   "contentCommit": "cba4307b",
-   "submittedAt": "2026-08-24T10:11Z",
-   "candidate": "upstream/main 0863b06a + exactly the four Q kernel files (quantized{,_nax}.{h,cpp}); organizer-pinned head",
-   "artifacts": {
-    "worker": "5e8291e02163bd3103cb993f1b783496550ff40f24065066f6eefc7be146c09d",
-    "metallib": "5d6e3f9f1438dc5d6e99423b720d66676b08a3c92a204c1e3fd8b6b0ecaef91d"
-   },
-   "confirmation": "512-token real-gate --local-submit exact both legs, residual_divergence 0, mtp-verify rows=513 self-consistent; W&B 8bc65oel",
-   "twoModelRegistration": "advisor ranked-route 3.7328 (mean7) / 3.7267 (score-setting) vs Edward local-prefill-adjusted 3.7218 / 3.7157; receipt discriminates whether the +1.936 % M4 prefill penalty transfers to M5",
-   "readingRule": ">=3.7291 promote/crown; 3.71-3.729 Q real, compose; ~3.708 Q null -> A-replay contingency; <=3.69 channel broken -> A-replay immediately",
-   "firedUnder": "F6 branch 1 (90c131dc REJECTED, crown unmoved at ec24d591/3.7291100105909); fired 6 min after slot free; guard line-383 clean (770a3ff2 submitted snapshot == origin/main)",
-   "watcher": "Edward's read-only run_job 95233da4, 60 s polls, 150-poll cap, output outside checkout",
-   "note": "12.5 KiB, above the 5 KiB Yukon minimum"
-  },
-  "preparing": null,
-  "frozenNext": null
+  "ledger": 380,
+  "inFlight": null,
+  "frozenNext": null,
+  "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
  },
- "lastAdvisorUpdate": "2026-08-24T11:05Z ledger entry 379: E177 merged (082a1d60) -- ranked depth axis CLOSED with data; FINDING 455 (rejected receipts expose per-prompt; mtp includes prefill; exact round counts), FINDING 456 (convex round-cost law; cap-7 optimum; cap-8 dead on data; no depth cell reaches crown); crown gap is receipt-channel; E178 next for Askeladd",
- "ledgerEntry": 379,
+ "lastAdvisorUpdate": "2026-08-24T11:50Z ledger entry 380: receipt F rejected 3.65474, Q OUT of ship set (FINDINGs 457-459, RULE 379); E175 closed unmerged; E176 r1 + E174 merged; slot FREE; next E180 A-replay (Edward), E179 record cache (Alphonse), E181 local Q pair (Thorfinn); E178 in flight (Askeladd).",
+ "ledgerEntry": 380,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2388,7 +2367,10 @@
   "453": "Receipt C (fda590bb) is an outlier: C-A decode +0.9889% mean7 = 7.0 sigma on inert-only contrast; B-C's -0.6691% cannot be Q-decode (FINDING 450) and leaves -0.8687% located in C; FINDING 440 Q attribution conditional on E175 receipt. B-A splits clean: Q is prefill-only (+1.9359% prefill 0/8 neg, decode +0.0153% null), net leg +0.20% SLOWER. harness=ranked. (E176, W&B vxdn8h60)",
   "454": "Corrected scored-tree census: 257 dispatches/round in 7 fused cells, all N>=4096, all replica-routable; FINDING 450 rests on two independent barriers (replica consumes M 2-9 pre-MLX; fallthrough hits limit 10 > 9). routable() has NO arch_gen dependence -> replica intercepts on every host; gen13/14 limit-6 explanation for local step law and FINDING 444 is DEAD. Fusion eliminates small-N cells entirely. E176 r0 censused the wrong tree (Sources/MLXFastModel, not scored); r1 amends. harness=source.",
   "455": "Rejected receipts expose FULL per-prompt officialMetrics; mtp_seconds_per_token_mean INCLUDES prefill (round cost = 512*(mtp-prefill)); round counts exactly recoverable via E159 lattice. Every paid receipt = 8 measurements. harness=ranked. (E177, W&B gjn7stes)",
-  "456": "Ranked round cost is CONVEX: R(M)=30.640-0.939M+0.576M^2 ms (OOS: A-only fit predicts paid cap-4 to -0.381%). Cells: cap5 3.65289 / cap6 3.70170 / cap7 3.70785 / cap8 3.67148 / oracle=cap7. No cell reaches crown 3.72911 (short 0.5735%). Cap-8 DEAD on data (marginal row 8.848 ms vs break-evens 6.19-8.13). Depth axis CLOSED. harness=ranked. (E177, merged 082a1d60)"
+  "456": "Ranked round cost is CONVEX: R(M)=30.640-0.939M+0.576M^2 ms (OOS: A-only fit predicts paid cap-4 to -0.381%). Cells: cap5 3.65289 / cap6 3.70170 / cap7 3.70785 / cap8 3.67148 / oracle=cap7. No cell reaches crown 3.72911 (short 0.5735%). Cap-8 DEAD on data (marginal row 8.848 ms vs break-evens 6.19-8.13). Depth axis CLOSED. harness=ranked. (E177, merged 082a1d60)",
+  "457": "Q ranked decomposition: prefill +1.9705% replicated across receipts; decode +1.0984% 8/8 unexplained by call graph; shared-JIT-compilation-unit channel named (testable locally); B-vs-F decode tension held open",
+  "458": "Q is a ranked regression (-1.43% single-factor); Q out of ship set; organizer-pure is the strongest known tree; FINDING 440 B/C attribution dead as a mechanism claim",
+  "459": "Ranked decode channel is wide-tailed: four inert-or-identical draws span -0.23%..+1.10%; single-receipt sub-1% claims unsafe (supersedes 0.25% floor upward); crown edge over byte-identical A consistent with a channel draw"
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2400,7 +2382,8 @@
   "374": "per-leg W&B logging for any timed session over one hour; a reprovision then costs only the remaining legs",
   "376": "Before assigning an implementation experiment, grep the campaign ledger for the mechanism axis. A merged null on the same mechanism closes the axis absent a recorded reopening reason (program.md already requires the recorded reason). Raised by ADVISOR ERROR 237 (E174 assigned onto the E160-closed epilogue axis).",
   "377": "Mechanism presence is decided by file CONTENT, not by whether a file appears in a diff. Organizer code carries mechanisms too: a file absent from candidate-vs-organizer diff means ORGANIZER content, which may include the mechanism. Raised by the FINDING 438 'sidecar ABSENT' misreading (file-level diff inference).",
-  "378": "No depth-axis change is promoted on local timing evidence alone. The depth axis inverts between local M4 and ranked M5 (cap-4: local -3.97 %, ranked ~+4.5 % candidate-leg). Adopted from the qwen-askeladd E168 r1 follow-up. Ranked depth moves are priced only from controlled ranked receipts."
+  "378": "No depth-axis change is promoted on local timing evidence alone. The depth axis inverts between local M4 and ranked M5 (cap-4: local -3.97 %, ranked ~+4.5 % candidate-leg). Adopted from the qwen-askeladd E168 r1 follow-up. Ranked depth moves are priced only from controlled ranked receipts.",
+  "379": "Build every official candidate as organizer-pure + the single mechanism under test; price mechanisms against organizer-pure, not the campaign research tree"
  },
  "crownAttempt": {
   "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
@@ -2618,7 +2601,8 @@
   "censusCentrals": {
    "range": "3.700-3.704",
    "basis": "thorfinn FINDING 450: Q is prefill-only, so A x (1 - 0.0678 x 1.936 %) ~= 3.703; registered pre-receipt at 10:24Z interim (E176 interim 1)"
-  }
+  },
+  "outcome": "RESOLVED 2026-08-24: receipt F=15017ddf scored 3.65473627 \u2014 ALL THREE models overshot LOW (advisor 3.7328 err -0.078; edward 3.7218 err -0.067; thorfinn census 3.7020 err -0.047, closest). Pre-registered <=3.705 branch fired: Q out of the ship set; FINDING 440 attribution re-opened; A-replay live."
  },
  "xsumsFillCostBracket": {
   "finding": 451,
@@ -2633,13 +2617,15 @@
   "finding": 452,
   "harness": "ranked",
   "statement": "Byte-identical receipt pair ec24d591 (crown) vs 5a9f130a (A) shows the cross-receipt null is NOT sign-symmetric: a coherent whole-receipt candidate-channel offset of -0.2346% appears 8/8 same-sign on prefill, decode, and leg with 0.18% per-prompt spread. Serial channel clean (mean8 +0.0051%; one +1.13% essays excursion kills essays as a per-prompt falsification lever). RULE OF USE: any cross-receipt claim below ~0.25% is unsafe; the 0.189% mean7 pairwise 1-sigma understates the offset because it is coherent, not random.",
-  "source": "E176 task 2, W&B vxdn8h60"
+  "source": "E176 task 2, W&B vxdn8h60",
+  "supersededNote": "FINDING 459 widens the caution: decode-channel draws on inert-or-identical contrasts span -0.2346% (crown-A) to +1.0984% (F-A), four draws over ~1.33pp. Treat single-receipt claims below ~1% as unconfirmed pending E178."
  },
  "receiptCOutlier": {
   "finding": 453,
   "harness": "ranked",
   "statement": "Receipt C (fda590bb, inert-instrumentation-only contrast vs A) is an outlier: C-A decode channel +0.9889% mean7, 7/8 positive = 7.0 sigma on the 0.1421% common-offset sd. B-C's -0.6691% 'Q gain' leaves -0.8687% unexplained, located in C. The +0.0070% additivity residual is an identity ((C-A)+(B-C)+(D-B)=D-A) and cannot detect this. Converges with Edward's independent C/A -1.08% published anomaly and FINDING 443 (C's commit 080d4cd3 unfetchable). B-A (both trees inspected first-hand) splits clean: decode +0.0153% mean8 sd 0.11 (null); prefill +1.9359% 0/8 negative = Edward's local +1.936% reproduced on ranked M5 to three digits. Q is prefill-only, net +0.20% leg SLOWER. FINDING 440's Q attribution is conditional on the E175 receipt (three-model registration adjudicates).",
-  "source": "E176 tasks 2-3, W&B vxdn8h60"
+  "source": "E176 tasks 2-3, W&B vxdn8h60",
+  "status": "REVISED by FINDING 459: C is no longer a unique outlier \u2014 wide-tailed receipt decode channel is the leading explanation (F-A +1.0984% with zero call-graph consumers)."
  },
  "rejectedReceiptsExposePerPrompt": {
   "finding": 455,
@@ -2667,5 +2653,11 @@
  "crownGapIsReceiptChannel": {
   "statement": "Crown ec24d591 sits on a tree byte-identical to receipt A (5a9f130a): the +0.5735% crown gap is receipt-channel (luck), not mechanism. FINDING 452 offset scale ~0.23% coherent per receipt. Depth axis closed (FINDING 456). Open levers by priced size: xsums dedup/fill bracket (FINDING 451, 0.38-0.52% leg upper bound), receipt-channel statistics + A-replay option (E178), prefill (~10% of leg, no current lever).",
   "ledger": 379
+ },
+ "qSingleFactorRanked": {
+  "status": "MEASURED-NEGATIVE (FINDINGs 457-458)",
+  "value": "Q on organizer-pure = 3.65474 = -1.43% published; prefill +1.9705% (replicates B to 0.035pp); decode +1.0984% 8/8 despite zero call-graph consumers",
+  "shipSet": "Q OUT. Every Q-bearing receipt underperforms A (B -0.086%, D -1.34%, F -1.43%).",
+  "openChannel": "shared-JIT-compilation-unit channel: quantized.cpp is one JIT source string; any edit changes compiled module + metallib layout for the whole quantized family incl. qmv kernels Q never calls. Named independently by Edward (E175 result) and Thorfinn (E176 r1). Tension: B decode was null with identical quantized.cpp \u2014 deterministic JIT penalty predicts equal deltas; wide-tailed receipt channel is the rival explanation. E181 local pair discriminates."
  }
 }

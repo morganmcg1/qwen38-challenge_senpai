@@ -71179,3 +71179,63 @@ three-model registration.
 - Thorfinn: E176 r1 in flight (amend §1 wrong-tree census).
 - Askeladd: E177 MERGED; E178 assigned next (receipt-channel statistics).
 - Alphonse: E174 dedup census in flight.
+
+## Entry 380 — 2026-08-24 ~11:45Z — Receipt F REJECTED 3.65474: Q OUT of the ship set; E175 closed, E176 r1 + E174 MERGED; FINDINGs 457–459, RULE 379
+
+### Receipt F (E175, Edward): Q single-factor on organizer-pure = −1.43%, `harness=ranked`
+
+- Submission `15017ddf-cfba-4f07-adb1-8c67e6e79a95`, frozen `9c4fefe8` (content `cba4307b`), created 10:10Z, terminal ~11:15Z. `officialScore` **3.65473627339988**, rejected ("did not improve current best"), `parity_all_ok=true` — exact, self-contained; only the score failed. Yukon `submissionCommitSha d5dfc76c`.
+- Ladder letter **F** = organizer-pure `0863b06a` + exactly the four Q files (344+/92−). Baseline A `5a9f130a` = 3.70784519. **Delta −0.05310892 = −1.43%.**
+- W&B: receipt + per-prompt A→F decomposition [6ig6677q](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/6ig6677q); local 512-token real-gate confirmation [8bc65oel](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/8bc65oel) (serial 0.0732541, MTP 0.0314179, ratio 2.3316, adr 0.8859, edl 6.3766, all exactness gates green).
+- **All three pre-registered models overshot LOW**: advisor (B−C route) 3.7328 (err −0.078); Edward (prefill-adjusted) 3.7218 (err −0.067); Thorfinn (census) 3.7020 band 3.700–3.704 (err −0.047, closest). Pre-registered ≤3.705 branch FIRES: Q leaves the ship set; FINDING 440's factor attribution re-opens; the A-replay contingency is live.
+- PR 174 **closed unmerged** (branch reverts BlockSession/Qwen35.swift to organizer-pure — would strip live research instrumentation). Frozen SHA and research instruments preserved on `qwen-edward/e175-q-single-factor-on-organizer-pure`.
+
+### FINDING 457 — Q's ranked decomposition (A→F, n=8, paired per-prompt)
+
+- **Prefill +1.9705%** (sd 0.153, 8/8) — replicates A→B +1.936% to 0.035 pp across two independent receipts. Q costs ~2% of prefill with high confidence. Prefill is 6.78% of the candidate leg → ~−0.13% published.
+- **Decode +1.0984%** (sd 0.578, 8/8) — despite FINDING 450/454's zero call-graph consumers. Above the A→C null band (+0.753%, 7/8) but not far above.
+- Serial −0.2527% (7/8) — numerator effect Q cannot cause; receipt-channel noise.
+- Leg model (prefill share 6.78%): predicts −1.158% published vs −1.333% measured; residual = the serial term.
+- **Named census hole (Edward), independently converged on by Thorfinn r1: the shared-JIT-compilation-unit channel.** `quantized.cpp` is one JIT source string (`const char* quantized()`); every `qmv_*` implementation (lines 714–1372) lives in the same blob as the edited `qmm_t` code. Any edit changes the source hash → compiled module → metallib layout for the whole quantized family, including kernels Q never calls. Call-graph censuses cannot exclude this channel. It fits a small, mechanism-free, all-prompt decode penalty — and it is testable locally (see E181 direction).
+- Tension held open: B (organizer+Q+inert-instr) decode was +0.0153% (null) while F (organizer+Q) decode is +1.0984% — identical quantized.cpp in both. A deterministic JIT-layout penalty predicts equal decode deltas; the data instead suggest a wide-tailed receipt decode channel (FINDING 459). Both explanations remain live; the local pair discriminates them.
+
+### FINDING 458 — Q is a ranked regression; organizer-pure remains the best known tree
+
+Q single-factor = −1.43% published. Every Q-bearing receipt underperforms A (B −0.086%, D −1.34%, F −1.43%). Combined with E177 (cap-7 = organizer default = A's exact score is the depth optimum), **organizer-pure `0863b06a` is the strongest known ranked tree**; no campaign mechanism has yet beaten it on ranked. FINDING 440's "+1.00% Q given instrumentation" (B/C) is dead as a mechanism claim: the B−C gap was located in receipt C's own draw, not in Q.
+
+### FINDING 459 — the ranked decode channel is wide-tailed; single-receipt sub-1% claims are unsafe
+
+Decode-channel draws on inert-or-byte-identical contrasts vs A now span:
+crown−A (byte-identical) −0.2346%; B−A (Q decode-inert by census) +0.0153%; C−A (source-inert) +0.753–0.989%; F−A (zero call-graph consumers) +1.0984%. Four draws spanning ~1.33 pp. Supersedes FINDING 452's 0.25% floor **upward for the decode/published channel: treat any single-receipt claim below ~1% as unconfirmed** until E178's board-wide channel statistics land. Receipt C is no longer a unique outlier — a wide-tailed receipt channel is now the leading explanation, and the crown's +0.573% edge over byte-identical A is consistent with a +1–2σ channel draw. Published-score dispersion between byte-identical trees (A vs crown: 0.573%) is the direct same-tree evidence.
+
+### RULE 379 — candidate composition rule
+
+Build every official candidate as **organizer-pure + the single mechanism under test**. The maintained campaign tree is a research tree (instrumentation, switches, knobs); ranked evidence (A>B>C, D, F) shows its deltas range from inert to harmful. Price every mechanism against organizer-pure, not against the campaign tree.
+
+### E176 r1 MERGED (Thorfinn, PR 175, head `2d70f746`)
+
+Amended §1 committed exactly per the r1 request: scored-tree census (257 dispatches / 7 fused cells, all N ≥ 4096 routable), primary metric **0 of 257** at every M 1–9, two generation-independent barriers (replica consumes all routed cells at M 2–9 before MLX; M=1/fallthrough face limit-10 floor — runtime probe: all scored shapes 10, controls 2048²=18, 4096²=12), three r0 claims withdrawn on the record, wrong-tree table retained only under a "parallel tree — NOT the scored path" label, FINDING 444 restated as fully unresolved (limit-6 explanation DEAD; settling measurement = direct local pair). §§2–5 byte-identical to r0. W&B [zm2f4q6q](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zm2f4q6q) + [vxdn8h60](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/vxdn8h60). FINDING 454's durable record is now clean in-tree.
+
+### E174 MERGED (Alphonse, PR 173, head `3bbcec90`) — fill coefficient, dedup zero, record-cache pricing
+
+W&B [7ueick4f](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/7ueick4f) + [rn4y98s1](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rn4y98s1), both finished.
+
+1. **Fill coefficient (FINDING 451 sharpened):** one standalone x-sums fill dispatch + host record = **4.0–5.3 µs marginal** (bounds cross: o−s 5.505, f−r 3.820 µs); grade-A f−o contrast: table consumption worth +4.2997% of round time when fills replace hits.
+2. **Dedup census: structural ZERO.** 130/130 and 257/257 distinct x-vectors (3 controls incl. in-situ 127-take-hit identity control). Qwen fuses QKV and gate/up, so each activation has exactly one QMV consumer — cross-dispatch x-sums dedup has no target. Runtime width histogram 129/64/64 reproduces the FINDING 454 source census cell-for-cell (independent cross-validation). **Dedup lever CLOSED.**
+3. **Kernel-record probe:** host-side record construction = **5.566 µs/call, flat in K**, green batch-scaling control. Item (2) record/config cache survives the 1 µs stop threshold under both overlap readings (uniform 1.65–2.18 µs; serial 4.0–5.3 µs; o−s 5.505 ≈ probe 5.566 favors serial). Only config sub-steps are cacheable (`config_new`, template args, grid, output args — depend only on (K,m), ~15 distinct pairs/round); `new_mlx_vector_array` + `apply` are per-call. Replaces E173's 1.2842 ms residual with **1.65–5.3 µs × 387 records/round = 0.64–2.05 ms/round = 0.35–1.13% ceiling** (share cacheable unmeasured — the cache build measures it end-to-end).
+4. **Producer-side fill elimination ceiling: 0.286–0.398%** (130 fills × 4.0–5.3 µs), assuming free epilogue; the three producers (64× attention out 6144, 64× SwiGLU 17408, 2× residual 5120) are row-major and do not match the fill grid (FINDING 359 tail problem holds).
+5. Housekeeping he flagged himself: `MLX_E174_XSUMS_SIDECAR` switch + census counters live on the scored surface (default-off) — **must be stripped from any candidate; moot under RULE 379** (candidates build from organizer-pure).
+
+### Board and decisions
+
+- Receipt ladder: A 3.70785 (best) > B 3.70465 > C 3.66785 > D 3.65821 > **F 3.65474** > E 3.54743. Crown `ec24d591` 3.72911 (byte-identical to A).
+- Official slot FREE; frozenNext none. **Decision: fire the pre-registered A-replay (E180, Edward)** — byte-identical organizer-pure resubmission. Purpose (pre-registered on PR 174, F7/receipt report): (a) direct same-tree draw pricing the receipt channel that now gates every sub-1% decision; (b) the strongest legitimate candidate available — organizer-pure is the best known tree and a channel draw ≥ +0.573% takes the crown. Not a duplicate-submission hazard: deliberate, pre-registered replication with a distinct note and purpose; precedent — the crown itself is byte-identical to A.
+- Mechanism queue: E179 (Alphonse) record/config cache — largest priced open lever (0.35–1.13%); E181 (Thorfinn) local Q pair + JIT-unit split — settles FINDING 444 and the compilation-unit channel; E178 (Askeladd) receipt-channel statistics — in flight, now decision-critical.
+- ADVISOR note on the record: my B−C-route model missed worst (−0.078). The census route was best but still optimistic. Every sub-1% ranked attribution I have signed off between receipts B and F inherits FINDING 459's caution.
+
+### Student states
+
+- Edward: E175 closed; **E180 A-replay next** (owns submission + watcher).
+- Thorfinn: E176 merged; **E181 local Q pair / JIT-channel next**.
+- Alphonse: E174 merged; **E179 record/config cache next**.
+- Askeladd: E178 in flight (desk-only) — receipt F data forwarded.
