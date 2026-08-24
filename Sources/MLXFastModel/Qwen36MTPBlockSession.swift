@@ -1001,9 +1001,81 @@ public final class Qwen36MTPBlockSession {
         return out
     }
 
-    internal enum DepthPriceArm: String {
-        case ship, pb5, pb7, pbfit
+    /// E200. The E197 ranked round-cost law: milliseconds of decode round at
+    /// exactly `m` verified rows, `m = 1 ... 9`, index `m - 1`. Smooth-step
+    /// family, AICc 29.8, weighted RMSE 0.268 ms, fitted on 24 weighted
+    /// per-prompt constraints taken from three PAID receipts at cap 4, cap 5
+    /// and cap 7. `research/e197-artifacts/refit.json`.
+    ///
+    /// This is the marginal cost the shipped uniform price cannot see. The
+    /// step into verify width 6 costs 7.93 ms; the step into width 2 costs
+    /// 1.41 ms. Unlike `measuredRawDepthPrice`, which was an isolated QMV
+    /// probe on one local dispatch table, every number here comes from ranked
+    /// end-to-end receipts on the scored hardware.
+    internal static let rankedRoundCostMs: [Double] = [
+        30.260724998120555,
+        31.666388233791732,
+        33.278091533039610,
+        35.678159248309770,
+        40.435096101831750,
+        48.360761661689416,
+        55.231766557393320,
+        58.796862540567346,
+        60.759154322285190,
+    ]
+
+    /// E200 MEASUREMENT ARM. The ranked marginal law as a depth price, in the
+    /// units the rule already uses: the width-1 verify forward.
+    ///
+    /// `holdLevel` rescales the shape so the steps the walk can actually reach
+    /// still total `segmentedVerifyDepthCap * headStepCostRatio`, which
+    /// isolates the SHAPE exactly as `makeMeasuredDepthPrice` does. Passing
+    /// false keeps the measured level, which is the honest reading of the
+    /// ranked law but moves level and shape together.
+    internal static func makeRankedStepDepthPrice(
+        holdLevel: Bool
+    ) -> DepthPrice {
+        let cost = rankedRoundCostMs
+        precondition(cost.count == Qwen36MTPLimits.maxDepth + 1,
+                     "E200: rankedRoundCostMs is not R(1...maxDepth+1)")
+        let forward = cost[0]
+        var marginal = (0 ..< Qwen36MTPLimits.maxDepth).map {
+            (cost[$0 + 1] - cost[$0]) / forward
+        }
+        if holdLevel {
+            let reachable = Swift.min(segmentedVerifyDepthCap,
+                                      Qwen36MTPLimits.maxDepth)
+            let total = Double(reachable) * headStepCostRatio
+            let scale = total / marginal.prefix(reachable).reduce(0.0, +)
+            marginal = marginal.map { $0 * scale }
+        }
+        return DepthPrice(marginal: marginal,
+                          cumulative: prefixCosts(marginal))
     }
+
+    internal enum DepthPriceArm: String {
+        case ship, pb5, pb7, pbfit, rstep, rstepnat
+    }
+
+    /// E200 ARM SWITCH, MEASUREMENT ONLY, DELETED BEFORE ANY FREEZE (RULE 198).
+    ///
+    /// `MLX_E200_DEPTH_PRICE` selects the depth price once, at first use.
+    /// Unset keeps `depthPriceArm`, so an unset environment runs the shipped
+    /// price byte for byte and every earlier leg stays comparable. Both arms
+    /// live in one binary, so an ABBA session needs no rebuild between legs.
+    /// An unrecognised value traps rather than falling back silently: a leg
+    /// that believes it ran an arm it did not run is worse than a failed leg.
+    internal static let depthPriceArmEffective: DepthPriceArm = {
+        guard let raw = ProcessInfo.processInfo
+            .environment["MLX_E200_DEPTH_PRICE"], !raw.isEmpty else {
+            return depthPriceArm
+        }
+        guard let arm = DepthPriceArm(rawValue: raw) else {
+            preconditionFailure(
+                "MLX_E200_DEPTH_PRICE=\(raw) is not a DepthPriceArm")
+        }
+        return arm
+    }()
 
     /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
     /// shipped value so a leg session cannot leave another arm behind.
@@ -1019,11 +1091,13 @@ public final class Qwen36MTPBlockSession {
     /// Built once. A computed property here would allocate two arrays on
     /// every round, inside the timed path.
     internal static let depthPrice: DepthPrice = {
-        switch depthPriceArm {
+        switch depthPriceArmEffective {
         case .ship: return makeUniformDepthPrice()
         case .pb5: return makeBoundaryDepthPrice(enteringVerifyWidth: 5)
         case .pb7: return makeBoundaryDepthPrice(enteringVerifyWidth: 7)
         case .pbfit: return makeMeasuredDepthPrice()
+        case .rstep: return makeRankedStepDepthPrice(holdLevel: true)
+        case .rstepnat: return makeRankedStepDepthPrice(holdLevel: false)
         }
     }()
 
@@ -1381,7 +1455,7 @@ public final class Qwen36MTPBlockSession {
         }
         let emas = positionAcceptEMA
             .map { String(format: "%.6f", $0) }.joined(separator: ",")
-        scheduleTrace = "arm=" + Self.depthPriceArm.rawValue + " " + String(
+        scheduleTrace = "arm=" + Self.depthPriceArmEffective.rawValue + " " + String(
             format: "m=%.6f streak=%d cap=%d ema=",
             margin, fullAcceptStreak, widthCap) + emas + " sched="
     }

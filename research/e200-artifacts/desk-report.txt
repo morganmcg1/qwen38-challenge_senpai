@@ -1,0 +1,245 @@
+==============================================================================
+E200 DESK PRICING  (harness=ranked)
+==============================================================================
+  ranked law: smooth-step, AICc 29.8, wRMSE 0.268 ms
+  R(1..9) ms: 30.26 31.67 33.28 35.68 40.44 48.36 55.23 58.80 60.76
+  dR(m->m+1): 1.406 1.612 2.400 4.757 7.926 6.871 3.565 1.962
+  cap 7, receipt A median 3.70784519, crown 3.72911001
+
+  shipped-rule latent-q knots Q_k (k = 1..7), monotone=True
+   Q1=0.1800 Q2=0.4742 Q3=0.6497 Q4=0.7527 Q5=0.8168 Q6=0.8591 Q7=0.8884
+
+  MODEL CHECK: the shipped price replayed through its own knots
+  reproduces receipt A exactly by construction: 3.70784519 vs 3.70784519
+
+  --------------------------------------------------------------------------
+  arm                                     median     vs A vs crown
+  --------------------------------------------------------------------------
+  ship uniform 0.18                     3.707845   -0.00%   -0.57%
+  ranked dR, level held                 3.538193   -4.58%   -5.12%
+  ranked dR, measured level             3.609000   -2.67%   -3.22%
+  ranked dR, level held, argmin         3.567809   -3.78%   -4.33%
+  ranked dR, measured level, argmin     3.696187   -0.31%   -0.88%
+  ship uniform, argmin                  3.707845   -0.00%   -0.57%
+  --------------------------------------------------------------------------
+
+  price tables, marginal[0..6] in units of the width-1 forward
+   ship uniform 0.18                  [0.1800 0.1800 0.1800 0.1800 0.1800 0.1800 0.1800]
+   ranked dR, level held              [0.0621 0.0712 0.1060 0.2100 0.3500 0.3034 0.1574]
+   ranked dR, measured level          [0.0465 0.0533 0.0793 0.1572 0.2619 0.2271 0.1178]
+   ranked dR, level held, argmin      [0.0621 0.0712 0.1060 0.2100 0.3500 0.3034 0.1574]
+   ranked dR, measured level, argmin  [0.0465 0.0533 0.0793 0.1572 0.2619 0.2271 0.1178]
+
+  Q_k under each arm (the latent-q bar for reaching depth k)
+   arm                                Q1 Q2 Q3 Q4 Q5 Q6 Q7
+   ship uniform 0.18                  0.180 0.474 0.650 0.753 0.817 0.859 0.888
+   ranked dR, level held              0.062 0.295 0.559 0.861   -     -     -  
+   ranked dR, measured level          0.046 0.252 0.502 0.789 0.993 0.993 0.993
+   ranked dR, level held, argmin      0.062 0.295 0.559 0.861 0.983 0.983 0.983
+   ranked dR, measured level, argmin  0.046 0.252 0.502 0.789 0.933 0.933 0.933
+   ship uniform, argmin               0.180 0.474 0.650 0.753 0.817 0.859 0.888
+
+  PER-PROMPT SHIFT: ranked dR, level held
+   prompt      edl_A    edl'   R_A ms    R' ms     raw_A      raw'
+   plutarch    0.156   0.799   30.522   31.464   1.26070   1.52309
+   drama       2.298   2.645   34.241   35.058   2.12219   2.15226
+   travel      2.648   2.641   35.109   34.213   2.42773   2.51577
+   beagle      4.382   3.176   44.983   37.076   3.54530   3.40198
+   republic    4.989   3.365   47.723   37.334   3.91990   3.72422
+   essays      5.087   3.386   48.932   38.042   3.87039   3.67440
+   medicine    5.256   3.457   49.350   38.000   3.90647   3.74987
+   botany      6.148   3.710   54.474   39.184   3.93321   3.93296
+
+  PER-PROMPT SHIFT: ranked dR, measured level
+   prompt      edl_A    edl'   R_A ms    R' ms     raw_A      raw'
+   plutarch    0.156   0.903   30.522   31.634   1.26070   1.55600
+   drama       2.298   2.858   34.241   35.566   2.12219   2.16857
+   travel      2.648   2.897   35.109   35.105   2.42773   2.53262
+   beagle      4.382   3.425   44.983   38.177   3.54530   3.46824
+   republic    4.989   3.656   47.723   38.715   3.91990   3.80433
+   essays      5.087   3.662   48.932   39.358   3.87039   3.74976
+   medicine    5.256   3.703   49.350   39.199   3.90647   3.81147
+   botany      6.148   3.986   54.474   40.627   3.93321   3.98103
+
+  PER-PROMPT SHIFT: ranked dR, level held, argmin
+   prompt      edl_A    edl'   R_A ms    R' ms     raw_A      raw'
+   plutarch    0.156   0.799   30.522   31.464   1.26070   1.52309
+   drama       2.298   2.645   34.241   35.058   2.12219   2.15226
+   travel      2.648   2.641   35.109   34.213   2.42773   2.51577
+   beagle      4.382   3.307   44.983   37.879   3.54530   3.42758
+   republic    4.989   3.530   47.723   38.347   3.91990   3.75486
+   essays      5.087   3.581   48.932   39.238   3.87039   3.70804
+   medicine    5.256   3.676   49.350   39.338   3.90647   3.77634
+   botany      6.148   4.023   54.474   41.100   3.93321   3.93734
+
+  PER-PROMPT SHIFT: ranked dR, measured level, argmin
+   prompt      edl_A    edl'   R_A ms    R' ms     raw_A      raw'
+   plutarch    0.156   0.903   30.522   31.634   1.26070   1.55600
+   drama       2.298   2.858   34.241   35.566   2.12219   2.16857
+   travel      2.648   2.897   35.109   35.105   2.42773   2.53262
+   beagle      4.382   3.879   44.983   40.958   3.54530   3.54531
+   republic    4.989   4.230   47.723   42.227   3.91990   3.89346
+   essays      5.087   4.339   48.932   43.503   3.87039   3.84707
+   medicine    5.256   4.460   49.350   43.834   3.90647   3.88684
+   botany      6.148   5.070   54.474   47.266   3.93321   3.98744
+
+  SENSITIVITY: cost family, survival interpolation, S model
+   arm                                smooth-step step2+step6    sat-exp
+   ranked dR, level held                3.538193   3.360818   3.504690
+   ranked dR, measured level            3.609000   3.477945   3.626877
+   ranked dR, level held, argmin        3.567809   3.442167   3.504690
+   ranked dR, measured level, argmin    3.696187   3.648415   3.626877
+   ship uniform, argmin                 3.707845   3.707845   3.707845
+
+   arm                                  G linear G log-linear
+   ranked dR, level held                3.538193   3.536569
+   ranked dR, measured level            3.609000   3.596232
+   ranked dR, level held, argmin        3.567809   3.536569
+   ranked dR, measured level, argmin    3.696187   3.596296
+   ship uniform, argmin                 3.707845   3.707845
+
+   arm                                S measured    S curve
+   ranked dR, level held                3.538193   3.621970
+   ranked dR, measured level            3.609000   3.691402
+   ranked dR, level held, argmin        3.567809   3.638098
+   ranked dR, measured level, argmin    3.696187   3.736271
+   ship uniform, argmin                 3.707845   3.707845
+
+  SHAPE SWEEP: blend w from uniform to the measured ranked law,
+  level held at 1.26, greedy walk
+        w      median     vs A
+      0.0    3.707845   -0.00%
+      0.1    3.706690   -0.03%
+      0.2    3.697773   -0.27%
+      0.3    3.678247   -0.80%
+      0.4    3.658334   -1.34%
+      0.5    3.625661   -2.22%
+      0.6    3.588127   -3.23%
+      0.7    3.548506   -4.30%
+      0.8    3.536014   -4.63%
+      0.9    3.537256   -4.60%
+      1.0    3.538193   -4.58%
+
+  LEVEL SWEEP on the measured ranked SHAPE, greedy walk
+    level      median     vs A
+     0.60    3.801653   +2.53%
+     0.70    3.749196   +1.12%
+     0.80    3.697235   -0.29%
+     0.90    3.636005   -1.94%
+     1.00    3.586113   -3.28%
+     1.10    3.566473   -3.81%
+     1.20    3.548939   -4.29%
+     1.30    3.528790   -4.83%
+     1.40    3.505827   -5.45%
+     1.50    3.483984   -6.04%
+     1.60    3.462821   -6.61%
+     1.70    3.442293   -7.16%
+     1.80    3.422317   -7.70%
+
+  LEVEL SWEEP on the UNIFORM shape, greedy walk (control axis:
+  ranked receipts already bracket h = 0.18 on both sides)
+        h      median     vs A
+     0.08    3.852879   +3.91%
+     0.10    3.822285   +3.09%
+     0.12    3.792237   +2.28%
+     0.14    3.764284   +1.52%
+     0.16    3.734760   +0.73%
+     0.18    3.707845   -0.00%
+     0.20    3.666274   -1.12%
+     0.22    3.626899   -2.18%
+     0.24    3.589529   -3.19%
+     0.26    3.553699   -4.16%
+     0.28    3.520159   -5.06%
+     0.30    3.484801   -6.02%
+     0.32    3.447059   -7.03%
+
+==============================================================================
+STAGE 2  the same replay with q-CONDITIONAL acceptance
+==============================================================================
+  Stage 1 reuses the paid per-position rate S_k for every round the new
+  rule sends to depth k. S_k was measured on the rounds the SHIPPED rule
+  selected for that depth, so stage 1 over-values added depth and over-
+  charges removed depth. Stage 2 gives every round its own acceptance
+  q**gamma, with one gamma per prompt fitted so the shipped arm reproduces
+  the paid mean accepted count exactly.
+
+  prompt      gamma  abar fit abar paid | S_k predicted vs paid
+  plutarch    1.435    0.0492    0.0492 | 0.42/0.44 0.20/0.19
+  drama       1.066    1.0317    1.0317 | 0.58/0.60 0.36/0.37 0.32/0.22
+  travel      0.930    1.4038    1.4038 | 0.64/0.71 0.48/0.50 0.44/0.36 0.44/0.25 0.44/0.39
+  beagle      0.421    3.6545    3.6545 | 0.88/0.92 0.83/0.85 0.81/0.78 0.80/0.72 0.83/0.84 0.83/0.84 0.85/0.84
+  republic    0.255    4.5054    4.5054 | 0.94/0.96 0.91/0.92 0.89/0.88 0.88/0.85 0.89/0.86 0.89/0.92 0.90/0.92
+  essays      0.288    4.5652    4.5652 | 0.93/0.96 0.90/0.92 0.89/0.88 0.88/0.85 0.88/0.87 0.88/0.88 0.89/0.88
+  medicine    0.319    4.6889    4.6889 | 0.93/0.96 0.90/0.93 0.88/0.90 0.87/0.87 0.88/0.92 0.88/0.78 0.88/0.78
+  botany      0.496    5.3210    5.3210 | 0.94/0.98 0.90/0.96 0.87/0.94 0.85/0.93 0.82/0.58 0.83/0.80 0.82/0.80
+
+  gamma < 1 means the scheduler's own `reach` UNDER-estimates the
+  acceptance it then gets, so a price below the measured marginal
+  cost is the compensating error, not a mistake.
+
+  MODEL CHECK: shipped arm reproduces receipt A: 3.70784519 vs 3.70784519 (-0.000%)
+  OUT OF SAMPLE: cap4 predicted 3.531905, paid 3.547429, -0.44%
+  OUT OF SAMPLE: cap5 predicted 3.532206, paid 3.523636, +0.24%
+  (receipt channel is 0.689% 1-sigma, FINDING 460)
+
+  --------------------------------------------------------------------------
+  arm                                     median     vs A vs crown
+  --------------------------------------------------------------------------
+  ship uniform 0.18                     3.707845   -0.00%   -0.57%
+  ranked dR, level held                 3.517563   -5.13%   -5.67%
+  ranked dR, measured level             3.578438   -3.49%   -4.04%
+  ranked dR, level held, argmin         3.563387   -3.90%   -4.44%
+  ranked dR, measured level, argmin     3.694449   -0.36%   -0.93%
+  ship uniform, argmin                  3.707845   -0.00%   -0.57%
+  --------------------------------------------------------------------------
+
+  STAGE 2 SHAPE SWEEP, level held at 1.26, greedy walk
+        w      median     vs A
+      0.0    3.707845   -0.00%
+      0.1    3.714206   +0.17%
+      0.2    3.713391   +0.15%
+      0.3    3.702255   -0.15%
+      0.4    3.686055   -0.59%
+      0.5    3.652561   -1.49%
+      0.6    3.605574   -2.76%
+      0.7    3.546217   -4.36%
+      0.8    3.523128   -4.98%
+      0.9    3.520909   -5.04%
+      1.0    3.517563   -5.13%
+
+  STAGE 2 LEVEL SWEEP on the UNIFORM shape (the axis three paid
+  receipts already bracket: h 0.14 and 0.15 below, 0.32 above)
+        h      median     vs A
+     0.08    3.730519   +0.61%
+     0.10    3.733209   +0.68%
+     0.12    3.732221   +0.66%
+     0.14    3.728574   +0.56%
+     0.16    3.719047   +0.30%
+     0.18    3.707845   -0.00%
+     0.20    3.684994   -0.62%
+     0.22    3.660979   -1.26%
+     0.24    3.636346   -1.93%
+     0.26    3.611515   -2.60%
+     0.28    3.587444   -3.25%
+     0.30    3.560309   -3.98%
+     0.32    3.529716   -4.80%
+
+  STAGE 2 LEVEL SWEEP on the measured ranked SHAPE, greedy walk
+    level      median     vs A
+     0.40    3.771685   +1.72%
+     0.50    3.777771   +1.89%
+     0.60    3.762434   +1.47%
+     0.70    3.727913   +0.54%
+     0.80    3.679011   -0.78%
+     0.90    3.611826   -2.59%
+     1.00    3.552591   -4.19%
+     1.10    3.538942   -4.56%
+     1.20    3.526100   -4.90%
+     1.30    3.508762   -5.37%
+     1.40    3.486571   -5.97%
+     1.50    3.464842   -6.55%
+     1.60    3.442350   -7.16%
+     1.70    3.419301   -7.78%
+     1.80    3.396087   -8.41%
+
+  wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-askeladd/workspace/target/research/e200-artifacts/desk-price.json
