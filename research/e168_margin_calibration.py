@@ -252,26 +252,11 @@ def signal_auc(rounds: list[dict], position: int) -> dict:
     }
 
 
-def outcome_autocorrelation(legs: list[dict], position: int, lags: int = 5) -> dict:
-    """Is acceptance at `position` predictable from its own recent history?
+def autocorrelation(series: list[list[float]], lags: int = 5) -> dict:
+    """Lag 1..`lags` autocorrelation of several independent sequences.
 
-    The EMA and the streak are both history summaries, so they can only work
-    if the outcome sequence is autocorrelated. If the sequence is
-    indistinguishable from independent draws, then no history-based signal can
-    rank anything, and the AUC null has a mechanism rather than just a value.
-
-    Rounds are taken in leg order and the legs are kept separate, so no lag
-    ever spans two prompts.
+    Each sequence is one leg, so no lag ever spans two prompts.
     """
-    series = []
-    for leg in legs:
-        sequence = [
-            1 if record["acc"] > position else 0
-            for record in leg["rounds"]
-            if record["d"] > position and record["acc"] >= position
-        ]
-        if len(sequence) > lags + 1:
-            series.append(sequence)
     total = sum(len(s) for s in series)
     if total < 30:
         return {}
@@ -300,6 +285,42 @@ def outcome_autocorrelation(legs: list[dict], position: int, lags: int = 5) -> d
             "significant": abs(rho) > band,
         }
     return out
+
+
+def history_structure(legs: list[dict], position: int, lags: int = 5) -> dict:
+    """Does acceptance have memory, and is the margin a real signal at all?
+
+    `accept` answers the first question: the EMA and the streak are history
+    summaries, so they can only carry information if the outcome sequence is
+    autocorrelated.
+
+    `margin` is descriptive rather than a test. It asks whether the margin
+    itself carries memory, which decides whether a smoothed margin could work
+    where the instantaneous one does not.
+
+    Neither series can settle whether the recording is sound. Two other checks
+    do that, and both are reported elsewhere: the offline replay of
+    `costModelDepth` reproduces every recorded depth from the recorded margin,
+    EMA and offer, and the splice finds the same margin at the same absolute
+    token in two independently scheduled arms.
+    """
+    accepts, margins = [], []
+    for leg in legs:
+        rounds = [
+            record
+            for record in leg["rounds"]
+            if record["d"] > position and record["acc"] >= position
+        ]
+        if len(rounds) <= lags + 1:
+            continue
+        accepts.append([1.0 if r["acc"] > position else 0.0 for r in rounds])
+        usable = [r["margin"] for r in rounds if not math.isnan(r["margin"])]
+        if len(usable) == len(rounds):
+            margins.append(usable)
+    return {
+        "accept": autocorrelation(accepts, lags),
+        "margin": autocorrelation(margins, lags),
+    }
 
 
 def oracle_ceiling(legs: list[dict]) -> list[dict]:
@@ -1220,7 +1241,7 @@ def main() -> int:
         }
         report["oracle_ceiling"] = oracle_ceiling(pinned_legs)
         report["autocorrelation"] = {
-            position: outcome_autocorrelation(pinned_legs, position)
+            position: history_structure(pinned_legs, position)
             for position in (0, 1)
         }
         report["policy_sweep"] = policy_sweep(
@@ -1324,16 +1345,23 @@ def main() -> int:
     if report.get("autocorrelation"):
         print("=== is acceptance predictable from its own history? ===")
         for position, block in report["autocorrelation"].items():
-            if not block:
-                continue
-            cells = "  ".join(
-                f"lag{lag} {row['rho']:+.3f}{'*' if row['significant'] else ' '}"
-                f"(+-{row['band']:.3f})"
-                for lag, row in block["lags"].items()
-            )
-            print(f"  position {position}  n={block['n']}  {cells}")
+            for series, rows in block.items():
+                if not rows:
+                    continue
+                cells = "  ".join(
+                    f"lag{lag} {row['rho']:+.3f}"
+                    f"{'*' if row['significant'] else ' '}"
+                    for lag, row in rows["lags"].items()
+                )
+                band = next(iter(rows["lags"].values()))["band"]
+                print(
+                    f"  position {position} {series:<7} n={rows['n']:<5}"
+                    f"band +-{band:.3f}   {cells}"
+                )
         print(
             "  An EMA or a streak can only work on an autocorrelated sequence.\n"
+            "  The margin row is descriptive: it says whether a smoothed margin\n"
+            "  could carry information where the instantaneous one does not.\n"
             "  * marks a lag outside Bartlett's white-noise band."
         )
         print()
