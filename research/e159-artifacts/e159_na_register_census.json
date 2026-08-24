@@ -1,0 +1,455 @@
+{
+ "experiment": "e159-f10-na-register-census",
+ "harness": "static_compile",
+ "gpu_seconds": 0,
+ "official_or_ranked_score": false,
+ "source": "Qwen35.swift qwen35E120QMVHeader, read live",
+ "template_signature": "template <int NA, bool USE_TABLE> qwen_e120_qmv_wide",
+ "why_the_old_census_is_void": "research/e135_f22_na6_census.py targets a template family with an RPS parameter that this base does not have. It fails to build on 8 of 9 arms including both channel-check controls, so the ledger figures 94/42 and 105/37 cannot be reproduced or used as controls.",
+ "cells": {
+  "use_table_True": {
+   "m2_ipg2": {
+    "M": 2,
+    "IPG": 2,
+    "NA": 2,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 2,
+    "g16s": {
+     "registers": 74,
+     "spill_bytes": 0,
+     "text_bytes": 4242,
+     "text_sha8": "7b85883a"
+    },
+    "g17s": {
+     "registers": 87,
+     "spill_bytes": 0,
+     "text_bytes": 4464,
+     "text_sha8": "b42056d2"
+    }
+   },
+   "m3_ipg3": {
+    "M": 3,
+    "IPG": 3,
+    "NA": 3,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 84,
+     "spill_bytes": 0,
+     "text_bytes": 5348,
+     "text_sha8": "fd32a84e"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 5596,
+     "text_sha8": "44ee82c3"
+    }
+   },
+   "m4_ipg4": {
+    "M": 4,
+    "IPG": 4,
+    "NA": 4,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 6508,
+     "text_sha8": "5ed2e3eb"
+    },
+    "g17s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 6748,
+     "text_sha8": "abe4d6f4"
+    }
+   },
+   "m5_ipg5": {
+    "M": 5,
+    "IPG": 5,
+    "NA": 5,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 5,
+    "g16s": {
+     "registers": 96,
+     "spill_bytes": 0,
+     "text_bytes": 7682,
+     "text_sha8": "ab989e21"
+    },
+    "g17s": {
+     "registers": 102,
+     "spill_bytes": 0,
+     "text_bytes": 7882,
+     "text_sha8": "da33d06d"
+    }
+   },
+   "m6_ipg3": {
+    "M": 6,
+    "IPG": 3,
+    "NA": 3,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 2,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 84,
+     "spill_bytes": 0,
+     "text_bytes": 5348,
+     "text_sha8": "37c00942"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 5596,
+     "text_sha8": "f7126412"
+    }
+   },
+   "m7_ipg4": {
+    "M": 7,
+    "IPG": 4,
+    "NA": 4,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 2,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 11704,
+     "text_sha8": "b2515bb6"
+    },
+    "g17s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 12184,
+     "text_sha8": "a7864ed4"
+    }
+   },
+   "m8_ipg4": {
+    "M": 8,
+    "IPG": 4,
+    "NA": 4,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 2,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 6508,
+     "text_sha8": "f04e5445"
+    },
+    "g17s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 6748,
+     "text_sha8": "20062eb4"
+    }
+   },
+   "m9_ipg3": {
+    "M": 9,
+    "IPG": 3,
+    "NA": 3,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 3,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 84,
+     "spill_bytes": 0,
+     "text_bytes": 5348,
+     "text_sha8": "bf7ac976"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 5596,
+     "text_sha8": "e2c12d69"
+    }
+   },
+   "m6_ipg6": {
+    "M": 6,
+    "IPG": 6,
+    "NA": 6,
+    "role": "one_pass_arm",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 96,
+     "spill_bytes": 16,
+     "text_bytes": 4862,
+     "text_sha8": "13751565"
+    },
+    "g17s": {
+     "registers": 114,
+     "spill_bytes": 0,
+     "text_bytes": 4950,
+     "text_sha8": "0d622557"
+    }
+   },
+   "m7_ipg7": {
+    "M": 7,
+    "IPG": 7,
+    "NA": 7,
+    "role": "one_pass_arm",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 96,
+     "spill_bytes": 64,
+     "text_bytes": 5750,
+     "text_sha8": "dae3c063"
+    },
+    "g17s": {
+     "registers": 126,
+     "spill_bytes": 16,
+     "text_bytes": 5694,
+     "text_sha8": "4f6a2bdf"
+    }
+   },
+   "m8_ipg8": {
+    "M": 8,
+    "IPG": 8,
+    "NA": 8,
+    "role": "one_pass_arm",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 96,
+     "spill_bytes": 96,
+     "text_bytes": 6538,
+     "text_sha8": "c4d9d809"
+    },
+    "g17s": {
+     "registers": 126,
+     "spill_bytes": 64,
+     "text_bytes": 6384,
+     "text_sha8": "50abcbbf"
+    }
+   }
+  },
+  "use_table_False": {
+   "m2_ipg2": {
+    "M": 2,
+    "IPG": 2,
+    "NA": 2,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 2,
+    "g16s": {
+     "registers": 66,
+     "spill_bytes": 0,
+     "text_bytes": 4430,
+     "text_sha8": "09e67a29"
+    },
+    "g17s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 4670,
+     "text_sha8": "8559ba1b"
+    }
+   },
+   "m3_ipg3": {
+    "M": 3,
+    "IPG": 3,
+    "NA": 3,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 82,
+     "spill_bytes": 0,
+     "text_bytes": 5670,
+     "text_sha8": "546986aa"
+    },
+    "g17s": {
+     "registers": 89,
+     "spill_bytes": 0,
+     "text_bytes": 5900,
+     "text_sha8": "52a5b298"
+    }
+   },
+   "m4_ipg4": {
+    "M": 4,
+    "IPG": 4,
+    "NA": 4,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 6934,
+     "text_sha8": "239c419e"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 7218,
+     "text_sha8": "9213432d"
+    }
+   },
+   "m5_ipg5": {
+    "M": 5,
+    "IPG": 5,
+    "NA": 5,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 5,
+    "g16s": {
+     "registers": 93,
+     "spill_bytes": 0,
+     "text_bytes": 8234,
+     "text_sha8": "b23a42ec"
+    },
+    "g17s": {
+     "registers": 101,
+     "spill_bytes": 0,
+     "text_bytes": 8452,
+     "text_sha8": "92bd05e7"
+    }
+   },
+   "m6_ipg3": {
+    "M": 6,
+    "IPG": 3,
+    "NA": 3,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 2,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 82,
+     "spill_bytes": 0,
+     "text_bytes": 5670,
+     "text_sha8": "90ae3663"
+    },
+    "g17s": {
+     "registers": 89,
+     "spill_bytes": 0,
+     "text_bytes": 5900,
+     "text_sha8": "525f65cd"
+    }
+   },
+   "m7_ipg4": {
+    "M": 7,
+    "IPG": 4,
+    "NA": 4,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 2,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 12452,
+     "text_sha8": "91bbc140"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 12958,
+     "text_sha8": "1359528c"
+    }
+   },
+   "m8_ipg4": {
+    "M": 8,
+    "IPG": 4,
+    "NA": 4,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 2,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 94,
+     "spill_bytes": 0,
+     "text_bytes": 6934,
+     "text_sha8": "0e812090"
+    },
+    "g17s": {
+     "registers": 90,
+     "spill_bytes": 0,
+     "text_bytes": 7218,
+     "text_sha8": "ab51b6af"
+    }
+   },
+   "m9_ipg3": {
+    "M": 9,
+    "IPG": 3,
+    "NA": 3,
+    "role": "shipped",
+    "streams_ceil_m_over_ipg": 3,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 82,
+     "spill_bytes": 0,
+     "text_bytes": 5670,
+     "text_sha8": "8b344670"
+    },
+    "g17s": {
+     "registers": 89,
+     "spill_bytes": 0,
+     "text_bytes": 5900,
+     "text_sha8": "cdd18539"
+    }
+   },
+   "m6_ipg6": {
+    "M": 6,
+    "IPG": 6,
+    "NA": 6,
+    "role": "one_pass_arm",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 3,
+    "g16s": {
+     "registers": 96,
+     "spill_bytes": 16,
+     "text_bytes": 4974,
+     "text_sha8": "c38c12c0"
+    },
+    "g17s": {
+     "registers": 111,
+     "spill_bytes": 0,
+     "text_bytes": 5084,
+     "text_sha8": "32a1f590"
+    }
+   },
+   "m7_ipg7": {
+    "M": 7,
+    "IPG": 7,
+    "NA": 7,
+    "role": "one_pass_arm",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 96,
+     "spill_bytes": 48,
+     "text_bytes": 5860,
+     "text_sha8": "094e1002"
+    },
+    "g17s": {
+     "registers": 125,
+     "spill_bytes": 0,
+     "text_bytes": 5730,
+     "text_sha8": "0ac078ff"
+    }
+   },
+   "m8_ipg8": {
+    "M": 8,
+    "IPG": 8,
+    "NA": 8,
+    "role": "one_pass_arm",
+    "streams_ceil_m_over_ipg": 1,
+    "shipped_ipg_for_this_m": 4,
+    "g16s": {
+     "registers": 96,
+     "spill_bytes": 96,
+     "text_bytes": 6708,
+     "text_sha8": "17184475"
+    },
+    "g17s": {
+     "registers": 126,
+     "spill_bytes": 48,
+     "text_bytes": 6604,
+     "text_sha8": "002454b1"
+    }
+   }
+  }
+ }
+}
