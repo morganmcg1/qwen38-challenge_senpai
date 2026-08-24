@@ -165,16 +165,27 @@ private enum E191Probe {
     static let split = 5
     static var scale: Float { 1.0 / Float(headDim).squareRoot() }
 
-    /// The layout the scored attention layer hands to `attentionWithCacheUpdate`:
-    /// `[B, L, H, D]` from the projection, transposed to `[B, H, L, D]`.
-    static func queries(width: Int) -> MLXArray {
-        MLXRandom.normal([1, width, heads, headDim]).asType(.bfloat16)
+    /// The scored layout. `Qwen35.swift:3695-3718` takes the fused
+    /// `qwen35AttentionQKRMSRoPE` path at every decode width (24/4 heads, head
+    /// dim 256, rope dims 64, theta 1e7 -> `usesFusedQKPreparation` is true at
+    /// `:3377-3383`, and `L <= 32` holds), and that kernel returns
+    /// ROW-CONTIGUOUS `[B, H, L, D]` queries and keys (`:2341-2343`). The
+    /// `headTransposed` layout is the eager fallback at `:3720-3721` and the
+    /// layout `values` always has (`:3690`); it is kept as a bracket.
+    static func rows(width: Int, heads count: Int, layout: String) -> MLXArray {
+        if layout == "contiguous" {
+            return MLXRandom.normal([1, count, width, headDim]).asType(.bfloat16)
+        }
+        return MLXRandom.normal([1, width, count, headDim]).asType(.bfloat16)
             .transposed(0, 2, 1, 3)
     }
 
-    static func newKV(width: Int) -> MLXArray {
-        MLXRandom.normal([1, width, kvHeads, headDim]).asType(.bfloat16)
-            .transposed(0, 2, 1, 3)
+    static func queries(width: Int, layout: String = "contiguous") -> MLXArray {
+        rows(width: width, heads: heads, layout: layout)
+    }
+
+    static func newKV(width: Int, layout: String = "contiguous") -> MLXArray {
+        rows(width: width, heads: kvHeads, layout: layout)
     }
 
     /// A `KVCacheSimple` already holding the given rows, with capacity for the
@@ -328,41 +339,46 @@ struct E191DispatchCensusTests {
         #expect(e191SwizzleDispatch(encoderClass, "dispatchThreads:threadsPerThreadgroup:"))
 
         var cells: [[String: Any]] = []
-        for kvLength in [512, 1024] {
-            for width in [5, 6, 7, 8, 9] {
-                let q = E191Probe.queries(width: width)
-                let kv = E191Probe.newKV(width: width)
-                eval(q, kv)
-                for form in E191Form.allCases {
-                    if form != .unsplit, width < 6 { continue }
-                    let cache = E191Probe.seededCache(length: kvLength)
-                    // Warm the kernels and the pipeline map before counting so a
-                    // first-use JIT compile cannot appear as a dispatch.
-                    for _ in 0 ..< 3 {
-                        eval(
-                            E191Probe.call(
-                                form, q: q, kv: kv, cache: cache, kvLength: kvLength))
-                    }
-                    E191Ledger.shared.start()
-                    eval(E191Probe.call(form, q: q, kv: kv, cache: cache, kvLength: kvLength))
-                    let records = E191Ledger.shared.stop()
-
-                    var counts: [String: Int] = [:]
-                    for record in records { counts[record.kernel, default: 0] += 1 }
-                    let copies = records.filter { $0.kernel.lowercased().contains("copy") }
-                    cells.append([
-                        "form": form.rawValue, "qL": width, "kv": kvLength,
-                        "dispatches": records.count,
-                        "kernel_counts": counts,
-                        "kernel_sequence": records.map(\.kernel),
-                        "copy_dispatches": copies.count,
-                        "copy_grids": copies.map {
-                            "\($0.kernel) grid=(\($0.grid.width),\($0.grid.height),"
-                                + "\($0.grid.depth))"
-                        },
-                    ])
+        let census: [(String, Int, Int, E191Form)] = [
+            "contiguous", "headTransposed",
+        ].flatMap { layout in
+            [512, 1024].flatMap { kvLength in
+                [5, 6, 7, 8, 9].flatMap { width in
+                    E191Form.allCases
+                        .filter { $0 == .unsplit || width >= 6 }
+                        .map { (layout, kvLength, width, $0) }
                 }
             }
+        }
+        for (layout, kvLength, width, form) in census {
+            let q = E191Probe.queries(width: width, layout: layout)
+            let kv = E191Probe.newKV(width: width, layout: layout)
+            eval(q, kv)
+            let cache = E191Probe.seededCache(length: kvLength)
+            // Warm the kernels and the pipeline map before counting so a
+            // first-use JIT compile cannot appear as a dispatch.
+            for _ in 0 ..< 3 {
+                eval(E191Probe.call(form, q: q, kv: kv, cache: cache, kvLength: kvLength))
+            }
+            E191Ledger.shared.start()
+            eval(E191Probe.call(form, q: q, kv: kv, cache: cache, kvLength: kvLength))
+            let records = E191Ledger.shared.stop()
+
+            var counts: [String: Int] = [:]
+            for record in records { counts[record.kernel, default: 0] += 1 }
+            let copies = records.filter { $0.kernel.lowercased().contains("copy") }
+            cells.append([
+                "form": form.rawValue, "qL": width, "kv": kvLength,
+                "query_layout": layout,
+                "dispatches": records.count,
+                "kernel_counts": counts,
+                "kernel_sequence": records.map(\.kernel),
+                "copy_dispatches": copies.count,
+                "copy_grids": copies.map {
+                    "\($0.kernel) grid=(\($0.grid.width),\($0.grid.height),"
+                        + "\($0.grid.depth))"
+                },
+            ])
         }
 
         try e191WriteReport(
