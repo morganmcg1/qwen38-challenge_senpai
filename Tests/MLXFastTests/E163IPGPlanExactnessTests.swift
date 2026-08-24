@@ -178,7 +178,9 @@ struct E163IPGPlanExactnessTests {
                         maxAbsDelta, abs(candidateValues[index] - referenceValues[index]))
                 }
 
-                let ipg = Qwen35CustomQMV.inputsPerGroup(m)
+                let ipg = try #require(
+                    plan[m],
+                    Comment(rawValue: "the live plan has no entry for width \(m)"))
                 var cell: [String: Any] = [
                     "shape": shape.name,
                     "k": shape.k,
