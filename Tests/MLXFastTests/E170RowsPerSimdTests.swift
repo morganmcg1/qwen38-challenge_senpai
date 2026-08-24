@@ -209,7 +209,11 @@ struct E170RowsPerSimdScreenTests {
         let outPath = try #require(
             env["MLXFAST_E170_SCREEN_OUT"],
             "MLXFAST_E170_SCREEN_OUT must name the JSON destination")
-        let widths = e170ParseWidths(env["MLXFAST_E170_SCREEN_WIDTHS"]) ?? [3, 4, 5, 7, 8]
+        // NA = 5 first. Advisor F1 makes M = 5 the cell the candidate would
+        // spend all of its time in if fixed depth 4 promotes. M = 4 is the
+        // NA = 4 target, and M = 3 is the near-roof control that should not
+        // gain, because NA = 3 already streams at 98.1 % of roof.
+        let widths = e170ParseWidths(env["MLXFAST_E170_SCREEN_WIDTHS"]) ?? [5, 4, 3]
         let reps = Int(env["MLXFAST_E170_SCREEN_REPS"] ?? "") ?? 9
         let inner = Int(env["MLXFAST_E170_SCREEN_INNER"] ?? "") ?? 8
 
