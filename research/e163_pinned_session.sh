@@ -26,9 +26,14 @@
 # which reaches `default: break` in the width switch and launches no routed
 # QMV at all, so the serial leg cannot move and cannot cancel this effect.
 #
-# ORDER. The timed legs run `shipped ARM ARM shipped`, so both arms have mean
-# leg position 2.5 and a monotone thermal drift in leg index cancels to first
-# order. Every timed leg keeps the real 40 C cool gate.
+# ORDER. The timed legs run
+#
+#   shipped@d   ARM@d   shipped@d+1   shipped@d+1   ARM@d   shipped@d
+#
+# so all three leg kinds have mean leg position 3.5 and a monotone thermal
+# drift in leg index cancels to first order in every pairwise contrast. Every
+# timed leg keeps the real 40 C cool gate. The two `d+1` legs measure the width
+# boundary `R(W+1) - R(W)` on the shipped plan in the same thermal session.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -109,7 +114,9 @@ echo "=== witness: realised width histogram under the pin ==="
 export MLX_E163_IPG_PLAN="${arm}"
 research/e79_trace_leg.sh "e163${label}hist" 128
 unset MLX_E163_IPG_PLAN
-awk '{
+# Only `mtp-trace: round=` lines are rounds. `mtp-anchor:` repeats the same
+# `d=` for its timestamp record, so counting every `d=` doubles every round.
+awk '/^mtp-trace: round=/ {
   for (i = 1; i <= NF; i++) if ($i ~ /^d=/) { split($i, kv, "="); w[kv[2] + 1]++; n++ }
 } END {
   printf "width histogram over %d traced rounds:\n", n
@@ -122,21 +129,47 @@ if ((witness_only)); then
 fi
 
 # PHASE 3: the counterbalanced, gated, timed session.
+#
+#   1 shipped@d    2 arm@d    3 shipped@d+1    4 shipped@d+1    5 arm@d    6 shipped@d
+#
+# Every leg kind has mean position 3.5, so a monotone drift in leg index
+# cancels to first order in the arm contrast AND in the width contrast.
+#
+# Legs 3 and 4 cost two of the six legs and buy the width boundary
+# `R(W+1) - R(W)` on the SHIPPED plan inside one thermal session. No ranked
+# receipt can show it, because no ranked prompt sits between 3.65 and 5.38
+# rows, and a second session would carry the ~10 % isolated-comparison drift
+# of RULE 119.
+#
+# Timing legs keep the trace on. Every leg carries the same instrumentation,
+# so the contrasts are unaffected, and the trace is the only source of the
+# seed prefill, the per-round cost and the realised width of each timed leg.
+# `R` cannot be computed without it.
+plans=(shipped "${arm}" shipped shipped "${arm}" shipped)
+depths=("${depth}" "${depth}" "$((depth + 1))" "$((depth + 1))" "${depth}" "${depth}")
+if ((depth + 1 > 7)); then
+  echo "e163_pinned_session: the width-boundary legs would pin depth" \
+       "$((depth + 1)), above segmentedVerifyDepthCap" >&2
+  exit 2
+fi
+
 failures=0
-position=0
-for plan in shipped "${arm}" "${arm}" shipped; do
-  position=$((position + 1))
-  tag="e163${label}p${position}${plan}"
-  echo "=== ${tag}: plan=${plan} pinned_depth=${depth} tokens=${tokens} ==="
+for position in 1 2 3 4 5 6; do
+  plan="${plans[position - 1]}"
+  leg_depth="${depths[position - 1]}"
+  tag="e163${label}p${position}${plan}d${leg_depth}"
+  echo "=== ${tag}: plan=${plan} pinned_depth=${leg_depth}" \
+       "verify_width=$((leg_depth + 1)) tokens=${tokens} ==="
   export MLX_E163_IPG_PLAN="${plan}"
-  research/e79_trace_leg.sh "${tag}" "${tokens}" --no-trace --cool-gate
+  export MLX_E159_FIXED_DRAFT_DEPTH="${leg_depth}"
+  research/e79_trace_leg.sh "${tag}" "${tokens}" --cool-gate
   status=$?
   unset MLX_E163_IPG_PLAN
   {
     echo "e163_plan=${plan}"
     echo "e163_position=${position}"
-    echo "e163_pinned_depth=${depth}"
-    echo "e163_verify_width=$((depth + 1))"
+    echo "e163_pinned_depth=${leg_depth}"
+    echo "e163_verify_width=$((leg_depth + 1))"
     echo "e163_session_commit=${session_commit}"
     echo "e163_session_worker_sha256=${session_worker}"
   } >> "research/out/${tag}/meta.txt"
@@ -148,4 +181,5 @@ done
 
 echo "e163_pinned_session: ${failures} failed legs"
 python3 research/e163_pinned_report.py --label "${label}"
-exit $((failures > 0))
+report=$?
+exit $(((failures > 0) || report != 0))
