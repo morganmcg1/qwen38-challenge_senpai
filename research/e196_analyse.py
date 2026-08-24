@@ -45,9 +45,17 @@ FULL_ATTENTION_LAYERS = 16
 MUE_US_PER_ROUND = 567.0  # senpai/frontier-state.json
 SPLIT = 5
 GQA = 6
+HEADS = 24
 KV_HEADS = 4
 HEAD_DIM = 256
 BYTES_PER_ELEMENT = 2  # bfloat16
+
+# M4 Pro (applegpu_g16s, 20-core GPU) limits, for the roofline that names the
+# binding resource. The vector SDPA kernel issues scalar fused multiply-adds,
+# not simdgroup matrix operations, so the FMA peak is the relevant ALU limit:
+# 20 cores * 128 lanes * 2 flops * 1.575 GHz.
+M4PRO_DRAM_GB_PER_S = 273.0
+M4PRO_BF16_TFLOP_PER_S = 8.06
 
 # Round composition of a scored 512-token decode leg, from
 # research/analysis-runP-512-confirm.json (cap-7 tree, 81 rounds).
@@ -83,6 +91,7 @@ def reduce_samples(timing):
             sample["m"],
             sample["rows"],
             sample["keys"],
+            sample.get("heads", HEADS),
         )
         buckets[key].append(sample["microseconds"])
     reduced = {}
@@ -122,8 +131,8 @@ def chain_slopes(reduced):
     that FINDING 497's instrument charged to every call.
     """
     grouped = defaultdict(dict)
-    for (arm, mode, chain, kv, m, rows, keys), stats in reduced.items():
-        grouped[(arm, mode, kv, m, rows, keys)][chain] = stats["min"]
+    for (arm, mode, chain, kv, m, rows, keys, heads), stats in reduced.items():
+        grouped[(arm, mode, kv, m, rows, keys, heads)][chain] = stats["min"]
     slopes = {}
     for key, by_chain in grouped.items():
         if len(by_chain) < 2:
@@ -144,8 +153,8 @@ def chain_slopes(reduced):
 def ladder_model(slopes, mode):
     """Fit T(R, N) = a(N) + b(N)*R per KV window, then a(N) and b(N) in N."""
     per_kv = {}
-    for (arm, m_mode, kv, m, rows, keys), value in slopes.items():
-        if arm != "ladder" or m_mode != mode:
+    for (arm, m_mode, kv, m, rows, keys, heads), value in slopes.items():
+        if arm != "ladder" or m_mode != mode or heads != HEADS:
             continue
         per_kv.setdefault((kv, keys), {})[rows] = value["per_call_us"]
     model = {}
@@ -196,9 +205,9 @@ def price_cells(slopes, model, mode, widths, kvs):
         a_us = fit["a_us"]
         b_us = fit["b_us_per_row"]
         for m in widths:
-            call_a = slopes.get(("callA", mode, kv, m, SPLIT, kv + m - (m - SPLIT)))
-            call_b = slopes.get(("callB", mode, kv, m, m - SPLIT, kv + m))
-            pair = slopes.get(("pair", mode, kv, m, m, kv + m))
+            call_a = slopes.get(("callA", mode, kv, m, SPLIT, kv + m - (m - SPLIT), HEADS))
+            call_b = slopes.get(("callB", mode, kv, m, m - SPLIT, kv + m, HEADS))
+            pair = slopes.get(("pair", mode, kv, m, m, kv + m, HEADS))
             if call_a is None or call_b is None:
                 continue
             kL = kv + m
@@ -387,6 +396,151 @@ def census_summary(census):
     return {"cells": rows, "ladder": ladder}
 
 
+def occupancy_model(slopes, mode):
+    """Is the scored `sdpa_vector` dispatch latency bound or bandwidth bound?
+
+    Each arm holds per-threadgroup work fixed (GQA 6, head dim 256, one KV
+    window) and scales the query-head count, which scales the threadgroup
+    count and the total KV bytes read by the same factor. Regress per-call
+    microseconds on head count and report the elasticity
+
+        e = d ln(time) / d ln(heads)
+
+    at the scored 24-head point. e -> 0 means the dispatch is latency bound
+    and adding work per threadgroup is nearly free, so a fused kernel that
+    loops m rows in one threadgroup really can amortize the KV traversal.
+    e -> 1 means the dispatch is bandwidth or throughput bound, the machine
+    is already saturated, and only the per-call fixed cost is recoverable.
+    """
+    per_cell = defaultdict(dict)
+    for (arm, m_mode, kv, m, rows, keys, heads), value in slopes.items():
+        if arm != "occupancy" or m_mode != mode:
+            continue
+        per_cell[(keys, rows)][heads] = value["per_call_us"]
+    out = []
+    for (keys, rows), by_heads in sorted(per_cell.items()):
+        head_counts = sorted(by_heads)
+        if len(head_counts) < 2:
+            continue
+        fit = linear_fit(
+            [float(h) for h in head_counts], [by_heads[h] for h in head_counts]
+        )
+        at_scored = by_heads.get(HEADS)
+        elasticity = (
+            None if at_scored in (None, 0) else fit["slope"] * HEADS / at_scored
+        )
+        # Ratio form, free of any fit: doubling the heads from the scored
+        # point costs this much more.
+        doubling = None
+        if HEADS in by_heads and 2 * HEADS in by_heads:
+            doubling = by_heads[2 * HEADS] / by_heads[HEADS]
+        halving = None
+        if HEADS in by_heads and HEADS // 2 in by_heads:
+            halving = by_heads[HEADS // 2] / by_heads[HEADS]
+        out.append(
+            {
+                "keys": keys,
+                "rows": rows,
+                "per_call_us": {h: by_heads[h] for h in head_counts},
+                "slope_us_per_head": fit["slope"],
+                "intercept_us": fit["intercept"],
+                "elasticity_at_24_heads": elasticity,
+                "ratio_48_over_24": doubling,
+                "ratio_12_over_24": halving,
+            }
+        )
+    return out
+
+
+def roofline(model, kv=512, m=SPLIT):
+    """Which resource binds the scored `sdpa_vector` dispatch?
+
+    The occupancy arm scales the threadgroup count and the total load traffic
+    together, so it proves that a per-work resource binds but not which one.
+    This does: it compares the achieved rates against the M4 Pro limits.
+
+    Every (query head, query row) threadgroup reads the whole K and V window
+    of its own KV head, so the loads are redundant by a factor of GQA times
+    the row count. That redundant traffic is exactly what a fused,
+    row-amortized kernel removes.
+    """
+    if kv not in model:
+        return None
+    fit = model[kv]
+    keys = fit["keys"]
+    seconds = (fit["a_us"] + fit["b_us_per_row"] * m) / 1e6
+    unique_bytes = kv_bytes_per_traversal(keys)
+    requested_bytes = unique_bytes * GQA * m
+    # Q.K^T and the P.V accumulation: two multiply-adds per key element.
+    flops = 2 * 2 * keys * HEAD_DIM * HEADS * m
+    return {
+        "kv": kv,
+        "keys": keys,
+        "rows": m,
+        "call_us": seconds * 1e6,
+        "unique_kv_bytes": unique_bytes,
+        "requested_kv_bytes": requested_bytes,
+        "redundancy_factor": GQA * m,
+        "unique_gb_per_s": unique_bytes / seconds / 1e9,
+        "requested_gb_per_s": requested_bytes / seconds / 1e9,
+        "gflop_per_s": flops / seconds / 1e9,
+        "m4pro_dram_gb_per_s": M4PRO_DRAM_GB_PER_S,
+        "m4pro_bf16_tflop_per_s": M4PRO_BF16_TFLOP_PER_S,
+        "fraction_of_dram_bandwidth": (unique_bytes / seconds / 1e9)
+        / M4PRO_DRAM_GB_PER_S,
+        "fraction_of_alu_peak": (flops / seconds / 1e12) / M4PRO_BF16_TFLOP_PER_S,
+    }
+
+
+def occupancy_verdict(rows, roof, weight_keys=517, weight_rows=5):
+    """Read the occupancy elasticity together with the roofline.
+
+    The elasticity says only whether a per-work resource binds. The roofline
+    says which one. Route-1 removes redundant KV loads, so a work-scaled
+    dispatch that sits far below both the DRAM and the ALU limit is bound by
+    load throughput through the cache hierarchy, which is the resource
+    row-amortization attacks.
+    """
+    deciding = next(
+        (
+            row
+            for row in rows
+            if row["keys"] == weight_keys and row["rows"] == weight_rows
+        ),
+        None,
+    )
+    low_parallelism = next(
+        (row for row in rows if row["keys"] == weight_keys and row["rows"] == 1), None
+    )
+    if deciding is None or deciding["elasticity_at_24_heads"] is None:
+        return {"cell": None, "verdict": "unmeasured"}
+    elasticity = deciding["elasticity_at_24_heads"]
+    scaling = (
+        "latency_bound"
+        if elasticity < 0.35
+        else "work_scaled" if elasticity > 0.75 else "mixed"
+    )
+    if roof is None:
+        binding = "unknown"
+    elif roof["fraction_of_alu_peak"] > 0.5:
+        binding = "alu"
+    elif roof["fraction_of_dram_bandwidth"] > 0.5:
+        binding = "dram_bandwidth"
+    elif scaling == "latency_bound":
+        binding = "dispatch_latency"
+    else:
+        binding = "redundant_load_throughput"
+    return {
+        "cell": deciding,
+        "low_parallelism_cell": low_parallelism,
+        "elasticity": elasticity,
+        "scaling": scaling,
+        "binding_resource": binding,
+        "route1_removes_binding_resource": binding
+        in {"redundant_load_throughput", "dram_bandwidth", "dispatch_latency"},
+    }
+
+
 def decide(recoverable_ms):
     if recoverable_ms >= 1.0:
         return "CONTINUE"
@@ -472,12 +626,18 @@ def main():
             "decision_route1": decide(
                 aggregates["recoverable_route1_us"]["per_round_ms"]
             ),
+            "occupancy": occupancy_model(slopes, mode),
+            "roofline_m5_kv512": roofline(model, kv=512, m=SPLIT),
         }
+        report["modes"][mode]["occupancy_verdict"] = occupancy_verdict(
+            report["modes"][mode]["occupancy"],
+            report["modes"][mode]["roofline_m5_kv512"],
+        )
 
     # The bridge cells: the whole shipped `today` form, one call per eval,
     # which is FINDING 497's own instrument.
     bridge = []
-    for (arm, mode, chain, kv, m, rows, keys), stats in sorted(reduced.items()):
+    for (arm, mode, chain, kv, m, rows, keys, heads), stats in sorted(reduced.items()):
         if arm != "today":
             continue
         bridge.append({"kv": kv, "m": m, "us": stats["min"], "spread_pct": stats["spread_pct"]})
@@ -532,6 +692,42 @@ def main():
                 summary[f"{mode}/{field}/ms_per_round"] = aggregate["per_round_ms"]
                 summary[f"{mode}/{field}/mue"] = aggregate["mue"]
             summary[f"{mode}/decision_route1"] = payload["decision_route1"]
+            verdict = payload["occupancy_verdict"]
+            summary[f"{mode}/occupancy/elasticity_at_24_heads"] = verdict.get(
+                "elasticity"
+            )
+            summary[f"{mode}/occupancy/scaling"] = verdict.get("scaling")
+            summary[f"{mode}/occupancy/binding_resource"] = verdict.get(
+                "binding_resource"
+            )
+            roof = payload["roofline_m5_kv512"]
+            if roof:
+                summary[f"{mode}/roofline/fraction_of_alu_peak"] = roof[
+                    "fraction_of_alu_peak"
+                ]
+                summary[f"{mode}/roofline/fraction_of_dram_bandwidth"] = roof[
+                    "fraction_of_dram_bandwidth"
+                ]
+                summary[f"{mode}/roofline/requested_gb_per_s"] = roof[
+                    "requested_gb_per_s"
+                ]
+                summary[f"{mode}/roofline/redundancy_factor"] = roof[
+                    "redundancy_factor"
+                ]
+            occupancy_table = wandb.Table(
+                columns=[
+                    "keys",
+                    "rows",
+                    "heads",
+                    "per_call_us",
+                ]
+            )
+            for row in payload["occupancy"]:
+                for heads, value in row["per_call_us"].items():
+                    occupancy_table.add_data(
+                        row["keys"], row["rows"], int(heads), value
+                    )
+            run.log({f"{mode}/occupancy": occupancy_table})
             table = wandb.Table(
                 columns=[
                     "kv",

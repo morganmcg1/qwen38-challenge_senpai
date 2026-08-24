@@ -251,6 +251,9 @@ private enum E196Probe {
 private func e196GpuTemperature() -> Double? {
     for path in [
         ProcessInfo.processInfo.environment["MLXFAST_MACMON_BIN"] ?? "",
+        // The role HOME, not the passwd home `homeDirectoryForCurrentUser`
+        // returns: the Senpai runner installs macmon under the role home.
+        "\(ProcessInfo.processInfo.environment["HOME"] ?? "")/bin/macmon",
         "\(FileManager.default.homeDirectoryForCurrentUser.path)/bin/macmon",
         "/opt/homebrew/bin/macmon", "/usr/local/bin/macmon",
     ] where !path.isEmpty && FileManager.default.isExecutableFile(atPath: path) {
