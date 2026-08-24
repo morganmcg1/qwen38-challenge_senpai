@@ -49,7 +49,13 @@ def reduce_census(census):
 
 
 def block_stats(samples):
-    """Per-cell mean over ABBA blocks, plus the between-block spread."""
+    """Per-cell statistics over ABBA blocks.
+
+    External system contention only ever ADDS time to a GPU dispatch block, so
+    the per-cell minimum over blocks is the contention-robust estimator of the
+    cell's true cost. The mean and sd are kept so a contaminated session is
+    visible rather than silently smoothed away.
+    """
     grouped = defaultdict(list)
     for sample in samples:
         grouped[(sample["form"], sample["qL"], sample["kv"])].append(
@@ -78,7 +84,8 @@ def per_round_ms(delta_us):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--census")
-    parser.add_argument("--timing")
+    parser.add_argument("--timing", nargs="+")
+    parser.add_argument("--timing-labels", nargs="+")
     parser.add_argument("--out")
     parser.add_argument("--wandb-project", default=None)
     parser.add_argument("--wandb-entity", default=None)
@@ -137,73 +144,142 @@ def main():
                 f"{row['copy_dispatches']:>5}  {kernels}"
             )
 
-    if args.timing:
-        timing = load(args.timing)
-        stats = block_stats(timing["samples"])
-        report["gpu_temperature_c"] = timing["gpu_temperature_c"]
-        report["cool_gate_passed_real_gate"] = timing["cool_gate_passed_real_gate"]
-        report["gate_qualified_for_timing"] = timing["gate_qualified_for_timing"]
-        report["abba_counterbalanced"] = timing["abba_counterbalanced"]
-        report["agreement"] = timing["agreement"]
-        report["blocks"] = timing["blocks"]
-        report["reps"] = timing["reps"]
+    sessions = []
+    for index, path in enumerate(args.timing or []):
+        timing = load(path)
+        label = args.timing_labels[index] if args.timing_labels else f"session{index}"
+        sessions.append({"label": label, "path": path, "timing": timing})
+
+    if sessions:
+        report["sessions"] = [
+            {
+                "label": s["label"],
+                "gpu_temperature_c": s["timing"]["gpu_temperature_c"],
+                "cool_gate_passed_real_gate": s["timing"][
+                    "cool_gate_passed_real_gate"
+                ],
+                "gate_qualified_for_timing": s["timing"]["gate_qualified_for_timing"],
+                "abba_counterbalanced": s["timing"]["abba_counterbalanced"],
+                "blocks": s["timing"]["blocks"],
+                "reps": s["timing"]["reps"],
+            }
+            for s in sessions
+        ]
+        primary = sessions[0]["timing"]
+        report["agreement"] = primary["agreement"]
 
         cells = []
-        for (form, qL, kv), value in sorted(stats.items(), key=lambda i: (i[0][2], i[0][1], i[0][0])):
-            cells.append({"form": form, "qL": qL, "kv": kv, **value})
+        stats_by_session = {}
+        for session in sessions:
+            stats = block_stats(session["timing"]["samples"])
+            stats_by_session[session["label"]] = stats
+            for (form, qL, kv), value in stats.items():
+                cells.append(
+                    {
+                        "session": session["label"],
+                        "form": form,
+                        "qL": qL,
+                        "kv": kv,
+                        **value,
+                    }
+                )
+        cells.sort(key=lambda c: (c["kv"], c["qL"], c["form"], c["session"]))
         report["timing_cells"] = cells
 
         print("\n== absolute time per call (us), ABBA blocks ==")
-        print(f"{'kv':>5} {'qL':>3} {'form':<10} {'mean':>9} {'sd':>7} {'sem':>7}")
+        print(
+            f"{'session':<10} {'kv':>5} {'qL':>3} {'form':<10} {'robust min':>11} "
+            f"{'mean':>9} {'sd':>8}"
+        )
         for cell in cells:
             print(
-                f"{cell['kv']:>5} {cell['qL']:>3} {cell['form']:<10} "
-                f"{cell['mean_us']:>9.2f} {cell['sd_us']:>7.2f} {cell['sem_us']:>7.2f}"
+                f"{cell['session']:<10} {cell['kv']:>5} {cell['qL']:>3} "
+                f"{cell['form']:<10} {cell['min_us']:>11.2f} "
+                f"{cell['mean_us']:>9.2f} {cell['sd_us']:>8.2f}"
             )
 
+        # Cross-session replication on the contention-robust estimator.
+        if len(sessions) > 1:
+            base_label = sessions[0]["label"]
+            print("\n== cross-session replication of robust min (%) ==")
+            worst = 0.0
+            replication = []
+            for key, value in sorted(
+                stats_by_session[base_label].items(), key=lambda i: (i[0][2], i[0][1])
+            ):
+                form, qL, kv = key
+                for other in sessions[1:]:
+                    peer = stats_by_session[other["label"]].get(key)
+                    if not peer:
+                        continue
+                    pct = 100.0 * (peer["min_us"] - value["min_us"]) / value["min_us"]
+                    worst = max(worst, abs(pct))
+                    replication.append(
+                        {
+                            "kv": kv,
+                            "qL": qL,
+                            "form": form,
+                            "peer": other["label"],
+                            "base_min_us": value["min_us"],
+                            "peer_min_us": peer["min_us"],
+                            "delta_pct": pct,
+                        }
+                    )
+                    print(
+                        f"  kv={kv:>5} qL={qL} {form:<10} "
+                        f"{value['min_us']:>9.2f} vs {peer['min_us']:>9.2f}  "
+                        f"{pct:+6.2f}%"
+                    )
+            report["replication"] = replication
+            report["replication_worst_abs_pct"] = worst
+            print(f"  worst |delta| = {worst:.2f}%")
+
         derived = []
-        for kv in sorted({c["kv"] for c in cells}):
-            control = stats.get(("unsplit", 5, kv))
-            for qL in [6, 7, 8, 9]:
-                today = stats.get(("today", qL, kv))
-                two = stats.get(("twoAppend", qL, kv))
-                unsplit = stats.get(("unsplit", qL, kv))
-                if not (today and two and unsplit and control):
-                    continue
-                fix_gain_us = today["mean_us"] - two["mean_us"]
-                prod_step_us = today["mean_us"] - control["mean_us"]
-                f489_step_us = unsplit["mean_us"] - control["mean_us"]
-                derived.append(
-                    {
-                        "kv": kv,
-                        "qL": qL,
-                        "two_append_gain_us_per_layer": fix_gain_us,
-                        "two_append_gain_ms_per_round": per_round_ms(fix_gain_us),
-                        "two_append_gain_mue": per_round_ms(fix_gain_us)
-                        * 1000.0
-                        / MUE_US_PER_ROUND,
-                        "production_step_us_per_layer": prod_step_us,
-                        "production_step_ms_per_round": per_round_ms(prod_step_us),
-                        "finding489_step_us_per_layer": f489_step_us,
-                        "finding489_step_ms_per_round": per_round_ms(f489_step_us),
-                        "split_saves_vs_unsplit_us_per_layer": unsplit["mean_us"]
-                        - today["mean_us"],
-                        "split_saves_vs_unsplit_ms_per_round": per_round_ms(
-                            unsplit["mean_us"] - today["mean_us"]
-                        ),
-                    }
-                )
+        for label, stats in stats_by_session.items():
+            for kv in sorted({k[2] for k in stats}):
+                control = stats.get(("unsplit", 5, kv))
+                for qL in [6, 7, 8, 9]:
+                    today = stats.get(("today", qL, kv))
+                    two = stats.get(("twoAppend", qL, kv))
+                    unsplit = stats.get(("unsplit", qL, kv))
+                    if not (today and two and unsplit and control):
+                        continue
+                    fix_gain_us = today["min_us"] - two["min_us"]
+                    prod_step_us = today["min_us"] - control["min_us"]
+                    f489_step_us = unsplit["min_us"] - control["min_us"]
+                    derived.append(
+                        {
+                            "session": label,
+                            "kv": kv,
+                            "qL": qL,
+                            "two_append_gain_us_per_layer": fix_gain_us,
+                            "two_append_gain_ms_per_round": per_round_ms(fix_gain_us),
+                            "two_append_gain_mue": per_round_ms(fix_gain_us)
+                            * 1000.0
+                            / MUE_US_PER_ROUND,
+                            "production_step_us_per_layer": prod_step_us,
+                            "production_step_ms_per_round": per_round_ms(prod_step_us),
+                            "finding489_step_us_per_layer": f489_step_us,
+                            "finding489_step_ms_per_round": per_round_ms(f489_step_us),
+                            "split_saves_vs_unsplit_us_per_layer": unsplit["min_us"]
+                            - today["min_us"],
+                            "split_saves_vs_unsplit_ms_per_round": per_round_ms(
+                                unsplit["min_us"] - today["min_us"]
+                            ),
+                        }
+                    )
+        derived.sort(key=lambda r: (r["session"], r["kv"], r["qL"]))
         report["derived"] = derived
 
-        print("\n== derived, per full-attention layer and per round (x16) ==")
+        print("\n== derived from robust min, per FA layer and per round (x16) ==")
         print(
-            f"{'kv':>5} {'qL':>3} {'fix gain us':>12} {'fix ms/rnd':>11} {'fix MUE':>8} "
-            f"{'prod step us':>13} {'prod ms/rnd':>12} {'489 step us':>12} "
-            f"{'split saves us':>15}"
+            f"{'session':<10} {'kv':>5} {'qL':>3} {'fix gain us':>12} "
+            f"{'fix ms/rnd':>11} {'fix MUE':>8} {'prod step us':>13} "
+            f"{'prod ms/rnd':>12} {'489 step us':>12} {'split saves us':>15}"
         )
         for row in derived:
             print(
-                f"{row['kv']:>5} {row['qL']:>3} "
+                f"{row['session']:<10} {row['kv']:>5} {row['qL']:>3} "
                 f"{row['two_append_gain_us_per_layer']:>12.2f} "
                 f"{row['two_append_gain_ms_per_round']:>11.3f} "
                 f"{row['two_append_gain_mue']:>8.2f} "
@@ -214,7 +290,7 @@ def main():
             )
 
         print("\n== today vs twoAppend agreement (max abs delta) ==")
-        for row in timing["agreement"]:
+        for row in primary["agreement"]:
             print(
                 f"  kv={row['kv']:>5} qL={row['qL']} "
                 f"max_abs_delta={row['max_abs_delta']:.3e} "
@@ -244,14 +320,9 @@ def main():
                 "full_attention_layers": FULL_ATTENTION_LAYERS,
                 "mue_us_per_round": MUE_US_PER_ROUND,
                 "host_architecture": report.get("host_architecture"),
-                "cool_gate_passed_real_gate": report.get(
-                    "cool_gate_passed_real_gate"
-                ),
-                "gate_qualified_for_timing": report.get("gate_qualified_for_timing"),
-                "abba_counterbalanced": report.get("abba_counterbalanced"),
-                "blocks": report.get("blocks"),
-                "reps": report.get("reps"),
-                "gpu_temperature_c": report.get("gpu_temperature_c"),
+                "estimator": "min over ABBA blocks (contention-robust)",
+                "sessions": report.get("sessions"),
+                "replication_worst_abs_pct": report.get("replication_worst_abs_pct"),
             },
         )
         if "census" in report:
@@ -279,19 +350,42 @@ def main():
             run.log({"dispatch_census": table})
         if "timing_cells" in report:
             table = wandb.Table(
-                columns=["kv", "qL", "form", "mean_us", "median_us", "sd_us", "sem_us"]
+                columns=[
+                    "session",
+                    "kv",
+                    "qL",
+                    "form",
+                    "min_us",
+                    "mean_us",
+                    "median_us",
+                    "sd_us",
+                    "sem_us",
+                ]
             )
             for cell in report["timing_cells"]:
                 table.add_data(
+                    cell["session"],
                     cell["kv"],
                     cell["qL"],
                     cell["form"],
+                    cell["min_us"],
                     cell["mean_us"],
                     cell["median_us"],
                     cell["sd_us"],
                     cell["sem_us"],
                 )
             run.log({"timing_cells": table})
+        if "replication" in report:
+            table = wandb.Table(
+                columns=["kv", "qL", "form", "peer", "base_min_us", "peer_min_us",
+                         "delta_pct"]
+            )
+            for row in report["replication"]:
+                table.add_data(*[row[c] for c in table.columns])
+            run.log({"cross_session_replication": table})
+            run.summary["replication_worst_abs_pct"] = report[
+                "replication_worst_abs_pct"
+            ]
         if "derived" in report:
             columns = list(report["derived"][0].keys()) if report["derived"] else []
             table = wandb.Table(columns=columns)
@@ -300,7 +394,7 @@ def main():
             run.log({"derived": table})
             summary = {}
             for row in report["derived"]:
-                tag = f"kv{row['kv']}_m{row['qL']}"
+                tag = f"{row['session']}/kv{row['kv']}_m{row['qL']}"
                 for key in (
                     "two_append_gain_us_per_layer",
                     "two_append_gain_ms_per_round",
