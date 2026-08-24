@@ -1901,6 +1901,13 @@ public final class Qwen36MTPBlockSession {
                 // `off`/zero unless MLX_E174_DEDUP_CENSUS=1.
                 + "xs_uniq=\(qwen35XSumsFillDistinct) "
                 + "xs_dedup=\(xsDedupSummary) "
+                // E179 launch-config cache. `cfg=0` is the off arm, where both
+                // counters must stay zero. `cfg_miss` is the number of distinct
+                // launch geometries, so the per-round delta of `cfg_miss` falls
+                // to zero once the geometry set is warm.
+                + "cfg=\(Qwen35KernelConfigCache.enabled ? 1 : 0) "
+                + "cfg_hit=\(qwen35KernelConfigCacheHits) "
+                + "cfg_miss=\(qwen35KernelConfigCacheMisses) "
                 // Head-chain prefetch witness. `pf` is the arm this process
                 // compiled for, `pf_hit` says this round consumed a step the
                 // PREVIOUS round submitted, and the running counts show what
