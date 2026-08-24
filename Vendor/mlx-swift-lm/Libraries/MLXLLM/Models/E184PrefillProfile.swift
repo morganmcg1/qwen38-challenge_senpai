@@ -6,7 +6,7 @@
 //  (the manifest names only `Qwen35.swift`, `Qwen35MTP.swift` and
 //  `Qwen35MoE.swift` in this directory), so a submission archive cannot carry
 //  it. Every call site in `Qwen35.swift` is guarded by `E184Prefill.active`,
-//  which is false unless `MLXFAST_E184_PREFILL_PROFILE=1` is exported AND the
+//  which is false unless `DARKBLOOM_E184_PREFILL_PROFILE=1` is exported AND the
 //  forward being executed is a seed-width forward.
 //
 //  WHAT IT MEASURES. E83 attributed the 512-token seed prefill by summing
@@ -20,7 +20,7 @@
 //
 //  WHAT IT COSTS. An eval boundary drains the pipeline and stops the host from
 //  running ahead of the GPU, so the bracketed total is an UPPER bound on the
-//  natural prefill wall time. `MLXFAST_E184_PREFILL_PROFILE=coarse` keeps only
+//  natural prefill wall time. `DARKBLOOM_E184_PREFILL_PROFILE=coarse` keeps only
 //  the layer-level boundaries (64 of them instead of ~400) so the distortion
 //  can itself be measured.
 //
@@ -34,9 +34,17 @@ public enum E184Prefill {
         case coarse
     }
 
+    // The `DARKBLOOM_` prefix is required, not stylistic: the runtime worker
+    // is spawned with a strict environment allowlist
+    // (`sanitizedRuntimeWorkerEnvironment`, QwenRuntimeWorker.swift:2626) that
+    // starts from an empty environment and copies in only exact names plus the
+    // `DARKBLOOM_`, `DYLD_`, `LC_`, `METAL_`, `MLX_` and `MTL_` prefixes.
+    // `MLXFAST_*` is deliberately excluded, so an `MLXFAST_`-named knob never
+    // reaches the process that runs the model. `DARKBLOOM_` is the allowlist's
+    // documented channel for model-side local tuning opt-ins.
     static let granularity: Granularity = {
         let raw = ProcessInfo.processInfo.environment[
-            "MLXFAST_E184_PREFILL_PROFILE"] ?? ""
+            "DARKBLOOM_E184_PREFILL_PROFILE"] ?? ""
         switch raw {
         case "1", "fine": return .fine
         case "coarse": return .coarse
@@ -46,11 +54,11 @@ public enum E184Prefill {
 
     /// Smallest sequence length treated as a seed-width forward.
     static let minSequenceLength = Int(
-        ProcessInfo.processInfo.environment["MLXFAST_E184_PREFILL_MIN_S"] ?? "")
+        ProcessInfo.processInfo.environment["DARKBLOOM_E184_PREFILL_MIN_S"] ?? "")
         ?? 512
 
     static let outputPath = ProcessInfo.processInfo.environment[
-        "MLXFAST_E184_PREFILL_PROFILE_OUT"]
+        "DARKBLOOM_E184_PREFILL_PROFILE_OUT"]
 
     /// True only inside a seed-width forward while profiling is enabled.
     nonisolated(unsafe) public private(set) static var active = false

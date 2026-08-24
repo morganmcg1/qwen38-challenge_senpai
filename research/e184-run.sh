@@ -49,11 +49,11 @@ run_profile() {
   export MLXFAST_SCORE_PATH="${score}"
   export MLXFAST_LOCAL_COOL_GATE="${gate}"
   if [[ "${mode}" == "off" ]]; then
-    unset MLXFAST_E184_PREFILL_PROFILE
-    unset MLXFAST_E184_PREFILL_PROFILE_OUT
+    unset DARKBLOOM_E184_PREFILL_PROFILE
+    unset DARKBLOOM_E184_PREFILL_PROFILE_OUT
   else
-    export MLXFAST_E184_PREFILL_PROFILE="${mode}"
-    export MLXFAST_E184_PREFILL_PROFILE_OUT="${profile_out}"
+    export DARKBLOOM_E184_PREFILL_PROFILE="${mode}"
+    export DARKBLOOM_E184_PREFILL_PROFILE_OUT="${profile_out}"
   fi
 
   rm -rf "${capture}" "${score}" "${profile_out}"
