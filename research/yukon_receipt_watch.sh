@@ -19,7 +19,7 @@ strip_ansi='s/\x1b\[[0-9;]*m//g'
 while true; do
   row="$(yukon submissions --all 2>/dev/null \
     | sed -e "${strip_ansi}" \
-    | awk -v p="${prefix}" '$1 ~ ("^" p) { print; exit }')"
+    | awk -v p="${prefix}" 'length($1) >= 6 && (index($1, p) == 1 || index(p, $1) == 1) { print; exit }')"
 
   if [[ -n "${row}" ]]; then
     status="$(awk '{print $3}' <<<"${row}")"
