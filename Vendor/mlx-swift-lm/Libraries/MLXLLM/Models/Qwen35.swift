@@ -7,6 +7,7 @@
 //  Port of https://github.com/ml-explore/mlx-lm/blob/main/mlx_lm/models/qwen3_5.py
 //
 
+import Cmlx
 import Foundation
 import MLX
 import MLXLMCommon
@@ -1595,6 +1596,171 @@ private func qwen35E120QMVSource(table: Bool) -> String {
         """
 }
 
+/// The launch geometry of one custom-kernel call: exactly the fields that
+/// `MLXFast.MLXFastKernel.callAsFunction` writes into an
+/// `mlx_fast_metal_kernel_config`, and nothing else. Two calls that agree here
+/// build byte-identical configs, so serving the second from a cache hands
+/// `mlx_fast_metal_kernel_apply` the arguments it would have built anyway.
+struct Qwen35KernelLaunch: Hashable {
+    let gridX: Int32
+    let gridY: Int32
+    let gridZ: Int32
+    let threadGroupX: Int32
+    let threadGroupY: Int32
+    let threadGroupZ: Int32
+    let outputShape: [Int32]
+    let outputDType: DType
+    /// `USE_TABLE`, the only template argument this path uses. `nil` means the
+    /// kernel takes no template arguments.
+    let useTable: Bool?
+
+    init(
+        grid: (Int, Int, Int), threadGroup: (Int, Int, Int),
+        outputShape: [Int32], outputDType: DType, useTable: Bool? = nil
+    ) {
+        self.gridX = Int32(grid.0)
+        self.gridY = Int32(grid.1)
+        self.gridZ = Int32(grid.2)
+        self.threadGroupX = Int32(threadGroup.0)
+        self.threadGroupY = Int32(threadGroup.1)
+        self.threadGroupZ = Int32(threadGroup.2)
+        self.outputShape = outputShape
+        self.outputDType = outputDType
+        self.useTable = useTable
+    }
+}
+
+/// A custom Metal kernel that keeps one launch config per geometry.
+///
+/// `MLXFastKernel.callAsFunction` builds a fresh `mlx_fast_metal_kernel_config`
+/// on every call: a C++ config object, the template argument, the grid, the
+/// thread group and the output argument, then frees it, and it boxes the
+/// template arguments and the inputs into Swift existential arrays on the way.
+/// Every one of those fields is a function of the launch geometry alone. One
+/// decode round launches about 387 records over about fifteen distinct
+/// geometries, so all but the first call at each geometry rebuilds a config it
+/// has already built.
+///
+/// `mlx_fast_metal_kernel_apply` copies the config and never writes to it, so a
+/// reused config is bit-exact by construction: it changes no input, no output
+/// shape, no dtype and no dispatch dimension. The per-call graph work inside
+/// `apply` -- source regeneration, kernel naming and primitive construction --
+/// is untouched.
+///
+/// The decode path builds its graph on one thread, like the counters in this
+/// file, so the cache takes no lock.
+final class Qwen35CachedKernel: @unchecked Sendable {
+    private let kernel: mlx_fast_metal_kernel
+    private var configs: [Qwen35KernelLaunch: mlx_fast_metal_kernel_config] = [:]
+
+    init(
+        name: String, inputNames: [String], outputNames: [String],
+        source: String, header: String = "", ensureRowContiguous: Bool = true
+    ) {
+        let inputNameVector = mlx_vector_string_new()
+        defer { mlx_vector_string_free(inputNameVector) }
+        for name in inputNames {
+            mlx_vector_string_append_value(inputNameVector, name)
+        }
+
+        let outputNameVector = mlx_vector_string_new()
+        defer { mlx_vector_string_free(outputNameVector) }
+        for name in outputNames {
+            mlx_vector_string_append_value(outputNameVector, name)
+        }
+
+        self.kernel = mlx_fast_metal_kernel_new(
+            name, inputNameVector, outputNameVector, source, header,
+            ensureRowContiguous, false)
+    }
+
+    deinit {
+        for (_, config) in configs {
+            mlx_fast_metal_kernel_config_free(config)
+        }
+        mlx_fast_metal_kernel_free(kernel)
+    }
+
+    private static func makeConfig(
+        _ launch: Qwen35KernelLaunch
+    ) -> mlx_fast_metal_kernel_config {
+        let config = mlx_fast_metal_kernel_config_new()
+        if let useTable = launch.useTable {
+            mlx_fast_metal_kernel_config_add_template_arg_bool(
+                config, "USE_TABLE", useTable)
+        }
+        mlx_fast_metal_kernel_config_set_grid(
+            config, launch.gridX, launch.gridY, launch.gridZ)
+        mlx_fast_metal_kernel_config_set_thread_group(
+            config, launch.threadGroupX, launch.threadGroupY, launch.threadGroupZ)
+        _ = launch.outputShape.withUnsafeBufferPointer { shape in
+            mlx_fast_metal_kernel_config_add_output_arg(
+                config, shape.baseAddress, shape.count,
+                launch.outputDType.cmlxDtype)
+        }
+        mlx_fast_metal_kernel_config_set_verbose(config, false)
+        return config
+    }
+
+    func callAsFunction(
+        _ inputs: [MLXArray], _ launch: Qwen35KernelLaunch,
+        stream: StreamOrDevice = .default
+    ) -> MLXArray {
+        let config: mlx_fast_metal_kernel_config
+        if let cached = configs[launch] {
+            qwen35KernelConfigCacheHits &+= 1
+            config = cached
+        } else {
+            config = Self.makeConfig(launch)
+            configs[launch] = config
+            qwen35KernelConfigCacheMisses &+= 1
+        }
+
+        let inputVector = withExtendedLifetime(inputs) {
+            mlx_vector_array_new_data(inputs.map { $0.ctx }, inputs.count)
+        }
+        defer { mlx_vector_array_free(inputVector) }
+
+        var result = mlx_vector_array_new()
+        defer { mlx_vector_array_free(result) }
+        let rc = mlx_fast_metal_kernel_apply(
+            &result, kernel, inputVector, config, stream.ctx)
+        precondition(rc == 0, "[Qwen35CachedKernel] apply failed with rc=\(rc)")
+
+        // ctx is a +1 object, the array takes ownership.
+        var output = mlx_array_new()
+        mlx_vector_array_get(&output, result, 0)
+        return MLXArray(output)
+    }
+}
+
+/// The launch-config cache arm.
+public enum Qwen35KernelConfigCache {
+    /// Read once at process start; it never varies with the request, the prompt
+    /// or the benchmark phase. `sanitizedRuntimeWorkerEnvironment` drops every
+    /// `MLXFAST_*` name, so the switch carries the `MLX_` prefix, and the name
+    /// is long enough for `strings` to witness it in the built worker.
+    public static let enabled: Bool = {
+        ProcessInfo.processInfo.environment["MLX_E179_CFG_CACHE_ARM"] != "off"
+    }()
+}
+
+private let qwen35CachedAffine4QMVKernel = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false),
+    header: qwen35E120QMVHeader
+)
+
+private let qwen35CachedAffine4QMVTableKernel = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true),
+    header: qwen35E120QMVHeader
+)
+
 private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
     name: "qwen35_custom_affine4_g64_qmv_wide_v1",
     inputNames: ["w", "scales", "biases", "x"],
@@ -1626,29 +1792,38 @@ private let qwen35CustomAffine4QMVTableKernel = MLXFast.metalKernel(
 /// else: three BF16 adds per group of four activations, accumulated into a
 /// float across the four groups a lane owns, in ascending `i`. Filling this
 /// table from host float32 would change the arithmetic and break exactness.
+private let qwen35CustomAffine4XSumsSource = """
+    const int xs_m = x_shape[x_ndim - 2];
+    const int xs_k = x_shape[x_ndim - 1];
+    const int xs_stride = xs_m <= 8 ? 8 : 16;
+    const uint3 xs_gid = thread_position_in_grid;
+    const int xs_lane = int(xs_gid.x);
+    const int xs_kb = int(xs_gid.y);
+    const int xs_row = int(xs_gid.z);
+    const device bfloat16_t* xm =
+        x + xs_row * xs_k + xs_kb * 512 + xs_lane * 16;
+    float s = 0.0f;
+    for (int i = 0; i < 4; i++) {
+        const vec<bfloat16_t, 4> xv =
+            *reinterpret_cast<const device vec<bfloat16_t, 4>*>(xm + 4 * i);
+        s += xv[0] + xv[1] + xv[2] + xv[3];
+    }
+    xsums[(xs_kb * 32 + xs_lane) * xs_stride + xs_row] = s;
+    """
+
 private let qwen35CustomAffine4XSumsKernel = MLXFast.metalKernel(
     name: "qwen35_custom_affine4_g64_xsums_v1",
     inputNames: ["x"],
     outputNames: ["xsums"],
-    source: """
-        const int xs_m = x_shape[x_ndim - 2];
-        const int xs_k = x_shape[x_ndim - 1];
-        const int xs_stride = xs_m <= 8 ? 8 : 16;
-        const uint3 xs_gid = thread_position_in_grid;
-        const int xs_lane = int(xs_gid.x);
-        const int xs_kb = int(xs_gid.y);
-        const int xs_row = int(xs_gid.z);
-        const device bfloat16_t* xm =
-            x + xs_row * xs_k + xs_kb * 512 + xs_lane * 16;
-        float s = 0.0f;
-        for (int i = 0; i < 4; i++) {
-            const vec<bfloat16_t, 4> xv =
-                *reinterpret_cast<const device vec<bfloat16_t, 4>*>(xm + 4 * i);
-            s += xv[0] + xv[1] + xv[2] + xv[3];
-        }
-        xsums[(xs_kb * 32 + xs_lane) * xs_stride + xs_row] = s;
-        """,
+    source: qwen35CustomAffine4XSumsSource,
     ensureRowContiguous: true
+)
+
+private let qwen35CachedAffine4XSumsKernel = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_xsums_v1",
+    inputNames: ["x"],
+    outputNames: ["xsums"],
+    source: qwen35CustomAffine4XSumsSource
 )
 
 /// Candidate-owned entry point for the wide affine-4/group-64 QMV.
@@ -1798,6 +1973,15 @@ public enum Qwen35CustomQMV {
         let k = x.dim(-1)
         let m = x.size / k
         let kBlocks = k / 512
+        if Qwen35KernelConfigCache.enabled {
+            return qwen35CachedAffine4XSumsKernel(
+                [x],
+                Qwen35KernelLaunch(
+                    grid: (32, kBlocks, m),
+                    threadGroup: (32, 1, 1),
+                    outputShape: [Int32(kBlocks * 32 * sumsStride(m))],
+                    outputDType: .float32))
+        }
         return qwen35CustomAffine4XSumsKernel(
             [x],
             grid: (32, kBlocks, m),
@@ -1828,6 +2012,16 @@ public enum Qwen35CustomQMV {
         else { return nil }
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
+        if Qwen35KernelConfigCache.enabled {
+            return qwen35CachedAffine4QMVTableKernel(
+                [w, scales, biases, x, xsums],
+                Qwen35KernelLaunch(
+                    grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1),
+                    threadGroup: (32, 2, 1),
+                    outputShape: outShape.map(Int32.init),
+                    outputDType: .bfloat16,
+                    useTable: consume))
+        }
         return qwen35CustomAffine4QMVTableKernel(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
@@ -1881,6 +2075,15 @@ public enum Qwen35CustomQMV {
 
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
+        if Qwen35KernelConfigCache.enabled {
+            return qwen35CachedAffine4QMVKernel(
+                [w, scales, biases, x],
+                Qwen35KernelLaunch(
+                    grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1),
+                    threadGroup: (32, 2, 1),
+                    outputShape: outShape.map(Int32.init),
+                    outputDType: .bfloat16))
+        }
         return qwen35CustomAffine4QMVKernel(
             [w, scales, biases, x],
             grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1),
@@ -4487,6 +4690,13 @@ public nonisolated(unsafe) var qwen35XSumsStandaloneFills: Int = 0
 /// per-round delta against `qwen35XSumsStandaloneFills` gives the round's
 /// duplicate fill count. Stays zero unless `MLX_E174_DEDUP_CENSUS=1`.
 public nonisolated(unsafe) var qwen35XSumsFillDistinct: Int = 0
+
+/// Launch-config cache census. `Misses` is also the number of distinct launch
+/// geometries the process has seen, because every miss inserts a new key, so
+/// the pair witnesses both the hit rate and the size of the geometry set. Both
+/// stay zero when the cache arm is off.
+public nonisolated(unsafe) var qwen35KernelConfigCacheHits: Int = 0
+public nonisolated(unsafe) var qwen35KernelConfigCacheMisses: Int = 0
 
 /// Derived-index geometry this process built, for the arm witness. Zero until
 /// `buildDerivedClusterIndex` runs, which happens once during the untimed warm.
