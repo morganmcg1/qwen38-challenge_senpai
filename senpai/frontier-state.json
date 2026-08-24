@@ -2229,8 +2229,8 @@
    "holdRule": "fires after the cap-4 receipt 90c131dc is terminal and read; Edward builds/gates/freezes now and holds the SHA (F4 09:33Z)"
   }
  },
- "lastAdvisorUpdate": "2026-08-24T09:40Z ledger entry 373: cap-4 receipt 90c131dc IN FLIGHT (frozen 99959d49), FINDINGs 444-445",
- "ledgerEntry": 373,
+ "lastAdvisorUpdate": "2026-08-24T09:48Z ledger entry 374: E171 MERGED (9859a0a9), note 04 restored, FINDING 446, FINDING 444 qualifier, E176 assigned",
+ "ledgerEntry": 374,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2386,8 +2386,9 @@
   "441": "SIDECAR FACTOR NEVER EXISTED (Thorfinn r2 \u00a70 + Edward E175 interim 1, independent simultaneous source proofs): D's Qwen35.swift is byte-identical to organizer main; Qwen35XSumsSidecar/publish/take and the qwen35_custom_affine4_g64_qmv_* consumers are ORGANIZER code present in all four receipts. The campaign 88-line Qwen35.swift delta = counters + an env knob returning the organizer constant + research-only defaults - inert on ranked. Q's four files contain zero xsums references in both versions; Q = qmm_t software pipelining (shift_dst, pipelined k-loop, double-width Ws, _nax 32KiB predicate) serving large-M traffic (prefill above all); the sidecar serves the m=4..9 decode QMV replica. DISJOINT by construction. Alphonse's census measured organizer-code coupling.",
   "442": "E175 RULING: original four-file candidate = A + Q; F1/F2 amendments withdrawn (premise dissolved). Predictions (two routes, Thorfinn r2): published 3.7328 (mean7) / 3.7267 (score-setting prompts) - straddles crown 3.72911 within +/-0.005 vs receipt sd ~0.010, genuine coin flip, every outcome decisive. Edward's drift objection answered by four bounds; his byte-identical A-replay recorded as STANDING CONTINGENCY if E175 lands ~3.708 or <=3.69. Fire order: after cap-4 receipt.",
   "443": "Edward first-hand B-tree verification: B = organizer + Q + provably inert instrumentation (BlockSession +30 = unset E159 env knob + trace fields; Qwen35.swift 88 inert). C provenance rests on Edward's own first-hand fda590bb build+inspection (commit 080d4cd3 no longer fetchable) - flagged, accepted. MLX routing: cells the m=2..9 replica declines fall to MLX; M>=vector_limit -> qmm, qmm_nax when is_nax_available && transpose && K%64==0. OPEN PUZZLE: why Q helps most at LOW edl - leading next-assignment candidate (Thorfinn), connects to Q-serves-prefill.",
-  "444": "CROSS-HOST Q CORROBORATION. Askeladd's r1-vs-r0-cap composite (+0.67 % local cost of organizer-pure vs campaign tree at digit-identical cap-4 schedule) decomposes with local instrumentation tax ~+0.21 % (E167 B3) to local Q ~= -0.88 %, vs ranked Q = -0.6691 % (FINDING 440). Same sign, ~0.76 transfer ratio; first independent cross-host confirmation that Q is real. Sign flip vs ranked B-A +0.20 % explained by instrumentation taxing ranked ~4x harder. W&B u2g6yfjx + f4np59rg.",
-  "445": "CAP-4 SCHEDULE INVARIANCE ACROSS TREES. The cap-4 depth schedule is digit-identical between the campaign tree (E168 r0 cap arm) and organizer-pure (r1): 111 rounds, width histogram {2:1,4:4,5:106}, acceptance 0.919908466819222, edl 3.936936936936937. Depth policy is fully decoupled from kernel/instrumentation state; the reverted campaign work did not interact with the depth controller. Makes tree-swap timing contrasts schedule-clean by construction."
+  "444": "CROSS-HOST Q CORROBORATION. Askeladd's r1-vs-r0-cap composite (+0.67 % local cost of organizer-pure vs campaign tree at digit-identical cap-4 schedule) decomposes with local instrumentation tax ~+0.21 % (E167 B3) to local Q ~= -0.88 %, vs ranked Q = -0.6691 % (FINDING 440). Same sign, ~0.76 transfer ratio; first independent cross-host confirmation that Q is real. Sign flip vs ranked B-A +0.20 % explained by instrumentation taxing ranked ~4x harder. W&B u2g6yfjx + f4np59rg. QUALIFIER (askeladd, accepted): local Q ~= -0.88% is a DERIVED quantity (measured composite +0.67% at 3.5 sigma vs the 0.189% null, plus E167's ~+0.21% local instrumentation tax, plus the assumption the inert deltas contribute ~0). Treat as sign-and-rough-magnitude corroboration, not a calibrated cross-host transfer coefficient.",
+  "445": "CAP-4 SCHEDULE INVARIANCE ACROSS TREES. The cap-4 depth schedule is digit-identical between the campaign tree (E168 r0 cap arm) and organizer-pure (r1): 111 rounds, width histogram {2:1,4:4,5:106}, acceptance 0.919908466819222, edl 3.936936936936937. Depth policy is fully decoupled from kernel/instrumentation state; the reverted campaign work did not interact with the depth controller. Makes tree-swap timing contrasts schedule-clean by construction.",
+  "446": "ORGANIZER-PURE SUITE BASELINE. swift test does not compile on organizer 0863b06a with this toolchain (QwenMTPVerbTests.swift:755 concatenated string literals cannot convert to Comment; campaign one-hunk fix applies, Tests/ is outside editablePaths). With the fix: 657 tests, 37 suites, 9 failing test functions, ALL pre-existing organizer state (8 already red on the campaign base; the 9th, theQwenMTPTrackIsArmedOnQwen38, is stale organizer test code expecting the QWEN38-PENDING-RELEASE placeholder in a fixture organizer main now ships armed). Cap-4 frozen tree 99959d49: no regression from the literal. Any failure OUTSIDE this set on an organizer-based tree is signal."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2555,7 +2556,15 @@
   "medianCheck": "mean of 3.51403 and 3.80239 = 3.658209010 reproduces the published score exactly"
  },
  "e165RankedHarm": "E165 head-prefetch: +0.69..+1.56 % candidate-leg harm on ranked M5 (FINDING 440); DROPPED from ship set; maintained base keeps it opt-in (default-off); mechanism deletion is cleanup backlog; never flip the default.",
- "e171MergePlan": "r3 requested 09:25Z: one commit restores all non-research/ paths to merge-base content so the PR merges only the analysis files; frozen 4ba44f82 stays reachable through branch history; typed result re-posted at r3; then merge.",
+ "e171MergePlan": {
+  "status": "EXECUTED",
+  "mergeCommit": "9859a0a9439c27b2737b916b96f31553de454db6",
+  "resultHead": "0ba2395cc304470c672cab03c6bdd3b53c7c27b3",
+  "revision": "r3",
+  "method": "merge (true merge to preserve 4ba44f82 provenance ancestry)",
+  "baseDiff": "six research/ files, 1009 insertions, zero deletions; scored surface untouched",
+  "note04": "senpai/submissions/04-e171-instrumentation-strip.md deleted by the merge-clean criterion, restored by the advisor from 4ba44f82 in ledger entry 374"
+ },
  "qLocalRankedCrossCheck": {
   "finding": 444,
   "statement": "Askeladd r1 vs r0-cap (identical cap-4 schedule, digit-identical histogram): organizer-pure is +0.67 % slower LOCAL than the campaign tree. Composite removes Q + instrumentation + inert deltas at once; with local instrumentation tax ~+0.21 % (E167 B3), local Q ~= -0.88 %. Ranked Q = -0.6691 % (B-C, FINDING 440). Same sign, transfer ratio ~0.76: first cross-host corroboration that Q is a real hardware-portable mechanism, not a receipt-channel artifact.",
@@ -2564,5 +2573,18 @@
    "u2g6yfjx",
    "f4np59rg"
   ]
+ },
+ "yukonTableTruncation": {
+  "behaviour": "yukon submissions truncates the submission-ID column to 7 characters",
+  "hazard": "a watcher anchoring a match on a longer prefix reports \"not listed\" for a live submission",
+  "fix": "askeladd 43995554: matcher accepts either direction of prefix containment; watcher job 1f4d2080",
+  "ledger": 374
+ },
+ "qLowEdlPuzzle": {
+  "status": "E176 assigned to qwen-thorfinn (desk-first)",
+  "observation": "Q (B-C) helps most at LOW edl: travel -1.14%, drama -0.68%, botany -0.25%; ~0 on plutarch. Fixed-prefill prior inverted twice: plutarch carries the same 512-token prefill and shows ~0, and a fixed prefill saving would give the largest percentage on the shortest legs (high edl), the opposite of observed.",
+  "absoluteScale": "travel ~91 ms/leg saved vs botany ~12 ms/leg; not constant per round (650 vs 167 us/round)",
+  "mechanismHypothesis": "Q edits qmm_t/qmm_t_nax only. Decode consumers must be non-replica-routable cells (e.g. kv projections n=1024 < 4096) that cross M >= get_qmv_batch_limit(K,N) into the qmm path. Consumption then depends on the per-round M distribution, which differs by prompt.",
+  "compositionCritical": "Cap-4 truncates the schedule to M <= 5 ({2:1,4:4,5:106} local). If Q's decode consumers need M >= 6, Q's -0.67% does NOT survive under cap-4 and the cap4+Q composition is mispriced. E176 answers this before the next composition fires."
  }
 }

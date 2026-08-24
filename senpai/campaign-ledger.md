@@ -70744,3 +70744,71 @@ the depth controller.
 - Thorfinn: r3 merge-clean commit pending on PR 171; merge follows his typed r3 result.
 - Alphonse: 8-leg palindrome screen running; `f−r` per-fill+per-record coefficient expected
   ~11:30Z; pivot ruling (e173 item 2 vs item 3) follows.
+
+---
+
+## Entry 374 — 2026-08-24T09:48Z — E171 MERGED (`9859a0a9`); note 04 restored; FINDING 446; FINDING 444 qualifier; E176 assigned
+
+### 1. E171 merged
+
+PR 171 (qwen-thorfinn) merged at r3, head `0ba2395c`, merge commit `9859a0a9`, method
+`merge` — a true merge so the frozen receipt-D tree `4ba44f82` enters the base ancestry.
+Result accepted on the current base first (delta `f9ce6465..f3a93991` was advisor records
+only). The PR contributes six `research/` analysis files (1009 insertions, zero deletions);
+the scored surface is untouched. The r3 typed result carries the full decomposition of
+Entry 372 (closed factor system, Q stays, E165 dropped, tau < 0, 0.189% null), W&B
+[`f4np59rg`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/f4np59rg),
+[`fdi6ute3`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/fdi6ute3),
+[`wsxn283s`](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/wsxn283s).
+
+Thorfinn's flagged judgement call is ruled and closed: his merge-clean commit deleted
+`senpai/submissions/04-e171-instrumentation-strip.md` to satisfy the literal "only research/"
+criterion. Correct execution, correct flag. Submission notes are advisor-owned campaign
+records, so this commit restores note 04 from `4ba44f82`. The notes series (01, 02, 04) is
+complete again in the base.
+
+### 2. FINDING 444 qualifier (Askeladd, accepted)
+
+Local Q ≈ −0.88% is a derived quantity: measured composite +0.67% (3.5σ vs the 0.189% null) +
+E167's ~+0.21% local instrumentation tax + the assumption the inert deltas contribute ~0.
+Treat FINDING 444 as sign-and-rough-magnitude corroboration that Q is real, not as a
+calibrated cross-host transfer coefficient.
+
+### 3. FINDING 446 — organizer-pure suite baseline
+
+The Swift suite does not compile on organizer `0863b06a` with this toolchain
+(`QwenMTPVerbTests.swift:755`; the campaign one-hunk fix applies; `Tests/` is outside
+`editablePaths` so the fix cannot reach an archive). With the fix: 657 tests, 9 failing test
+functions, all pre-existing organizer state — 8 already red on the campaign base, and the 9th
+(`theQwenMTPTrackIsArmedOnQwen38`) expects the `QWEN38-PENDING-RELEASE` placeholder in a
+fixture organizer main now ships armed. Cap-4 frozen tree `99959d49`: no regression from the
+literal (Askeladd, behind receipt `90c131dc`). Forwarded to Edward (PR 174 F5) before his
+suite run. Standing rule: on an organizer-based tree, any failure OUTSIDE this set is signal.
+
+### 4. Operational — Yukon table truncation
+
+`yukon submissions` truncates the submission-ID column to 7 characters; Askeladd's first
+watcher anchored on an 8-char prefix and reported "not listed" for six minutes on a live
+submission. Fixed (`43995554`, watcher job `1f4d2080`, prefix containment both directions).
+Receipt `90c131dc` still validating as of 09:34Z. Runbook-worthy alongside the 5 KiB note
+minimum.
+
+### 5. E176 assigned to Thorfinn — Q's ranked mechanism and the cap-4 composition question
+
+Q helps most at LOW edl (travel −1.14%, botany −0.25%) and shows ~0 on plutarch. The
+fixed-prefill prior is inverted twice: plutarch carries the same 512-token prefill and shows
+nothing, and a fixed prefill saving would favor the shortest legs (high edl) in percentage —
+the opposite of observed. So Q's ranked channel is drafting-round-coupled, not prefill. Q
+edits only `qmm_t`/`qmm_t_nax`; decode consumers must be non-replica-routable cells (e.g. kv
+projections n=1024 < 4096) crossing `M >= get_qmv_batch_limit(K,N)` into the qmm path.
+Composition-critical: cap-4 truncates the schedule to M ≤ 5; if Q's decode consumers need
+M ≥ 6, Q's −0.67% does not survive under cap-4 and the cap4+Q composition is mispriced. E176
+is desk-first (cell census + routing table + model fit to the ranked Q 8-vector), then the
+smallest local probe.
+
+### 6. Board state after this entry
+
+- In flight: `90c131dc` (cap-4, Askeladd) validating; watcher `1f4d2080`.
+- Frozen next: Edward's E175 four-file A+Q (building; suite heads-up delivered).
+- Thorfinn: E176 assigned (desk-first; host needs full recovery sequence before GPU legs).
+- Alphonse: 8-leg screen running; coefficients ~11:30Z.
