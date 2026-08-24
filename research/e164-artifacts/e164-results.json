@@ -1,0 +1,790 @@
+{
+  "experiment": "e164-ranked-ab-error-bar",
+  "harness": "ranked",
+  "harness_invariants": {
+    "aggregation": "median_of_per_prompt_raw_serial_relative_speedup",
+    "decode_tokens": 512,
+    "median_rule": "even_n_mean_of_two_central_order_statistics",
+    "mode": "qwen-mtp-paired-decode-only",
+    "pairs_per_prompt": 1,
+    "prompt_count": 8,
+    "prompt_sha256_8": [
+      "919318e1",
+      "192fb621",
+      "4b9e88cd",
+      "a2ea8b60",
+      "00142a44",
+      "c1ec5866",
+      "ea82dcb5",
+      "3b10cb4d"
+    ],
+    "qwen_mtp_weights_hash": "b53e4991737cdf50827e518e7559628874d3ff6d5f63bebc057ddbb16a89e2cd",
+    "score_anchor": "serial = 1.0",
+    "scoring_normalized": false
+  },
+  "provenance": {
+    "board_path": "/tmp/yukon-board/full.json",
+    "created_first": "2026-08-14T23:49:37.150Z",
+    "created_last": "2026-08-23T23:09:05.130Z",
+    "rows_scored_with_per_prompt": 946,
+    "rows_total": 1285
+  },
+  "q1_serial_dispersion": {
+    "by_day": [
+      {
+        "day": "2026-08-15",
+        "mean_s_per_token": 0.03798880251898734,
+        "median_s_per_token": 0.03797438775,
+        "n_receipts": 79,
+        "within_day_rel_sd_pct": 0.23426326147271045
+      },
+      {
+        "day": "2026-08-16",
+        "mean_s_per_token": 0.037996609907661294,
+        "median_s_per_token": 0.03798673245,
+        "n_receipts": 93,
+        "within_day_rel_sd_pct": 0.22248841345505446
+      },
+      {
+        "day": "2026-08-17",
+        "mean_s_per_token": 0.03799681857395833,
+        "median_s_per_token": 0.03799107715,
+        "n_receipts": 120,
+        "within_day_rel_sd_pct": 0.22991553913820378
+      },
+      {
+        "day": "2026-08-18",
+        "mean_s_per_token": 0.03799255361901261,
+        "median_s_per_token": 0.0379842657,
+        "n_receipts": 119,
+        "within_day_rel_sd_pct": 0.2210919872645101
+      },
+      {
+        "day": "2026-08-19",
+        "mean_s_per_token": 0.03799452313943966,
+        "median_s_per_token": 0.03798361225,
+        "n_receipts": 116,
+        "within_day_rel_sd_pct": 0.21838303745839943
+      },
+      {
+        "day": "2026-08-20",
+        "mean_s_per_token": 0.03799757374891305,
+        "median_s_per_token": 0.03799132225,
+        "n_receipts": 115,
+        "within_day_rel_sd_pct": 0.22518575767783885
+      },
+      {
+        "day": "2026-08-21",
+        "mean_s_per_token": 0.03799769847237394,
+        "median_s_per_token": 0.037988837,
+        "n_receipts": 119,
+        "within_day_rel_sd_pct": 0.24948143549831733
+      },
+      {
+        "day": "2026-08-22",
+        "mean_s_per_token": 0.03795578137654639,
+        "median_s_per_token": 0.037945164,
+        "n_receipts": 97,
+        "within_day_rel_sd_pct": 0.21623592308386327
+      },
+      {
+        "day": "2026-08-23",
+        "mean_s_per_token": 0.03792906157413793,
+        "median_s_per_token": 0.037917184500000006,
+        "n_receipts": 87,
+        "within_day_rel_sd_pct": 0.2326099366191276
+      }
+    ],
+    "channel": "serial_seconds_per_token_mean",
+    "cross_prompt_correlation": {
+      "fraction_positive": 1.0,
+      "matrix": [
+        [
+          1.0,
+          0.14688031186437142,
+          0.28348523008843174,
+          0.19109925954899068,
+          0.1784543907161861,
+          0.16972949078382019,
+          0.2187519746310456,
+          0.17071166518183878
+        ],
+        [
+          0.1468803118643714,
+          1.0,
+          0.18293310196528306,
+          0.15998931121763632,
+          0.13912901881833062,
+          0.17315745513038058,
+          0.12483466237214098,
+          0.21330487120742456
+        ],
+        [
+          0.28348523008843174,
+          0.18293310196528306,
+          1.0,
+          0.1863914749724384,
+          0.23735949427852618,
+          0.16623663028537836,
+          0.22731582509031492,
+          0.16810462582412347
+        ],
+        [
+          0.19109925954899068,
+          0.15998931121763635,
+          0.1863914749724384,
+          1.0,
+          0.17674343151752495,
+          0.1839559337134506,
+          0.14176406314336779,
+          0.178455186049057
+        ],
+        [
+          0.1784543907161861,
+          0.1391290188183306,
+          0.23735949427852618,
+          0.17674343151752495,
+          1.0,
+          0.17974882594345976,
+          0.15805393620203606,
+          0.17746648729110778
+        ],
+        [
+          0.16972949078382019,
+          0.17315745513038056,
+          0.16623663028537836,
+          0.18395593371345062,
+          0.17974882594345976,
+          1.0,
+          0.13723220511593784,
+          0.1701073154605953
+        ],
+        [
+          0.2187519746310456,
+          0.12483466237214098,
+          0.22731582509031495,
+          0.14176406314336779,
+          0.1580539362020361,
+          0.13723220511593787,
+          1.0,
+          0.14976475009530577
+        ],
+        [
+          0.17071166518183878,
+          0.21330487120742456,
+          0.16810462582412347,
+          0.17845518604905702,
+          0.17746648729110778,
+          0.17010731546059527,
+          0.14976475009530577,
+          1.0
+        ]
+      ],
+      "max_off_diagonal": 0.28348523008843174,
+      "mean_off_diagonal": 0.1782557474467323,
+      "min_off_diagonal": 0.12483466237214098,
+      "n_off_diagonal_pairs": 28
+    },
+    "drift": {
+      "between_day_rel_sd_of_means_pct": 0.0638940938026083,
+      "day_median_max": 0.03799132225,
+      "day_median_min": 0.037917184500000006,
+      "mean_within_day_rel_sd_pct": 0.2277394768520028,
+      "n_days": 9
+    },
+    "finding_329_check": {
+      "claim": "baseline serial daily median 0.03799 +/- 0.0001, flat 2026-08-14..08-23",
+      "daily_median_range": [
+        0.037917184500000006,
+        0.03799132225
+      ],
+      "pooled_mean_s_per_token": 0.03798510924612843,
+      "pooled_sd_s_per_token": 8.921813404369002e-05,
+      "verdict": "confirmed"
+    },
+    "harness": "ranked",
+    "icc": {
+      "design_effect": 2.2511179397443914,
+      "icc": 0.1787311342491988,
+      "icc_ci95": [
+        0.15506734343726278,
+        0.20249814726415064
+      ],
+      "k_prompts": 8,
+      "n_receipts": 946,
+      "sd_of_run_mean_if_independent_pct": 0.07502518368372928,
+      "sd_of_run_mean_measured_pct": 0.12421198790487846,
+      "sd_run_level_pct": 0.09899413999073055,
+      "sd_total_pct": 0.23415820559340408,
+      "sd_within_receipt_pct": 0.21220326457012514,
+      "se_inflation_factor": 1.5003726003044682
+    },
+    "narrow_window": {
+      "bucket": "hour",
+      "icc": {
+        "design_effect": 2.022756661742645,
+        "icc": 0.14610809453466359,
+        "k_prompts": 8,
+        "n_receipts": 107,
+        "sd_of_run_mean_if_independent_pct": 0.07969620683338731,
+        "sd_of_run_mean_measured_pct": 0.1226614299497151,
+        "sd_run_level_pct": 0.09324345024546665,
+        "sd_total_pct": 0.24393897614509907,
+        "sd_within_receipt_pct": 0.22541491314693535,
+        "se_inflation_factor": 1.4222364999333426
+      },
+      "n_receipts": 107,
+      "rel_sd_pct": 0.24552010954423176
+    },
+    "per_prompt": [
+      {
+        "max": 0.0385686287,
+        "mean_s_per_token": 0.037979209126109935,
+        "min": 0.0377260451,
+        "p2_5": 0.03783241965,
+        "p97_5": 0.03815514665,
+        "prompt": "919318e1",
+        "rel_sd_pct": 0.24485221997898754,
+        "sd_s_per_token": 9.29929366757424e-05
+      },
+      {
+        "max": 0.0385044727,
+        "mean_s_per_token": 0.03799011286458774,
+        "min": 0.0377740527,
+        "p2_5": 0.0378534408125,
+        "p97_5": 0.038153734012499996,
+        "prompt": "192fb621",
+        "rel_sd_pct": 0.23497825107623938,
+        "sd_s_per_token": 8.92685027910977e-05
+      },
+      {
+        "max": 0.0385014864,
+        "mean_s_per_token": 0.037979217426321356,
+        "min": 0.0377668166,
+        "p2_5": 0.0378387882625,
+        "p97_5": 0.0381542215,
+        "prompt": "4b9e88cd",
+        "rel_sd_pct": 0.2381367253904793,
+        "sd_s_per_token": 9.044246470797195e-05
+      },
+      {
+        "max": 0.038540127,
+        "mean_s_per_token": 0.03799026990613107,
+        "min": 0.037787504,
+        "p2_5": 0.0378538653625,
+        "p97_5": 0.038157868275,
+        "prompt": "a2ea8b60",
+        "rel_sd_pct": 0.23503216901773846,
+        "sd_s_per_token": 8.928935537607302e-05
+      },
+      {
+        "max": 0.03849283,
+        "mean_s_per_token": 0.03798085268689218,
+        "min": 0.037765705,
+        "p2_5": 0.0378403858375,
+        "p97_5": 0.03815235905,
+        "prompt": "00142a44",
+        "rel_sd_pct": 0.23876779557567096,
+        "sd_s_per_token": 9.068604470133544e-05
+      },
+      {
+        "max": 0.0384895899,
+        "mean_s_per_token": 0.037987361057082454,
+        "min": 0.0377699668,
+        "p2_5": 0.0378520508625,
+        "p97_5": 0.0381509453375,
+        "prompt": "c1ec5866",
+        "rel_sd_pct": 0.21298263544669732,
+        "sd_s_per_token": 8.090648271602659e-05
+      },
+      {
+        "max": 0.0385442637,
+        "mean_s_per_token": 0.03797969518319239,
+        "min": 0.0377647753,
+        "p2_5": 0.0378316553625,
+        "p97_5": 0.0381481795625,
+        "prompt": "ea82dcb5",
+        "rel_sd_pct": 0.23325933489152423,
+        "sd_s_per_token": 8.859118437814283e-05
+      },
+      {
+        "max": 0.0385742735,
+        "mean_s_per_token": 0.03799415571871036,
+        "min": 0.0377584375,
+        "p2_5": 0.037851427675,
+        "p97_5": 0.0381624255625,
+        "prompt": "3b10cb4d",
+        "rel_sd_pct": 0.23680491787805663,
+        "sd_s_per_token": 8.997202924815302e-05
+      }
+    ],
+    "pooled": {
+      "mean_s_per_token": 0.03798510924612843,
+      "n_cells": 7568,
+      "p2_5": 0.0378448382625,
+      "p97_5": 0.038155664685,
+      "rel_sd_pct": 0.23487660247491174,
+      "sd_s_per_token": 8.921813404369002e-05
+    }
+  },
+  "q2_raw_versus_candidate": {
+    "cross_leg_coupling": {
+      "corr_is_attenuated_by_mechanism_variance": true,
+      "corr_per_cell_serial_vs_mtp": 0.024960062709455763,
+      "corr_run_mean_serial_vs_mtp": 0.051957358613586774,
+      "n_receipts": 787,
+      "regression_slope_ci95": [
+        -0.3698766234002166,
+        4.140031221896691
+      ],
+      "regression_slope_mtp_on_serial": 1.9141762131900386,
+      "sd_run_mean_mtp_pct": 4.10654794429327,
+      "sd_run_mean_serial_pct": 0.11146590514253255,
+      "verdict": "the board cannot resolve the cross-leg coupling slope: the candidate leg's mechanism variance is 30x the serial leg's total variance"
+    },
+    "deliverable_se_single_receipt_pair_pct": {
+      "candidate_leg_mean_of_8_upper_bound": 5.8075357973548964,
+      "note": "the candidate and raw figures are upper bounds only: no two board receipts share source, so every candidate-leg set carries real mechanism differences",
+      "raw_mean_of_8_upper_bound": 5.801481661689177,
+      "serial_leg_mean_of_8_exact": 0.17566227790440198
+    },
+    "fingerprint_replicate_dispersion": {
+      "mtp": {
+        "n_receipts_in_groups": 787,
+        "sd_of_run_mean_of_8_pct": 4.10654794429327,
+        "sd_within_receipt_pct": 1.175075313724625,
+        "se_single_receipt_pair_pct": 5.8075357973548964
+      },
+      "prefill": {
+        "n_receipts_in_groups": 690,
+        "sd_of_run_mean_of_8_pct": 0.9298217880101565,
+        "sd_within_receipt_pct": 0.4413115409288535,
+        "se_single_receipt_pair_pct": 1.3149665831939643
+      },
+      "raw": {
+        "n_receipts_in_groups": 787,
+        "sd_of_run_mean_of_8_pct": 4.102267023909817,
+        "sd_within_receipt_pct": 1.190721620979334,
+        "se_single_receipt_pair_pct": 5.801481661689177
+      },
+      "serial": {
+        "n_receipts_in_groups": 787,
+        "sd_of_run_mean_of_8_pct": 0.11146590514253255,
+        "sd_within_receipt_pct": 0.19173222153228014,
+        "se_single_receipt_pair_pct": 0.15763659479476247
+      }
+    },
+    "harness": "ranked",
+    "icc_inflation_factor": 1.5003726003044682,
+    "prior_art_reconciliation": {
+      "FINDING_207_serial_mean8_diff_of_two_pct": 0.1517,
+      "FINDING_20_icc": 0.131,
+      "FINDING_20_sd_run_level_pct": 0.0821,
+      "FINDING_20_sd_within_pct": 0.212,
+      "FINDING_211_candidate_mean8_diff_of_two_pct": 0.0731,
+      "FINDING_211_serial_mean8_diff_of_two_pct": 0.1695,
+      "comment": "FINDING 20 and ledger item 4030 already measured a run-level serial component. This experiment reproduces both at larger n and does not overturn them.",
+      "ledger_L4030_common_mode_sd_pct": 0.0978
+    },
+    "raw_identity": {
+      "expression": "raw_ratio_of_means == serial_seconds_per_token_mean / mtp_seconds_per_token_mean",
+      "max_relative_deviation": 5.656441644864315e-11
+    },
+    "replicates_by_behaviour_fingerprint": {
+      "largest_groups": [
+        228,
+        203,
+        88,
+        39,
+        25,
+        24,
+        22,
+        21
+      ],
+      "n_groups": 40,
+      "n_pairs": 52476,
+      "n_receipts": 787
+    },
+    "replicates_by_promotedSourceRef": {
+      "n_groups": 0,
+      "n_pairs": 0,
+      "n_receipts": 0
+    },
+    "replicates_by_submissionCommitSha": {
+      "n_groups": 0,
+      "n_pairs": 0,
+      "n_receipts": 0
+    },
+    "same_solver_same_fingerprint": {
+      "mtp": {
+        "median_abs_mean8_pct": 0.9150859576051675,
+        "p10_abs_mean8_pct": 0.04517145927999955,
+        "p25_abs_mean8_pct": 0.1966239320584616,
+        "sd_of_mean8_pair_delta_pct": 2.8788078793296044
+      },
+      "n_pairs": 2991,
+      "raw": {
+        "median_abs_mean8_pct": 0.8918288793028972,
+        "p10_abs_mean8_pct": 0.07942010020620394,
+        "p25_abs_mean8_pct": 0.24440904045902948,
+        "sd_of_mean8_pair_delta_pct": 2.8334482343578835
+      },
+      "serial": {
+        "median_abs_mean8_pct": 0.11746864192457573,
+        "p10_abs_mean8_pct": 0.02047406581701383,
+        "p25_abs_mean8_pct": 0.05253807911984182,
+        "sd_of_mean8_pair_delta_pct": 0.16495151524127635
+      }
+    },
+    "serial_true_null": {
+      "empirical_pair_draws": {
+        "abs_z_naive_max": 34.53463967843903,
+        "abs_z_naive_p50": 1.2348573130831992,
+        "abs_z_naive_p95": 4.299534310819019,
+        "abs_z_naive_p97_5": 5.236041684193954,
+        "abs_z_naive_p99": 6.529515366934264,
+        "false_positive_rate_at_z_1_96": 0.2995975935695052,
+        "false_positive_rate_at_z_3": 0.13519154345889348,
+        "false_positive_rate_at_z_4_16": 0.055070621327540814,
+        "mean_within_pair_sd_pct": 0.2824380479610413,
+        "n_pairs": 199798,
+        "sd_of_mean8_pct": 0.1760588041844215
+      },
+      "note": "the pinned serial build is byte-identical on every receipt, so this is a true null",
+      "sd_of_run_mean_of_8_pct": 0.12421198790487846,
+      "se_single_receipt_pair_pct": 0.17566227790440198
+    },
+    "variance_identity": {
+      "cov_needed_for_raw_to_beat_mtp": 0.006212324004622032,
+      "cov_serial_mtp_run_mean": 0.023782965676553955,
+      "measured_sd_raw_run_mean_pct": 4.102267023909817,
+      "note": "exact in logs because raw == serial / mtp; measured on mechanism-contaminated data",
+      "predicted_sd_raw_run_mean_pct": 4.102267023907076,
+      "raw_advantage_pct_of_mtp_sd": 0.10424620494553505,
+      "raw_tighter_than_mtp": true,
+      "var_mtp_run_mean": 16.86373601877928,
+      "var_serial_run_mean": 0.012424648009244064
+    }
+  },
+  "q3_reprice_finding_259": {
+    "arm": {
+      "created": "2026-08-23T10:23:07.251Z",
+      "id8": "c47b45be",
+      "score": 3.64961554659287
+    },
+    "base": {
+      "created": "2026-08-23T00:04:10.820Z",
+      "id8": "684821ed",
+      "score": 3.71959722580154
+    },
+    "denominators": {
+      "A_naive_between_prompt": {
+        "basis": "sd of the 8 per-prompt deltas / sqrt(8), as FINDING 259 quoted it",
+        "se_pct": 0.25421381464449605,
+        "valid": false,
+        "why": "treats 8 prompts as independent replicates of a run-level effect",
+        "z": 4.162910949823899
+      },
+      "B_naive_times_icc_inflation": {
+        "basis": "denominator A inflated by sqrt(1 + 7 * ICC) = 1.500",
+        "se_pct": 0.38141544211148065,
+        "valid": true,
+        "why": "corrects A for within-run correlation measured on the pinned serial leg",
+        "z": 2.7745847591319155
+      },
+      "C_serial_true_null": {
+        "basis": "measured sd of the mean-of-8 pair delta on the byte-identical serial leg",
+        "se_pct": 0.17566227790440198,
+        "valid": true,
+        "why": "exact, but assumes the candidate leg is no noisier than the serial leg",
+        "z": 6.024454909755876
+      },
+      "D_same_arm_replicates": {
+        "basis": "spread of the two independent ranked receipts of this same mechanism",
+        "dof": 1,
+        "se_pct": 0.7758663659749659,
+        "valid": true,
+        "why": "the only denominator measured on the candidate leg for THIS arm",
+        "z": 1.3639842104126236
+      }
+    },
+    "harness": "ranked",
+    "legs": {
+      "candidate": {
+        "k": 8,
+        "mean_pct": 1.0582694725800756,
+        "n_positive": 7,
+        "sd_pct": 0.719025248825693,
+        "se_naive_pct": 0.25421381464449605,
+        "sign_test_p": 0.0703125,
+        "z_naive": 4.162910949823899
+      },
+      "raw": {
+        "k": 8,
+        "mean_pct": -1.2846365270285889,
+        "n_positive": 1,
+        "sd_pct": 0.9174513728730133,
+        "se_naive_pct": 0.3243680435837077,
+        "sign_test_p": 0.0703125,
+        "z_naive": -3.960428755051114
+      },
+      "serial": {
+        "k": 8,
+        "mean_pct": -0.24485742088703188,
+        "n_positive": 2,
+        "sd_pct": 0.49533423393033826,
+        "se_naive_pct": 0.1751270978829929,
+        "sign_test_p": 0.2890625,
+        "z_naive": -1.3981698083675644
+      }
+    },
+    "opposite_sign_argument": {
+      "beta": 1.9141762131900386,
+      "beta_ci95": [
+        -0.3698766234002166,
+        4.140031221896691
+      ],
+      "claim": "the serial leg moved -0.2449 %, so the run was fast; a fast run cannot make the candidate slow, therefore drift cannot explain the effect",
+      "implied_candidate_drift_pct": -0.46870025068501814,
+      "implied_candidate_drift_range_pct": [
+        -1.013717367385411,
+        0.09056703605218103
+      ],
+      "observed_serial_pair_delta_pct": -0.24485742088703188,
+      "requires": "a positive cross-leg coupling slope beta",
+      "verdict": "directionally supported but not quantitatively usable: beta = 1.91 with CI [-0.37, 4.14] spans zero, so the board cannot confirm that a fast serial leg implies a fast candidate leg"
+    },
+    "pair": "684821ed -> c47b45be",
+    "per_prompt": [
+      {
+        "cand_delta_pct": 1.3162190031553722,
+        "edl_arm": 4.381818181818182,
+        "edl_base": 4.381818181818182,
+        "edl_identical": true,
+        "nondraft_identical": true,
+        "prompt": "919318e1",
+        "raw_delta_pct": -1.4773810115034536,
+        "serial_delta_pct": -0.18060757630803392
+      },
+      {
+        "cand_delta_pct": 1.351161550063007,
+        "edl_arm": 6.148148148148148,
+        "edl_base": 6.148148148148148,
+        "edl_identical": true,
+        "nondraft_identical": true,
+        "prompt": "192fb621",
+        "raw_delta_pct": -1.2786325079206184,
+        "serial_delta_pct": 0.05525265050847494
+      },
+      {
+        "cand_delta_pct": 1.1936291569726531,
+        "edl_arm": 2.2976190476190474,
+        "edl_base": 2.2976190476190474,
+        "edl_identical": true,
+        "nondraft_identical": true,
+        "prompt": "4b9e88cd",
+        "raw_delta_pct": -1.2451510861634651,
+        "serial_delta_pct": -0.06638441614431612
+      },
+      {
+        "cand_delta_pct": 1.2362251623146525,
+        "edl_arm": 5.086956521739131,
+        "edl_base": 5.086956521739131,
+        "edl_identical": true,
+        "nondraft_identical": true,
+        "prompt": "a2ea8b60",
+        "raw_delta_pct": -2.6563979172732566,
+        "serial_delta_pct": -1.4530118129257419
+      },
+      {
+        "cand_delta_pct": 1.1355957232354275,
+        "edl_arm": 5.2555555555555555,
+        "edl_base": 5.2555555555555555,
+        "edl_identical": true,
+        "nondraft_identical": true,
+        "prompt": "00142a44",
+        "raw_delta_pct": -1.2881737797277193,
+        "serial_delta_pct": -0.16720650270621862
+      },
+      {
+        "cand_delta_pct": -0.4520060643355084,
+        "edl_arm": 0.1557377049180328,
+        "edl_base": 0.1557377049180328,
+        "edl_identical": true,
+        "nondraft_identical": true,
+        "prompt": "c1ec5866",
+        "raw_delta_pct": 0.47998218709244256,
+        "serial_delta_pct": 0.02580657188053781
+      },
+      {
+        "cand_delta_pct": 0.6469670300147667,
+        "edl_arm": 4.989247311827957,
+        "edl_base": 4.989247311827957,
+        "edl_identical": true,
+        "nondraft_identical": true,
+        "prompt": "ea82dcb5",
+        "raw_delta_pct": -0.7621028948838426,
+        "serial_delta_pct": -0.12006641949267038
+      },
+      {
+        "cand_delta_pct": 2.0383642192202345,
+        "edl_arm": 2.647887323943662,
+        "edl_base": 2.647887323943662,
+        "edl_identical": true,
+        "nondraft_identical": true,
+        "prompt": "3b10cb4d",
+        "raw_delta_pct": -2.0492352058487984,
+        "serial_delta_pct": -0.0526418619082869
+      }
+    ],
+    "published": {
+      "arm_median_recomputed": 3.64961554655,
+      "arm_officialScore": 3.64961554659287,
+      "base_median_recomputed": 3.7195972258,
+      "base_officialScore": 3.71959722580154,
+      "median_rule_reproduces_arm": true,
+      "median_rule_reproduces_base": true,
+      "published_delta_pct": -1.8814316443885426
+    },
+    "single_mechanism_check": {
+      "edl_digit_identical_all_8": true,
+      "nondraft_identical_all_8": true
+    }
+  },
+  "q4_onepass6_replicates": {
+    "arm_detail": [
+      {
+        "candidate": {
+          "k": 8,
+          "mean_pct": 1.0582694725800756,
+          "n_positive": 7,
+          "sd_pct": 0.719025248825693,
+          "se_naive_pct": 0.25421381464449605,
+          "z_naive": 4.162910949823899
+        },
+        "commit": "bb79fcd49e4e58038a8d08bd14c911d094384d7d",
+        "created": "2026-08-23T10:23:07.251Z",
+        "edl_digit_identical_to_base": true,
+        "head_identical_to_base": true,
+        "id8": "c47b45be",
+        "nondraft_identical_to_base": true,
+        "published_delta_pct": -1.8814316443885426,
+        "raw": {
+          "k": 8,
+          "mean_pct": -1.2846365270285889,
+          "n_positive": 1,
+          "sd_pct": 0.9174513728730133,
+          "se_naive_pct": 0.3243680435837077,
+          "z_naive": -3.960428755051114
+        },
+        "score": 3.64961554659287,
+        "serial": {
+          "k": 8,
+          "mean_pct": -0.24485742088703188,
+          "n_positive": 2,
+          "sd_pct": 0.49533423393033826,
+          "se_naive_pct": 0.1751270978829929,
+          "z_naive": -1.3981698083675644
+        },
+        "solver": "scarletbright"
+      },
+      {
+        "candidate": {
+          "k": 8,
+          "mean_pct": -0.038971264770848446,
+          "n_positive": 4,
+          "sd_pct": 0.2259426672634223,
+          "se_naive_pct": 0.07988279609067082,
+          "z_naive": -0.4878555418442562
+        },
+        "commit": "9bb3146d23330e4b84375b2a4717fb6364e390ea",
+        "created": "2026-08-23T08:50:12.140Z",
+        "edl_digit_identical_to_base": true,
+        "head_identical_to_base": true,
+        "id8": "24fb4012",
+        "nondraft_identical_to_base": true,
+        "published_delta_pct": -0.7291328456716539,
+        "raw": {
+          "k": 8,
+          "mean_pct": -0.2856389067490181,
+          "n_positive": 2,
+          "sd_pct": 0.6734045775234981,
+          "se_naive_pct": 0.23808447162446383,
+          "z_naive": -1.1997376594957565
+        },
+        "score": 3.69247642069842,
+        "serial": {
+          "k": 8,
+          "mean_pct": -0.3254090049477243,
+          "n_positive": 1,
+          "sd_pct": 0.5446814246332995,
+          "se_naive_pct": 0.19257396447227773,
+          "z_naive": -1.6897871207017137
+        },
+        "solver": "newjordan"
+      }
+    ],
+    "arms": [
+      "c47b45be",
+      "24fb4012"
+    ],
+    "base": "684821ed",
+    "base_detail": {
+      "created": "2026-08-23T00:04:10.820Z",
+      "id8": "684821ed",
+      "score": 3.71959722580154,
+      "solver": "newjordan"
+    },
+    "harness": "ranked",
+    "provenance_search": {
+      "matches_from_base": [
+        {
+          "channel": "mtp",
+          "k": 8,
+          "mean_pct": -0.038971264770848446,
+          "n_positive": 4,
+          "pair": "684821ed -> 24fb4012",
+          "sd_pct": 0.2259426672634223,
+          "se_naive_pct": 0.07988279609067082,
+          "z_naive": -0.4878555418442562
+        }
+      ],
+      "n_matches": 1,
+      "target_mean_pct": -0.039,
+      "target_se_pct": 0.0799,
+      "verdict": "FINDING 279's figure is a real candidate-leg measurement, not a mislabelled prefill number"
+    },
+    "replicate_analysis": {
+      "candidate_leg_estimates_pct": [
+        1.0582694725800756,
+        -0.038971264770848446
+      ],
+      "dof": 1,
+      "n_replicates": 2,
+      "p_two_sided": 0.5234332298643882,
+      "pooled_estimate_pct": 0.5096491039046136,
+      "quoted_se_finding_259": 0.2542,
+      "quoted_se_finding_279": 0.0799,
+      "raw_estimates_pct": [
+        -1.2846365270285889,
+        -0.2856389067490181
+      ],
+      "raw_sd_of_one_estimate_pct": 0.7063979916889082,
+      "sd_ci95": [
+        0.34615167093232035,
+        24.758890642277418
+      ],
+      "sd_of_one_estimate_pct": 0.7758663659749659,
+      "se_of_pooled_pct": 0.548620368675462,
+      "serial_estimates_pct": [
+        -0.24485742088703188,
+        -0.3254090049477243
+      ],
+      "serial_sd_of_one_estimate_pct": 0.05695857132463381,
+      "spread_pct": 1.097240737350924,
+      "t_statistic": 0.9289649692282897,
+      "understatement_vs_finding_259": 3.0521886938432967,
+      "understatement_vs_finding_279": 9.71046765926115
+    }
+  }
+}
