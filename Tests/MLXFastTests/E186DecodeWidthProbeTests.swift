@@ -22,6 +22,8 @@ import Testing
 // packaged into a submission. Within-session relative measurement,
 // harness=local, no thermal gate, no score.
 
+private let e186Widths = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
 private struct E186Sample: Encodable {
     var family: String
     var cell: String
@@ -38,6 +40,143 @@ private struct E186QmvCell {
     var n: Int
 }
 
+private let e186QmvCells = [
+    E186QmvCell(name: "mlp.gate_up", k: 5120, n: 34816),
+    E186QmvCell(name: "mlp.down", k: 17408, n: 5120),
+    E186QmvCell(name: "gdn.in_proj", k: 5120, n: 16480),
+    E186QmvCell(name: "gdn.out_proj", k: 6144, n: 5120),
+    E186QmvCell(name: "fa.qkv", k: 5120, n: 14336),
+    E186QmvCell(name: "fa.o_proj", k: 6144, n: 5120),
+    E186QmvCell(name: "lm_head", k: 5120, n: 248_320),
+]
+
+/// Decode the pinned target's own `config.json` rather than typing the
+/// architecture in. Every shape in this probe then comes from the artifact.
+private func e186Configuration() throws -> Qwen35TextConfiguration {
+    let env = ProcessInfo.processInfo.environment
+    let candidates: [String]
+    if let explicit = env["MLXFAST_E186_CONFIG"] {
+        candidates = [explicit]
+    } else {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let root =
+            "\(home)/.cache/huggingface/hub/models--EigenLabs--Qwen3.8-27B-4bit/snapshots"
+        let snapshots =
+            (try? FileManager.default.contentsOfDirectory(atPath: root)) ?? []
+        candidates = snapshots.map { "\(root)/\($0)/config.json" }
+    }
+    let path = try #require(
+        candidates.first { FileManager.default.fileExists(atPath: $0) },
+        "no target config.json found; set MLXFAST_E186_CONFIG")
+    let data = try Data(contentsOf: URL(fileURLWithPath: path))
+    let outer = try #require(
+        try JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let text = try #require(outer["text_config"] as? [String: Any])
+    let textData = try JSONSerialization.data(withJSONObject: text)
+    return try JSONDecoder().decode(Qwen35TextConfiguration.self, from: textData)
+}
+
+private func e186CastBF16(_ module: Module) {
+    module.update(
+        parameters: module.parameters().mapValues {
+            $0.dtype == .float32 ? $0.asType(.bfloat16) : $0
+        })
+}
+
+private func e186QuantizedBF16(_ module: Module) {
+    e186CastBF16(module)
+    quantize(model: module, groupSize: 64, bits: 4)
+    eval(module)
+}
+
+/// One blocking `eval` per call, so every cell carries the same fixed
+/// per-eval cost. `e186EvalFloor` measures that cost directly.
+private func e186Timed(reps: Int, _ body: () -> [MLXArray]) -> Double {
+    let start = DispatchTime.now().uptimeNanoseconds
+    for _ in 0 ..< reps {
+        eval(body())
+    }
+    return Double(DispatchTime.now().uptimeNanoseconds - start) / 1e3
+        / Double(reps)
+}
+
+private func e186EvalFloor(reps: Int) -> Double {
+    let a = MLXArray.zeros([16], dtype: .float32)
+    return e186Timed(reps: reps) { [a + 1] }
+}
+
+private func e186GpuTemperature() -> Double? {
+    for path in [
+        ProcessInfo.processInfo.environment["MLXFAST_MACMON_BIN"] ?? "",
+        "\(FileManager.default.homeDirectoryForCurrentUser.path)/bin/macmon",
+        "/opt/homebrew/bin/macmon", "/usr/local/bin/macmon",
+    ] where !path.isEmpty && FileManager.default.isExecutableFile(atPath: path) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = ["pipe", "-s1"]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        guard (try? process.run()) != nil else { continue }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        guard
+            let object = try? JSONSerialization.jsonObject(with: data)
+                as? [String: Any],
+            let temp = object["temp"] as? [String: Any],
+            let gpu = temp["gpu_temp_avg"] as? Double
+        else { continue }
+        return gpu
+    }
+    return nil
+}
+
+private func e186Write(_ payload: [String: Any], to key: String) throws {
+    let path = try #require(
+        ProcessInfo.processInfo.environment[key],
+        "\(key) must name the JSON destination")
+    let data = try JSONSerialization.data(
+        withJSONObject: payload,
+        options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+    try data.write(to: URL(fileURLWithPath: path))
+}
+
+private func e186Counters() -> [String: Int] {
+    [
+        "kernel_config_cache_hits": qwen35KernelConfigCacheHits,
+        "kernel_config_cache_misses": qwen35KernelConfigCacheMisses,
+        "xsums_sidecar_hits": qwen35XSumsSidecarHits,
+        "xsums_standalone_fills": qwen35XSumsStandaloneFills,
+        "xsums_fill_distinct": qwen35XSumsFillDistinct,
+    ]
+}
+
+private func e186CounterDelta(_ before: [String: Int], _ after: [String: Int])
+    -> [String: Int]
+{
+    after.reduce(into: [String: Int]()) { out, entry in
+        out[entry.key] = entry.value - (before[entry.key] ?? 0)
+    }
+}
+
+/// affine 4-bit group-64 packed weights at a scored cell shape. The probe
+/// times dispatch, not arithmetic, so the packed bits are random.
+private func e186PackedCell(k: Int, n: Int) -> (MLXArray, MLXArray, MLXArray) {
+    let w = MLXRandom.uniform(low: 0.0, high: 4.2e9, [n, k / 8]).asType(.uint32)
+    let scales = MLXRandom.uniform(low: 0.01, high: 0.02, [n, k / 64])
+        .asType(.bfloat16)
+    let biases = MLXRandom.uniform(low: -0.02, high: 0.02, [n, k / 64])
+        .asType(.bfloat16)
+    eval(w, scales, biases)
+    return (w, scales, biases)
+}
+
+private func e186Activations(width: Int, k: Int) -> MLXArray {
+    let x = MLXRandom.normal([1, width, k]).asType(.bfloat16)
+    eval(x)
+    return x
+}
+
 @Suite("E186 decode width kernel probes")
 struct E186DecodeWidthProbeTests {
     static let dispatchEnabled =
@@ -45,160 +184,11 @@ struct E186DecodeWidthProbeTests {
     static let probeEnabled =
         ProcessInfo.processInfo.environment["MLXFAST_RUN_E186_PROBE"] == "1"
 
-    static let widths = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-    // MARK: - target configuration
-
-    /// Decode the pinned target's own `config.json` rather than typing the
-    /// architecture in. Every shape in this probe then comes from the artifact.
-    static func configuration() throws -> Qwen35TextConfiguration {
-        let env = ProcessInfo.processInfo.environment
-        let explicit = env["MLXFAST_E186_CONFIG"]
-        let candidates: [String]
-        if let explicit {
-            candidates = [explicit]
-        } else {
-            let home = FileManager.default.homeDirectoryForCurrentUser.path
-            let root =
-                "\(home)/.cache/huggingface/hub/models--EigenLabs--Qwen3.8-27B-4bit/snapshots"
-            let snapshots =
-                (try? FileManager.default.contentsOfDirectory(atPath: root)) ?? []
-            candidates = snapshots.map { "\(root)/\($0)/config.json" }
-        }
-        let path = try #require(
-            candidates.first { FileManager.default.fileExists(atPath: $0) },
-            "no target config.json found; set MLXFAST_E186_CONFIG")
-        let data = try Data(contentsOf: URL(fileURLWithPath: path))
-        let outer = try #require(
-            try JSONSerialization.jsonObject(with: data) as? [String: Any])
-        let text = try #require(outer["text_config"] as? [String: Any])
-        let textData = try JSONSerialization.data(withJSONObject: text)
-        return try JSONDecoder().decode(
-            Qwen35TextConfiguration.self, from: textData)
-    }
-
-    // MARK: - helpers
-
-    static func bf16(_ module: Module) {
-        module.update(
-            parameters: module.parameters().mapValues {
-                $0.dtype == .float32 ? $0.asType(.bfloat16) : $0
-            })
-    }
-
-    static func quantizedBF16(_ module: Module) {
-        bf16(module)
-        quantize(model: module, groupSize: 64, bits: 4)
-        eval(module)
-    }
-
-    /// One blocking `eval` per call, so every cell carries the same fixed
-    /// per-eval cost. `evalFloor` measures that cost directly.
-    static func timed(reps: Int, _ body: () -> [MLXArray]) -> Double {
-        let start = DispatchTime.now().uptimeNanoseconds
-        for _ in 0 ..< reps {
-            eval(body())
-        }
-        return Double(DispatchTime.now().uptimeNanoseconds - start) / 1e3
-            / Double(reps)
-    }
-
-    static func evalFloor(reps: Int) -> Double {
-        let a = MLXArray.zeros([16], dtype: .float32)
-        return timed(reps: reps) { [a + 1] }
-    }
-
-    static func gpuTemperature() -> Double? {
-        for path in [
-            ProcessInfo.processInfo.environment["MLXFAST_MACMON_BIN"] ?? "",
-            "\(FileManager.default.homeDirectoryForCurrentUser.path)/bin/macmon",
-            "/opt/homebrew/bin/macmon", "/usr/local/bin/macmon",
-        ] where !path.isEmpty && FileManager.default.isExecutableFile(atPath: path) {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: path)
-            process.arguments = ["pipe", "-s1"]
-            let pipe = Pipe()
-            process.standardOutput = pipe
-            process.standardError = FileHandle.nullDevice
-            guard (try? process.run()) != nil else { continue }
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
-            guard
-                let object = try? JSONSerialization.jsonObject(with: data)
-                    as? [String: Any],
-                let temp = object["temp"] as? [String: Any],
-                let gpu = temp["gpu_temp_avg"] as? Double
-            else { continue }
-            return gpu
-        }
-        return nil
-    }
-
-    static func write(_ payload: [String: Any], to key: String) throws {
-        let path = try #require(
-            ProcessInfo.processInfo.environment[key],
-            "\(key) must name the JSON destination")
-        let data = try JSONSerialization.data(
-            withJSONObject: payload,
-            options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
-        try data.write(to: URL(fileURLWithPath: path))
-    }
-
-    static func counters() -> [String: Int] {
-        [
-            "kernel_config_cache_hits": qwen35KernelConfigCacheHits,
-            "kernel_config_cache_misses": qwen35KernelConfigCacheMisses,
-            "xsums_sidecar_hits": qwen35XSumsSidecarHits,
-            "xsums_standalone_fills": qwen35XSumsStandaloneFills,
-            "xsums_fill_distinct": qwen35XSumsFillDistinct,
-            "row_top32_fused_drafts": qwen35RowTop32FusedDrafts,
-        ]
-    }
-
-    static func counterDelta(_ before: [String: Int], _ after: [String: Int])
-        -> [String: Int]
-    {
-        after.reduce(into: [String: Int]()) { out, entry in
-            out[entry.key] = entry.value - (before[entry.key] ?? 0)
-        }
-    }
-
-    // MARK: - synthetic quantized cells
-
-    /// affine 4-bit group-64 packed weights at a scored cell shape. The probe
-    /// times dispatch, not arithmetic, so the packed bits are random.
-    static func packedCell(k: Int, n: Int) -> (MLXArray, MLXArray, MLXArray) {
-        let w = MLXRandom.uniform(low: 0.0, high: 4.2e9, [n, k / 8])
-            .asType(.uint32)
-        let scales = MLXRandom.uniform(low: 0.01, high: 0.02, [n, k / 64])
-            .asType(.bfloat16)
-        let biases = MLXRandom.uniform(low: -0.02, high: 0.02, [n, k / 64])
-            .asType(.bfloat16)
-        eval(w, scales, biases)
-        return (w, scales, biases)
-    }
-
-    static func activations(width: Int, k: Int) -> MLXArray {
-        let x = MLXRandom.normal([1, width, k]).asType(.bfloat16)
-        eval(x)
-        return x
-    }
-
-    static let qmvCells = [
-        E186QmvCell(name: "mlp.gate_up", k: 5120, n: 34816),
-        E186QmvCell(name: "mlp.down", k: 17408, n: 5120),
-        E186QmvCell(name: "gdn.in_proj", k: 5120, n: 16480),
-        E186QmvCell(name: "gdn.out_proj", k: 6144, n: 5120),
-        E186QmvCell(name: "fa.qkv", k: 5120, n: 14336),
-        E186QmvCell(name: "fa.o_proj", k: 6144, n: 5120),
-        E186QmvCell(name: "lm_head", k: 5120, n: 248_320),
-    ]
-
     // MARK: - dispatch proof
 
     @Test(.enabled(if: E186DecodeWidthProbeTests.dispatchEnabled))
     func dispatchProof() throws {
-        let config = try configuration()
+        let config = try e186Configuration()
         var payload: [String: Any] = [
             "harness": "local",
             "cool_gate_passed_real_gate": false,
@@ -227,10 +217,11 @@ struct E186DecodeWidthProbeTests {
         // 1. QMV routing witness: does the candidate replica actually take the
         // cell at this width, and with how many input groups?
         var routing: [[String: Any]] = []
-        for cell in qmvCells {
-            let (w, scales, biases) = packedCell(k: cell.k, n: cell.n)
-            for m in widths {
-                let x = activations(width: m, k: cell.k)
+        for cell in e186QmvCells {
+            let (w, scales, biases) = e186PackedCell(k: cell.k, n: cell.n)
+            for m in e186Widths {
+                let x = e186Activations(width: m, k: cell.k)
+                let before = e186Counters()
                 let routed = Qwen35CustomQMV.matmul(
                     x, w, scales: scales, biases: biases,
                     groupSize: 64, bits: 4, mode: .affine)
@@ -241,33 +232,35 @@ struct E186DecodeWidthProbeTests {
                     "active_input_groups": (2 ... 9).contains(m)
                         ? Qwen35CustomQMV.activeInputGroups(m) : 0,
                     "table_pays": Qwen35CustomQMV.tablePays(m: m),
+                    "counter_delta": e186CounterDelta(before, e186Counters()),
                 ])
             }
         }
         payload["qmv_routing"] = routing
 
-        // 2. GDN branch witness. The three decode branches leave different,
+        // 2. GDN branch witness. The decode branches leave different,
         // observable marks on the cache: the S == 2 mid-kernel branch writes
         // one rollback checkpoint per boundary and no replay tape; the
         // S >= 3 branch writes a replay tape and no checkpoints.
         let gdn = Qwen35GatedDeltaNet(config)
-        quantizedBF16(gdn)
+        e186QuantizedBF16(gdn)
         let convDim = config.linearKeyHeadDim * config.linearNumKeyHeads * 2
             + config.linearValueHeadDim * config.linearNumValueHeads
         var branches: [[String: Any]] = []
-        for m in widths {
+        for m in e186Widths {
             let cache = MambaCache()
-            cache[0] = MLXRandom.normal([1, config.linearConvKernelDim - 1, convDim])
-                .asType(.bfloat16)
+            cache[0] = MLXRandom.normal(
+                [1, config.linearConvKernelDim - 1, convDim]
+            ).asType(.bfloat16)
             cache[1] = MLXRandom.normal([
                 1, config.linearNumValueHeads, config.linearValueHeadDim,
                 config.linearKeyHeadDim,
             ])
-            let x = activations(width: m, k: config.hiddenSize)
-            let before = counters()
-            let out = gdn(x, mask: nil, cache: cache, nConfirmed: 1)
+            let x = e186Activations(width: m, k: config.hiddenSize)
+            let before = e186Counters()
+            let out = gdn(x, mask: MLXArray?.none, cache: cache, nConfirmed: 1)
             eval(out)
-            let after = counters()
+            let after = e186Counters()
             branches.append([
                 "m": m,
                 "output_shape": out.shape,
@@ -275,7 +268,7 @@ struct E186DecodeWidthProbeTests {
                 "has_replay_tape": cache.prefixReplayTape != nil,
                 "replay_tape_rows": cache.prefixReplayTape?.rowCount ?? -1,
                 "has_rollback_state": cache.rollbackState != nil,
-                "counter_delta": counterDelta(before, after),
+                "counter_delta": e186CounterDelta(before, after),
             ])
         }
         payload["gdn_branch_witness"] = branches
@@ -287,8 +280,7 @@ struct E186DecodeWidthProbeTests {
                "MLXFAST_E186_CAPTURE_PATH"]
         {
             var captured: [String: Any] = ["requested_path": capturePath]
-            let url = URL(fileURLWithPath: capturePath)
-            GPU.startCapture(url: url)
+            GPU.startCapture(url: URL(fileURLWithPath: capturePath))
             for m in [2, 5, 8] {
                 let cache = MambaCache()
                 cache[0] = MLXRandom.normal(
@@ -298,8 +290,8 @@ struct E186DecodeWidthProbeTests {
                     1, config.linearNumValueHeads, config.linearValueHeadDim,
                     config.linearKeyHeadDim,
                 ])
-                let x = activations(width: m, k: config.hiddenSize)
-                eval(gdn(x, mask: nil, cache: cache, nConfirmed: 1))
+                let x = e186Activations(width: m, k: config.hiddenSize)
+                eval(gdn(x, mask: MLXArray?.none, cache: cache, nConfirmed: 1))
             }
             GPU.stopCapture()
             captured["exists"] = FileManager.default.fileExists(
@@ -307,7 +299,7 @@ struct E186DecodeWidthProbeTests {
             payload["gpu_capture"] = captured
         }
 
-        try write(payload, to: "MLXFAST_E186_DISPATCH_OUT")
+        try e186Write(payload, to: "MLXFAST_E186_DISPATCH_OUT")
     }
 
     // MARK: - width sweep
@@ -317,41 +309,40 @@ struct E186DecodeWidthProbeTests {
         let env = ProcessInfo.processInfo.environment
         let blocks = Int(env["MLXFAST_E186_BLOCKS"] ?? "") ?? 12
         let warmup = Int(env["MLXFAST_E186_WARMUP"] ?? "") ?? 8
-        let config = try configuration()
+        let config = try e186Configuration()
         let hidden = config.hiddenSize
         let headDim = config.headDim ?? 256
         let kvLengths = (env["MLXFAST_E186_KV"]?.split(separator: ",")
             .compactMap { Int($0) }).flatMap { $0.isEmpty ? nil : $0 } ?? [512, 1024]
 
         var samples: [E186Sample] = []
-        var notes: [[String: Any]] = []
         var temperatures: [[String: Any]] = []
 
         func recordTemperature(_ label: String) {
             temperatures.append([
                 "label": label,
-                "gpu_temp_c": gpuTemperature() ?? -1,
+                "gpu_temp_c": e186GpuTemperature() ?? -1,
                 "seconds": Date().timeIntervalSince1970,
             ])
         }
 
         // --- family construction -------------------------------------------
         // Every family is a closure list indexed by width, built once so that
-        // no allocation of a weight tensor lands inside a timed block.
+        // no weight allocation lands inside a timed block.
         var families: [(family: String, cell: String, reps: Int,
                         call: [Int: () -> [MLXArray]])] = []
 
-        // 1. Routed QMV cells, in-path dispatch (replica where routable,
+        // 1. Routed QMV cells: the in-path dispatch (replica where routable,
         // MLX quantizedMM otherwise) and the MLX arm alone for contrast.
-        for cell in qmvCells {
-            let (w, scales, biases) = packedCell(k: cell.k, n: cell.n)
+        for cell in e186QmvCells {
+            let (w, scales, biases) = e186PackedCell(k: cell.k, n: cell.n)
             let x = Dictionary(
-                uniqueKeysWithValues: widths.map {
-                    ($0, activations(width: $0, k: cell.k))
+                uniqueKeysWithValues: e186Widths.map {
+                    ($0, e186Activations(width: $0, k: cell.k))
                 })
             var inpath: [Int: () -> [MLXArray]] = [:]
             var mlxArm: [Int: () -> [MLXArray]] = [:]
-            for m in widths {
+            for m in e186Widths {
                 let xm = x[m]!
                 inpath[m] = {
                     if let y = Qwen35CustomQMV.matmul(
@@ -383,7 +374,7 @@ struct E186DecodeWidthProbeTests {
 
         // 2. GDN mixer, exactly as a verify round calls it.
         let gdn = Qwen35GatedDeltaNet(config)
-        quantizedBF16(gdn)
+        e186QuantizedBF16(gdn)
         let convDim = config.linearKeyHeadDim * config.linearNumKeyHeads * 2
             + config.linearValueHeadDim * config.linearNumValueHeads
         let gdnConv = MLXRandom.normal(
@@ -395,53 +386,43 @@ struct E186DecodeWidthProbeTests {
         ])
         eval(gdnConv, gdnState)
         var gdnCalls: [Int: () -> [MLXArray]] = [:]
-        for m in widths {
-            let x = activations(width: m, k: hidden)
+        for m in e186Widths {
+            let x = e186Activations(width: m, k: hidden)
             gdnCalls[m] = {
-                // A fresh cache per call keeps the recurrent state fixed, so
+                // A fresh cache per call holds the recurrent state fixed, so
                 // every replicate measures the same arithmetic.
                 let cache = MambaCache()
                 cache[0] = gdnConv
                 cache[1] = gdnState
-                return [gdn(x, mask: nil, cache: cache, nConfirmed: 1)]
+                return [
+                    gdn(x, mask: MLXArray?.none, cache: cache, nConfirmed: 1)
+                ]
             }
         }
         families.append(("gdn_layer", "nConfirmed=1", 20, gdnCalls))
 
         // 3. Isolated GDN recurrence at T = m, the vendored public entry.
-        let rq = Dictionary(
-            uniqueKeysWithValues: widths.map { m in
-                (m,
-                 MLXRandom.normal([
-                    1, m, config.linearNumKeyHeads, config.linearKeyHeadDim,
-                 ]).asType(.bfloat16))
-            })
-        let rk = Dictionary(
-            uniqueKeysWithValues: widths.map { m in
-                (m,
-                 MLXRandom.normal([
-                    1, m, config.linearNumKeyHeads, config.linearKeyHeadDim,
-                 ]).asType(.bfloat16))
-            })
-        let rv = Dictionary(
-            uniqueKeysWithValues: widths.map { m in
-                (m,
-                 MLXRandom.normal([
-                    1, m, config.linearNumValueHeads, config.linearValueHeadDim,
-                 ]).asType(.bfloat16))
-            })
-        let ra = Dictionary(
-            uniqueKeysWithValues: widths.map { m in
-                (m,
-                 MLXRandom.normal([1, m, config.linearNumValueHeads])
-                    .asType(.bfloat16))
-            })
-        let rb = Dictionary(
-            uniqueKeysWithValues: widths.map { m in
-                (m,
-                 MLXRandom.normal([1, m, config.linearNumValueHeads])
-                    .asType(.bfloat16))
-            })
+        var rq: [Int: MLXArray] = [:]
+        var rk: [Int: MLXArray] = [:]
+        var rv: [Int: MLXArray] = [:]
+        var ra: [Int: MLXArray] = [:]
+        var rb: [Int: MLXArray] = [:]
+        for m in e186Widths {
+            rq[m] = MLXRandom.normal([
+                1, m, config.linearNumKeyHeads, config.linearKeyHeadDim,
+            ]).asType(.bfloat16)
+            rk[m] = MLXRandom.normal([
+                1, m, config.linearNumKeyHeads, config.linearKeyHeadDim,
+            ]).asType(.bfloat16)
+            rv[m] = MLXRandom.normal([
+                1, m, config.linearNumValueHeads, config.linearValueHeadDim,
+            ]).asType(.bfloat16)
+            ra[m] = MLXRandom.normal([1, m, config.linearNumValueHeads])
+                .asType(.bfloat16)
+            rb[m] = MLXRandom.normal([1, m, config.linearNumValueHeads])
+                .asType(.bfloat16)
+            eval(rq[m]!, rk[m]!, rv[m]!, ra[m]!, rb[m]!)
+        }
         let aLog = MLXRandom.uniform(
             low: 0.1, high: 2.0, [config.linearNumValueHeads]
         ).asType(.bfloat16)
@@ -449,11 +430,8 @@ struct E186DecodeWidthProbeTests {
             low: 0.1, high: 1.0, [config.linearNumValueHeads]
         ).asType(.bfloat16)
         eval(aLog, dtBias)
-        for table in [rq, rk, rv, ra, rb] {
-            for value in table.values { eval(value) }
-        }
         var recurrenceCalls: [Int: () -> [MLXArray]] = [:]
-        for m in widths {
+        for m in e186Widths {
             recurrenceCalls[m] = {
                 let pair = gatedDeltaUpdate(
                     q: rq[m]!, k: rk[m]!, v: rv[m]!, a: ra[m]!, b: rb[m]!,
@@ -465,14 +443,14 @@ struct E186DecodeWidthProbeTests {
 
         // 4. Full-attention mixer with a populated KV cache.
         let attention = Qwen35Attention(config)
-        quantizedBF16(attention)
+        e186QuantizedBF16(attention)
         for kv in kvLengths {
             let cache = KVCacheSimple()
-            let seed = activations(width: kv, k: hidden)
+            let seed = e186Activations(width: kv, k: hidden)
             eval(attention(seed, mask: .causal, cache: cache))
             var calls: [Int: () -> [MLXArray]] = [:]
-            for m in widths {
-                let x = activations(width: m, k: hidden)
+            for m in e186Widths {
+                let x = e186Activations(width: m, k: hidden)
                 let mask: MLXFast.ScaledDotProductAttentionMaskMode =
                     m == 1 ? .none : .causal
                 calls[m] = {
@@ -492,7 +470,7 @@ struct E186DecodeWidthProbeTests {
             eval(keys, values)
             var calls: [Int: () -> [MLXArray]] = [:]
             let scale = 1.0 / Foundation.sqrt(Float(headDim))
-            for m in widths {
+            for m in e186Widths {
                 let q = MLXRandom.normal([1, config.attentionHeads, m, headDim])
                     .asType(.bfloat16)
                 eval(q)
@@ -512,24 +490,18 @@ struct E186DecodeWidthProbeTests {
         // 6. MLP block.
         let mlp = Qwen35FusedMLP(
             dimensions: hidden, hiddenDimensions: config.intermediateSize)
-        quantizedBF16(mlp)
+        e186QuantizedBF16(mlp)
         var mlpCalls: [Int: () -> [MLXArray]] = [:]
-        for m in widths {
-            let x = activations(width: m, k: hidden)
+        for m in e186Widths {
+            let x = e186Activations(width: m, k: hidden)
             mlpCalls[m] = { [mlp(x)] }
         }
         families.append(("mlp", "fused", 20, mlpCalls))
 
-        notes.append([
-            "families": families.map { ["family": $0.family, "cell": $0.cell] },
-            "blocks": blocks,
-            "warmup_evals_per_cell": warmup,
-        ])
-
         // --- warmup ---------------------------------------------------------
         recordTemperature("session_entry")
         for family in families {
-            for m in widths {
+            for m in e186Widths {
                 for _ in 0 ..< warmup { eval(family.call[m]!()) }
             }
         }
@@ -538,11 +510,11 @@ struct E186DecodeWidthProbeTests {
         // --- ABBA blocks ----------------------------------------------------
         for block in 0 ..< blocks {
             let ascending = block % 2 == 0
-            let order = ascending ? widths : widths.reversed().map { $0 }
+            let order = ascending ? e186Widths : e186Widths.reversed().map { $0 }
             recordTemperature("block_\(block)_entry")
             for family in families {
                 for m in order {
-                    let us = timed(reps: family.reps, family.call[m]!)
+                    let us = e186Timed(reps: family.reps, family.call[m]!)
                     samples.append(
                         E186Sample(
                             family: family.family, cell: family.cell, m: m,
@@ -553,7 +525,7 @@ struct E186DecodeWidthProbeTests {
         }
         recordTemperature("session_exit")
 
-        let floor = evalFloor(reps: 200)
+        let floor = e186EvalFloor(reps: 200)
         let encoded = try JSONEncoder().encode(samples)
         let sampleObjects = try JSONSerialization.jsonObject(with: encoded)
 
@@ -563,7 +535,7 @@ struct E186DecodeWidthProbeTests {
             "gate_qualified_for_timing": false,
             "official_or_ranked_score": false,
             "eval_floor_microseconds": floor,
-            "widths": widths,
+            "widths": e186Widths,
             "blocks": blocks,
             "warmup_evals_per_cell": warmup,
             "kv_lengths": kvLengths,
@@ -571,13 +543,15 @@ struct E186DecodeWidthProbeTests {
             "compiled_decode_supported": MLXHardwareInfo.isCompiledDecodeSupported,
             "samples": sampleObjects,
             "temperatures": temperatures,
-            "notes": notes,
+            "families": families.map {
+                ["family": $0.family, "cell": $0.cell, "reps": $0.reps]
+            },
         ]
         payload["active_input_groups"] = Dictionary(
-            uniqueKeysWithValues: widths.map {
+            uniqueKeysWithValues: e186Widths.map {
                 ("\($0)", (2 ... 9).contains($0)
                     ? Qwen35CustomQMV.activeInputGroups($0) : 0)
             })
-        try write(payload, to: "MLXFAST_E186_OUT")
+        try e186Write(payload, to: "MLXFAST_E186_OUT")
     }
 }
