@@ -1,54 +1,709 @@
 {
-  "boundary": null,
+  "boundary": {
+    "R_ms_high": 127.63050520833335,
+    "R_ms_high_range": [
+      127.49127083333333,
+      127.76973958333335
+    ],
+    "R_ms_low": 92.3946743119266,
+    "R_ms_low_range": [
+      92.33992660550459,
+      92.44942201834861
+    ],
+    "channel_note": "Qwen36MTPBlockSession.swift:765-790 forbids reading verify_build_us alone as host cost. E86 removed the decode asyncEval ladder and measured host encode of the whole 64-layer verify graph at 2.294 ms per round, against 72.330 ms of verify_build_us under the shipped ladder, so that counter is about 97 % GPU wait. verify_build_us and eval_wall_us partition one GPU cost at an arbitrary boundary and only their sum is meaningful, which is why the split is reported as verify_pipeline_ms. The host encode is also an upper bound on any host-channel movement here: this arm changes only the Metal grid x-extent, so no host op count differs between the arms.",
+    "contrast": "R(6) - R(5) on the shipped plan, one session",
+    "delta_R_ms_per_row": 35.23583089640675,
+    "delta_draft_window_ms_per_row": 0.7324131307339452,
+    "delta_verify_pipeline_ms_per_row": 34.0520338780581,
+    "draft_window_ms_high": 3.32915625,
+    "draft_window_ms_low": 2.596743119266055,
+    "verify_pipeline_ms_high": 122.40513020833333,
+    "verify_pipeline_ms_low": 88.35309633027524,
+    "verify_pipeline_share_of_marginal_row": 0.9664036014411291,
+    "width_high": 6,
+    "width_low": 5
+  },
   "contrasts": [
     {
       "base_arm": "shipped@d4",
-      "base_mean": 0.027339,
+      "base_mean": 0.0273265,
       "base_values": [
-        0.027339
+        0.027339,
+        0.027314
       ],
       "contrast": "arm",
-      "gain_minus_half_range_percent": -22.04908738432277,
-      "gain_percent": -22.04908738432277,
-      "half_range_percent": 0.0,
+      "gain_minus_half_range_percent": -22.498307503705185,
+      "gain_percent": -22.27874041681152,
+      "half_range_percent": 0.2195670868936657,
       "metric": "mtp_seconds_per_token",
       "separated": false,
       "test_arm": "minna5@d4",
-      "test_mean": 0.033367,
+      "test_mean": 0.0334145,
       "test_values": [
-        0.033367
+        0.033367,
+        0.033462
       ]
     },
     {
       "base_arm": "shipped@d4",
-      "base_mean": 92.44942201834861,
+      "base_mean": 92.3946743119266,
       "base_values": [
-        92.44942201834861
+        92.44942201834861,
+        92.33992660550459
       ],
       "contrast": "arm",
-      "gain_minus_half_range_percent": -30.633094991588276,
-      "gain_percent": -30.633094991588276,
-      "half_range_percent": 0.0,
+      "gain_minus_half_range_percent": -31.267003305871885,
+      "gain_percent": -30.959124843319014,
+      "half_range_percent": 0.3078784625528722,
       "metric": "R_ms_from_leg",
       "separated": false,
       "test_arm": "minna5@d4",
-      "test_mean": 120.76954128440367,
+      "test_mean": 120.99925688073395,
       "test_values": [
-        120.76954128440367
+        120.76954128440367,
+        121.22897247706423
       ]
     },
     {
       "contrast": "arm-adjacent-pairs",
-      "gain_minus_half_range_percent": -22.04908738432277,
-      "gain_percent": -22.04908738432277,
+      "gain_minus_half_range_percent": -22.508603646481646,
+      "gain_percent": -22.27884551540221,
       "gain_percent_each": [
-        -22.04908738432277
+        -22.04908738432277,
+        -22.508603646481646
       ],
-      "half_range_percent": 0.0,
+      "half_range_percent": 0.22975813107943743,
       "metric": "mtp_seconds_per_token"
     }
   ],
-  "decomposition": null,
+  "decomposition": {
+    "cells": {
+      "arm_low": {
+        "NA": 3,
+        "arm_key": "minna5@d4",
+        "ipg": 3,
+        "rows": 5,
+        "weight_streams_G": 2
+      },
+      "shipped_high": {
+        "NA": 3,
+        "arm_key": "shipped@d5",
+        "ipg": 3,
+        "rows": 6,
+        "weight_streams_G": 2
+      },
+      "shipped_low": {
+        "NA": 5,
+        "arm_key": "shipped@d4",
+        "ipg": 5,
+        "rows": 5,
+        "weight_streams_G": 1
+      }
+    },
+    "channel_split": {
+      "A": {
+        "draft_window_ms": 0.2338853211009173,
+        "host_encode_upper_bound_ms": 2.294,
+        "raw_eval_wall_ms": 15.101908256880733,
+        "raw_verify_build_ms": 13.09812844036697,
+        "traced_delta_ms": 28.536169724770645,
+        "unattributed_ms": 0.1022477064220304,
+        "verify_pipeline_ms": 28.200036697247697,
+        "verify_pipeline_share": 0.9882208078111069
+      },
+      "A_plus_B": {
+        "draft_window_ms": 0.7324131307339452,
+        "host_encode_upper_bound_ms": 2.294,
+        "raw_eval_wall_ms": 17.698686305428133,
+        "raw_verify_build_ms": 16.353347572629964,
+        "traced_delta_ms": 35.11156249999999,
+        "unattributed_ms": 0.32711549120795236,
+        "verify_pipeline_ms": 34.0520338780581,
+        "verify_pipeline_share": 0.9698239398505295
+      },
+      "B": {
+        "draft_window_ms": 0.4985278096330279,
+        "host_encode_upper_bound_ms": 2.294,
+        "raw_eval_wall_ms": 2.5967780485473995,
+        "raw_verify_build_ms": 3.2552191322629938,
+        "traced_delta_ms": 6.575392775229346,
+        "unattributed_ms": 0.22486778478592195,
+        "verify_pipeline_ms": 5.8519971808104,
+        "verify_pipeline_share": 0.8899844284368679
+      },
+      "channel_note": "Qwen36MTPBlockSession.swift:765-790 forbids reading verify_build_us alone as host cost. E86 removed the decode asyncEval ladder and measured host encode of the whole 64-layer verify graph at 2.294 ms per round, against 72.330 ms of verify_build_us under the shipped ladder, so that counter is about 97 % GPU wait. verify_build_us and eval_wall_us partition one GPU cost at an arbitrary boundary and only their sum is meaningful, which is why the split is reported as verify_pipeline_ms. The host encode is also an upper bound on any host-channel movement here: this arm changes only the Metal grid x-extent, so no host op count differs between the arms."
+    },
+    "channels": {
+      "ch_draft_window_ms": {
+        "A": {
+          "delta_ms": 0.2338853211009173,
+          "delta_percent_of_low": 9.006871698846469,
+          "high_cell": "minna5@d4",
+          "high_mean_ms": 2.830628440366972,
+          "high_values_ms": [
+            2.806908256880734,
+            2.8543486238532108
+          ],
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 2.596743119266055,
+          "low_values_ms": [
+            2.7361467889908258,
+            2.4573394495412844
+          ],
+          "meaning": "kernel config alone at 5 rows: minna5 against shipped, NA 5->3, G 1->2",
+          "metric": "ch_draft_window_ms",
+          "name": "A",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.20684102654551514,
+          "separated_from_zero": false,
+          "two_se_ms": 0.4136820530910303,
+          "two_se_percent_of_low": 15.930803860489428
+        },
+        "A_plus_B": {
+          "delta_ms": 0.7324131307339452,
+          "delta_percent_of_low": 28.205066773834563,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 3.32915625,
+          "high_values_ms": [
+            3.11896875,
+            3.53934375
+          ],
+          "identity_note": "zero by construction: all three contrasts are differences of the same three cell means, so the sum is an algebraic identity and not a third independent measurement. The real agreement check is cross_estimator_residual_ms.",
+          "identity_residual_ms": 0.0,
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 2.596743119266055,
+          "low_values_ms": [
+            2.7361467889908258,
+            2.4573394495412844
+          ],
+          "meaning": "shipped plan across the width boundary, R(6) - R(5)",
+          "metric": "ch_draft_window_ms",
+          "name": "A+B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.20684102654551514,
+          "separated_from_zero": true,
+          "two_se_ms": 0.4136820530910303,
+          "two_se_percent_of_low": 15.930803860489428
+        },
+        "B": {
+          "delta_ms": 0.4985278096330279,
+          "delta_percent_of_low": 17.61191269485009,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 3.32915625,
+          "high_values_ms": [
+            3.11896875,
+            3.53934375
+          ],
+          "low_cell": "minna5@d4",
+          "low_mean_ms": 2.830628440366972,
+          "low_values_ms": [
+            2.806908256880734,
+            2.8543486238532108
+          ],
+          "meaning": "one extra verified row alone, 5 -> 6 rows at a fixed NA=3, G=2 kernel",
+          "metric": "ch_draft_window_ms",
+          "name": "B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.20684102654551514,
+          "separated_from_zero": true,
+          "two_se_ms": 0.4136820530910303,
+          "two_se_percent_of_low": 14.6144950425708
+        },
+        "metric": "ch_draft_window_ms",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.20684102654551514
+      },
+      "ch_unattributed_ms": {
+        "A": {
+          "delta_ms": 0.1022477064220304,
+          "delta_percent_of_low": 10.610344729101948,
+          "high_cell": "minna5@d4",
+          "high_mean_ms": 1.065908256880739,
+          "high_values_ms": [
+            1.034889908256884,
+            1.0969266055045939
+          ],
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 0.9636605504587086,
+          "low_values_ms": [
+            0.9446146788990686,
+            0.9827064220183486
+          ],
+          "meaning": "kernel config alone at 5 rows: minna5 against shipped, NA 5->3, G 1->2",
+          "metric": "ch_unattributed_ms",
+          "name": "A",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.03164935060769038,
+          "separated_from_zero": true,
+          "two_se_ms": 0.06329870121538075,
+          "two_se_percent_of_low": 6.568568276998593
+        },
+        "A_plus_B": {
+          "delta_ms": 0.32711549120795236,
+          "delta_percent_of_low": 33.94509519480104,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 1.290776041666661,
+          "high_values_ms": [
+            1.277447916666667,
+            1.3041041666666549
+          ],
+          "identity_note": "zero by construction: all three contrasts are differences of the same three cell means, so the sum is an algebraic identity and not a third independent measurement. The real agreement check is cross_estimator_residual_ms.",
+          "identity_residual_ms": 0.0,
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 0.9636605504587086,
+          "low_values_ms": [
+            0.9446146788990686,
+            0.9827064220183486
+          ],
+          "meaning": "shipped plan across the width boundary, R(6) - R(5)",
+          "metric": "ch_unattributed_ms",
+          "name": "A+B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.03164935060769038,
+          "separated_from_zero": true,
+          "two_se_ms": 0.06329870121538075,
+          "two_se_percent_of_low": 6.568568276998593
+        },
+        "B": {
+          "delta_ms": 0.22486778478592195,
+          "delta_percent_of_low": 21.096354525292103,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 1.290776041666661,
+          "high_values_ms": [
+            1.277447916666667,
+            1.3041041666666549
+          ],
+          "low_cell": "minna5@d4",
+          "low_mean_ms": 1.065908256880739,
+          "low_values_ms": [
+            1.034889908256884,
+            1.0969266055045939
+          ],
+          "meaning": "one extra verified row alone, 5 -> 6 rows at a fixed NA=3, G=2 kernel",
+          "metric": "ch_unattributed_ms",
+          "name": "B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.03164935060769038,
+          "separated_from_zero": true,
+          "two_se_ms": 0.06329870121538075,
+          "two_se_percent_of_low": 5.938475549539067
+        },
+        "metric": "ch_unattributed_ms",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.03164935060769038
+      },
+      "ch_verify_pipeline_ms": {
+        "A": {
+          "delta_ms": 28.200036697247697,
+          "delta_percent_of_low": 31.917428894435496,
+          "high_cell": "minna5@d4",
+          "high_mean_ms": 116.55313302752293,
+          "high_values_ms": [
+            116.38985321100918,
+            116.7164128440367
+          ],
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 88.35309633027524,
+          "low_values_ms": [
+            88.28524770642203,
+            88.42094495412844
+          ],
+          "meaning": "kernel config alone at 5 rows: minna5 against shipped, NA 5->3, G 1->2",
+          "metric": "ch_verify_pipeline_ms",
+          "name": "A",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.1655936393706007,
+          "separated_from_zero": true,
+          "two_se_ms": 0.3311872787412014,
+          "two_se_percent_of_low": 0.37484512993543634
+        },
+        "A_plus_B": {
+          "delta_ms": 34.0520338780581,
+          "delta_percent_of_low": 38.54084949186978,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 122.40513020833333,
+          "high_values_ms": [
+            122.50446875,
+            122.30579166666666
+          ],
+          "identity_note": "zero by construction: all three contrasts are differences of the same three cell means, so the sum is an algebraic identity and not a third independent measurement. The real agreement check is cross_estimator_residual_ms.",
+          "identity_residual_ms": 0.0,
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 88.35309633027524,
+          "low_values_ms": [
+            88.28524770642203,
+            88.42094495412844
+          ],
+          "meaning": "shipped plan across the width boundary, R(6) - R(5)",
+          "metric": "ch_verify_pipeline_ms",
+          "name": "A+B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.1655936393706007,
+          "separated_from_zero": true,
+          "two_se_ms": 0.3311872787412014,
+          "two_se_percent_of_low": 0.37484512993543634
+        },
+        "B": {
+          "delta_ms": 5.8519971808104,
+          "delta_percent_of_low": 5.02088363375741,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 122.40513020833333,
+          "high_values_ms": [
+            122.50446875,
+            122.30579166666666
+          ],
+          "low_cell": "minna5@d4",
+          "low_mean_ms": 116.55313302752293,
+          "low_values_ms": [
+            116.38985321100918,
+            116.7164128440367
+          ],
+          "meaning": "one extra verified row alone, 5 -> 6 rows at a fixed NA=3, G=2 kernel",
+          "metric": "ch_verify_pipeline_ms",
+          "name": "B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.1655936393706007,
+          "separated_from_zero": true,
+          "two_se_ms": 0.3311872787412014,
+          "two_se_percent_of_low": 0.28415133093247236
+        },
+        "metric": "ch_verify_pipeline_ms",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.1655936393706007
+      },
+      "raw_eval_wall_ms": {
+        "A": {
+          "delta_ms": 15.101908256880733,
+          "delta_percent_of_low": 36.444426339045535,
+          "high_cell": "minna5@d4",
+          "high_mean_ms": 56.54009174311927,
+          "high_values_ms": [
+            56.43535779816514,
+            56.6448256880734
+          ],
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 41.438183486238536,
+          "low_values_ms": [
+            41.50247706422019,
+            41.373889908256885
+          ],
+          "meaning": "kernel config alone at 5 rows: minna5 against shipped, NA 5->3, G 1->2",
+          "metric": "raw_eval_wall_ms",
+          "name": "A",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.10428011020636524,
+          "separated_from_zero": true,
+          "two_se_ms": 0.20856022041273048,
+          "two_se_percent_of_low": 0.5033044474113895
+        },
+        "A_plus_B": {
+          "delta_ms": 17.698686305428133,
+          "delta_percent_of_low": 42.71105733026593,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 59.13686979166667,
+          "high_values_ms": [
+            59.10210416666666,
+            59.17163541666667
+          ],
+          "identity_note": "zero by construction: all three contrasts are differences of the same three cell means, so the sum is an algebraic identity and not a third independent measurement. The real agreement check is cross_estimator_residual_ms.",
+          "identity_residual_ms": 0.0,
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 41.438183486238536,
+          "low_values_ms": [
+            41.50247706422019,
+            41.373889908256885
+          ],
+          "meaning": "shipped plan across the width boundary, R(6) - R(5)",
+          "metric": "raw_eval_wall_ms",
+          "name": "A+B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.10428011020636524,
+          "separated_from_zero": true,
+          "two_se_ms": 0.20856022041273048,
+          "two_se_percent_of_low": 0.5033044474113895
+        },
+        "B": {
+          "delta_ms": 2.5967780485473995,
+          "delta_percent_of_low": 4.592808339161243,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 59.13686979166667,
+          "high_values_ms": [
+            59.10210416666666,
+            59.17163541666667
+          ],
+          "low_cell": "minna5@d4",
+          "low_mean_ms": 56.54009174311927,
+          "low_values_ms": [
+            56.43535779816514,
+            56.6448256880734
+          ],
+          "meaning": "one extra verified row alone, 5 -> 6 rows at a fixed NA=3, G=2 kernel",
+          "metric": "raw_eval_wall_ms",
+          "name": "B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.10428011020636524,
+          "separated_from_zero": true,
+          "two_se_ms": 0.20856022041273048,
+          "two_se_percent_of_low": 0.36887138662648444
+        },
+        "metric": "raw_eval_wall_ms",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.10428011020636524
+      },
+      "raw_verify_build_ms": {
+        "A": {
+          "delta_ms": 13.09812844036697,
+          "delta_percent_of_low": 27.91890178696529,
+          "high_cell": "minna5@d4",
+          "high_mean_ms": 60.01304128440367,
+          "high_values_ms": [
+            59.95449541284404,
+            60.0715871559633
+          ],
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 46.9149128440367,
+          "low_values_ms": [
+            46.78277064220184,
+            47.04705504587156
+          ],
+          "meaning": "kernel config alone at 5 rows: minna5 against shipped, NA 5->3, G 1->2",
+          "metric": "raw_verify_build_ms",
+          "name": "A",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.16098262452783263,
+          "separated_from_zero": true,
+          "two_se_ms": 0.32196524905566526,
+          "two_se_percent_of_low": 0.6862748527872197
+        },
+        "A_plus_B": {
+          "delta_ms": 16.353347572629964,
+          "delta_percent_of_low": 34.85746126608998,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 63.268260416666664,
+          "high_values_ms": [
+            63.40236458333334,
+            63.13415625
+          ],
+          "identity_note": "zero by construction: all three contrasts are differences of the same three cell means, so the sum is an algebraic identity and not a third independent measurement. The real agreement check is cross_estimator_residual_ms.",
+          "identity_residual_ms": 0.0,
+          "low_cell": "shipped@d4",
+          "low_mean_ms": 46.9149128440367,
+          "low_values_ms": [
+            46.78277064220184,
+            47.04705504587156
+          ],
+          "meaning": "shipped plan across the width boundary, R(6) - R(5)",
+          "metric": "raw_verify_build_ms",
+          "name": "A+B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.16098262452783263,
+          "separated_from_zero": true,
+          "two_se_ms": 0.32196524905566526,
+          "two_se_percent_of_low": 0.6862748527872197
+        },
+        "B": {
+          "delta_ms": 3.2552191322629938,
+          "delta_percent_of_low": 5.424186247846379,
+          "high_cell": "shipped@d5",
+          "high_mean_ms": 63.268260416666664,
+          "high_values_ms": [
+            63.40236458333334,
+            63.13415625
+          ],
+          "low_cell": "minna5@d4",
+          "low_mean_ms": 60.01304128440367,
+          "low_values_ms": [
+            59.95449541284404,
+            60.0715871559633
+          ],
+          "meaning": "one extra verified row alone, 5 -> 6 rows at a fixed NA=3, G=2 kernel",
+          "metric": "raw_verify_build_ms",
+          "name": "B",
+          "pooled_sd_df": 3,
+          "pooled_sd_ms": 0.16098262452783263,
+          "separated_from_zero": true,
+          "two_se_ms": 0.32196524905566526,
+          "two_se_percent_of_low": 0.5364921393166228
+        },
+        "metric": "raw_verify_build_ms",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.16098262452783263
+      }
+    },
+    "cross_estimator_residual_ms": {
+      "A": 0.06841284403671466,
+      "A_plus_B": 0.12426839640676235,
+      "B": 0.05585555237004769
+    },
+    "primary_estimator": {
+      "A": {
+        "delta_ms": 28.60458256880736,
+        "delta_percent_of_low": 30.959124843319014,
+        "high_cell": "minna5@d4",
+        "high_mean_ms": 120.99925688073395,
+        "high_values_ms": [
+          120.76954128440367,
+          121.22897247706423
+        ],
+        "low_cell": "shipped@d4",
+        "low_mean_ms": 92.3946743119266,
+        "low_values_ms": [
+          92.44942201834861,
+          92.33992660550459
+        ],
+        "meaning": "kernel config alone at 5 rows: minna5 against shipped, NA 5->3, G 1->2",
+        "metric": "R_ms_from_leg",
+        "name": "A",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.2238344294897308,
+        "separated_from_zero": true,
+        "two_se_ms": 0.4476688589794616,
+        "two_se_percent_of_low": 0.48451803344002387
+      },
+      "A_plus_B": {
+        "delta_ms": 35.23583089640675,
+        "delta_percent_of_low": 38.13621419071164,
+        "high_cell": "shipped@d5",
+        "high_mean_ms": 127.63050520833335,
+        "high_values_ms": [
+          127.49127083333333,
+          127.76973958333335
+        ],
+        "identity_note": "zero by construction: all three contrasts are differences of the same three cell means, so the sum is an algebraic identity and not a third independent measurement. The real agreement check is cross_estimator_residual_ms.",
+        "identity_residual_ms": 0.0,
+        "low_cell": "shipped@d4",
+        "low_mean_ms": 92.3946743119266,
+        "low_values_ms": [
+          92.44942201834861,
+          92.33992660550459
+        ],
+        "meaning": "shipped plan across the width boundary, R(6) - R(5)",
+        "metric": "R_ms_from_leg",
+        "name": "A+B",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.2238344294897308,
+        "separated_from_zero": true,
+        "two_se_ms": 0.4476688589794616,
+        "two_se_percent_of_low": 0.48451803344002387
+      },
+      "B": {
+        "delta_ms": 6.631248327599394,
+        "delta_percent_of_low": 5.480404176478253,
+        "high_cell": "shipped@d5",
+        "high_mean_ms": 127.63050520833335,
+        "high_values_ms": [
+          127.49127083333333,
+          127.76973958333335
+        ],
+        "low_cell": "minna5@d4",
+        "low_mean_ms": 120.99925688073395,
+        "low_values_ms": [
+          120.76954128440367,
+          121.22897247706423
+        ],
+        "meaning": "one extra verified row alone, 5 -> 6 rows at a fixed NA=3, G=2 kernel",
+        "metric": "R_ms_from_leg",
+        "name": "B",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.2238344294897308,
+        "separated_from_zero": true,
+        "two_se_ms": 0.4476688589794616,
+        "two_se_percent_of_low": 0.36997653582345386
+      },
+      "metric": "R_ms_from_leg",
+      "pooled_sd_df": 3,
+      "pooled_sd_ms": 0.2238344294897308
+    },
+    "reference_points": {
+      "advisor_F3_predicted_A_ms": 13.9,
+      "advisor_F3_predicted_A_percent": 12.0,
+      "askeladd_band_local_h_ms": 12.47,
+      "e68_rung1_step_into_width_5_ms": 13.405,
+      "e68_rung1_step_into_width_6_ms": 27.308,
+      "note": "harness=local for every measured value here. The ranked figures are quoted for comparison only and were produced by a different harness on a different chip.",
+      "ranked_5a9f130a_intercept_ms": 16.158,
+      "ranked_5a9f130a_per_row_h_ms": 5.3351
+    },
+    "trace_estimator": {
+      "A": {
+        "delta_ms": 28.536169724770645,
+        "delta_percent_of_low": 31.046766497598988,
+        "high_cell": "minna5@d4",
+        "high_mean_ms": 120.44966972477064,
+        "high_values_ms": [
+          120.2316513761468,
+          120.6676880733945
+        ],
+        "low_cell": "shipped@d4",
+        "low_mean_ms": 91.9135,
+        "low_values_ms": [
+          91.96600917431192,
+          91.86099082568808
+        ],
+        "meaning": "kernel config alone at 5 rows: minna5 against shipped, NA 5->3, G 1->2",
+        "metric": "R_ms_from_trace",
+        "name": "A",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.2092990870321913,
+        "separated_from_zero": true,
+        "two_se_ms": 0.4185981740643826,
+        "two_se_percent_of_low": 0.45542621493511026
+      },
+      "A_plus_B": {
+        "delta_ms": 35.11156249999999,
+        "delta_percent_of_low": 38.20065877156239,
+        "high_cell": "shipped@d5",
+        "high_mean_ms": 127.02506249999999,
+        "high_values_ms": [
+          126.90088541666667,
+          127.14923958333333
+        ],
+        "identity_note": "zero by construction: all three contrasts are differences of the same three cell means, so the sum is an algebraic identity and not a third independent measurement. The real agreement check is cross_estimator_residual_ms.",
+        "identity_residual_ms": 0.0,
+        "low_cell": "shipped@d4",
+        "low_mean_ms": 91.9135,
+        "low_values_ms": [
+          91.96600917431192,
+          91.86099082568808
+        ],
+        "meaning": "shipped plan across the width boundary, R(6) - R(5)",
+        "metric": "R_ms_from_trace",
+        "name": "A+B",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.2092990870321913,
+        "separated_from_zero": true,
+        "two_se_ms": 0.4185981740643826,
+        "two_se_percent_of_low": 0.45542621493511026
+      },
+      "B": {
+        "delta_ms": 6.575392775229346,
+        "delta_percent_of_low": 5.4590376131825185,
+        "high_cell": "shipped@d5",
+        "high_mean_ms": 127.02506249999999,
+        "high_values_ms": [
+          126.90088541666667,
+          127.14923958333333
+        ],
+        "low_cell": "minna5@d4",
+        "low_mean_ms": 120.44966972477064,
+        "low_values_ms": [
+          120.2316513761468,
+          120.6676880733945
+        ],
+        "meaning": "one extra verified row alone, 5 -> 6 rows at a fixed NA=3, G=2 kernel",
+        "metric": "R_ms_from_trace",
+        "name": "B",
+        "pooled_sd_df": 3,
+        "pooled_sd_ms": 0.2092990870321913,
+        "separated_from_zero": true,
+        "two_se_ms": 0.4185981740643826,
+        "two_se_percent_of_low": 0.3475295324768311
+      },
+      "metric": "R_ms_from_trace",
+      "pooled_sd_df": 3,
+      "pooled_sd_ms": 0.2092990870321913
+    }
+  },
   "harness": "local",
   "identity": {
     "base_sha": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
@@ -56,8 +711,9 @@
     "decode_tokens": 512,
     "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
     "host": "ip-10-231-2-22.ec2.internal",
-    "leg_commit_note": "legs recorded 2 commits ['63ce572ca0f0a163facb237dc39faca7351e9c62', '9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22'], and no file under Sources, Vendor or Package.swift differs between them. The worker digest is identical on every leg, so the timed bytes did not move.",
+    "leg_commit_note": "legs recorded 3 commits ['0efcdfedd3e948bf744dafd94d7ccd2fdc25faad', '63ce572ca0f0a163facb237dc39faca7351e9c62', '9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22'], and no file under Sources, Vendor or Package.swift differs between them. The worker digest is identical on every leg, so the timed bytes did not move.",
     "leg_commits": [
+      "0efcdfedd3e948bf744dafd94d7ccd2fdc25faad",
       "63ce572ca0f0a163facb237dc39faca7351e9c62",
       "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22"
     ],
@@ -218,44 +874,363 @@
       },
       "verify_width": 5,
       "worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7"
+    },
+    {
+      "R_ms_from_leg": 127.49127083333333,
+      "R_ms_from_trace": 126.90088541666667,
+      "accepted_draft_rate": 0.8684759916492694,
+      "all_tokens_matched": true,
+      "arm_key": "shipped@d5",
+      "base_sha": "63ce572ca0f0a163facb237dc39faca7351e9c62",
+      "ch_draft_window_ms": 3.11896875,
+      "ch_round_ms": 126.90088541666667,
+      "ch_unattributed_ms": 1.277447916666667,
+      "ch_verify_pipeline_ms": 122.50446875,
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "true",
+      "cool_gate_passes": [
+        {
+          "current_c": 39.7,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.7,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.6,
+          "target_c": 40.0,
+          "waited_s": 50
+        }
+      ],
+      "decode_tokens": 512,
+      "dirty_candidate_paths": 0,
+      "effective_mean_draft_len": 4.989583333333333,
+      "exit": 0,
+      "gate_qualified_for_timing": "true",
+      "gate_temp_before_mtp_decode_c": 39.6,
+      "gate_waited_s_before_mtp_decode": 50,
+      "gpu_temp_entry_c": 55.036964416503906,
+      "gpu_temp_exit_c": 58.74821472167969,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg_seconds": 16.154112,
+      "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+      "mtp_decode_speedup": 2.3365505086908276,
+      "mtp_seconds_per_token": 0.031551,
+      "pinned_depth": 5,
+      "plan": "shipped",
+      "position": 3,
+      "post_run_worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7",
+      "raw_eval_wall_ms": 59.10210416666666,
+      "raw_verify_build_ms": 63.40236458333334,
+      "reference_checked_rows": "575/575",
+      "residual_divergence_count": 0,
+      "rounds": 96,
+      "sandbox": "off",
+      "seed_prefill_seconds": 3.91495,
+      "serial_seconds_per_token": 0.073721,
+      "session_commit": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+      "tag": "e163w5p3shippedd5",
+      "trace": "1",
+      "trace_accepted_mean": 4.333333333333333,
+      "trace_draft_build_us_mean": 3118.96875,
+      "trace_eval_wall_us_mean": 59102.104166666664,
+      "trace_pinned_width_share": 0.9895833333333334,
+      "trace_prefill_seconds": 3.91495,
+      "trace_round_us_mean": 126900.88541666667,
+      "trace_round_us_sd": 4978.094097078121,
+      "trace_rounds": 96,
+      "trace_verify_build_us_mean": 63402.364583333336,
+      "trace_width_histogram": {
+        "5": 1,
+        "6": 95
+      },
+      "verify_width": 6,
+      "worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7"
+    },
+    {
+      "R_ms_from_leg": 127.76973958333335,
+      "R_ms_from_trace": 127.14923958333333,
+      "accepted_draft_rate": 0.8684759916492694,
+      "all_tokens_matched": true,
+      "arm_key": "shipped@d5",
+      "base_sha": "0efcdfedd3e948bf744dafd94d7ccd2fdc25faad",
+      "ch_draft_window_ms": 3.53934375,
+      "ch_round_ms": 127.14923958333333,
+      "ch_unattributed_ms": 1.3041041666666549,
+      "ch_verify_pipeline_ms": 122.30579166666666,
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "true",
+      "cool_gate_passes": [
+        {
+          "current_c": 39.4,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.4,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.3,
+          "target_c": 40.0,
+          "waited_s": 50
+        }
+      ],
+      "decode_tokens": 512,
+      "dirty_candidate_paths": 0,
+      "effective_mean_draft_len": 4.989583333333333,
+      "exit": 0,
+      "gate_qualified_for_timing": "true",
+      "gate_temp_before_mtp_decode_c": 39.3,
+      "gate_waited_s_before_mtp_decode": 50,
+      "gpu_temp_entry_c": 55.29012680053711,
+      "gpu_temp_exit_c": 58.58204650878906,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg_seconds": 16.182784,
+      "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+      "mtp_decode_speedup": 2.34071209356192,
+      "mtp_seconds_per_token": 0.031607,
+      "pinned_depth": 5,
+      "plan": "shipped",
+      "position": 4,
+      "post_run_worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7",
+      "raw_eval_wall_ms": 59.17163541666667,
+      "raw_verify_build_ms": 63.13415625,
+      "reference_checked_rows": "575/575",
+      "residual_divergence_count": 0,
+      "rounds": 96,
+      "sandbox": "off",
+      "seed_prefill_seconds": 3.916889,
+      "serial_seconds_per_token": 0.073984,
+      "session_commit": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+      "tag": "e163w5p4shippedd5",
+      "trace": "1",
+      "trace_accepted_mean": 4.333333333333333,
+      "trace_draft_build_us_mean": 3539.34375,
+      "trace_eval_wall_us_mean": 59171.635416666664,
+      "trace_pinned_width_share": 0.9895833333333334,
+      "trace_prefill_seconds": 3.916889,
+      "trace_round_us_mean": 127149.23958333333,
+      "trace_round_us_sd": 6188.866408818834,
+      "trace_rounds": 96,
+      "trace_verify_build_us_mean": 63134.15625,
+      "trace_width_histogram": {
+        "5": 1,
+        "6": 95
+      },
+      "verify_width": 6,
+      "worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7"
+    },
+    {
+      "R_ms_from_leg": 121.22897247706423,
+      "R_ms_from_trace": 120.6676880733945,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "arm_key": "minna5@d4",
+      "base_sha": "0efcdfedd3e948bf744dafd94d7ccd2fdc25faad",
+      "ch_draft_window_ms": 2.8543486238532108,
+      "ch_round_ms": 120.6676880733945,
+      "ch_unattributed_ms": 1.0969266055045939,
+      "ch_verify_pipeline_ms": 116.7164128440367,
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "true",
+      "cool_gate_passes": [
+        {
+          "current_c": 39.7,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.9,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.6,
+          "target_c": 40.0,
+          "waited_s": 50
+        }
+      ],
+      "decode_tokens": 512,
+      "dirty_candidate_paths": 0,
+      "effective_mean_draft_len": 4,
+      "exit": 0,
+      "gate_qualified_for_timing": "true",
+      "gate_temp_before_mtp_decode_c": 39.6,
+      "gate_waited_s_before_mtp_decode": 50,
+      "gpu_temp_entry_c": 55.18111801147461,
+      "gpu_temp_exit_c": 59.15011978149414,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg_seconds": 17.132544,
+      "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+      "mtp_decode_speedup": 2.208516138976433,
+      "mtp_seconds_per_token": 0.033462,
+      "pinned_depth": 4,
+      "plan": "minna5",
+      "position": 5,
+      "post_run_worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7",
+      "raw_eval_wall_ms": 56.6448256880734,
+      "raw_verify_build_ms": 60.0715871559633,
+      "reference_checked_rows": "545/545",
+      "residual_divergence_count": 0,
+      "rounds": 109,
+      "sandbox": "off",
+      "seed_prefill_seconds": 3.918586,
+      "serial_seconds_per_token": 0.073901,
+      "session_commit": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+      "tag": "e163w5p5minna5d4",
+      "trace": "1",
+      "trace_accepted_mean": 3.697247706422018,
+      "trace_draft_build_us_mean": 2854.348623853211,
+      "trace_eval_wall_us_mean": 56644.8256880734,
+      "trace_pinned_width_share": 1.0,
+      "trace_prefill_seconds": 3.918586,
+      "trace_round_us_mean": 120667.6880733945,
+      "trace_round_us_sd": 5864.6549844799965,
+      "trace_rounds": 109,
+      "trace_verify_build_us_mean": 60071.5871559633,
+      "trace_width_histogram": {
+        "5": 109
+      },
+      "verify_width": 5,
+      "worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7"
+    },
+    {
+      "R_ms_from_leg": 92.33992660550459,
+      "R_ms_from_trace": 91.86099082568808,
+      "accepted_draft_rate": 0.9243119266055045,
+      "all_tokens_matched": true,
+      "arm_key": "shipped@d4",
+      "base_sha": "0efcdfedd3e948bf744dafd94d7ccd2fdc25faad",
+      "ch_draft_window_ms": 2.4573394495412844,
+      "ch_round_ms": 91.86099082568808,
+      "ch_unattributed_ms": 0.9827064220183486,
+      "ch_verify_pipeline_ms": 88.42094495412844,
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "true",
+      "cool_gate_passes": [
+        {
+          "current_c": 39.8,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.7,
+          "target_c": 40.0,
+          "waited_s": 50
+        },
+        {
+          "current_c": 39.1,
+          "target_c": 40.0,
+          "waited_s": 60
+        }
+      ],
+      "decode_tokens": 512,
+      "dirty_candidate_paths": 0,
+      "effective_mean_draft_len": 4,
+      "exit": 0,
+      "gate_qualified_for_timing": "true",
+      "gate_temp_before_mtp_decode_c": 39.1,
+      "gate_waited_s_before_mtp_decode": 60,
+      "gpu_temp_entry_c": 55.65232849121094,
+      "gpu_temp_exit_c": 58.86691665649414,
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg_seconds": 13.984768,
+      "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+      "mtp_decode_speedup": 2.7227691156386444,
+      "mtp_seconds_per_token": 0.027314,
+      "pinned_depth": 4,
+      "plan": "shipped",
+      "position": 6,
+      "post_run_worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7",
+      "raw_eval_wall_ms": 41.373889908256885,
+      "raw_verify_build_ms": 47.04705504587156,
+      "reference_checked_rows": "545/545",
+      "residual_divergence_count": 0,
+      "rounds": 109,
+      "sandbox": "off",
+      "seed_prefill_seconds": 3.919716,
+      "serial_seconds_per_token": 0.074369,
+      "session_commit": "9fc9488d5e5a1dbb30bc85f177be7a273bfc5a22",
+      "tag": "e163w5p6shippedd4",
+      "trace": "1",
+      "trace_accepted_mean": 3.697247706422018,
+      "trace_draft_build_us_mean": 2457.3394495412845,
+      "trace_eval_wall_us_mean": 41373.88990825688,
+      "trace_pinned_width_share": 1.0,
+      "trace_prefill_seconds": 3.919716,
+      "trace_round_us_mean": 91860.99082568807,
+      "trace_round_us_sd": 6770.852455351341,
+      "trace_rounds": 109,
+      "trace_verify_build_us_mean": 47047.05504587156,
+      "trace_width_histogram": {
+        "5": 109
+      },
+      "verify_width": 5,
+      "worker_sha256": "3a7a991ea9a873bb702e8174bc7ab58bcb3e1d63df8bf3358a70b1c8db87e9d7"
     }
   ],
   "min_useful_percent": 0.06,
   "noise_channel": {
     "channel": "true serial control, depth 0, no routed QMV launched",
-    "half_range_percent": 0.056293703922246696,
-    "mean": 0.0737205,
+    "half_range_percent": 0.46683024518737043,
+    "mean": 0.07390266666666666,
     "predeclared_floor_percent": 0.039,
-    "sd_percent": 0.07961131956305677,
+    "sd_percent": 0.3459897510514057,
     "values": [
       0.073762,
-      0.073679
+      0.073679,
+      0.073721,
+      0.073984,
+      0.073901,
+      0.074369
     ]
   },
   "official_or_ranked_score": false,
   "order": [
     "shipped@d4",
-    "minna5@d4"
+    "minna5@d4",
+    "shipped@d5",
+    "shipped@d5",
+    "minna5@d4",
+    "shipped@d4"
   ],
   "problems": [],
   "round_cost_shares": [
     {
-      "R_ms": 120.76954128440367,
+      "R_ms": 120.99925688073395,
       "arm_key": "minna5@d4",
-      "draft_window_share_of_round": 0.023345834684572974,
-      "host_encode_share_of_round_upper_bound": 0.019079834417504434,
-      "routed_matvec_share_of_round_upper_bound": 0.9809201655824956,
-      "verify_pipeline_share_of_round": 0.9680466988420671,
+      "draft_window_share_of_round": 0.023500228652490306,
+      "host_encode_share_of_round_upper_bound": 0.01904536160992739,
+      "routed_matvec_share_of_round_upper_bound": 0.9809546383900727,
+      "verify_pipeline_share_of_round": 0.9676508005952265,
       "verify_width": 5
     },
     {
-      "R_ms": 92.44942201834861,
+      "R_ms": 92.3946743119266,
       "arm_key": "shipped@d4",
-      "draft_window_share_of_round": 0.029751718200631567,
-      "host_encode_share_of_round_upper_bound": 0.02494399855550939,
-      "routed_matvec_share_of_round_upper_bound": 0.9750560014444907,
-      "verify_pipeline_share_of_round": 0.9599769360339058,
+      "draft_window_share_of_round": 0.02825117449509657,
+      "host_encode_share_of_round_upper_bound": 0.024958256933918056,
+      "routed_matvec_share_of_round_upper_bound": 0.975041743066082,
+      "verify_pipeline_share_of_round": 0.9612642748603205,
       "verify_width": 5
+    },
+    {
+      "R_ms": 127.63050520833335,
+      "arm_key": "shipped@d5",
+      "draft_window_share_of_round": 0.02620706410897946,
+      "host_encode_share_of_round_upper_bound": 0.018059445491628873,
+      "routed_matvec_share_of_round_upper_bound": 0.9819405545083711,
+      "verify_pipeline_share_of_round": 0.9636314431863822,
+      "verify_width": 6
     }
   ]
 }
