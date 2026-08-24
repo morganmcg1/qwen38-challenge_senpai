@@ -23,6 +23,7 @@ import argparse
 import json
 import math
 import os
+import random
 import re
 import statistics
 import sys
@@ -350,6 +351,185 @@ def oracle_ceiling(legs: list[dict]) -> list[dict]:
     return out
 
 
+def auc_value_curve(
+    legs: list[dict],
+    aucs: tuple[float, ...] = (
+        0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.999
+    ),
+    replicates: int = 5,
+    seed: int = 20260824,
+    max_depth: int = WIDTH_CAP,
+) -> dict:
+    """How good must a per-position signal be before adaptivity pays?
+
+    The realised truth is known from the pinned arm: position `i` of a round
+    that accepted `a` drafts yields a token when `i < a` and yields nothing
+    otherwise. A signal of a stated quality is then synthesised on top of that
+    truth with the equal-variance binormal model, `s = delta * y + noise`,
+    where `delta = sqrt(2) * Phi^-1(auc)`. This inverts the usual direction:
+    instead of measuring a signal's AUC, it asks what an AUC is worth.
+
+    The policy family is a floor plus a threshold. It drafts the first `m`
+    positions whatever the signal says, then continues while the signal stays
+    above `tau`. The family therefore contains every constant depth, so an AUC
+    of 0.5 returns the best constant instead of a noise-driven rule that would
+    score below it, and a perfect signal returns the oracle. Both ends are
+    anchored to numbers computed elsewhere in this report, which is the check
+    that the construction is sound.
+
+    The synthetic signal is equally good at every position, which is
+    optimistic. A real feature normally decays with depth.
+    """
+    prompts = []
+    for leg in legs:
+        accepted = [
+            min(record["acc"], max_depth)
+            for record in leg["rounds"]
+            if record["d"] >= max_depth
+        ]
+        if accepted:
+            prompts.append((leg["label"], accepted))
+    if not prompts:
+        return {}
+
+    normal = statistics.NormalDist()
+    taus = [-4.0 + 0.5 * step for step in range(27)]
+
+    def median_raw(
+        totals: list[tuple[float, float]], extra_ms_per_draft: float = 0.0
+    ) -> float:
+        raws = sorted(
+            ranked_price(depth, accept, extra_ms_per_draft)["raw"]
+            for depth, accept in totals
+        )
+        middle = len(raws) // 2
+        return (
+            raws[middle]
+            if len(raws) % 2
+            else 0.5 * (raws[middle - 1] + raws[middle])
+        )
+
+    def price(policy) -> float:
+        totals = []
+        for _, accepted in prompts:
+            depth_total = accepted_total = 0
+            for a in accepted:
+                d = policy(a)
+                depth_total += d
+                accepted_total += min(a, d)
+            n = len(accepted)
+            totals.append((depth_total / n, accepted_total / n))
+        return median_raw(totals)
+
+    def break_even_sync_ms(totals: list[tuple[float, float]], target: float) -> float:
+        """Largest per-draft cost this rule can pay and still beat `target`."""
+        if median_raw(totals) <= target:
+            return 0.0
+        low, high = 0.0, 1.0
+        while median_raw(totals, high) > target and high < 64.0:
+            high *= 2.0
+        for _ in range(40):
+            middle = 0.5 * (low + high)
+            if median_raw(totals, middle) > target:
+                low = middle
+            else:
+                high = middle
+        return 0.5 * (low + high)
+
+    constants = {
+        depth: price(lambda a, depth=depth: depth)
+        for depth in range(max_depth + 1)
+    }
+    best_constant_depth = max(constants, key=constants.get)
+    best_constant = constants[best_constant_depth]
+    oracle = price(lambda a: a)
+
+    rows = []
+    for area in aucs:
+        delta = math.sqrt(2.0) * normal.inv_cdf(min(area, 0.999))
+        # One noise draw per position per round per replicate, reused by every
+        # rule in the grid, so the search compares rules and not luck.
+        draws = []
+        for replicate in range(replicates):
+            rng = random.Random(seed + replicate)
+            draws.append(
+                [
+                    [
+                        [
+                            delta * (1.0 if position < a else 0.0)
+                            + rng.gauss(0.0, 1.0)
+                            for position in range(max_depth)
+                        ]
+                        for a in accepted
+                    ]
+                    for _, accepted in prompts
+                ]
+            )
+        best = None
+        for floor in range(max_depth + 1):
+            for tau in taus:
+                values, by_replicate = [], []
+                for replicate_draws in draws:
+                    totals = []
+                    for (_, accepted), leg_draws in zip(prompts, replicate_draws):
+                        depth_total = accepted_total = 0
+                        for a, signal in zip(accepted, leg_draws):
+                            d = floor
+                            while d < max_depth and signal[d] > tau:
+                                d += 1
+                            depth_total += d
+                            accepted_total += min(a, d)
+                        n = len(accepted)
+                        totals.append((depth_total / n, accepted_total / n))
+                    by_replicate.append(totals)
+                    values.append(median_raw(totals))
+                # The rule is chosen on its mean across replicates and then
+                # reported at that same mean. Choosing the luckiest replicate
+                # would report the noise as if it were the signal.
+                mean = statistics.fmean(values)
+                if best is None or mean > best["raw"]:
+                    best = {
+                        "raw": mean,
+                        "floor": floor,
+                        "tau": tau,
+                        "spread": max(values) - min(values),
+                        "totals": [
+                            (
+                                statistics.fmean(t[i][0] for t in by_replicate),
+                                statistics.fmean(t[i][1] for t in by_replicate),
+                            )
+                            for i in range(len(prompts))
+                        ],
+                    }
+        span = oracle - best_constant
+        rows.append(
+            {
+                "auc": area,
+                "raw": best["raw"],
+                "floor": best["floor"],
+                "tau": best["tau"],
+                "mean_depth": statistics.fmean(t[0] for t in best["totals"]),
+                "mean_accepted": statistics.fmean(t[1] for t in best["totals"]),
+                "replicate_spread": best["spread"],
+                "gap_recovered": (
+                    (best["raw"] - best_constant) / span if span > 0 else 0.0
+                ),
+                "break_even_sync_ms_per_draft": break_even_sync_ms(
+                    best["totals"], best_constant
+                ),
+            }
+        )
+    return {
+        "best_constant_depth": best_constant_depth,
+        "best_constant_raw": best_constant,
+        "oracle_raw": oracle,
+        "constants": constants,
+        "curve": rows,
+        "prompts": len(prompts),
+        "replicates": replicates,
+    }
+
+
 def fit_temperature(samples: list[tuple[float, int, float]]) -> tuple[float, float]:
     """MLE of T in P(accept) = sigmoid(margin / T) by golden-section search."""
     if not samples:
@@ -557,7 +737,11 @@ RANKED_SERIAL_MS_PER_TOKEN = 37.92
 RANKED_WINDOW = 512
 
 
-def ranked_price(mean_depth: float, mean_accepted: float) -> dict:
+def ranked_price(
+    mean_depth: float,
+    mean_accepted: float,
+    extra_ms_per_draft: float = 0.0,
+) -> dict:
     """Convert one arm's round bookkeeping into a ranked `raw` ratio.
 
     This is a TRANSFER, not a measurement. It carries only two counts, the
@@ -565,10 +749,18 @@ def ranked_price(mean_depth: float, mean_accepted: float) -> dict:
     round law. It assumes the counts hold on the ranked host and that the law
     is affine in proposed rows; it assumes nothing about local wall time, so no
     ungated local timing enters it.
+
+    `extra_ms_per_draft` charges a controller for a new per-draft-position cost
+    that the shipped schedule does not pay, such as a host synchronisation to
+    read a feature. It is zero for every arm actually measured here.
     """
     tokens_per_round = 1.0 + mean_accepted
     rounds = RANKED_WINDOW / tokens_per_round
-    round_ms = RANKED_ROUND_FIXED_MS + RANKED_ROW_MS * (1.0 + mean_depth)
+    round_ms = (
+        RANKED_ROUND_FIXED_MS
+        + RANKED_ROW_MS * (1.0 + mean_depth)
+        + extra_ms_per_draft * mean_depth
+    )
     decode_ms = rounds * round_ms
     leg_ms = decode_ms + RANKED_WINDOW * RANKED_PREFILL_MS_PER_TOKEN
     return {
@@ -1397,6 +1589,7 @@ def main() -> int:
             position: signal_auc(pooled_pinned, position) for position in (0, 1, 2)
         }
         report["oracle_ceiling"] = oracle_ceiling(pinned_legs)
+        report["auc_value_curve"] = auc_value_curve(pinned_legs)
         report["autocorrelation"] = {
             position: history_structure(pinned_legs, position)
             for position in (0, 1)
@@ -1559,6 +1752,40 @@ def main() -> int:
             "  The margin row is descriptive: it says whether a smoothed margin\n"
             "  could carry information where the instantaneous one does not.\n"
             "  * marks a lag outside Bartlett's white-noise band."
+        )
+        print()
+
+    if report.get("auc_value_curve"):
+        block = report["auc_value_curve"]
+        print("=== what signal quality is enough? ===")
+        print(
+            f"  anchors: best constant is depth {block['best_constant_depth']}"
+            f" at raw {block['best_constant_raw']:.3f};"
+            f" oracle raw {block['oracle_raw']:.3f};"
+            f" {block['prompts']} prompts, {block['replicates']} replicates"
+        )
+        print(
+            f"{'signal AUC':>11}{'raw':>8}{'gap won':>10}{'mean d':>8}"
+            f"{'floor':>7}{'tau':>7}{'rep spread':>12}{'sync budget':>13}"
+        )
+        for row in block["curve"]:
+            print(
+                f"{row['auc']:>11.3f}{row['raw']:>8.3f}"
+                f"{100.0 * row['gap_recovered']:>9.1f}%"
+                f"{row['mean_depth']:>8.2f}"
+                f"{row['floor']:>7d}{row['tau']:>7.2f}"
+                f"{row['replicate_spread']:>12.4f}"
+                f"{1000.0 * row['break_even_sync_ms_per_draft']:>11.0f}us"
+            )
+        print(
+            "  A synthetic signal of the stated AUC is laid over the recorded\n"
+            "  outcomes and the best floor-plus-threshold rule is priced through\n"
+            "  the ranked round law. AUC 0.5 returns the best constant and a\n"
+            "  perfect signal returns the oracle, which is the check that the\n"
+            "  construction is sound. The signal is equally good at every\n"
+            "  position, so every row is optimistic for a real feature.\n"
+            "  The sync budget is the largest new per-draft-position cost the\n"
+            "  rule can pay and still beat the free best constant."
         )
         print()
 
