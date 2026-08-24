@@ -723,22 +723,7 @@
   "keyResult": "FINDINGs 504-506: both laws falsified; dR6 = +8.940 ms = 15.77 MUE",
   "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zhs21ryd"
  },
- "liveSubmittedSurface": {
-  "afterRevert": "organizer main plus exactly two files, 30 and 88 changed lines",
-  "ledgerEntry": 358,
-  "predictedReceipt": 3.71209,
-  "predictedVsCrown": "-0.46 %, will be rejected on score",
-  "twoDeltaValue": "about +0.11 % over 5a9f130a organizer main at 3.70784519",
-  "upstreamShiftDstCount": 0,
-  "vsUpstreamMain": {
-   "Sources/MLXFastModel/Qwen36MTPBlockSession.swift": 30,
-   "Vendor/.../MLXLLM/Models/Qwen35.swift": 88,
-   "Vendor/.../kernels/quantized.h": 138,
-   "Vendor/.../kernels/quantized_nax.h": 80,
-   "Vendor/.../mlx-generated/quantized.cpp": 138,
-   "Vendor/.../mlx-generated/quantized_nax.cpp": 80
-  }
- },
+ "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
  "localToRankedAmplification": {
   "byArmShape": {
    "per_draft_step": {
@@ -2201,9 +2186,9 @@
   "ledger": 361,
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
- "submissionQueue": "In flight: 2681c3ac (E193 prefetch, frozen e50b1511/measured 67662100, watcher Alphonse). Next: E199 cap-8 paid receipt (Thorfinn, freezing after width-9 gate). Later: E195 selective-QMV winner iff ranked width-frequency weighting clears MUE (advisor review note); E198 Route-1 kernel winner (m6..9); E192+E194 composition.",
- "lastAdvisorUpdate": "2026-08-24T18:50Z Entry 401: E197 MERGED (FINDINGs 514-515) - cap-8 priced crown-relevant P(crown)=0.465, cap-6 dead, dR9 receipt-only; E199 cap-8 candidate assigned to Thorfinn, queued behind 2681c3ac",
- "ledgerEntry": 401,
+ "submissionQueue": "In flight: 2681c3ac (E193 prefetch, validating ~2h20m, watcher Alphonse). Next: E199 cap-8 paid receipt (frozen 4b967648, Thorfinn holding on slot trigger e0516d5b). Merged riders for the next composition: E195 selective QMV plan (0.181 ms/round ranked). Pending: E198 fused-SDPA terminal (Stage 4 null, liveness diagnosis); E192+E194 composition; E200 depth pricing (assigned).",
+ "lastAdvisorUpdate": "2026-08-24T20:20Z Entry 402: E195 MERGED at cd3e7688 (FINDINGs 516-517, sub-MUE composition); E198 Stage 4 null under liveness diagnosis; E199 frozen holding; E200 depth pricing assigned to Askeladd",
+ "ledgerEntry": 402,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2425,7 +2410,9 @@
   "512": "Route-1 prize concentration (E196 census, 81 rounds, depth hist {3:1,4:29,5:2,6:3,7:46}): m=8 carries 92.8% (1124.7|1078.6 of 1212.5|1161.2 us/round); m=6-only kernel tops out at 0.032 ms/round = 0.057 MUE, 16x below the Stage 4 gate. E198 width scope expanded (feedback e198-fb-width-scope-402): Stage 4 arm and shipped compile-time default may enable every m in 6..9 that passes per-width register, dispatch (>=50% of pair-minus-floor, decision width m=8, both kL cells, no interpolation across kL=1024) and numerics gates. m=6 spill stops the line; m=8 spill => skip Stage 4, report register wall as Route-1 closure. m=9 in curves only (feeds E197 cap-8 repricing).",
   "513": "E195 m=7 ladder (mislabelled arms, corrected: arm suffix = draft depth, m = depth+1; plan table keys on verified width, unaffected): all-cells single-pass +23.62 ms/round (+17.2%, MTP s/token +9.47%) at m=7 vs staged 137.33; selective is a verified cross-width no-op (+0.03 ms inside the +/-0.24 FINDING 503 floor); RULE 179 identity exact (38/223/218). With lm_head-alone -1538 us probe, other six cells lose ~25 ms/round combined at m=7 => per-(cell,m) plan is necessary. qmv_sp census (staged 0 / singlepass 14392 / selective 386): fixed depth does not fix width \u2014 tail rounds land at lower m, so every per-width plan row is live at ranked cap-7. Corrected m=6 primary relaunched; true m=5 null is depth 4.",
   "514": "E197 ranked law refit (24 paid per-prompt constraints, 8 families): smooth-step is the only family reproducing all 3 paid medians inside the 0.689% channel (chi2 16.4/AICc 29.8); dR6 revised to 7.93-8.26 ms (still super-quadratic); LOO shows no family extrapolates a held-out paid median within the channel (3-9 sigma) so MC weights = 1/2 AICc + 1/2 LOO. cap-6 DEAD in every family (needs dR8 >= 7.895 ms vs estimates 2.35-7.65). cap-8 priced 3.7153 [3.466,3.994], P(beat crown)=0.465, P(beat A)=0.521. dR9 unobservable on ranked (cap-7 verifies <=8 rows); a paid cap-8 receipt is the only dR9 measurement and a 5.5-sigma flat-vs-stepped discriminator (3.82 vs 3.68). Predeclared 35% rule CLEARED -> paid cap-8 receipt queued (E199).",
-  "515": "Depth-axis upper bound: oracle per-prompt cap (shallow at 4, deep at 8) = 3.81998 = +3.02% vs A under smooth-step; within-request depth adaptation is legal. Shipped greedy depth rule uses makeUniformDepthPrice (.ship) and is blind to the width-6 step -> non-uniform depth-price arm is a distinct queued lever. Conditional repricing: a >=6-row-cell shave X corrects the anchor by X*P(rows>=6) and never moves the optimum back to cap 7 - depth and m>=6 width mechanisms compound."
+  "515": "Depth-axis upper bound: oracle per-prompt cap (shallow at 4, deep at 8) = 3.81998 = +3.02% vs A under smooth-step; within-request depth adaptation is legal. Shipped greedy depth rule uses makeUniformDepthPrice (.ship) and is blind to the width-6 step -> non-uniform depth-price arm is a distinct queued lever. Conditional repricing: a >=6-row-cell shave X corrects the anchor by X*P(rows>=6) and never moves the optimum back to cap 7 - depth and m>=6 width mechanisms compound.",
+  "516": "E195 MERGED at cd3e7688 (composition): cell-selective single-pass QMV plan wins -7.31 ms/round (-5.8%, -3.46% MTP s/token) at m=6 vs staged; beats all-cells by 3.50 ms/round with 45% FEWER single-pass dispatches (8685 vs 15934) - declined mlp.down is actively harmful under single-pass at m=6. Bit-exact 42 configs/13.8M elements/0 ULP; m=5 null +0.045. Census-weighted ranked value 0.181 ms/round = 0.32 MUE -> sub-MUE solo, merged to ride the next natural submission. Recompute weighting from per-prompt rows if cap-8 promotes (mass moves to m=8/9 where plan stays staged).",
+  "517": "Probe-level dispatch wins do not survive end-to-end: selective7 (lm_head-only single-pass at m=7) reversed from -1538 us/round projected (12/12 ABBA probe blocks, FINDING 501) to +0.60 ms/round end-to-end; enum deleted per quarantine. Same pattern as E198 Stage 4 null (+0.184 ms/round vs -0.51..-0.61 projected, refuted >=4 sigma, liveness diagnosis pending). RULE: isolated-dispatch microbenchmarks on an idle GPU can invert in a saturated 64-layer decode round; every per-dispatch or dispatch-count price must be confirmed end-to-end before entering a freeze decision."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
