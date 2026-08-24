@@ -701,6 +701,7 @@ enum Qwen35E187StateStore: String {
     case cellbig
     case cellcommit
     case cellboundary
+    case celllate
 }
 
 /// The four places a recurrent state enters the cache. `cellcommit` and
@@ -722,6 +723,7 @@ let qwen35E187StateStoreMode: Qwen35E187StateStore = {
 
 private enum Qwen35E187Probe {
     nonisolated(unsafe) static var applied = false
+    nonisolated(unsafe) static var stores = 0
     nonisolated(unsafe) static var announced = false
 
     /// Liveness line: prove on the worker's stderr that a non-default arm ran.
@@ -754,6 +756,19 @@ func qwen35E187StoreState(
     case .cellall:
         Qwen35E187Probe.announce(.cellall)
         guard state.ndim == 4 else { return state }
+        let perturbed = state[.ellipsis]
+        perturbed[0, 0, 0, 0] = MLXArray(Float(1e30))
+        return perturbed
+    case .celllate:
+        // Fires once, but only after 2000 stores, which is roughly decode
+        // round 40. It separates "a one-shot cannot be seen" from "an early
+        // one-shot is spent on a store the decode never reads".
+        Qwen35E187Probe.stores += 1
+        guard Qwen35E187Probe.stores > 2000, !Qwen35E187Probe.applied,
+            state.ndim == 4
+        else { return state }
+        Qwen35E187Probe.applied = true
+        Qwen35E187Probe.announce(.celllate)
         let perturbed = state[.ellipsis]
         perturbed[0, 0, 0, 0] = MLXArray(Float(1e30))
         return perturbed
