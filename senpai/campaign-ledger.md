@@ -65955,3 +65955,258 @@ askeladd and healthy.
 | alphonse | 163 | Session `c6063e2e` running, six gated legs. Reframed from "expected win" to a signed prediction test that prices one weight stream. Widths 4 and 6 held. |
 | edward | 164 | Red-teaming FINDING 357 and the prefill claim. B1 and A1 answers due first. |
 | thorfinn | — | Free. E160 closed. Next assignment is prefill, pending the source scope and Edward's B1 reconciliation. |
+
+## Entry 349 — 2026-08-24T01:35Z — I refuted my own prefill claim from entry 348 within the hour. The lever is real, the competitor mechanism is not, and the decode result now stands without any round-count assumption.
+
+`harness=ranked` throughout. Read this entry before acting on the PREFILL
+section of entry 348, which is **wrong**.
+
+### ADVISOR ERROR 214 — I tested outliers against a dispersion estimated with the outliers removed
+
+Entry 348 claimed two solvers had found a prefill mechanism worth about
++0.43 % published, on the grounds that 504.8 ms against a board mean of
+526.58 ms with sd 2.784 ms was an eight-sigma step.
+
+I computed that sd on the tight 291-receipt standard-ledger subset, which
+**excludes** the receipts I then evaluated against it. That is not a
+significance test. The correct picture, over all 815 receipts that carry the
+per-prompt `prefill_seconds_per_token` field:
+
+```
+prefill ms/leg distribution
+   500-505     5
+   520-525     2
+   525-530   564
+   530-535   172
+   535-540     9
+   540-545    33
+   545-550    26
+   640-645     1
+   775-780     1
+   780-785     1
+   945-950     1
+main mode (520-535): n=738  mean 527.830  sd 1.699 ms (0.322 %)
+ours                                527.37
+median 527.04   p10 526.48   p90 531.29
+```
+
+Only five receipts sit below 512 ms:
+
+```
+2026-08-18  BitWonka        5cdc9c17   500.33   rejected
+2026-08-23  scarletbright   ac89ef87   504.61   rejected
+2026-08-23  Amal-David      a9dd132a   504.63   rejected
+2026-08-23  Amal-David      43925f29   504.78   rejected
+2026-08-23  vibecodooor     8b84c190   504.78   rejected
+```
+
+Four of five are on one day, from three different solvers, within 0.17 ms of
+each other. The straddle test settles it:
+
+```
+solver           n     min       max      span
+scarletbright   49   504.61   545.32   40.71 ms
+vibecodooor     36   504.78   543.88   39.10 ms
+Amal-David      31   504.63   945.13  440.50 ms
+BitWonka        12   500.33   545.34   45.01 ms
+```
+
+**Every one of them has receipts on both sides of the step.** A code property
+cannot do that. Per-solver means are 527 to 529 ms for every serious
+competitor, and ours is 527.38 with sd 2.184.
+
+```
+FINDING 360
+There is no competitor prefill mechanism. The 504.x values are a runner-side
+event on 2026-08-23 that affected several solvers at once. Our prefill sits at
+the board mode and is statistically indistinguishable from every serious
+competitor's. The PREFILL section of entry 348 is withdrawn.
+```
+
+Consequence for FINDING 353: `8b84c190` and `ac89ef87` are prefill-anomaly-day
+receipts, and a prefill-only saving is leveraged in the raw ratio, so both are
+inflated by roughly +0.3 % for host reasons. **vibecodooor is not the fastest
+implementation on the board.** The crown `ec24d591` has prefill 526.23, a
+normal-day value, so the crown is unaffected. Edward is redoing the neutral
+ranking with the anomaly handled.
+
+### FINDING 361 — the prefill lever is real, large, and unclaimed
+
+Refuting the competitor claim does not refute the lever. It makes it greenfield.
+
+A candidate-side prefill saving is **leveraged**, because the ranked serial
+denominator comes from a different, untouched, runner-owned build. Only the
+candidate leg shrinks:
+
+```
+d(raw)/raw = delta_seconds / candidate_leg_seconds
+
+               beagle (leg 5.4764 s)     essays (leg 5.0295 s)
+cut  5.0 ms         +0.0913 %                 +0.0994 %
+cut 10.3 ms         +0.1881 %                 +0.2048 %
+cut 22.6 ms         +0.4127 %                 +0.4493 %
+```
+
+**A 10.3 ms candidate-side prefill cut is worth about +0.197 % published, which
+is more than our entire real gap to the crown.** Nobody on the board has taken
+it.
+
+That reverses my ranked-inert judgement on merged PR 162 arm A, which measured
+`seed_prefill_seconds` **-1.9471 %** (8 gated ABBA legs, 0.1 C entry spread,
+p=0.0286, W&B
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/o2hditxg ,
+run id `o2hditxg`). I priced only the kernel channel through the `qmm_nax`
+argument at `quantized.cpp:697` and never priced the eliminated work.
+
+**The open question that decides whether prefill deserves GPU** is the transfer
+factor. RULE 192's aggregate is 7.593x for prefill (local 4.0042 s against
+ranked 0.5274 s). If every category transfers at 7.6x, a local 8 ms saving is
+1.05 ms ranked and worth +0.019 % published, which is nothing. Prefill is only
+worth GPU if some category transfers at **much less** than 7.6x. The candidate
+is work M5 does not accelerate: NAX shrinks quantized GEMM but does not shrink
+bandwidth-bound elementwise traffic or a sequential dependent scan.
+
+Prefill source census, all sites verified in tree:
+
+- **lm_head seed slicing is already done.** `Qwen36MTPBlockSession.swift:654-662`
+  leaves the full-seed logits as a deliberately unevaluated lazy graph and
+  projects only the last row. Promoted at receipt `b5130678`, +0.09 %.
+  **That prize is gone.**
+- **No prefill chunking exists.** One 512-row forward, one GDN chunk
+  (`Qwen35.swift:1291-1294`). `KVCacheSimple.step = 256` governs KV growth only.
+- **One blocking eval in `begin`** (`Qwen36MTPBlockSession.swift:671-672`);
+  inside the forward only the fire-and-forget rung ladder. E16 already closed
+  scheduling: prefill is 99.94 % GPU-bound locally. Do not reopen.
+- **The head defers seed ingestion to round 1** (`:1393-1404`), K/V-only path
+  for history rows (`Qwen35MTP.swift:218-241`), about 65 GFLOP.
+- **The 48 GDN scan layers write only `y[512]` plus one final state**, no
+  per-position materialisation (`grid (32, 128, 48)`). The scan is
+  **sequential over T=512 inside one launch, plain Metal, never NAX**, so its
+  absolute cost is the leading candidate for a low transfer factor.
+- Candidate mechanisms, largest first: fuse the prefill SwiGLU epilogue
+  (`Qwen35.swift:1979-1988`, gate `x.dim(-2) <= 16` excludes prefill; the fused
+  form `qwen35CompiledFusedSwiGLU` already exists and an equivalent fused
+  epilogue already runs at prefill for GDN at `:1318`); extend the fused QK
+  RMSNorm+RoPE past its `L <= 32` gate (`Qwen35.swift:3353-3382`, about 240 MB
+  over 16 FA layers); GDN in-proj 4-way fuse at prefill (gate `S <= 9` at
+  `:1143`, about 750 MB, but `:1341-1344` warns prefill was deliberately left
+  unfused to preserve pinned-baseline qmm reduction order).
+
+Not assigned yet. The census that decides it is one cheap session and goes to
+alphonse when width 5 reports, because he has already built the
+`mtp-trace: begin` phase harness that measures prefill directly.
+
+### FINDING 362 — FINDING 357 confirmed with no round-count assumption
+
+Entry 348's `(s, h)` decomposition depends on a recovered round-count vector
+that the board does not determine. The board **does** determine this, with no
+`N` anywhere, because two receipts with the same `edl` have the same round
+count whatever it is:
+
+```
+decode_leg = (mtp_seconds_per_token_mean - prefill_seconds_per_token) * 512
+
+prompt      edl      ours ms      frontier ms     ours - frontier
+drama      2.298     8628.63        8579.36          +0.5743 %
+travel     2.648     7478.27        7443.09          +0.4727 %
+beagle     4.382     4948.18        4935.95          +0.2479 %
+republic   4.989     4438.23        4430.50          +0.1745 %
+essays     5.087     4501.74        4495.17          +0.1461 %
+medicine   5.256     4441.54        4437.43          +0.0928 %
+botany     6.148     4412.42        4404.71          +0.1751 %
+PREFILL              527.37          526.23          +0.2166 %
+```
+
+**Our decode deficit falls monotonically as `edl` rises, with botany the single
+exception.** Low-`edl` prompts run many short rounds; high-`edl` prompts run
+few long rounds. A deficit that shrinks as rounds-per-token falls is the
+signature of a fixed per-round overhead and of nothing else.
+
+Closure check by two independent routes. Weighting the beagle and essays decode
+deficits by FINDING 342's marginal published weights (0.47808, 0.52192) gives
+`0.478*0.2479 + 0.522*0.1461 = +0.195 %` published, plus about +0.02 % from
+prefill, total **+0.215 %**. FINDING 353's serial-draw-neutralised gap is
+**+0.2078 %**. Same answer from different arithmetic.
+
+Deficit against the best decode leg anyone has posted on the standard ledger:
+
+```
+drama    +0.8149 %  ofou 6cb5fe7c        republic  +0.1745 %  newjordan ec24d591
+travel   +0.6157 %  jungjipdo e18e3685   essays    +0.1721 %  a-github-name b3868faa
+beagle   +0.2738 %  ofou 9f63972a        medicine  +0.1140 %  ofou 9f63972a
+botany   +0.1945 %  ofou 9f63972a
+mean over the 7 drafting prompts: +0.3371 %
+```
+
+Open: **botany breaks the monotone pattern** (highest `edl`, but +0.1751 %
+rather than the ~+0.09 % the trend predicts). Assigned to Edward.
+
+### FINDING 363 — the per-round fixed-cost inventory
+
+Source census of the shipped round. Ruled out, with evidence, so nobody spends
+a session on them:
+
+- **The recurrent snapshot is not a 144 MiB copy.** `snapshotRecurrent`
+  (`Qwen36MTPBlockSession.swift:1477`) builds 96 lazy slices and a 48-entry
+  dictionary; `:1756-1772` says "No GPU work happens here" and
+  `research/ESTABLISHED_FACTS.md:28-30` already corrects the materialisation
+  hypothesis. **This was my leading hypothesis and the tree had killed it
+  before I formed it.**
+- **The K=1 eager rollback checkpoint is real but not worth attacking.** At
+  `nConfirmed == 1 && S == 2` the mid-kernel emits a third fp32 output
+  `[1,1,48,128,128]` = 3.0 MiB per layer = 144 MiB per round
+  (`Qwen35.swift:1185-1256`, shapes `:1236-1241`), which the `S >= 3` tape path
+  at `:1173-1184` explicitly avoids. But S=2 is 1 round of 78 in the reference
+  cell, so this is 0.007 ms per average round.
+- **Full-attention KV rollback and trim are free.** `KVCacheSimple.trim` is an
+  offset decrement (`KVCache.swift:468-472`); `state` returns stride views.
+- **Ledger and telemetry are ~0** in the shipped path; all tracing is gated on
+  `MLX_QWEN_MTP_TRACE=1` and worker stderr is discarded at rank.
+
+The live suspects, which together match the 1.03 ms local target:
+
+```
+A  post-eval host tail, GPU idle   measured 635-675 us/round (E86)      0.6-1.5 ms
+B  verify-graph host encode        measured 2294 us/round, ladder       0.3-0.5 ms
+                                   recovers ~2.7-2.9 ms, residual
+                                   GPU idle ~1.36 % of round                exposed
+C  per-draft .item() fan-out       8 single-element reads at :1518      unknown
+D  head-chain per-round fixed      1.2288 ms claimed, NEVER VERIFIED    claimed 1.2
+E  command-buffer submits          11 per drafting round                0.05-0.15 ms
+```
+
+**A and B together are 0.9 to 2.0 ms of local per-round time in which the GPU
+does nothing, against a 1.03 ms target.** Assigned to thorfinn as E165.
+
+Also recorded: `Sources/MLXFastModel/Qwen35GatedDelta.swift` and its siblings
+are editable but **never executed** — `Qwen35FastPathReadiness.swift:11-19`
+hardcodes false (`research/ESTABLISHED_FACTS.md:33-38`). The live GDN code is
+in `Qwen35.swift`.
+
+### Method note that should outlive this entry
+
+The N-free decode-only comparison is strictly better than the `(s, h)` fit for
+any question about **who is faster and on which prompts**, because it assumes
+nothing that the board does not report. Reserve the `(s, h)` fit for questions
+that genuinely need a per-round quantity, and always say which one a number
+came from.
+
+The only round count the board proves is **plutarch's**. `non_drafting_round_count`
+is a per-prompt field and equals 449, which forces `N >= 449`; combined with the
+exact rational `edl = 76/488` the only admissible value in `[449, 512]` is
+**N = 488**. Every other prompt's round count remains an inference.
+
+### Board and submission state at 01:35Z
+
+Frontier unchanged: `ec24d591` newjordan `3.7291100105909`, srcRef `0863b06a`.
+`35a8a9de` (B1, askeladd, BASE_SHA `770a3ff2`) still `validating` since
+23:31:28Z. Validating queue down from 7 to 6.
+
+### Assignment board
+
+| student | PR | question |
+|---|---|---|
+| askeladd | 158 | E159 pinned per-width curve `R(M)`, band-split at the weight-stream boundary; plus the B1 receipt when it lands |
+| alphonse | 163 | prices one weight stream at fixed rows; widths 4 and 6 held; prefill census next |
+| edward | 164 | prefill lever priced through the median rule; check my refutation; redo the neutral ranking; botany anomaly |
+| thorfinn | 165 | the 1.03 ms of fixed per-round work and the GPU idle window |
