@@ -28,7 +28,7 @@ import Foundation
 import MLX
 
 public enum E184Prefill {
-    public enum Granularity: String {
+    public enum Granularity: String, Sendable {
         case off
         case fine
         case coarse
