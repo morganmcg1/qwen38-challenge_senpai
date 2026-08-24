@@ -15,6 +15,7 @@ import argparse
 import json
 import pathlib
 import subprocess
+import sys
 
 import wandb
 
@@ -31,6 +32,9 @@ PINNED_HEAD = "559b24eb"
 
 # Shipped clamp temperatures under test.
 SHIPPED_T = {"0": 2.0, "1": 3.0}
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from e168_margin_calibration import QUOTED_LADDER  # noqa: E402
 
 
 def git_head() -> str:
@@ -530,6 +534,99 @@ def main() -> int:
         residuals = [abs(leg["residual_pct"]) for leg in timing["legs"]]
         summary["timing/max_abs_round_law_residual_pct"] = max(residuals)
         summary["timing/legs"] = len(timing["legs"])
+
+    ladder = report.get("break_even_ladder")
+    if ladder:
+        table = wandb.Table(
+            columns=["step", "q_star", "quoted", "delta", "survival_threshold"]
+        )
+        for row in ladder:
+            quoted = QUOTED_LADDER.get(row["step"])
+            table.add_data(
+                row["step"],
+                row["q_star_homogeneous"],
+                quoted,
+                (row["q_star_homogeneous"] - quoted) if quoted else None,
+                row["survival_threshold_at_q_star"],
+            )
+            summary[f"ladder/{row['step']}/q_star"] = row["q_star_homogeneous"]
+        run.log({"ladder/break_even": table})
+        summary["ladder/quoted_rows_reproduced"] = sum(
+            1
+            for row in ladder
+            if QUOTED_LADDER.get(row["step"]) is not None
+            and abs(row["q_star_homogeneous"] - QUOTED_LADDER[row["step"]]) < 1e-4
+        )
+
+    go_no_go = report.get("depth_go_no_go")
+    if go_no_go:
+        fields = [
+            "step",
+            "p_d",
+            "reached",
+            "ci_low",
+            "ci_high",
+            "survival",
+            "threshold",
+            "margin",
+            "verdict",
+            "extrapolated",
+        ]
+        table = wandb.Table(columns=["prompt", *fields])
+        for label in sorted(go_no_go):
+            for row in go_no_go[label]:
+                table.add_data(label, *(row[field] for field in fields))
+                if not row["extrapolated"]:
+                    summary[f"pd/{label}/{row['step']}"] = row["p_d"]
+        run.log({"ladder/go_no_go": table})
+        deepest = {
+            label: max(
+                (row["depth"] for row in rows if row["verdict"] == "go"), default=-1
+            )
+            for label, rows in go_no_go.items()
+        }
+        for label, depth in deepest.items():
+            summary[f"ladder/{label}/deepest_paying_depth"] = depth + 1
+
+    transfer = report.get("optimism_transfer")
+    if transfer:
+        table = wandb.Table(
+            columns=["scope", "depth", "rounds", "fires", "rate"]
+        )
+        for depth, cell in transfer["pooled"]["by_depth"].items():
+            table.add_data("pooled", depth, cell["rounds"], cell["fires"], cell["rate"])
+            summary[f"optimism/pooled/d{depth}/rate"] = cell["rate"]
+        for leg in transfer["legs"]:
+            for depth, cell in leg["by_depth"].items():
+                table.add_data(
+                    leg["label"], depth, cell["rounds"], cell["fires"], cell["rate"]
+                )
+            summary[f"optimism/{leg['label']}/fire_rate"] = leg["fire_rate"]
+        run.log({"optimism/transfer": table})
+        summary["optimism/pooled_fire_rate"] = transfer["pooled"]["fire_rate"]
+
+    cost = report.get("cap_cost")
+    if cost:
+        fields = [
+            "label",
+            "max_p",
+            "positions_above_cap",
+            "true_depth",
+            "true_raw",
+            "capped_depth",
+            "capped_raw",
+            "raw_cost",
+        ]
+        table = wandb.Table(columns=fields)
+        for row in cost["prompts"]:
+            table.add_data(*(row[field] for field in fields))
+            summary[f"cap/{row['label']}/raw_cost"] = row["raw_cost"]
+        run.log({"cap/cost": table})
+        summary["cap/binding_prompts"] = cost["binding_prompts"]
+        summary["cap/mean_raw_cost_when_binding"] = cost[
+            "mean_raw_cost_when_binding"
+        ]
+        summary["cap/max_raw_cost"] = cost["max_raw_cost"]
 
     run.summary.update(summary)
     run.finish()

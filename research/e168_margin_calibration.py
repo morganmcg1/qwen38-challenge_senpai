@@ -1068,6 +1068,242 @@ def analyse_adapt(legs: list[dict], offered_default: int) -> dict:
     return result
 
 
+def break_even_ladder(max_depth: int = 8) -> list[dict]:
+    """Exact ranked marginal condition for the step from depth `d` to `d+1`.
+
+    The ranked leg time for a fixed proposed depth `d` is
+
+        leg(d) = (W / (1 + A(d))) * (A_fix + B * (1 + d)) + W * prefill
+
+    with `A_fix = RANKED_ROUND_FIXED_MS`, `B = RANKED_ROW_MS`, chain survival
+    `S_k = prod_{j<=k} p_j` and accepted extras `A(d) = sum_{k<d} S_k`. Adding
+    position `d` adds one row of cost `B` and adds `S_d` accepted tokens, so
+    `leg(d+1) < leg(d)` reduces exactly to
+
+        S_d > B * (1 + A(d)) / (A_fix + B * (1 + d)).
+
+    The threshold therefore constrains CHAIN SURVIVAL, not the per-position
+    conditional. Under a homogeneous profile `p_j = q` the two coincide only
+    through `S_d = q^(d+1)`, and the reported `q_star` is the `q` that solves
+    the homogeneous case, which is what a flat-profile ladder quotes.
+    """
+    rows = []
+    for depth in range(max_depth):
+        # Homogeneous solve: find q with q^(d+1) == B(1+A(d,q))/(A_fix+B(1+d)).
+        low, high = 0.0, 1.0
+        for _ in range(200):
+            mid = 0.5 * (low + high)
+            survival = mid ** (depth + 1)
+            accepted = sum(mid ** (k + 1) for k in range(depth))
+            need = (
+                RANKED_ROW_MS
+                * (1.0 + accepted)
+                / (RANKED_ROUND_FIXED_MS + RANKED_ROW_MS * (1.0 + depth))
+            )
+            if survival > need:
+                high = mid
+            else:
+                low = mid
+        q_star = 0.5 * (low + high)
+        rows.append(
+            {
+                "step": f"{depth}->{depth + 1}",
+                "depth": depth,
+                "q_star_homogeneous": q_star,
+                "survival_threshold_at_q_star": q_star ** (depth + 1),
+            }
+        )
+    return rows
+
+
+def depth_go_no_go(
+    profile: list[dict], max_depth: int = 8, min_reached: int = 20
+) -> list[dict]:
+    """Per-prompt go/no-go for each depth step under the measured profile.
+
+    Uses the exact heterogeneous condition `S_d > threshold_d`, where both
+    sides depend on the prompt's own measured `p_j`. Positions past the
+    measured reach are marked `extrapolated` because their `p_j` is carried
+    forward from the last position with enough observations; a verdict resting
+    on a carried value is not evidence.
+    """
+    measured = {row["position"]: row for row in profile}
+    rows = []
+    survival = 1.0
+    accepted = 0.0
+    last_solid = None
+    for depth in range(max_depth):
+        row = measured.get(depth)
+        if row is not None and row["reached"] >= min_reached:
+            p_d = row["q"]
+            last_solid = p_d
+            extrapolated = False
+        elif last_solid is not None:
+            p_d = last_solid
+            extrapolated = True
+        else:
+            break
+        survival *= p_d
+        threshold = (
+            RANKED_ROW_MS
+            * (1.0 + accepted)
+            / (RANKED_ROUND_FIXED_MS + RANKED_ROW_MS * (1.0 + depth))
+        )
+        rows.append(
+            {
+                "step": f"{depth}->{depth + 1}",
+                "depth": depth,
+                "p_d": p_d,
+                "reached": row["reached"] if row is not None else 0,
+                "ci_low": row["ci_low"] if row is not None else float("nan"),
+                "ci_high": row["ci_high"] if row is not None else float("nan"),
+                "survival": survival,
+                "threshold": threshold,
+                "margin": survival - threshold,
+                "verdict": "go" if survival > threshold else "stop",
+                "extrapolated": extrapolated,
+            }
+        )
+        accepted += survival
+    return rows
+
+
+def optimal_depth(profile: list[float], max_depth: int = 8) -> dict:
+    """Depth that minimises ranked leg time under a position-only profile."""
+    best_depth, best_ms, best_raw = 0, float("inf"), 0.0
+    curve = []
+    for depth in range(max_depth + 1):
+        accepted = expected_accepted(profile, depth)
+        priced = ranked_price(float(depth), accepted)
+        curve.append(
+            {"depth": depth, "accepted": accepted, "raw": priced["raw"]}
+        )
+        if priced["ms_per_token"] < best_ms:
+            best_depth, best_ms, best_raw = depth, priced["ms_per_token"], priced["raw"]
+    return {"depth": best_depth, "raw": best_raw, "curve": curve}
+
+
+def optimism_transfer(legs: list[dict], max_depth: int = 8) -> dict:
+    """How often `recordAcceptOutcome` takes its fully-accepted branch.
+
+    `Qwen36MTPBlockSession.swift:1194-1247` nudges `positionAcceptEMA[d]` toward
+    0.95 only when `acceptedCount == drafts.count`, and only while that entry is
+    still below 0.95. The firing rate bounds how much optimism the controller
+    can import for a position it has never actually observed, so a low rate
+    means the seed schedule, not the transfer, sets the deep-position beliefs.
+    """
+    rows = []
+    pooled_fires = pooled_rounds = 0
+    pooled_by_depth: dict[int, list[int]] = defaultdict(lambda: [0, 0])
+    for leg in legs:
+        fires = total = 0
+        by_depth: dict[int, list[int]] = defaultdict(lambda: [0, 0])
+        for record in leg["rounds"]:
+            depth = record["d"]
+            if depth <= 0:
+                continue
+            total += 1
+            by_depth[depth][1] += 1
+            pooled_by_depth[depth][1] += 1
+            if record["acc"] == depth:
+                fires += 1
+                by_depth[depth][0] += 1
+                pooled_by_depth[depth][0] += 1
+        pooled_fires += fires
+        pooled_rounds += total
+        rows.append(
+            {
+                "label": leg["label"],
+                "drafting_rounds": total,
+                "fires": fires,
+                "fire_rate": fires / total if total else 0.0,
+                "by_depth": {
+                    d: {"rounds": c[1], "fires": c[0], "rate": c[0] / c[1]}
+                    for d, c in sorted(by_depth.items())
+                    if d <= max_depth
+                },
+            }
+        )
+    return {
+        "legs": rows,
+        "pooled": {
+            "drafting_rounds": pooled_rounds,
+            "fires": pooled_fires,
+            "fire_rate": pooled_fires / pooled_rounds if pooled_rounds else 0.0,
+            "by_depth": {
+                d: {"rounds": c[1], "fires": c[0], "rate": c[0] / c[1]}
+                for d, c in sorted(pooled_by_depth.items())
+                if d <= max_depth
+            },
+        },
+    }
+
+
+EMA_CAP = 0.95
+
+# The advisor's F4 break-even table, kept verbatim so the recomputation is a
+# check and not a restatement.
+QUOTED_LADDER = {
+    "0->1": 0.50000,
+    "1->2": 0.55631,
+    "2->3": 0.71829,
+    "3->4": 0.80727,
+    "4->5": 0.86039,
+    "5->6": 0.89441,
+    "6->7": 0.91742,
+    "7->8": 0.93369,
+}
+
+
+def cap_cost(
+    profiles: dict[str, list[float]], min_positions: int = 3
+) -> dict:
+    """Ranked cost of the 0.95 optimism cap when true acceptance exceeds it.
+
+    The cap sits 0.016 above the 7->8 break-even, so a prompt whose real
+    per-position acceptance is above 0.95 can never have a belief high enough
+    to justify its true depth. This prices that directly: optimal depth and raw
+    under the measured profile, against optimal depth and raw under the same
+    profile capped at 0.95. The capped arm is priced with the TRUE profile at
+    the depth the capped beliefs would choose, because the cap distorts the
+    decision, not the hardware.
+    """
+    rows = []
+    for label in sorted(profiles):
+        profile = profiles[label]
+        if len(profile) < min_positions:
+            continue
+        capped = [min(p, EMA_CAP) for p in profile]
+        true_best = optimal_depth(profile)
+        capped_best = optimal_depth(capped)
+        # Price the capped DECISION under the true acceptance profile.
+        realised = ranked_price(
+            float(capped_best["depth"]),
+            expected_accepted(profile, capped_best["depth"]),
+        )
+        rows.append(
+            {
+                "label": label,
+                "max_p": max(profile),
+                "positions_above_cap": sum(1 for p in profile if p > EMA_CAP),
+                "true_depth": true_best["depth"],
+                "true_raw": true_best["raw"],
+                "capped_depth": capped_best["depth"],
+                "capped_raw": realised["raw"],
+                "raw_cost": true_best["raw"] - realised["raw"],
+            }
+        )
+    binding = [r for r in rows if r["positions_above_cap"] > 0]
+    return {
+        "prompts": rows,
+        "binding_prompts": len(binding),
+        "mean_raw_cost_when_binding": (
+            sum(r["raw_cost"] for r in binding) / len(binding) if binding else 0.0
+        ),
+        "max_raw_cost": max((r["raw_cost"] for r in rows), default=0.0),
+    }
+
+
 def chain_survival(profile: list[float], position: int) -> float:
     """P(the draft at `position` is accepted) under a position-only model.
 
@@ -1577,6 +1813,7 @@ def main() -> int:
     args = parser.parse_args()
 
     report: dict = {"offered_depth": args.offered}
+    report["break_even_ladder"] = break_even_ladder()
     if args.timing:
         report["timing"] = timing_contrast(load_timed_legs(args.timing))
     pinned_legs = load_legs(args.pinned, "pinned") if args.pinned else []
@@ -1615,6 +1852,12 @@ def main() -> int:
                 for position, block in report["pinned"]["positions"].items()
             },
         )
+        report["depth_go_no_go"] = {
+            label: depth_go_no_go(rows)
+            for label, rows in report["pinned"]["profile_by_leg"].items()
+        }
+        report["optimism_transfer"] = optimism_transfer(adapt_legs)
+        report["cap_cost"] = cap_cost(profiles)
 
     if "timing" in report:
         print("=== measured wall time, untraced ABBA legs ===")
@@ -1835,6 +2078,108 @@ def main() -> int:
                 f"{shipped['mean_depth']:.2f}   best '{best['policy']}' raw "
                 f"{best['raw']:.3f}   gap {best['raw'] - shipped['raw']:+.3f}"
             )
+        print()
+
+    if report.get("break_even_ladder"):
+        print("=== ranked break-even ladder, recomputed from the round law ===")
+        print(
+            f"{'step':<8}{'q* (this)':>11}{'quoted':>9}{'delta':>9}"
+            f"   S_d threshold at q*"
+        )
+        for row in report["break_even_ladder"]:
+            quoted = QUOTED_LADDER.get(row["step"])
+            delta = (
+                f"{row['q_star_homogeneous'] - quoted:+.5f}"
+                if quoted is not None
+                else "n/a"
+            )
+            print(
+                f"{row['step']:<8}{row['q_star_homogeneous']:>11.5f}"
+                f"{(f'{quoted:.5f}' if quoted is not None else 'n/a'):>9}"
+                f"{delta:>9}   {row['survival_threshold_at_q_star']:.5f}"
+            )
+        print(
+            "  The exact condition is S_d > B(1+A(d))/(A_fix+B(1+d)) on chain\n"
+            "  survival. q* solves it for a flat profile. 'quoted' is the\n"
+            "  advisor's F4 ladder."
+        )
+        print()
+
+    if report.get("depth_go_no_go"):
+        ladder = {row["depth"]: row for row in report["break_even_ladder"]}
+        print("=== HEADLINE: per-position acceptance against the depth ladder ===")
+        print(
+            "p_d is the prompt's own conditional accept rate at position d,\n"
+            "measured on the pinned depth-7 arm. S_d is chain survival, the\n"
+            "quantity the exact ranked condition constrains. q* is the\n"
+            "homogeneous-profile break-even the ladder quotes for the same step."
+        )
+        for label in sorted(report["depth_go_no_go"]):
+            rows = report["depth_go_no_go"][label]
+            print(f"\n  {label}")
+            print(
+                f"  {'step':<7}{'n':>6}{'p_d':>8}{'95% CI':>18}{'S_d':>8}"
+                f"{'thresh':>8}{'q*':>8}{'margin':>9}{'  verdict':>10}"
+            )
+            for row in rows:
+                interval = (
+                    f"[{row['ci_low']:.3f},{row['ci_high']:.3f}]"
+                    if not math.isnan(row["ci_low"])
+                    else "extrapolated"
+                )
+                star = ladder[row["depth"]]["q_star_homogeneous"]
+                mark = "*" if row["extrapolated"] else " "
+                print(
+                    f"  {row['step']:<7}{row['reached']:>6}{row['p_d']:>8.4f}"
+                    f"{interval:>18}{row['survival']:>8.4f}"
+                    f"{row['threshold']:>8.4f}{star:>8.4f}"
+                    f"{row['margin']:>+9.4f}{row['verdict'] + mark:>10}"
+                )
+        print(
+            "\n  * carried forward from the last position with enough\n"
+            "    observations; not evidence for that step."
+        )
+        print()
+
+    if report.get("optimism_transfer"):
+        transfer = report["optimism_transfer"]
+        pooled = transfer["pooled"]
+        print("=== optimism transfer: how often the 0.95 nudge can fire ===")
+        print(
+            f"pooled fully-accepted rounds {pooled['fires']}/"
+            f"{pooled['drafting_rounds']} = {pooled['fire_rate']:.4f}"
+        )
+        for depth, cell in pooled["by_depth"].items():
+            print(
+                f"  chosen d={depth}: n={cell['rounds']:<5} acc==d in "
+                f"{cell['fires']:<5} rate {cell['rate']:.4f}"
+            )
+        for leg in transfer["legs"]:
+            print(
+                f"  {leg['label']:<24} rate {leg['fire_rate']:.4f} "
+                f"({leg['fires']}/{leg['drafting_rounds']})"
+            )
+        print()
+
+    if report.get("cap_cost"):
+        cost = report["cap_cost"]
+        print("=== cost of the 0.95 EMA cap, priced on the ranked round law ===")
+        print(
+            f"{'prompt':<20}{'max p_d':>9}{'>cap':>6}{'d_true':>8}"
+            f"{'raw_true':>10}{'d_cap':>7}{'raw_cap':>9}{'raw cost':>10}"
+        )
+        for row in cost["prompts"]:
+            print(
+                f"{row['label']:<20}{row['max_p']:>9.4f}"
+                f"{row['positions_above_cap']:>6}{row['true_depth']:>8}"
+                f"{row['true_raw']:>10.3f}{row['capped_depth']:>7}"
+                f"{row['capped_raw']:>9.3f}{row['raw_cost']:>+10.4f}"
+            )
+        print(
+            f"  prompts where the cap binds: {cost['binding_prompts']}; "
+            f"mean raw cost when binding {cost['mean_raw_cost_when_binding']:+.4f}; "
+            f"worst {cost['max_raw_cost']:+.4f}"
+        )
         print()
 
     if "adapt" in report:
