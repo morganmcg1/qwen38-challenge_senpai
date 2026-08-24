@@ -1064,7 +1064,13 @@ public final class Qwen36MTPBlockSession {
     /// Gated on a full-accept streak so the deep rounds only fire where the
     /// head has been perfect, mirroring the streak ladder that qualified
     /// cap 4; any reject resets the streak.
-    private static let segmentedVerifyDepthCap = 7
+    ///
+    /// E190 MEASUREMENT CELL, cap 5, not a promotion attempt. The bare
+    /// quadratic (FINDING 456) and the affine-rescaled staircase (FINDING 488)
+    /// are both admissible on the paid M=0/4/7 anchors and disagree most at
+    /// M=5 (7.14 ms/round). This receipt buys that cell to pick the ranked
+    /// pricing authority. Restore 7 after the verdict.
+    private static let segmentedVerifyDepthCap = 5
     /// 2, not 3 — the FOURTH restore of this literal, and it has still never
     /// lost on its merits.
     ///
