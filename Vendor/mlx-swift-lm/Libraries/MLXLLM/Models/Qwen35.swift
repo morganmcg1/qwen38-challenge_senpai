@@ -1772,11 +1772,18 @@ public enum Qwen35CustomQMV {
     /// any width. Halving the register block at the deficient widths trades
     /// reuse of the staged activations for occupancy.
     ///
+    /// E170 measured that trade and it loses at every width. `rows_per_simd = 2`
+    /// does buy the occupancy: on this host it takes NA = 5 from 33 to 37
+    /// resident simdgroups per core, which is more than the 35 the NA = 3 cell
+    /// gets at 98.1 % of the roof. The wide QMV still slowed by 4.6 % to 7.5 %
+    /// in 21 of 21 shape-by-width cells, so the set stays empty and the scored
+    /// path keeps `rows_per_simd = 4` at every width.
+    ///
     /// The table is keyed on `M` and not on `NA` because one dispatch serves
     /// every input group of a width, and M = 7 mixes an NA = 4 group with an
     /// NA = 3 tail group. A per-NA rule would need two row mappings inside one
     /// grid.
-    static let halvedRowWidths: Set<Int> = [5]
+    static let halvedRowWidths: Set<Int> = []
 
     public static func rowsPerSimd(_ m: Int) -> Int {
         halvedRowWidths.contains(m) ? 2 : 4
