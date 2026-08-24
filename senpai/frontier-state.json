@@ -2186,8 +2186,8 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": "In flight: 2681c3ac (E193 prefetch, validating ~2h20m, watcher Alphonse). Next: E199 cap-8 paid receipt (frozen 4b967648, Thorfinn holding on slot trigger e0516d5b). Merged riders for the next composition: E195 selective QMV plan (0.181 ms/round ranked). Pending: E198 fused-SDPA terminal (Stage 4 null, liveness diagnosis); E192+E194 composition; E200 depth pricing (assigned).",
- "lastAdvisorUpdate": "2026-08-24T21:30Z Entry 408: E200 MERGED as decisive NOT USEFUL (FINDINGs 519-521) \u2014 static depth-price axis CLOSED (even global argmin -0.36%); corrected survival-pinned desk instrument validated vs paid receipts; local/ranked cost tables give the same depth policy opposite signs (RULE 79 proof). E201 assigned to Askeladd: online per-prompt cap adaptation, desk feasibility first.",
- "ledgerEntry": 408,
+ "lastAdvisorUpdate": "2026-08-24T21:45Z Entry 409: board-wide ranked-queue stall \u2014 8 submissions from 7 solvers validating, nothing terminal since 17:35Z (stopped-worker pattern); crown unchanged 3.72911. E199 HOLD ruling: one receipt in flight stands (preserves E193-promotion composition option; unknown Yukon concurrency policy; queue position worthless while the worker is stopped). Report condition now material-change only.",
+ "ledgerEntry": 409,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2852,5 +2852,13 @@
   "caveat": "sessions run with the sandbox lifted are within-session evidence only: comparable_with_sandboxed_history=false",
   "livenessGate": "PASSED: served_by_rows {6:96,7:92,8:48,9:32}, zero declines, exact 64-token screen, declared head",
   "ledgerEntry": 405
+ },
+ "rankedQueueStall20260824": {
+  "observedAt": "2026-08-24T21:31Z (Thorfinn board read)",
+  "evidence": "eight validating submissions from seven solvers; newest terminal row created 17:35Z; ours 2681c3ac at 3h33m",
+  "pattern": "stopped ranked worker rather than slow queue",
+  "ruling": "E199 keeps holding; one receipt in flight; no stall action available beyond patience",
+  "frontier": "crown ec24d591 newjordan 3.7291100105909 unchanged",
+  "ledgerEntry": 409
  }
 }

@@ -72125,3 +72125,22 @@ Local M4 Pro (measured this session): R(8)/R(5) = 1.6095, 8→5 saves 37.87 % of
 **E201 assigned (Askeladd) — online per-prompt depth-cap adaptation, desk feasibility first.** The oracle ceiling conditions on per-prompt outcomes; within-request adaptation is legal. Stage 1 is desk-only: price an observe-then-commit cap rule on the corrected instrument and per-prompt receipt anchors; GPU only if the desk clears the floor. Brief in PR.
 
 **State.** Receipt `2681c3ac` validating (~3 h 32 m — STALL THRESHOLD 21:30Z reached; advisor watching for Thorfinn/Alphonse reports). E198 ABBA2 running. E199 holding. Feedbacks this cycle: `e198-fb-null-calibration-412` (Entry 407), E200 review actions.
+
+---
+
+## Entry 409 — 2026-08-24T21:45Z — Board-wide ranked-queue stall (8 validating, nothing terminal since 17:35Z); E199 HOLD ruling: one receipt in flight stands
+
+**Observation (Thorfinn's 21:30Z threshold report, PR #196, verified board read at 21:31Z).** Receipt `2681c3ac` is at 3 h 33 m validating. The stall is board-wide, not ours: EIGHT submissions from seven solvers are `validating` simultaneously (hadakang 17:38Z, ours 17:58Z, ofou 18:00Z, jungjipdo 18:38Z, Carme99 18:59Z, vibecodooor 20:02Z, scarletbright 20:42Z, newjordan 21:30Z). The newest terminal row is `e38b32a` (newjordan, rejected 3.56133, created 17:35Z) — every submission created after 17:35Z is unresolved. Pattern is consistent with a stopped ranked worker rather than a slow queue. Promoted frontier unchanged: crown `ec24d591` newjordan 3.72911; next rows 684821e 3.71960, 3ba6ee9 3.70576, 1760479 3.70355, 08b67f1 3.69072. E199's conditional-hold trigger has NOT fired.
+
+**Ruling (feedback `e199-fb-hold-ruling-413`): KEEP HOLDING — do not queue E199 as a second in-flight receipt.**
+
+1. The hold preserves the composition option: if E193 promotes (~coin flip on P(beat A)), E199's cap-8 line is re-applied on the new promoted base (then including prefetch), re-confirmed, and submitted as a strictly stronger candidate. A pre-queued E199 would be burned on the old tree with no withdrawal path.
+2. Yukon's per-solver concurrency policy is undocumented and its dedup has already behaved restrictively (FINDING 467); a second concurrent receipt during a backlog is an unbounded administrative risk.
+3. If the worker is stopped, queue position gains nothing until an operator restarts it; on restart, receipts resolve in order and the standing conditional handles both E193 outcomes.
+4. The one-receipt-in-flight discipline is written into the campaign and E199's brief; a backlog does not change its logic.
+
+**New report condition for Thorfinn (replaces time thresholds):** report on material change only — any new terminal row on the board, or `2681c3ac` resolving. Advisor takes no stall action beyond patience: we cannot accelerate the organizer's runner, resubmission is forbidden, and all four Macs remain productive.
+
+**Other events.** Controller re-surfaced `blocked` on PR #190 — reflects the Entry 404 label, no action.
+
+**State.** E198 ABBA2 running (~25 min remaining). E201 desk stage starting (PR #198). E193/E199 gated on the stalled board. Advisor tip `e1afcf3e` + this entry.
