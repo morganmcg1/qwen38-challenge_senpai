@@ -104,12 +104,12 @@ def main() -> int:
             "accept_ema_alpha": 0.15,
             "segmented_verify_depth_cap": 7,
             "pinned_arm_env": "MLX_E159_FIXED_DRAFT_DEPTH=7",
-            "reproduce_pinned": (
-                "research/e168_collect.sh p7 english medicine natural_history "
-                "technical dramatic narrative philosophy travel benchfixture"
-            ),
-            "reproduce_adapt": (
-                "research/e168_collect.sh adapt english medicine "
+            "ranked_round_fixed_ms": 16.1585,
+            "ranked_row_ms": 5.3350,
+            "ranked_prefill_ms_per_token": 1.0310,
+            "ranked_serial_ms_per_token": 37.92,
+            "reproduce_census": (
+                "research/e168_collect.sh adapt,p7 english medicine "
                 "natural_history technical dramatic narrative philosophy "
                 "travel benchfixture"
             ),
@@ -254,6 +254,91 @@ def main() -> int:
                     row["mean_ema"],
                 )
             run.log({f"pinned/calibration_pos{position}": calib})
+
+    arms = report.get("arms", {})
+    if arms:
+        per_prompt = wandb.Table(
+            columns=[
+                "prompt", "arm", "rounds", "mean_depth", "mean_accepted",
+                "accept_fraction", "tokens_per_round", "at_cap_fraction",
+                "cap_stop_fraction", "accept_fraction_first_half",
+                "accept_fraction_second_half", "ranked_raw", "ranked_round_ms",
+            ]
+        )
+        selection = wandb.Table(
+            columns=[
+                "prompt", "adapt_accept_fraction", "pinned_accept_fraction",
+                "selection_gain", "adapt_mean_depth", "pinned_mean_depth",
+                "raw_adapt", "raw_pinned", "raw_ratio",
+                "pinned_decay_per_position", "pinned_first_step_decay",
+            ]
+        )
+        depth_bins = wandb.Table(
+            columns=[
+                "prompt", "arm", "chosen_depth", "rounds", "proposed",
+                "accepted", "accept_fraction", "tokens_per_round",
+            ]
+        )
+        profiles = wandb.Table(
+            columns=["prompt", "arm", "position", "q", "ci_low", "ci_high", "n"]
+        )
+        for row in arms["prompts"]:
+            for arm, price_key, profile_key in (
+                ("adapt", "adapt_price", "adapt_profile"),
+                ("pinned", "pinned_price", "pinned_profile"),
+            ):
+                counts = row[arm]
+                price = row[price_key]
+                per_prompt.add_data(
+                    row["label"], arm, counts["rounds"], counts["mean_depth"],
+                    counts["mean_accepted"], counts["accept_fraction"],
+                    counts["tokens_per_round"], counts["at_cap_fraction"],
+                    counts["cap_stop_fraction"],
+                    counts["accept_fraction_first_half"],
+                    counts["accept_fraction_second_half"],
+                    price["raw"], price["round_ms"],
+                )
+                for depth, bucket in counts["depth_bins"].items():
+                    depth_bins.add_data(
+                        row["label"], arm, int(depth), bucket["rounds"],
+                        bucket["proposed"], bucket["accepted"],
+                        bucket["accept_fraction"], bucket["tokens_per_round"],
+                    )
+                for entry in row[profile_key]:
+                    profiles.add_data(
+                        row["label"], arm, entry["position"], entry["q"],
+                        entry["ci_low"], entry["ci_high"], entry["reached"],
+                    )
+            decay = row["pinned_decay"]
+            selection.add_data(
+                row["label"], row["adapt"]["accept_fraction"],
+                row["pinned"]["accept_fraction"], row["selection_gain"],
+                row["adapt"]["mean_depth"], row["pinned"]["mean_depth"],
+                row["raw_adapt"], row["raw_pinned"], row["raw_ratio"],
+                decay.get("decay_per_position"), decay.get("first_step_decay"),
+            )
+        run.log(
+            {
+                "arms/per_prompt": per_prompt,
+                "arms/selection_and_price": selection,
+                "arms/depth_bins": depth_bins,
+                "arms/position_profiles": profiles,
+            }
+        )
+        prompts = arms["prompts"]
+        summary["arms/prompts"] = len(prompts)
+        if prompts:
+            summary["arms/median_raw_ratio"] = sorted(
+                row["raw_ratio"] for row in prompts
+            )[len(prompts) // 2]
+            summary["arms/mean_selection_gain"] = sum(
+                row["selection_gain"] for row in prompts
+            ) / len(prompts)
+
+    splice = report.get("splice", {})
+    if splice:
+        pooled = splice["pooled"]
+        summary.update({f"splice/{key}": value for key, value in pooled.items()})
 
     run.summary.update(summary)
     run.finish()
