@@ -381,6 +381,151 @@ def analyse_pinned(legs: list[dict]) -> dict:
     return result
 
 
+# Ranked M5 Max constants, advisor F2 sections 4 and 5. `R(M)` is ms per round
+# against `M = 1 + proposed draft rows`; prefill and the pinned serial time are
+# near-constant across the eight ranked prompts.
+RANKED_ROUND_FIXED_MS = 16.1585
+RANKED_ROW_MS = 5.3350
+RANKED_PREFILL_MS_PER_TOKEN = 1.0310
+RANKED_SERIAL_MS_PER_TOKEN = 37.92
+RANKED_WINDOW = 512
+
+
+def ranked_price(mean_depth: float, mean_accepted: float) -> dict:
+    """Convert one arm's round bookkeeping into a ranked `raw` ratio.
+
+    This is a TRANSFER, not a measurement. It carries only two counts, the
+    proposed depth and the accepted extra tokens per round, onto the ranked
+    round law. It assumes the counts hold on the ranked host and that the law
+    is affine in proposed rows; it assumes nothing about local wall time, so no
+    ungated local timing enters it.
+    """
+    tokens_per_round = 1.0 + mean_accepted
+    rounds = RANKED_WINDOW / tokens_per_round
+    round_ms = RANKED_ROUND_FIXED_MS + RANKED_ROW_MS * (1.0 + mean_depth)
+    decode_ms = rounds * round_ms
+    leg_ms = decode_ms + RANKED_WINDOW * RANKED_PREFILL_MS_PER_TOKEN
+    return {
+        "tokens_per_round": tokens_per_round,
+        "rounds": rounds,
+        "round_ms": round_ms,
+        "decode_ms": decode_ms,
+        "leg_ms": leg_ms,
+        "ms_per_token": leg_ms / RANKED_WINDOW,
+        "raw": RANKED_SERIAL_MS_PER_TOKEN / (leg_ms / RANKED_WINDOW),
+    }
+
+
+def profile_decay(profile: list[dict], min_reached: int = 20) -> dict:
+    """Log-linear decay of the per-position conditional acceptance.
+
+    The advisor's break-even table is stated as a percentage fall per extra
+    position, so report the same shape: a least-squares slope of `log q` on
+    position, over the positions with enough observations to mean anything.
+    """
+    points = [
+        (row["position"], math.log(row["q"]))
+        for row in profile
+        if row["reached"] >= min_reached and row["q"] > 0.0
+    ]
+    if len(points) < 2:
+        return {"positions_used": len(points)}
+    n = len(points)
+    mean_x = sum(x for x, _ in points) / n
+    mean_y = sum(y for _, y in points) / n
+    denominator = sum((x - mean_x) ** 2 for x, _ in points)
+    slope = sum((x - mean_x) * (y - mean_y) for x, y in points) / denominator
+    return {
+        "positions_used": n,
+        "q0_fit": math.exp(mean_y - slope * mean_x),
+        "decay_per_position": 1.0 - math.exp(slope),
+        "first_step_decay": (
+            1.0 - profile[1]["q"] / profile[0]["q"] if len(profile) > 1 else None
+        ),
+    }
+
+
+def leg_bookkeeping(rounds: list[dict]) -> dict:
+    """The counts the ranked conversion needs, and nothing modelled.
+
+    The halves split is a warm-up control: the proposal head and the schedule
+    both carry state across a leg, so an acceptance rate that differs between
+    the halves is a transient, not the prompt's acceptance.
+    """
+    count = len(rounds)
+    proposed = sum(record["d"] for record in rounds)
+    accepted = sum(record["acc"] for record in rounds)
+    half = count // 2
+
+    def fraction(subset: list[dict]) -> float:
+        rows = sum(record["d"] for record in subset)
+        return sum(record["acc"] for record in subset) / rows if rows else float("nan")
+
+    capped = [record for record in rounds if record["cap"] is not None]
+    return {
+        "rounds": count,
+        "proposed": proposed,
+        "accepted": accepted,
+        "mean_depth": proposed / count if count else 0.0,
+        "mean_accepted": accepted / count if count else 0.0,
+        "accept_fraction": accepted / proposed if proposed else 0.0,
+        "tokens_per_round": 1.0 + (accepted / count if count else 0.0),
+        "accept_fraction_first_half": fraction(rounds[:half]),
+        "accept_fraction_second_half": fraction(rounds[half:]),
+        "cap_stop_fraction": (
+            sum(1 for record in capped if record["d"] >= record["cap"]) / len(capped)
+            if capped
+            else None
+        ),
+        "schedule_rounds": len(capped),
+    }
+
+
+def compare_arms(pinned_legs: list[dict], adapt_legs: list[dict]) -> dict:
+    """Per prompt, both arms' round bookkeeping and their ranked prices.
+
+    The comparison of the two arms' accept fractions is the selection test: the
+    adaptive arm chooses when to be deep, so if it accepts a higher share of
+    what it proposes than the fixed-depth arm does on the SAME text, the
+    controller is picking its spots and no stationary profile can stand in for
+    it.
+    """
+    pinned_by_label = {leg["label"]: leg for leg in pinned_legs}
+    rows = []
+    for leg in adapt_legs:
+        pinned = pinned_by_label.get(leg["label"])
+        if pinned is None:
+            continue
+        adapt_counts = leg_bookkeeping(leg["rounds"])
+        pinned_counts = leg_bookkeeping(pinned["rounds"])
+        adapt_price = ranked_price(
+            adapt_counts["mean_depth"], adapt_counts["mean_accepted"]
+        )
+        pinned_price = ranked_price(
+            pinned_counts["mean_depth"], pinned_counts["mean_accepted"]
+        )
+        rows.append(
+            {
+                "label": leg["label"],
+                "adapt": adapt_counts,
+                "pinned": pinned_counts,
+                "raw_adapt": adapt_price["raw"],
+                "raw_pinned": pinned_price["raw"],
+                "raw_ratio": pinned_price["raw"] / adapt_price["raw"],
+                "adapt_price": adapt_price,
+                "pinned_price": pinned_price,
+                "selection_gain": (
+                    adapt_counts["accept_fraction"]
+                    - pinned_counts["accept_fraction"]
+                ),
+                "pinned_profile": position_profile(pinned["rounds"]),
+                "pinned_decay": profile_decay(position_profile(pinned["rounds"])),
+                "adapt_profile": position_profile(leg["rounds"]),
+            }
+        )
+    return {"prompts": rows}
+
+
 def position_profile(rounds: list[dict], max_position: int = 8) -> list[dict]:
     """Per-position conditional acceptance, the quantity the walk models.
 
@@ -622,6 +767,37 @@ def main() -> int:
         report["adapt"] = analyse_adapt(adapt_legs, args.offered)
     if pinned_legs and adapt_legs:
         report["splice"] = splice_arms(adapt_legs, pinned_legs)
+        report["arms"] = compare_arms(pinned_legs, adapt_legs)
+
+    if "arms" in report:
+        print("=== per prompt, both arms, counts then ranked price ===")
+        print(
+            f"{'prompt':<18}{'arm':<7}{'N':>5}{'depth':>7}{'A':>7}"
+            f"{'acc/prop':>10}{'capstop':>9}{'tok/rnd':>9}{'raw':>8}"
+        )
+        for row in report["arms"]["prompts"]:
+            for arm in ("adapt", "pinned"):
+                counts = row[arm]
+                cap_stop = counts["cap_stop_fraction"]
+                print(
+                    f"{row['label'] if arm == 'adapt' else '':<18}{arm:<7}"
+                    f"{counts['rounds']:>5}{counts['mean_depth']:>7.3f}"
+                    f"{counts['mean_accepted']:>7.3f}"
+                    f"{counts['accept_fraction']:>10.4f}"
+                    f"{('n/a' if cap_stop is None else f'{cap_stop:.3f}'):>9}"
+                    f"{counts['tokens_per_round']:>9.3f}"
+                    f"{row['raw_adapt' if arm == 'adapt' else 'raw_pinned']:>8.3f}"
+                )
+            decay = row["pinned_decay"]
+            print(
+                f"{'':<18}{'->':<7}raw_p7/raw_adapt {row['raw_ratio']:.4f}   "
+                f"selection gain in acc/prop {row['selection_gain']:+.4f}   "
+                f"pinned decay/position "
+                f"{decay.get('decay_per_position', float('nan')):.4f}   "
+                f"halves {row['pinned']['accept_fraction_first_half']:.3f}"
+                f"/{row['pinned']['accept_fraction_second_half']:.3f}"
+            )
+        print()
 
     if "adapt" in report:
         pooled = report["adapt"]["pooled"]
