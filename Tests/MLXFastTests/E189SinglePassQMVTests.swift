@@ -55,12 +55,15 @@ private let e189Cells: [E189Cell] = {
 }()
 
 /// A JIT kernel pair for one width plan, built from the production source so
-/// the instrument cannot drift from the shipped text.
+/// the instrument cannot drift from the shipped text. The shipped decode path
+/// launches through `Qwen35CachedKernel`, so the instrument does too: a
+/// `MLXFastKernel` call would add a per-call config build that the scored path
+/// does not pay.
 private struct E189Pipeline {
     var plan: Qwen35QMVWidthPlan
     var label: String
-    var table: MLXFast.MLXFastKernel
-    var plain: MLXFast.MLXFastKernel
+    var table: Qwen35CachedKernel
+    var plain: Qwen35CachedKernel
 
     init(
         plan: Qwen35QMVWidthPlan, label: String,
@@ -69,20 +72,18 @@ private struct E189Pipeline {
         self.plan = plan
         self.label = label
         let head = header ?? qwen35E120QMVHeader
-        self.table = MLXFast.metalKernel(
+        self.table = Qwen35CachedKernel(
             name: "e189_qmv_table_\(label)\(nameSuffix)",
             inputNames: ["w", "scales", "biases", "x", "xsums"],
             outputNames: ["y"],
             source: qwen35E120QMVSource(table: true, plan: plan),
-            header: head,
-            ensureRowContiguous: true)
-        self.plain = MLXFast.metalKernel(
+            header: head)
+        self.plain = Qwen35CachedKernel(
             name: "e189_qmv_plain_\(label)\(nameSuffix)",
             inputNames: ["w", "scales", "biases", "x"],
             outputNames: ["y"],
             source: qwen35E120QMVSource(table: false, plan: plan),
-            header: head,
-            ensureRowContiguous: true)
+            header: head)
     }
 
     func call(
@@ -92,23 +93,16 @@ private struct E189Pipeline {
         let groups = Qwen35CustomQMV.activeInputGroups(m, plan: plan)
         var outShape = x.shape
         outShape[outShape.count - 1] = n
-        if useTable {
-            return table(
-                [w, scales, biases, x, xsums],
-                template: [("USE_TABLE", true)],
-                grid: (groups * 32, (n / 8) * 2, 1),
-                threadGroup: (32, 2, 1),
-                outputShapes: [outShape],
-                outputDTypes: [.bfloat16]
-            )[0]
-        }
-        return plain(
-            [w, scales, biases, x],
+        let launch = Qwen35KernelLaunch(
             grid: (groups * 32, (n / 8) * 2, 1),
             threadGroup: (32, 2, 1),
-            outputShapes: [outShape],
-            outputDTypes: [.bfloat16]
-        )[0]
+            outputShape: outShape.map(Int32.init),
+            outputDType: .bfloat16,
+            useTable: useTable ? true : nil)
+        if useTable {
+            return table([w, scales, biases, x, xsums], launch)
+        }
+        return plain([w, scales, biases, x], launch)
     }
 }
 
@@ -167,13 +161,24 @@ private func e189Compare(_ a: MLXArray, _ b: MLXArray) -> E189Diff {
     return diff
 }
 
-private func e189Timed(reps: Int, _ body: () -> MLXArray) -> Double {
+/// Microseconds per kernel call, from `chain` dispatches behind one blocking
+/// `eval`. One sync per call would measure the host round trip, which is the
+/// same for both arms and several times the cell's own device time; chaining
+/// lets the device time dominate the sample.
+private func e189Timed(reps: Int, chain: Int, _ body: (Int) -> MLXArray)
+    -> Double
+{
     let start = DispatchTime.now().uptimeNanoseconds
-    for _ in 0 ..< reps {
-        eval(body())
+    for rep in 0 ..< reps {
+        var outputs: [MLXArray] = []
+        outputs.reserveCapacity(chain)
+        for index in 0 ..< chain {
+            outputs.append(body(rep &* chain &+ index))
+        }
+        eval(outputs)
     }
     return Double(DispatchTime.now().uptimeNanoseconds - start) / 1e3
-        / Double(reps)
+        / Double(reps * chain)
 }
 
 private func e189GpuTemperature() -> Double? {
@@ -351,6 +356,8 @@ struct E189SinglePassQMVTests {
         let blocks = Int(env["MLXFAST_E189_BLOCKS"] ?? "") ?? 8
         let warmup = Int(env["MLXFAST_E189_WARMUP"] ?? "") ?? 6
         let reps = Int(env["MLXFAST_E189_REPS"] ?? "") ?? 4
+        let chain = Int(env["MLXFAST_E189_CHAIN"] ?? "") ?? 8
+        let variants = Int(env["MLXFAST_E189_VARIANTS"] ?? "") ?? 4
 
         let staged = E189Pipeline(plan: .staged, label: "staged")
         let single = E189Pipeline(plan: .singlePass, label: "singlepass")
@@ -371,15 +378,24 @@ struct E189SinglePassQMVTests {
                 let (w, scales, biases) = e189PackedCell(
                     k: cell.k, n: cell.n, seed: 0xE189)
                 for m in Self.probeWidths {
-                    let x = e189Activations(
-                        m: m, k: cell.k, seed: UInt64(0xE189_0000 + m))
-                    let xsums = Qwen35CustomQMV.xsumsTable(x)
-                    eval(xsums)
+                    // Distinct activation tensors, cycled inside a chain, so no
+                    // graph-level reuse can serve a repeat from an earlier
+                    // result instead of relaunching the kernel.
+                    let inputs: [(MLXArray, MLXArray)] = (0 ..< variants).map {
+                        variant in
+                        let x = e189Activations(
+                            m: m, k: cell.k,
+                            seed: UInt64(0xE189_0000 + m * 16 + variant))
+                        let xsums = Qwen35CustomQMV.xsumsTable(x)
+                        eval(xsums)
+                        return (x, xsums)
+                    }
                     let arms: [(String, E189Pipeline)] = [
                         ("staged", staged), ("singlepass", single),
                     ]
                     for (_, pipeline) in arms {
-                        for _ in 0 ..< warmup {
+                        for index in 0 ..< warmup {
+                            let (x, xsums) = inputs[index % inputs.count]
                             eval(
                                 pipeline.call(
                                     x: x, w: w, scales: scales, biases: biases,
@@ -393,8 +409,10 @@ struct E189SinglePassQMVTests {
                         let ascending = block % 2 == 0
                         let order = ascending ? arms : arms.reversed()
                         for (position, entry) in order.enumerated() {
-                            let us = e189Timed(reps: reps) {
-                                entry.1.call(
+                            let us = e189Timed(reps: reps, chain: chain) {
+                                index in
+                                let (x, xsums) = inputs[index % inputs.count]
+                                return entry.1.call(
                                     x: x, w: w, scales: scales, biases: biases,
                                     xsums: xsums, m: m, n: cell.n,
                                     useTable: true)
@@ -404,6 +422,7 @@ struct E189SinglePassQMVTests {
                                 "m": m, "arm": entry.0, "block": block,
                                 "ascending": ascending, "position": position,
                                 "microseconds": us, "reps": reps,
+                                "chain": chain,
                                 "invocations_per_round": cell.invocations,
                                 "groups": Qwen35CustomQMV.activeInputGroups(
                                     m, plan: entry.1.plan),
@@ -426,6 +445,7 @@ struct E189SinglePassQMVTests {
                 "official_or_ranked_score": false,
                 "active_plan": Qwen35QMVWidthPlan.active.rawValue,
                 "blocks": blocks, "warmup": warmup, "reps": reps,
+                "chain": chain, "variants": variants,
                 "samples": samples,
                 "temperatures": temperatures,
             ], to: "MLXFAST_E189_PROBE_OUT")
