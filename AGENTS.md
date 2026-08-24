@@ -425,3 +425,43 @@ Do not run Laguna/DFlash setup or benchmark scripts, use their score formulas,
 or copy their MoE/NVFP4 kernels without a Qwen-specific call-path and geometry
 proof.
 <!-- SENPAI-CAMPAIGN-END -->
+
+## Local Measurement Hygiene
+
+`research/e79_trace_leg.sh` stamps `base_sha=$(git rev-parse HEAD)` into
+every leg's `meta.txt`. Do not commit anything while a multi-leg session
+runs, or legs from one session will report different bases. The session
+scripts capture `e165_session_commit` once and assert the worker digest
+between legs; those two fields, not `base_sha`, prove the legs are
+comparable.
+
+`e79_trace_leg.sh` also records `dirty_candidate_paths` from `Sources`,
+`Vendor` and `Package.swift`. An uncommitted source file makes every leg
+report a dirty tree even when the leg builds nothing, so park unrelated work
+on a side branch before a session rather than leaving it in the tree.
+
+The GPU-idle fraction can be MEASURED, not just bounded. Passwordless sudo is
+available, and `powermetrics --samplers gpu_power` reports `GPU idle
+residency`, `GPU HW active residency`, the DVFS frequency histogram and GPU
+power. Host clocks cannot see a bubble that opens after a command buffer is
+committed and closes before it completes, so a host-clock budget only bounds
+idle from below; these counters close it from above. Measured on this M4 Pro
+over full 512-token legs: about 90-97% idle between legs, 0.87% idle during
+pinned width 4 decode and 0.66% at width 7, with 99.9% of active GPU time in
+the top DVFS bin. The sampler is system-wide, and "active" means the block is
+clocked, not that the shader cores are issuing, so a memory-stalled GPU still
+reads as active. Wrappers: `research/e165_residency_leg.sh`,
+`research/e165_residency.py`.
+
+Sample the residency over a WHOLE leg. A six-second window of the same run
+reported 4.33% idle, five times the full-leg figure, because decode phases are
+not stationary over a few seconds. The short sample suggested a large
+intra-queue bubble that the full legs show does not exist: hardware idle and
+host-clock idle agree to within about 0.3 ms per round.
+
+Measured timing noise on this host is larger than the campaign assumed. Across
+sixteen gated 512-token legs the per-leg coefficient of variation of
+`mtp_seconds_per_token` is 0.12%, not the 0.039% quoted as the noise floor.
+Four legs per arm give a 2 sigma of about 0.17% on a contrast and eight give
+about 0.12%, so an effect below roughly 0.3% needs two replicates before it
+can be separated from a predeclared threshold.

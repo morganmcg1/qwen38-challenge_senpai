@@ -66769,3 +66769,2180 @@ B1           35a8a9de  morganmcg1  3.694062213       rejected   commit 08f81100
 - PR 165 thorfinn, per-round fixed cost, `e165L4` promoted to deliverable.
 - PR 166 edward, ship the maintained base, holds the official slot, owns the receipt watcher.
 - PR 167 askeladd, the ranked depth optimum, next in the submission queue.
+
+## Entry 352 — 2026-08-24T03:35:00Z — Two refutations in one cycle, both of my own briefs; the board cannot measure depth; the row is the only channel worth better than 1x
+
+### Summary
+
+Alphonse and askeladd both returned terminal negatives, both refuting hypotheses
+I wrote, and both did it without spending a timed comparison arm on the wrong
+mechanism. PR 163 and PR 167 are closed unmerged with the evidence preserved.
+Edward submitted `180db842` and holds the official slot. Thorfinn's 512-token
+prefetch ABBA is running. Askeladd and alphonse are reassigned to PR 168 and
+PR 169.
+
+I also spent this cycle trying to measure the ranked depth axis from 612
+pinned-head board receipts. It cannot be done, and finding out why retired an
+argument I had already put into a student brief.
+
+---
+
+### FINDING 379 — the board's schedule support is two build generations, not a depth axis
+
+`harness=ranked`. 612 receipts on the pinned head `559b24eb`, all with
+`len(per_prompt)==8`, `decode_tokens==512`, `parity_all_ok`.
+
+The schedule support is dominated by two clusters:
+
+```
+cluster A  beagle 4.382  botany 6.148  essays 5.087  medicine 5.256  republic 4.989   n=293
+cluster B  beagle 4.533  botany 5.776  essays 5.425  medicine 4.768  republic 5.270   n=229
+other                                                                                 n= 90
+```
+
+Cluster B is deeper on beagle, essays and republic and shallower on botany and
+medicine. It is not a depth setting. Decode seconds per token, cluster B minus
+cluster A, with solver fixed effects:
+
+```
+prompt      nA    nB   B-A ms/tok      se        t   B deeper?
+beagle     290   222      +0.8272  0.0535   +15.45        yes
+botany     290   222      +0.8906  0.0541   +16.46         no
+drama      290   222      +0.9577  0.0893   +10.72       same
+essays     290   222      +0.7892  0.0492   +16.03        yes
+medicine   290   222      +1.1327  0.0571   +19.85         no
+plutarch   290   222      +0.1344  0.0493    +2.73       same
+republic   290   222      +0.8392  0.0495   +16.94        yes
+travel     290   222      +0.9046  0.0805   +11.24       same
+```
+
+**Cluster B is slower on all eight prompts, including the three where both
+clusters run identical schedules.** drama +0.958 at t = +10.7 and travel +0.905
+at t = +11.2 cannot be depth effects because the depth is the same. B is a
+slower build generation.
+
+Corroboration. Cluster B's board-wide maximum is `3.2546`; cluster A's is the
+crown at `3.7291`. Every one of the top 25 receipts is cluster A. Twenty-one
+solvers submitted in both clusters and **21 of 21 scored higher in A**, mean
+best-A minus best-B `+0.385`. Our best `5a9f130a`, the crown `ec24d591`, and the
+crown's parent `684821ed` are all cluster A, so no cluster correction applies to
+any of our comparisons.
+
+Plutarch is the diagnostic. It drafts in about 8 % of its rounds and shows only
++0.134 against +0.79 to +1.13 elsewhere, so the B penalty is a per-drafting-round
+build cost.
+
+### ADVISOR ERROR 220 — I priced a build artifact as a depth measurement
+
+The claim "948 receipts, 190 schedules, and not one of them is both deep and
+fast", which I put in askeladd's E166 brief as falsification evidence, is an
+artifact. The apparent within-prompt depth slopes are the A-to-B build gap
+re-signed by whichever cluster happens to draft deeper on each prompt.
+
+I then tried to rescue the design with a leave-one-out common-build control
+(`z_ip = dec_ip/median_p - 1`, `f_ip = mean over q != p of z_iq`). It produces a
+clean sign flip: deeper is faster on all five high-acceptance prompts and slower
+on drama and travel, with implied `h` of 5.57 ms/row against the between-prompt
+5.335. It is seductive and it is wrong. **Six of seven wrong-prompt negative
+controls fire, up to |t| = 15.5, with the same signs.** Regressing a prompt's
+decode time on a *different* prompt's schedule reproduces the result, so the
+design identifies schedule generation, not depth.
+
+**The ranked depth axis is unmeasurable from the board.** It is an empty cell,
+not a tested and rejected one. This is consistent with RULE 373: the exposure
+library is approximately rank-2 and selected exposures need |t| >= 5.5.
+
+### ADVISOR ERROR 219 — FINDING 378 was refuted at the source level
+
+Askeladd refuted E166 in about 25 minutes without building an arm. Full report
+`research/e166-result.md`, W&B `ob750vyt`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ob750vyt
+
+1. The shipped objective `f(d) = (1 + 0.18*d)/(1 + E(d))` under
+   `depthPriceArm = .ship` is **scale-free and dimensionless**.
+   `headStepCostRatio = 0.18` is a ratio, not milliseconds, so no LAW 354
+   weight-stream step can live in it under any calibration. `.ship` resolves to
+   `makeUniformDepthPrice()` at `Qwen36MTPBlockSession.swift:1015`.
+   `measuredRawDepthPrice[4] = 0.6329` is reachable only under `.pbfit`, which
+   is not selected. `sdpaWidthWallDepthCap = 5` is dead: exactly two treewide
+   references, the declaration at `:1053` and one comment at `:1105`.
+2. The ranked truth implies a per-row ratio of `0.24821` against the shipped
+   `0.18`, so the shipped policy is too **cheap** per row. Correcting it makes
+   the greedy walk **shallower**, the opposite of my briefed mechanism.
+3. At each prompt's measured `q` the shipped rule **already selects d = 7** on
+   all five high-acceptance prompts, which is the ranked optimum I derived.
+   Predicted gain +0.00 %, not +4.19 %. Only travel disagrees, 3 -> 2.
+4. Measured anyway: open-loop replay of a traced 512-token adaptive leg under
+   the briefed ranked price gives mean depth 5.821 and 8.6330 ms/token against
+   ship 8.4664, a **+1.97 % regression**.
+
+Controls: 513 trace steps rebuilt with worst absolute error 1.8e-6; replayed
+depth equals realised depth on 77/77 interior rounds, with round 78 reported
+separately as window truncation. `phi_acc = 0` survives and **ADVISOR ERROR 217
+is closed**: the E166 step 0 island prelude gave digit-identical ledgers between
+arms (27 rounds, EDL 3.814815, 102/1 accept/reject, 130/130 rows, 0 residual
+divergences), so FINDING 372 holds under mechanism (b) — the island transform
+changes runtime only and never the decision walk. Islands OFF costs +0.31 % to
++0.43 % per round, directional only, so islands are the faster arm.
+
+Askeladd withdrew his own traced-versus-untraced timing claim on a 20.0 C entry
+spread (79.20 against 59.21) and kept only the thermally immune EDL identity.
+He then found the harness had produced no A/B estimate for that pair at all
+(`blocks=0`, reducer exits 1), which is stronger than the withdrawal.
+
+### FINDING 380 — `effective_mean_draft_len` is mean proposed draft rows per round
+
+Settled, and it closes the open E167-B question assigned to Edward. Askeladd's
+traced leg reports `draft=6.3589743589743586` and mean realised offered depth
+`6.359`; they are the same number to the last digit.
+
+Verified against the board with the FINDING 374 round-count identity, using
+`acceptance = (512 - rounds) / (rounds * edl)`:
+
+```
+prompt      edl    rounds   proposed   accepted extra   acceptance
+local      6.359      78       496           434          0.875
+botany     6.148      81       498           431          0.866
+medicine   5.256      90       473           422          0.892
+essays     5.087      92       468           420          0.897
+republic   4.989      93       464           419          0.903
+beagle     4.382     110       482           402          0.834
+travel     2.648     213       564           299          0.530
+drama      2.298     252       579           260          0.449
+plutarch   0.156     488         76            24          0.316
+```
+
+The acceptance column recovers FINDING 374's `alpha` independently.
+
+### FINDING 381 — beagle drafts 31 % shallower than our local fixture at a 5 % lower acceptance rate
+
+From the table above: the local fixture accepts at 0.875 and is offered 6.359
+rows; ranked botany accepts at 0.866 and is offered 6.148, which tracks. But
+**ranked beagle accepts at 0.834 and is offered only 4.382**. The policy is not
+tracking acceptance there. The two candidate causes are the depth-0 and depth-1
+margin clamps and a depressed `positionAcceptEMA`.
+
+This matters because of FINDING 342: the marginal published weight is `0.47808`
+beagle, `0.52192` essays, and exactly zero on the other six. The two shallowest
+high-acceptance prompts on the board are beagle 4.382 and essays 5.087. The
+prompt drafting closest to its optimum, botany 6.148, is worth nothing at the
+margin. Whatever truncates depth is concentrated exactly where the score is
+decided.
+
+Priced with `R(M) = 16.1585 + 5.3350*M`, beagle at depth 7:
+
+```
+beagle now       M = 5.382   R = 44.98 ms   4.655 tok/round   9.66 ms/tok
+depth 7, acc 0.834           R = 58.84 ms   6.84  tok/round   8.60 ms/tok   -11.0 %
+depth 7, acc 0.80            R = 58.84 ms   6.60  tok/round   8.92 ms/tok    -7.7 %
+depth 7, acc 0.75            R = 58.84 ms   6.25  tok/round   9.41 ms/tok    -2.5 %
+depth 7, acc 0.70            R = 58.84 ms   5.90  tok/round   9.97 ms/tok    +3.2 %
+```
+
+Break-even is acceptance about 0.72. This is now PR 168.
+
+### E163 closed — the transfer law is confirmed and four of my supporting numbers are dead
+
+Alphonse declined to build the width-6 one-pass arm after F5 and priced the
+mechanism instead. W&B `plnv63p3`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/plnv63p3
+
+Six-leg pinned palindrome, 512 tokens, real 40 C gate,
+`gate_qualified_for_timing=true` on all six legs. Three cells fix
+
+```
+R_local = 57.384 + 7.002*rows + 28.605*(G-1)
+```
+
+exactly: identity residual +0.000000 ms, cross-estimator residuals <= 0.124 ms,
+pooled sd 0.2238 ms. Askeladd's independent intercept 57.83 ms agrees to 0.8 %
+and his R(5) and R(6) agree to 1.0 % and 0.8 % on a different host with a
+different instrument. My signed prediction was A = +13.9 ms; the measurement is
+2.06x that.
+
+Adopted corrections:
+
+- The ranked box is `m5-max-128gb-3`, Metal cache key `mlx-metallib-m5-max-v2`,
+  so it is an **M5 Max** and 590 GB/s is not self-evidently impossible there.
+  FINDING 375 no longer rests on that argument. It rests on the disproportion
+  test: the second weight stream is 22.35 % of alphonse's round, an equal ranked
+  share would be 10.93 ms, and the measured ranked effect is -0.20 ms.
+- The 57.1 %-of-peak headline is retracted. Against the measured 255.5 GB/s peak
+  the round runs at **80.3 %** and local headroom is **18.23 ms, not 43 %**.
+  This kills ADVISOR ERROR 216 completely rather than partially.
+- The 116.46 ms round figure is retracted as host state, not width.
+- The eval versus `verify_build_us` counter split is withdrawn;
+  `verify_build_us` is about 97 % GPU wait.
+- `14,417,640,448 B` does include the 248,320 x 5,120 vocabulary readout and the
+  group-64 scales and biases. Without the readout 13.702 GB; packed 4-bit only
+  12.811 GB; without both 12.175 GB. The ranked first stream is 294.7 GB/s on
+  the stated count and never below 248.8 GB/s.
+
+Exactness green: 126 cells, 10,867,296 elements per arm, `max_abs_delta = 0`,
+63 of 63 positive controls rejecting.
+
+Closed axis `width6_one_pass_ipg_table_entry`. Refuted on the ranked host by
+three independent board arms, not merely unmeasured. Reopen only on a ranked
+host generation change.
+
+### Official submission in flight
+
+Edward submitted `180db842-a6b3-4bca-b50b-66372c34f389`, commit
+`a69e3de131d626e72503e1a5510c489634603318`, `BASE_SHA`
+`770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`, model flag `senpai`, status
+validating. Frontier verified at 02:50Z: top promoted `ec24d59` newjordan
+`3.7291100105909` commit `0863b06a`, agreeing with `frontier-state.json` on
+submission ID, solver, score and source reference. **The crown has not moved.**
+Receipt watcher `023eaee4`, read-only, output outside the checkout. W&B
+`cqfa2d6n`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cqfa2d6n
+
+### Operational fact recorded in the runbook
+
+`senpai/submit-official.sh` requires a submission note of **at least 5 KiB** and
+rejects a shorter one locally without creating a submission. This is written
+nowhere in `program.md` or the runbook and cost Edward one round trip. The note
+must also cover the full narrative arc the error text names and be passed as a
+path readable from the checkout. Added to `senpai/experiment-runbook.md`,
+together with the rule that a note must never claim `swift test` is green: it
+carries 41 pre-existing failures, and the correct statement is the count, how
+many are new, and whether any exercises the changed surface.
+
+### Board state
+
+Crown unchanged: `ec24d591` newjordan `3.7291100105909`, source ref `0863b06a`,
+promoted. Our best `5a9f130a` `3.70784519415395`. Gap +0.5735 % published,
+draw-neutral replicable part +0.2071 %.
+
+### Live assignments after this cycle
+
+- PR 165 thorfinn, `e165-per-round-fixed-cost`. Cross-round head-chain prefetch
+  built, gated and witnessed; 512-token ABBA running as job `18875159`. Targets
+  the 790.3 microsecond per-round `gpu_idle_window` intercept, a
+  `per_round_fixed` term that transfers at 0.34x, so full local recovery is
+  about 267 microseconds per ranked round against our +0.2883 ms/round deficit
+  to the crown.
+- PR 166 edward, `e167-ship-the-maintained-base`. Submitted, holds the official
+  slot, owns the receipt watcher.
+- PR 168 askeladd, `e168-margin-clamp-calibration`. Calibrate the depth-0 and
+  depth-1 `pendingTop2` margin clamps at
+  `Qwen36MTPBlockSession.swift:1137-1151` rather than ablate them. My claim to
+  be falsified first: the clamps choose offered depth only and cannot affect
+  exactness.
+- PR 169 alphonse, `e169-marginal-verified-row-decomposition`. Decompose the
+  5.3350 ms ranked marginal verified row, 63.8 % of the ranked beagle round and
+  66.4 % of essays, and the only LAW 377 channel that transfers at better than
+  1x. Our `h = 5.3408 ms` is already the lowest on the board.
+
+## Entry 353 — 2026-08-24T04:05:00Z — The published score is a two-term formula, our replicable gap to the crown is 0.061 %, and the only empty cell on the board is a depth cap we set ourselves
+
+Advisor analysis cycle. No GPU used. All numbers below come from the official
+`per_prompt` metrics of 956 scored 512-token parity-ok receipts on the live
+Yukon board (snapshot `/tmp/board_t11.json`, 1298 rows, 04:00Z), from the
+maintained source tree at `ca3181bd`, and from a faithful re-implementation of
+the shipped depth controller.
+
+### FINDING 382 — the published score is exactly two prompts
+
+Recomputing the median from the eight per-prompt `raw_ratio_of_means` values
+reproduces `officialScore` to better than 5e-15 on our receipt, the crown, the
+crown's parent and B1:
+
+```
+published = 0.5 * beagle_raw + 0.5 * min(essays_raw, medicine_raw, republic_raw, botany_raw)
+```
+
+Board-wide the 4th order statistic is beagle on **936 of 956** receipts (97.9 %)
+and the 5th is one of the four fast prompts on **948 of 956**. Beagle's slot is
+structurally safe: it is 31.5 % slower than the 3rd prompt (travel).
+
+Marginal published weights on our receipt (published 3.70784519):
+
+| lever | d(published)% per 1 % | note |
+| --- | --- | --- |
+| beagle only | **+0.4781** | no saturation |
+| current minimum (essays) only | +0.5219 | **saturates after +0.932 %** |
+| all eight uniformly | +1.0000 | |
+
+Consequence for assignment: **improving a fast prompt that is not the current
+minimum is worth exactly zero.** Raising the minimum and reducing dispersion are
+the same action. This sharpens askeladd's FINDING E (+0.500 % from equalising
+the fast four at zero mean speedup) from a curiosity into a mechanism.
+
+Supersedes the loose reading of FINDING 342.
+
+### FINDING 383 — our replicable gap to the crown is 0.061 %, and resubmitting the same code is hopeless
+
+Per-prompt decomposition of the crown's lead into the runner's serial draw
+(which we cannot cause) and candidate speed (which is ours):
+
+| prompt | serial advantage | mtp advantage | raw advantage |
+| --- | --- | --- | --- |
+| beagle | −0.151 % | +0.248 % | +0.096 % |
+| essays | **+1.126 %** | +0.170 % | +1.298 % |
+| medicine | −0.007 % | +0.085 % | +0.078 % |
+| republic | −0.431 % | +0.171 % | −0.260 % |
+| botany | +0.054 % | +0.181 % | +0.236 % |
+
+**The crown's code is only about 0.17 % faster than ours, uniformly.** Its board
+position comes from one essays serial draw at z = +5.12 against the board mean
+(sd 0.236 %, n = 956). Put that draw at the mean and the crown's published falls
+to 3.71126, against our 3.70899 at mean serial. This independently confirms
+askeladd's FINDING D from the opposite direction.
+
+Simulation of a resubmission of our exact candidate, candidate times held fixed,
+serial times drawn from the board's own per-prompt distributions, 200,000 draws:
+
+| candidate speed | P(beat crown 3.72911) | mean | p5 | p95 |
+| --- | --- | --- | --- | --- |
+| as submitted | **0.1 %** | 3.70896 | 3.69859 | 3.71934 |
+| 0.5 % faster | 40.9 % | 3.72764 | 3.71722 | 3.73804 |
+| 1.0 % faster | **99.7 %** | 3.74648 | 3.73602 | 3.75697 |
+| 2.0 % faster | 100 % | 3.78472 | 3.77411 | 3.79526 |
+
+**One percent of candidate MTP time takes the crown with near certainty.** That
+is the campaign target and every brief should be priced against it.
+
+The min-of-four order statistic contributes **0.000 %** of noise penalty: the
+four fast prompts are 1.6 % apart, far outside the 0.24 % serial noise, so the
+minimum is effectively deterministic. Dispersion matters through its level, not
+through draw risk.
+
+### FINDING 384 — the parent offers 8 draft rows to everybody, always
+
+`mtp_max_draft_depth = 8` and `mtp_depth = 8` on **956 of 956** scored receipts.
+Askeladd refuted the same hypothesis independently at source
+(`QwenRuntimeMTPDriver.swift:141-150`): the offer is a function of the configured
+depth, the trusted constant `qwenMTPMaxDraftDepth`, and `remaining - 1` only. The
+prompt is not an input, and the ranked host runs this same trusted driver.
+
+**ADVISOR ERROR 221.** FINDING 381's third candidate — an external per-prompt
+`offeredDepth` cap explaining beagle's shallow drafting — is dead. I proposed it
+as the largest and cheapest of three explanations. It was cheap and wrong.
+
+### FINDING 385 — the depth-price identity, and it explains four historical ranked receipts
+
+The shipped rule extends while `reach > c*(1+A)/(1 + d*c)`. The true marginal
+rule under a round law `R(M) = s + h*M` extends while
+`reach > h*(1+A)/(s + h*(1+d)) = (1+A)/(s/h + 1 + d)`. These agree if and only if
+
+```
+c* = h / (s + h)
+```
+
+| host | s (ms/round) | h (ms/row) | c* |
+| --- | --- | --- | --- |
+| ranked M5 Max | 16.1585 | 5.3350 | **0.24821** |
+| local M4 Pro | 47.756 | 8.6457 | **0.15329** |
+| shipped constant | | | 0.18000 |
+
+The source comment at `:1072-1088` records four ranked price arms. Ordering them
+by distance from the ranked `c*` reproduces the score order almost exactly:
+
+| c | ranked score | \|c − c*\| | rank by score | rank by distance |
+| --- | --- | --- | --- | --- |
+| 0.18 | 2.92000 | 0.06821 | 1 | 1 |
+| 0.32 | 2.84585 | 0.07179 | 2 | 2 |
+| 0.15 | 2.66700 | 0.09821 | 4 | 3 |
+| 0.14 | 2.76600 | 0.10821 | 3 | 4 |
+
+Only the 0.14/0.15 pair swaps, and they differ by 0.01 in `c`. **The local
+optimum 0.15329 sits inside the losing pair.** This is a concrete, standing
+warning: a local price sweep would have selected 0.153 and lost 8 % on rank. It
+is the clearest instance yet of the local/ranked causal boundary in
+`program.md`.
+
+The identity does not by itself justify shipping `c = 0.24821`; see FINDING 386.
+
+### FINDING 386 — the shipped controller cannot be described by any stationary acceptance rate
+
+I re-implemented `costModelDepth` and `recordAcceptOutcome` exactly — cold prior
+`0.85*pow(0.98,i)`, `acceptEMAAlpha = 0.15`, reject update to 0.0, full-accept
+optimism transfer capped at 0.95, `c = 0.18`, cap 7 — and drove it with a
+stationary Bernoulli target for 120,000 steady-state rounds per point.
+
+**It saturates at the cap for every true per-position acceptance at or above
+0.90.** Solving for the `q` that reproduces each ranked mean depth gives an
+acc/prop that is far too low, with the same sign on all five prompts:
+
+| prompt | q needed for observed depth | implied acc/prop | observed | error |
+| --- | --- | --- | --- | --- |
+| beagle | 0.8000 | 0.545 | 0.834 | −0.289 |
+| republic | 0.8216 | 0.567 | 0.903 | −0.336 |
+| essays | 0.8272 | 0.573 | 0.897 | −0.324 |
+| medicine | 0.8363 | 0.583 | 0.892 | −0.309 |
+| botany | 0.8838 | 0.653 | 0.866 | −0.212 |
+
+A two-state mixture fits beagle immediately: 52.4 % easy rounds at the cap with
+q = 0.97, the rest cut to about 1.5 rows at q = 0.70, giving acc/prop 0.796
+against the observed 0.834 from an untuned two-parameter guess.
+
+**Askeladd's positive-feedback-selector explanation is confirmed.** The
+controller is not defective; it is tracking genuinely non-stationary text. Roughly
+half of the ranked rounds on the fast prompts are already **pinned at the cap**.
+
+**`beagleDepthAnomaly` is withdrawn.** It was never a beagle fact and never an
+anomaly; it was my stationary model applied to an adaptive controller.
+
+**ADVISOR ERROR 222.** The value table I sent askeladd in E168 F2 §6
+(+1.4 % to +4.4 % published from moving all five drafting prompts to a model
+optimum) assumed one stationary `q` per prompt. A stationary model necessarily
+overstates the value of forcing depth, because it spreads the hard rounds' low
+acceptance evenly instead of letting the controller avoid them. Retracted in F3
+as an oracle ceiling, not available headroom.
+
+**CLOSED AXIS — `acceptEMAAlpha`.** I hypothesised that alpha = 0.15 was fast
+enough for estimator noise to cost depth through Jensen's inequality. Measured in
+simulation at q = 0.9335: mean depth 6.880 at alpha 0.15 against 7.000 at alpha
+0.01, worth about +0.13 % of decode, and it would slow adaptation on exactly the
+non-stationary text that turns out to matter. Do not reopen without new evidence
+that the estimator, not the text, is the limiter.
+
+### FINDING 387 — ranked decode separates exactly, and confirms the round law per prompt
+
+`decode_seconds_per_token = mtp_seconds_per_token_mean − prefill_seconds_per_token`,
+both present in `officialMetrics.per_prompt`. Dividing by the FINDING 374 round
+counts reproduces the ranked per-round decode times to the digit:
+
+| prompt | mtp ms/tok | prefill ms/tok | decode ms/tok | rounds | ms/round |
+| --- | --- | --- | --- | --- | --- |
+| drama | 17.8803 | 1.0275 | 16.8528 | 252 | 34.241 |
+| travel | 15.6379 | 1.0319 | 14.6060 | 213 | 35.109 |
+| beagle | 10.6961 | 1.0317 | 9.6644 | 110 | 44.983 |
+| republic | 9.6975 | 1.0290 | 8.6684 | 93 | 47.723 |
+| essays | 9.8233 | 1.0308 | 8.7925 | 92 | 48.932 |
+| medicine | 9.7036 | 1.0287 | 8.6749 | 90 | 49.350 |
+| botany | 9.6485 | 1.0305 | 8.6180 | 81 | 54.474 |
+| plutarch | 30.1213 | 1.0298 | 29.0915 | 488 | 30.522 |
+
+Prefill is 1.0275 to 1.0319 ms per generated token on every prompt — effectively
+a constant. Any student may now convert a measured round bookkeeping
+`(mean depth d, accepted extra per round A)` straight to a ranked prediction:
+
+```
+N = 512/(1+A);  decode = N*(16.1585 + 5.3350*(1+d));  leg = decode + 512*1.031
+raw = 37.92 / (leg/512)
+```
+
+### THE OPEN LEVER — `segmentedVerifyDepthCap = 7` while the parent offers 8
+
+Three facts line up:
+
+- the parent offers 8 draft rows on every round of every receipt (FINDING 384);
+- the sdpa exactness chunk at `Qwen36MTPBlockSession.swift:1045` is coded for a
+  **6..9-row** split, but the measured claim at `:1049` is only *"widths 6..8
+  bit-exact"* — **width 9 is coded and unmeasured**;
+- the maximum `effective_mean_draft_len` anywhere on the board is botany 6.846.
+  **No solver has ever exceeded cap 7.** This is an empty cell for the whole
+  competition, not just for us.
+
+Sizing one released at-cap round with the ranked round law: depth 7 gives 8.298
+ms/token at M=8, depth 8 gives 8.183 ms/token at M=9, a 1.39 % improvement. At the
+50 to 60 % at-cap fraction implied by FINDING 386 that is roughly 0.7 % to 0.8 %
+of the ranked leg — which FINDING 383 prices at close to a 90 % chance of the
+crown.
+
+Assigned to Edward as E167 F3 while `180db842` validates. Exactness first, at 512
+tokens, with a one-ulp positive control, because the comment at `:1031` warns that
+drifted K/V rows from one wide forward contaminate every later round and stay
+invisible to an argmax-only check. A clean refutation is a complete result: it
+converts a coded-but-unproven range into a measured boundary.
+
+`G_min(M) = ceil(M/5)` puts M=8 and M=9 both in G=2, so no new weight-stream pass
+is expected at width 9; that must still be confirmed from the dispatch.
+
+### State of the round
+
+- Edward, PR #166: `180db842` still validating at 04:00Z, 70 minutes elapsed. Official slot held. Now also carrying the cap-8 question.
+- Thorfinn, PR #165: cross-round head-chain prefetch built, gated and witnessed with a one-ulp positive control; 512-token gated ABBA job `18875159` running to about 04:28Z. Targets 0.267 ranked ms/round against our +0.2883 ms/round deficit.
+- Askeladd, PR #168: refuted my Explanation 2 at source before spending GPU time; measured the clamp at 49 % binding but only 9 % depth-removing on the local fixture; `p7` uncensored arm running over eight varied prose prompts. Now also owns the at-cap fraction and the easy/hard depth-bin split.
+- Alphonse, PR #169: marginal verified row decomposition, just started.
+
+Three of the four live experiments target a channel capable of the 0.5 % to 1.0 %
+needed for the crown. That is the right portfolio.
+
+## Entry 354 — 2026-08-24T04:55:00Z — Prefill is a 10-sigma ranked instrument, it defines the top of the code board, and the mechanism that ruins ours is sitting in our own base
+
+Board snapshot `/tmp/board_t12.json`, 1299 rows, 828 usable
+(`len(per_prompt)==8`, `decode_tokens==512`, all `parity_ok`, prefill present).
+Crown unchanged: `ec24d591` newjordan **3.7291100105909**, promotedSourceRef
+`0863b06ac16e`.
+
+### A. Terminal receipt `180db842` — rejected at 3.70465399491642
+
+Edward's E167 (maintained base, two changes above `5a9f130a`) validated 02:50Z
+to 03:54:42Z and was **rejected**, 0.0861 % below our own best `5a9f130a`
+(3.70784519415395). Official slot released.
+
+Edward's own reading was "noise is the single most likely explanation,
+signal-to-noise 0.87, the experiment was unresolvable before it started". That
+reading is wrong, and the receipt itself contains the instrument that refutes
+it.
+
+### FINDING 388 — `prefill_seconds_per_token` is a candidate-side field with 0.200 % noise, and it resolves what `officialScore` cannot
+
+`officialScore` carries the pinned-serial lottery: single-receipt sd 0.271 %.
+`prefill_seconds_per_token` contains no serial term at all. Over our 32 normal
+receipts:
+
+```
+prefill mean 1.0294 ms/tok   sd 0.0021 ms   =  0.200 %
+```
+
+Two of our 34 receipts sit far outside that:
+
+| receipt | prefill | z | delta |
+|---|---|---|---|
+| `7226dc9a` 08-23T06:47 | 1.0503 | **+10.2 sigma** | +2.04 % |
+| `180db842` 08-24T02:50 | 1.0499 | **+10.0 sigma** | +2.00 % |
+
+All eight prompts move together in both; the minimum of each is above the
+maximum of every normal receipt we have ever produced.
+
+**Runner-state control (excluded).** For each receipt, every other solver's
+receipt within +/- 90 minutes:
+
+| receipt | its prefill | same-window median, other solvers | delta |
+|---|---|---|---|
+| `180db842` | 1.0499 | 1.0291 | **+2.03 %** |
+| `7226dc9a` | 1.0503 | 1.0291 | **+2.07 %** |
+| `1db9d63e` | 1.0277 | 1.0286 | −0.09 % |
+| `0cf1637e` | 1.0282 | 1.0291 | −0.08 % |
+| `5a9f130a` | 1.0300 | 1.0282 | +0.18 % |
+| `35a8a9de` | 1.0284 | 1.0289 | −0.05 % |
+
+The M5 was normal at those minutes. Our code was slow.
+
+**Rule.** Price a candidate's prefill from `prefill_seconds_per_token`, never
+from `officialScore`. A 1 % prefill effect is a 5-sigma ranked measurement; the
+same effect is 0.1 % of published score and invisible.
+
+### FINDING 389 — the mechanism is software-pipelined `qmm_t`, it is in the maintained base, and we have refuted it twice
+
+`origin/senpai/qwen38-mtp-r1` versus `upstream/main`, editable paths:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift              +30
+Vendor/.../MLXLLM/Models/Qwen35.swift                         +88
+Vendor/.../metal/kernels/quantized.h                         +138
+Vendor/.../mlx-generated/quantized.cpp                       +138
+Vendor/.../metal/kernels/quantized_nax.h                      +80
+Vendor/.../mlx-generated/quantized_nax.cpp                    +80
+```
+
+The four quantized files add exactly one mechanism: a **software-pipelined,
+double-buffered weight tile in `qmm_t`**, with a new
+`QuantizedBlockLoader::shift_dst`. `upstream/main` has none of it.
+
+The kernel comment argues the double buffer "fits with headroom" at
+`2 * 64 * 72 * 2 = 18,432 B`. Fitting is not the question. Threadgroup memory
+is the occupancy limiter on Apple GPUs; 9,216 B to 18,432 B per threadgroup can
+halve resident threadgroups per core, and for a weight-load-latency-bound
+quantized GEMM that removes more latency hiding than double buffering adds.
+
+Prefill timeline, exact:
+
+```
+08-23 06:47  7226dc9a  1.0503   pipelining IN   (quantized.h only)
+08-23 09:23  0cf1637e  1.0282   OUT
+08-23 12:22  749da2cf  1.0286   OUT
+08-23 14:38  75a21a47  1.0273   OUT
+08-23 16:29  5a9f130a  1.0300   OUT  (organizer main byte for byte)
+08-23 18:20  1509bf95  1.0287   OUT
+08-23 23:31  35a8a9de  1.0284   OUT
+08-24 02:50  180db842  1.0499   BACK IN  (now also ported to quantized_nax.h)
+```
+
+`0cf1637e`'s note recorded that we "refused to restore the one our own receipt
+refuted". That refusal was right. The mechanism was re-introduced anyway, this
+time also ported to the `_nax` family, and cost the same 2 % again.
+
+**Code-only leg comparison, `180db842` vs `5a9f130a`:** prefill +1.71 % to
++2.09 %, mean candidate leg **+0.234 % slower**, decode flat. E167 is a pure
+prefill regression. Reverting the four files is worth **+0.195 % published**
+against `180db842`, at zero risk. Assigned to Edward as F5, revert only, no
+submission.
+
+### FINDING 390 — `_nax` kernels cannot run on any host we own
+
+`Vendor/.../backend/metal/device.cpp:913`:
+
+```c
+bool is_nax_available() {
+  if (__builtin_available(macOS 26.2, ...)) can_use_nax = true;
+  gen = d.get_architecture_gen();
+  can_use_nax &= gen >= (arch == 'p' ? 18 : 17);
+}
+```
+
+The M4 Pro is generation 16. On our fleet `qmm_t_nax` never executes; on the
+ranked M5 it does. Dispatch gate at `backend/metal/quantized.cpp:697`:
+`is_nax_available() && transpose && (K % 64 == 0) && dtype != float32`. With
+K = 5120 and bf16 activations the ranked prefill and every wide-verification
+projection take the `_nax` path.
+
+**Consequence.** Any edit confined to `quantized_nax.h`, `fp_quantized_nax.h`,
+`steel_*_nax.h` or their generated twins is **structurally unscreenable
+locally**. Its only instrument is an official receipt. Never bundle such an
+edit with a measured one — that is precisely how E167 inverted.
+
+**Related surface fact.** `backend/metal/quantized.cpp` is **not** on the
+89-path submitted surface. The tile geometry chosen there for `qmm_nax`
+(`bm=bn=bk=64, wm=wn=2`, one hardcoded shape for every M, N, K) therefore
+cannot be tuned by a candidate. Only the kernel body and the Swift-level op
+shapes are editable.
+
+`get_qmv_batch_limit(K=5120, N>4096)` returns 6, so `qmm` (hence `qmm_nax` on
+M5) serves both the 512-row seed prefill **and** every target projection at
+verification width M >= 6. This is the same M >= 6 boundary as FINDING 358.
+
+### FINDING 391 — prefill defines the top of the code board; the crown is only rank 7 by code
+
+Ranking all 828 usable receipts by candidate speed alone, substituting the
+pooled-mean serial draw per prompt so the serial lottery is removed
+(`code* = 0.5*beagle + 0.5*min(fast four)`, FINDING 382 structure):
+
+| rank | receipt | solver | code* | prefill | official |
+|---|---|---|---|---|---|
+| 1 | `8b84c190` | vibecodooor | 3.72883 | 0.9859 | 3.71979 |
+| 2 | `ac89ef87` | scarletbright | 3.72408 | 0.9856 | 3.72298 |
+| 3 | `43925f29` | Amal-David | 3.72136 | 0.9859 | 3.71654 |
+| 4 | `9f63972a` | ofou | 3.71767 | 1.0276 | 3.70222 |
+| 7 | `ec24d591` | newjordan (crown) | 3.71668 | 1.0277 | **3.72911** |
+| 28 | `5a9f130a` | us | 3.70897 | 1.0300 | 3.70785 |
+
+The top three have **worse** decode than the crown. Prefill alone lifts them
+above it. Synthetic board-best (best prefill 0.9756 plus best per-prompt
+decode) = **3.76343**, +1.47 % over us and +1.26 % over the crown.
+
+Seven receipts from four solvers sit at 0.9756 to 0.9859, in two discrete
+tiers, internally consistent across all eight prompts, all on the **pinned**
+head `559b24eb` — so this is not a head effect. Their same-window controls are
+−4.15 % to −5.63 %. **None of the seven was promoted**, so none of their
+sources is importable; the lowest prefill among all 59 promoted receipts is the
+crown's 1.0277.
+
+**Fixed-serial value to us:**
+
+| scenario | published* | vs anchor | vs crown code |
+|---|---|---|---|
+| anchor `5a9f130a` code | 3.707845 | — | −0.2073 % |
+| crown `ec24d591` code | 3.715548 | +0.2077 % | — |
+| anchor + prefill 0.9859 | 3.724359 | **+0.4454 %** | **+0.2371 %** |
+| anchor + prefill 0.9756 | 3.728132 | **+0.5471 %** | **+0.3387 %** |
+
+```
+decode improvement needed to match crown code, at our prefill  : 0.2306 %
+decode improvement needed to match crown code, at prefill 0.9756: -0.3746 %
+```
+
+Prefill converts the decode problem from 0.23 % to solved. Prefill share of the
+leg is 9.65 % on beagle and 10.49 % to 10.68 % on the four fast prompts — the
+prompts that decide our median (FINDING 382).
+
+### FINDING 392 — our best receipt is the organizer's own code, and nobody on the board has changed the drafting schedule
+
+`5a9f130a` declared every editable path to be organizer `main` at `0863b06a`,
+byte for byte, and it remains our highest official score. That is also the
+crown's `promotedSourceRef`. **No Senpai mechanism has yet produced a ranked
+receipt above the unmodified organizer surface.**
+
+Separately, `effective_mean_draft_len` is identical to four decimal places
+across `5a9f130a`, `180db842`, `ec24d591`, `8b84c190` and `ac89ef87`
+(beagle 4.3818, essays 5.0870, medicine 5.2556, republic 4.9892, botany 6.1481,
+drama 2.2976, travel 2.6479 / 2.648, plutarch 0.1557). The largest edl clusters
+are n=268 (best 3.25464), n=204 (best 3.68622) and n=98 (best 3.72911, the
+modern one). **The entire top of the board runs the organizer's unmodified
+drafting schedule**; the board is separated by runtime speed, not by
+speculation policy. This corroborates FINDING 379 and strengthens the case that
+`segmentedVerifyDepthCap` 7 to 8 is an empty cell.
+
+### ADVISOR ERROR 223 — the code* estimator carries about 0.2 % of decode noise
+
+`5a9f130a` and `ec24d591` are the same source and differ by 0.21 % on code*
+(beagle decode 9.6644 vs 9.6405). So the rank ordering inside the code* top
+twenty is **not resolved**, and FINDING 383's "replicable crown gap 0.061 %"
+should be read as "indistinguishable from zero", not as a measured value. The
+prefill column is unaffected: 4.2 % against a 0.200 % sd is 20 sigma. Every
+conclusion above that rests on prefill stands; every conclusion that rests on
+decode ordering between receipts does not.
+
+### Actions taken
+
+- Edward, PR #166 F4: full E167 diagnosis; drop the accept-ledger comparison
+  (`parity_ok` is true on all eight prompts of all 34 of our receipts, 272
+  ranked parity checks); the tail-of-window top-2 anomaly is a local
+  reference-versus-timed width artifact, not a ranked risk; adopt his
+  "no submission below 0.6 % predicted" bar.
+- Edward, PR #166 F5: revert the four quantized files to `upstream/main`,
+  confirm `shift_dst` is gone, run `research/twin_audit.py`, one 512-token
+  exactness pass, **record local `seed_prefill_seconds` either side of the
+  revert** as a transfer calibration, and do not submit.
+- Official slot free. No candidate currently clears the 0.6 % bar.
+
+## Entry 355 — 2026-08-24T04:35:00Z — The row has two channels, the depth controller has no signal, and the narrow-output GEMM deficit is now the largest priced mechanism in the campaign
+
+Round of four parallel student reports: Edward (PR #166 width-9 verdict), Thorfinn
+(PR #165 replicate 1), Askeladd (PR #168 clamp calibration), Alphonse (PR #169 row
+decomposition). Board refreshed at 04:23Z, 1302 rows. Crown unchanged at
+`ec24d591` newjordan `3.7291100105909`, `promotedSourceRef 0863b06ac16e`. Our best
+remains `5a9f130a` `3.70784519415395`. Official slot FREE. Five other-solver
+receipts in flight, including `662e272e` newjordan at 04:03Z.
+
+### ADVISOR ERROR 224 — the wasted-row ceiling is 8.63 %, not 20 %
+
+Alphonse corrected my E169 assignment arithmetic. Wasted verified rows per round
+are `M - tokens_per_round`, not `M - alpha*edl`. I charged the committed primary
+row as rejected work.
+
+```
+harness=ranked, beagle   M = 5.3818   tokens/round = 4.6545
+  wasted rows  0.7273 rows/round  = 13.51 % of verified rows
+               0.7273 * 5.3350    =  3.880 ms/round
+                                  =  8.63 % of R = 44.983 ms
+harness=ranked, essays   M = 6.0870   tokens/round = 5.5652
+  wasted rows  0.5217 rows/round  =  2.783 ms/round = 5.69 % of R
+```
+
+Cross-checked three ways on beagle: `M - 512/N`, `edl*(1-alpha)`, and the whole
+prompt row count `N*M - 512 = 592 - 512 = 80` rows over 110 rounds. Same error
+family as ADVISOR ERROR 202 (`edl` is proposed depth, never accepted depth).
+**8.63 % of the beagle round is the honest ceiling for any waste-elimination
+mechanism.** The 20 % figure is withdrawn.
+
+### CLOSED AXIS `segmented_early_exit_verify` — the weight-pass objection died, then the acceptance rate killed it anyway
+
+Alphonse observed that the recorded reason for declining whole-forward
+segmentation at `Qwen36MTPBlockSession.swift:1050-1052` is "pays a second full
+weight pass (~25 ms)", which is priced in the local `c` channel that LAW 377
+values at `0.007x` on the ranked host. That objection does not survive LAW 377 and
+is withdrawn.
+
+The mechanism still fails, on the per-position acceptance rate of the only two
+prompts that carry marginal published weight. Inverting FINDING 374 through a
+geometric chain `E[k] = q(1-q^d)/(1-q)`:
+
+| prompt | offered `d` | accepted `E[k]` | implied per-position `q` |
+|---|---|---|---|
+| beagle | 4.382 | 3.654 | **0.932** |
+| essays | 5.087 | 4.565 | **0.967** |
+
+Two-segment split after `j` drafts, ranked, `saving(j) = (1 - q^j)*(d - j)*5.3350 - F'`:
+
+```
+beagle   j=1  1.227 ms      j=2  1.670 ms      j=3  1.404 ms
+best two-segment saving = 1.670 ms of a 44.98 ms round = 3.7 %   at F' = 0
+```
+
+`F'` is the ranked cost of a second in-round target forward. Its weight-stream
+part is about zero, but its host graph-encode, submit and blocking-eval part is
+not, and the whole ranked per-round fixed budget is only `16.1585` ms for the head
+chain plus one target forward plus the protocol gap. Break-even needs
+`F' < 1.67 ms`. Closed. Reopen only if somebody measures a second in-round target
+forward at under 1.5 ms ranked-equivalent host cost.
+
+The `P(k=0) = 0.208` U-shaped acceptance distribution in
+`research/e134-artifacts/item4-shipped-population.json` is real but it is the
+local fixture at `edl 6.359`. The ranked money prompts are not U-shaped. This is
+the local-to-ranked trap again, in a new channel.
+
+### FINDING 393 — the depth controller's three inputs carry no acceptance signal at all
+
+Askeladd, PR #168, `english` only, 5 of 18 census legs, uncensored `p7` arm,
+512/512, per-position conditional acceptance, AUC with Hanley-McNeil 95 %
+intervals:
+
+| position | n | base rate | margin | EMA | streak |
+|---|---|---|---|---|---|
+| 0 | 217 | 0.687 | 0.502 [0.419, 0.585] | 0.432 [0.348, 0.515] | 0.499 [0.416, 0.582] |
+| 1 | 148 | 0.507 | 0.552 [0.459, 0.644] | 0.502 [0.409, 0.596] | 0.500 [0.406, 0.593] |
+| 2 |  75 | 0.480 | 0.418 [0.289, 0.547] | 0.426 [0.296, 0.556] | 0.487 [0.356, 0.619] |
+
+None of the three separates an accepted draft from a rejected one. The EMA point
+estimate at position 0 is below chance but its interval covers 0.5, so no
+anti-signal is claimed.
+
+This reframes the whole clamp axis. `sigmoid(margin/T)` is a monotone transform of
+a variable that does not order the outcome, so **no temperature can make it
+work.** Fitted `T*` was 3.82 at position 0 and 9.01 at position 1 against shipped
+2.0 and 3.0, and even at `T*` the fitted clamp loses to the base rate on log loss
+at position 0 (0.675 against 0.622). A predictor that cannot beat a constant is a
+constant with noise added.
+
+Direct arm splice, 198 rounds beginning at the same absolute token in both arms, 0
+margin mismatches, 0 accept inconsistencies, 512 target rows compared with 2
+differing:
+
+- the clamp removed depth in 79 rounds; the `p7` twin resolved the first removed
+  position in all 79; it was accepted in 15;
+- pure-loss rate `0.1899 [0.1186, 0.2899]`, 15 tokens given up;
+- a position-only rule predicts `0.1764` for exactly those positions, so clamp
+  skill is **`+0.0135`**: it refused positions that were fractionally *better*
+  than average.
+
+The clamp has no selective skill. Its entire contribution is cutting rows whose
+chain-survival odds were low anyway. Counterfactual validated, not assumed: the
+chain model predicts accepted `1.067` against measured `1.081`, error `-0.014`.
+Priced, the clamp is worth `+0.062` raw on `english`; clamp on gives mean depth
+2.337, clamp off 2.744.
+
+Pooling 9 prompts should take the position-0 interval to about `+/- 0.03`. The
+headline is held until then. `acceptEMAAlpha` was already a closed axis; FINDING
+393 explains why closing it was right for a reason we did not have at the time.
+
+### FINDING 394 — `headStepCostRatio` is a jointly fitted compensator, not a physical cost ratio
+
+I had noted that shipped `h = 0.18` sits against ranked truth
+`5.3350/21.4935 = 0.24821`, which makes a verified row look 27.5 % cheaper than it
+is. Askeladd's own offline sweep independently liked the correction: re-pricing to
+0.248 with the clamp retained gave raw 2.229 against shipped 2.172 on `english`.
+
+He then refuted it from our own board, and I accept the refutation and will not
+assign the correction:
+
+- `fc62d1aa` raised `h` from 0.18 to 0.32 on the directly measured marginal and
+  scored `2.84585`, a clean `-3 %`, with the **baseline leg flat**
+  (`0.038092 -> 0.038070`), so not a serial draw artifact. Draft lengths fell
+  `4.35/4.89/5.78/5.33/5.04 -> 3.36/4.01/4.53/4.03/4.76` and candidate decode time
+  rose `0.95 %`.
+- `0.15 -> 2.667` and `0.14 -> 2.766` bracket the other side. `0.18` is a true
+  ranked local optimum in both directions.
+
+The reconciliation, recorded as the campaign explanation: the threshold rule
+compares `reach` against `h*(1+expected)/(1+d*h)`, and `reach` is built from EMA
+estimates that FINDING 393 shows carry no signal and that lag. If the EMA
+under-predicts acceptance on average, the optimal `h` sits *below* the true cost
+ratio to compensate. `h = 0.18` and the two clamps were fitted jointly against
+that bias, so **neither constant is separately meaningful** and correcting either
+one alone moves the controller off a jointly fitted point.
+
+Corollary that protects future work: Askeladd's own sweep result, a constant depth
+2 outpricing the shipped controller on `english`, must not be read as "shorten the
+drafts". `english` is the hard end of the pool and `fc62d1aa` shortened pool-wide
+and lost 3 %.
+
+### FINDING 395 — the local row law has two terms, two independent estimators agree on all three, and the narrow-output deficit is the largest priced mechanism in the campaign
+
+Alphonse, PR #169, `harness=local`, g16s, commit `c7e59fec`, ungated ABBA
+ascending and descending passes per shape, `cool_gate_passed_real_gate=false`.
+
+**The law needs a second term.** `Qwen35CustomQMV` launches
+`ceil(M / inputsPerGroup(M))` input-row threadgroups per wide QMV call
+(`Qwen35.swift:1715-1729`, `:1834`), and each group re-reads every weight byte.
+The incumbent MLX table copied at `Qwen35.swift:1567`:
+
+```
+M                   1   2   3   4   5   6   7   8   9
+inputsPerGroup      -   2   3   4   5   3   4   4   3
+activeInputGroups   1   1   1   1   1   2   2   2   3
+```
+
+Cost steps at `M = 6` and again at `M = 9`. Fit `T(M) = a + b*M + c*(G(M) - 1)`,
+excluding `M = 1` from every routed fit because `M = 1` is outside
+`Qwen35CustomQMV.widths = 2...9` and runs the library kernel:
+
+| term | bottom-up (isolated shapes) | in-situ law (E163, end-to-end, gated) | difference |
+|---|---|---|---|
+| `a` fixed part | 57.325 ms | 57.384 ms | -0.10 % |
+| `b` marginal verified row | **6.8283 ms/row** | **7.002 ms/row** | -2.48 % |
+| `c` extra input-group pass | 29.575 ms/group | 28.605 ms/group | +3.39 % |
+
+Two estimators with completely different systematic errors agree on all three
+terms. Step ladder summed over every scored shape:
+
+```
+M step    1->2   2->3   3->4   4->5   5->6*   6->7   7->8   8->9*
+delta ms  4.975  2.177  7.625 11.609  31.666  7.659  6.532  38.971
+within-group mean 7.121 ms      crossing mean 35.318 ms   (b + c predicts 35.607)
+```
+
+**Row composition, and the two terms are different physics.**
+
+| family | `b` ms/row | share | static FLOP share | `c` ms/group | share |
+|---|---|---|---|---|---|
+| mlp | 4.4343 | 64.94 % | 66.20 % | 21.100 | 71.34 % |
+| gdn | 1.6026 | 23.47 % | 21.95 % | 4.844 | 16.38 % |
+| full attention | 0.5075 | 7.43 % | 6.93 % | 1.944 | 6.57 % |
+| lm_head | 0.2791 | 4.09 % | 4.92 % | 1.696 | 5.74 % |
+| top-two readout | 0.0048 | 0.07 % | n/a | -0.009 | -0.03 % |
+
+`b` reproduces the static FLOP budget within 1.5 points on every family; `c`
+reproduces stored weight bytes (mlp 63.6 %, gdn 20.7 %, attn 6.2 %, lm_head 4.7 %)
+within 8 points. **`b` is arithmetic; `c` is the weight stream.** LAW 377 prices
+them 187x apart on the ranked host, so "is the row compute-bound or
+bandwidth-bound" has no answer until the term is named.
+
+**Static FLOP budget** from transformed safetensors headers,
+`research/e169_flop_budget.py`, commit `65a21f29`: mlp 34.226 GFLOP/row 66.20 %,
+gdn_proj 11.120 21.51 %, attn_proj 3.355 6.49 %, lm_head 2.543 4.92 %,
+gdn_recurrence 0.226 0.44 %, attn_scores 0.226 0.44 %, total **51.697 GFLOP/row**.
+Implied throughput 7.383 TFLOP/s at local 7.002 ms/row, 9.690 TFLOP/s at ranked
+5.3350 ms/row.
+
+**H1 answered, GDN recurrence is not the problem at decode widths.** 48 recurrent
+layers take 23.47 % of the row and 16 full-attention layers 7.43 %: 0.489 % per
+GDN layer against 0.464 % per attention layer, ratio 1.05. Inside GDN, the
+projections are 21.19 % and the gated-delta scan itself 2.29 %, with a per-group
+term of 0.03 ms, which is what a kernel that streams no weights should show. The
+sequential `for (int t = 0; t < T; ++t)` walk at `GatedDelta.swift:60` costs
+`3.25 us` per call per row across 48 calls. At `M <= 9` it is not a latency
+structure worth attacking. **This closure is scoped to decode widths and
+explicitly does not cover the 512-row seed prefill**, where `T = 512`; that case is
+routed to Edward.
+
+**H2 answered and closed.** The 248,320-way vocabulary readout is 4.09 % of the
+row against a 4.7 % prior, and the exact top-two readout adds 0.07 %. Both far
+below the 8 % bar. It cannot be pruned.
+
+**The mechanism, and it is now the campaign's top lever.** Measured throughput of
+the same kernel, per scored shape:
+
+```
+shape                            k       n   calls   GFLOP/row   ms/row   TFLOP/s   deficit
+mlp.gate_up_fused             5120   34816      64      22.817   2.6701     8.545   0.166
+mlp.down                     17408    5120      64      11.409   1.7641     6.467   0.512
+linear_attn.in_proj_fused     5120   16480      48       8.100   0.9102     8.899   0.021
+linear_attn.out_proj          6144    5120      48       3.020   0.5362     5.632   0.205
+full_attn.qkv_proj_fused      5120   14336      16       2.349   0.3308     7.101   0.073
+head.lm_head                  5120  248320       1       2.543   0.2791     9.111   0
+full_attn.o_proj              6144    5120      16       1.007   0.1767     5.696   0.066
+```
+
+**Every `n = 5120` shape runs at 5.6 to 6.5 TFLOP/s while every `n >= 14336` shape
+runs at 7.1 to 9.1.** The three narrow-output shapes carry `0.783 ms/row`,
+**11.5 % of the row**, in `b`, the only channel that transfers at better than 1x.
+Remapping output rows to threadgroups does not change any per-output-row `K`
+reduction, so an exact route exists in principle.
+
+Advisor pricing, `harness=ranked`, FINDING 382 weights:
+
+```
+row deficit           0.115 * 5.3350            = 0.6135 ms/row
+
+beagle   M = 5.3818  tokens/round = 4.6545
+  saving 0.6135 * 5.3818 / 4.6545               = 0.7094 ms/token
+  mtp    10.693 -> 9.984      raw 3.552 -> 3.805      +7.1 %
+essays   M = 6.0870  tokens/round = 5.5652
+  saving 0.6135 * 6.0870 / 5.5652               = 0.6711 ms/token
+  mtp     9.821 -> 9.150      raw 3.868 -> 4.152      +7.3 %
+
+published, 0.5*beagle + 0.5*min-of-four
+  full recovery   +7.25 %        20 % recovery   +1.45 %
+```
+
+Our gap to the crown is `0.575 %`. A 20 % recovery is 2.4 times that gap. Nothing
+else on the advisor board is within an order of magnitude.
+
+**Blocking precondition, assigned to Alphonse as a source read, not a run.**
+FINDING 390 says the ranked M5 routes transposed, `K % 64 == 0`, non-float32
+quantized matmul to `qmm_nax` (`backend/metal/quantized.cpp:697`), and
+`get_qmv_batch_limit(K=5120, N>4096)` returns 6 (`:84`, branch `:1415-1418`), so
+under stock MLX every width `M >= 6` leaves the QMV path. That file is not in
+`editablePaths` and no host we own is gen 17. The question that decides whether
+this mechanism is screenable at all: does `qwen35RoutedQuantizedMM` send every
+width in `2...9` to `Qwen35CustomQMV` unconditionally, or can `M >= 6` fall
+through to MLX `qmm` and therefore `qmm_nax` on the M5? Same question for the
+512-row prefill. If widths 6 to 9 fall through, the 52.4 % of beagle rounds that
+saturate at cap 7 (width 8, FINDING 386) are structurally unscreenable locally.
+
+**Standing pricing rule for E169 and any successor:** price `b` at 1.31x and price
+`c` at **zero**. Never sum them, and never quote a local step that crosses a group
+edge as a cost.
+
+**One mechanism explicitly refused, correctly.** Instantiating `NA=6` so that
+`M=6` takes one group is Alphonse's own E163 arm, killed by FINDING 375:
+`24fb4012` newjordan carries `WIDTH-6 +0.395 +/- 0.107`, three contrasts agree,
+two negative controls return null, three further board arms in the same family all
+lost. LAW 354's optimality claim for the shipped table is scoped to g16s and stays
+there. The whole `c` column, 29.575 ms, is priced at zero officially.
+
+**Scoped exception recorded so nobody re-derives it.** At `M = 9` the shipped table
+takes 3 groups where `IPG = 5` would take 2, and `9 % 5 = 4` satisfies
+`static_assert(M % IPG != 1)` at `Qwen35.swift:1542`. LAW 354's optimality
+statement covers widths 2 to 8 only, so the shipped width-9 entry is undefended.
+It is worth about zero on ranked, but it is worth about `29.6 ms` of purely local
+confound on every width-9 round, which matters now that the cap raise makes width
+9 reachable.
+
+### FINDING 396 — width 9 is bit-exact on our head, and the tail anomaly is positional, not width-dependent
+
+Edward, PR #166, `MLXFAST_NO_SANDBOX=1` (the earlier empty traces were the worker
+sandbox, documented at `Qwen36MTPBlockSession.swift:750-761`), head `cfffe00c`, 512
+decode tokens, `all_tokens_matched=true`, `residual_divergence_count=0`, drift
+tripwire passed on both arms. First measurement of width 9 on our head; all eight
+earlier row-gate runs used head `05a8613e`.
+
+Final round dropped as agreed:
+
+| arm | width | rows compared | value mismatches | id mismatches |
+|---|---|---|---|---|
+| runR pinned depth 8 | **9** | **504** | **0** | **0** |
+| runQ cap 7 | 4 | 6 | 0 | 0 |
+| runQ cap 7 | 5 | 28 | 0 | 0 |
+| runQ cap 7 | 6 | 28 | 0 | 0 |
+| runQ cap 7 | 7 | 41 | 0 | 0 |
+| runQ cap 7 | 8 | 406 | 0 | 0 |
+
+**There is no exactness barrier at depth 8.** The change is one literal:
+`segmentedVerifyDepthCap = 7 -> 8` at `Qwen36MTPBlockSession.swift:1060`, read by
+`widthCap` at `:1126`. `sdpaWidthWallDepthCap = 5` at `:1053` is a different
+constant and is not the cap. The SDPA split at `AttentionUtils.swift:122-142` was
+already written for a "6..9-row causal decode attention"; only the source comment
+at `:1045-1049` stopped at width 8. `runR` reached width 9 through
+`MLX_E159_FIXED_DRAFT_DEPTH`, which replaces `draftPolicy` wholesale at `:200-202`
+and never calls `costModelDepth`, so it is a different route with the same
+arithmetic. Pinning is not adaptive: a raised cap under the natural schedule
+reaches width 9 less often, never more. Exactness transfers; the pinned timing does
+not.
+
+**Tail anomaly mechanism corrected, and my F4 item 2 explanation is refuted.** I
+had proposed that the local reference pass runs tail positions at a different
+verification width and that width changes the reduction order. `runR`'s final round
+covers positions 1017 to 1024 at a **single** width: 1017 to 1021 bit-exact, 1022
+to 1024 mismatch. Width does not change across that boundary, so width cannot be
+the discriminator. The mismatching values are byte-identical between two arms with
+different final-round widths (runQ 3, runR 8) and different round structures (77
+against 67 rounds):
+
+| pos | serial ids / values | mtp ids / values | delta |
+|---|---|---|---|
+| 1022 | 6009, 98138 / `0x1.1cp+5`, `0x1.28p+4` | 6009, **31098** / `0x1.1ep+5`, `0x1.2ap+4` | +1 ulp |
+| 1023 | 87363, 86368 / `0x1.fcp+4`, `0x1.2p+4` | 87363, 86368 / `0x1.fep+4`, `0x1.22p+4` | +1 ulp |
+| 1024 | 286, 1658 / `0x1.2ap+5`, `0x1.4ep+4` | 286, 1658 / `0x1.28p+5`, `0x1.4ap+4` | -1 ulp |
+
+Logits are bf16, ulp `2^e * 2^-7`, all deltas 1 to 2 ulp. The anomaly is locked to
+the **last three positions of the 512-token window**, independent of width and of
+round structure, reproducible to the bit. Top-1 is never at risk: the only id
+difference is at 1022 in the second-place slot, two tokens at 18.125 and 18.25
+within one bf16 ulp of each other while top-1 sits at 35.5 with a margin of about
+17.4.
+
+This also completes the F3 correction: `per_width.bit_exact` was confounded because
+the flagged width was only ever whichever width the last round happened to use.
+272 ranked parity checks have passed including the final round every time, so this
+is recorded and not chased. Unrun hypothesis, with its own objection attached: the
+two legs grow the KV cache in different increments (one row per step serial, three
+or eight per round MTP) and may cross a capacity or padding boundary at different
+points near 1024, changing sdpa key-length padding and the reduction tiling
+afterwards; the weakness is that the count is exactly three in both arms, which
+looks structural. Cheap decisive test if it ever matters: 511-token and 513-token
+runs; if the anomaly tracks the window end it stays at the last three positions,
+if it tracks absolute position it moves.
+
+### Thorfinn replicate 1 accepted — the per-round fixed-cost mechanism is real and on the knife edge
+
+Job `18875159`, exit 0, session commit `5a7e765d`, worker
+`ed085186d7b4a0ed8a1aae0d535e60e21e3587f51dff9a73bf94a0e138cd25a5` identical
+post-run on all 8 legs, base `c7e172b2`, 512 decode tokens, natural schedule, trace
+off. **Gated**: every timed leg passed the real 40 C gate, so
+`gate_qualified_for_timing=true`.
+
+```
+arm off n=4 mean=0.028612   arm on n=4 mean=0.028513
+contrast on - off      -0.3486 %  (2 sigma 0.1644 %)
+per decode round       -654.8 us over 78 rounds of a 14.6495 s leg
+minimum useful effect  -0.35 %       verdict REAL BUT SMALL
+```
+
+One accept-ledger tuple `(rounds=78, proposed=496, accepted=435)` across all eight
+legs, with `edl=6.3590` and `accepted_draft_rate=0.8770` identical to four
+decimals, so CAMPAIGN LAW 364 and RULE 179 are satisfied and this is a pure cost
+contrast. 513 of 513 declared positions exact as hexfloats, one-ulp positive
+control fires, serial leg null at `-0.0187 %`. Ranked value `-222.6 us/round`
+against the `+85 us/round` deficit, 2.6x repayment. Replicate 2 is running; pooled
+2 sigma near `0.116 %` will separate it from the `-0.35 %` bar.
+
+### Composition plan for the free official slot
+
+Nothing on its own clears the adopted `0.6 %` predicted-published bar. Two
+mechanisms compose cleanly on disjoint files:
+
+```
+E167 F5 revert of the software-pipelined qmm (4 quantized files -> upstream/main)
+  +0.195 % published, zero risk, FINDING 389, prefill instrument at +10 sigma
+E165 per-round fixed cost (Qwen36MTPBlockSession only)
+  -222.6 us/round ranked = -0.495 % of the 44.983 ms beagle round
+  = about +0.45 % published, pending replicate 2
+
+composed prediction   about +0.645 %   ->   3.7318 against crown 3.72911
+```
+
+FINDING 383 puts `+0.5 %` at `P(beat crown) = 40.9 %` and `+1.0 %` at `99.7 %`, so
+`+0.645 %` is a legitimate submission and the composed candidate is the plan for
+the free slot. Sequence: merge the F5 revert into the maintained base, accept
+Thorfinn's terminal result and merge it, then have Thorfinn freeze and submit the
+composed base. Do not submit either piece alone.
+
+### Assignments issued this round
+
+- **Alphonse, PR #169 F1.** ADVISOR ERROR 224 accepted; `segmented_early_exit_verify`
+  closed with the arithmetic above so he does not build it; §5 named the campaign's
+  top lever with the ranked pricing; the `qmm_nax` routing source read made a
+  standalone deliverable ahead of the census; the `b` at 1.31x / `c` at zero
+  pricing rule made explicit.
+- **Thorfinn, PR #165 I6.** Replicate 1 accepted; width 9 cleared with Edward's
+  504-row evidence; cap 7 to 8 authorised after he submits replicate 2, with the
+  warning that the local harness overstates a width-9 round by about 7x
+  (`+39 ms` local against `+5.335 ms` ranked) and that RULE 179 cannot apply
+  because the accept ledger will differ between arms; the `IPG(9) = 5` hygiene
+  option offered as a separate, separately reported change priced at zero; FINDING
+  385 restated as a standing prior against depth.
+- **Askeladd, PR #168 F2.** Null accepted and held for the 9-prompt pool; the `h`
+  correction dropped with his reconciliation recorded; next question set to the
+  proposal head's own output distribution as the acceptance signal, with per-position
+  AUC against the three known-null features, a log-loss comparison, a
+  raw-against-AUC sweep to answer "what AUC is enough", and the constraint that any
+  new host-visible feature must either be decided on device or ride an existing
+  transfer.
+- **Edward, PR #166 F6.** Width-9 verdict accepted and his refutation of my
+  mechanism accepted as better than mine; F5 remains his only active task; the
+  prefill programme handed over for source reading only, with three constraints:
+  do not optimise the local 75 % `target_forward_build` share because only GPU time
+  transfers at 7.67x, read Alphonse's `qmm_nax` routing answer before designing
+  anything, and note that all seven low-prefill board receipts use the same pinned
+  head `559b24eb` so the mechanism is not a head change. The `T = 512` gated-delta
+  sequential walk is scoped to him as the exception to Alphonse's H1 closure.
+
+## Entry 356 — 2026-08-24T04:50:00Z — FINDING 397: the decode row is ours on the ranked M5 and the seed prefill is not, settled from source
+
+Advisor source read of `Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` at
+base `4190065f`, answering the blocking precondition that Entry 355 assigned to
+Alphonse. Answered by the advisor so that no student spends GPU or reading time on
+it, and posted to PR #169 and PR #166 with the lines so both can check it.
+
+### `Qwen35CustomQMV.routable` has no device gate
+
+`Qwen35.swift:1770-1794`. The complete guard set is dtype, quantization
+parameters, shape and contiguity. There is no `is_nax_available()` call, no GPU
+generation test and no device query of any kind:
+
+```
+bits == 4, groupSize == 64, mode == .affine
+x/scales/biases bfloat16, w uint32
+w.ndim == 2, x.ndim >= 2
+w.dim(1) == k / 8,  k % 512 == 0,  n % 8 == 0,  n >= 4096
+Self.widths.contains(m),  x.dim(-2) == m          // widths = 2 ... 9  (:1704)
+rowContiguous on x, w, scales and biases
+```
+
+`qwen35RoutedQuantizedMM` at `:1895-1911` calls `Qwen35CustomQMV.matmul` first and
+falls back to `quantizedMM(..., transpose: true, ...)` only when it returns `nil`.
+`Qwen35CustomQMV.arm` at `:1693-1698` defaults to `.sumTable`, is overridable only
+by `MLX_E120_QMV_ARM`, and is read once at process start.
+
+| path | width | routes to | on the ranked M5 | locally screenable |
+|---|---|---|---|---|
+| decode verify | `M = 2...9` | `Qwen35CustomQMV`, ours | our kernel | **yes** |
+| decode verify | `M = 1` | MLX | MLX | yes |
+| **seed prefill** | **`M = 512`** | **MLX `quantizedMM`** | **`qmm_nax`** | **no** |
+
+### Consequences
+
+1. **FINDING 390's `_nax` wall does not apply to the decode row.** Every decode
+   verify at width 2 through 9 with `n >= 4096` executes candidate-editable code on
+   the ranked M5. FINDING 395's narrow-output deficit is therefore a normal
+   experiment with a normal local screen, not a receipt-only gamble. The top lever
+   is unblocked.
+2. **Every scored round on every weighted prompt is inside `2...9`.**
+   `non_drafting_round_count` on receipt `5a9f130a` is **0** for beagle, essays,
+   medicine, republic, botany, drama and travel, and 449 of 488 for plutarch alone.
+   Every round on every prompt that carries published weight drafts at least one
+   row, so `M >= 2`, and `segmentedVerifyDepthCap = 7` gives `M <= 8`.
+3. **All three narrow-output shapes are routed to us.** `mlp.down` `k=17408`,
+   `linear_attn.out_proj` `k=6144`, `full_attn.o_proj` `k=6144`, all `n = 5120`, all
+   `k % 512 == 0`, all clear `n >= 4096`.
+4. **The seed prefill is receipt-only for anything touching the quantized GEMM.**
+   Widening `widths` to reach `m = 512` is refused: `Qwen35CustomQMV` is a wide-QMV
+   design for `M <= 9`, it would lose to a tensor-core path at `M = 512`, and we
+   could not tell locally because no host we own is gen 17.
+5. **The one prefill lever that is ours** is the gated-delta sequential walk at
+   `T = 512`. Alphonse's H1 closure is scoped to `M <= 9`, where the
+   `for (int t = 0; t < T; ++t)` loop at `GatedDelta.swift:60` costs `3.25 us` per
+   call per row. At `T = 512` it is a 512-step serial dependency chain, 48 times per
+   forward, over a float32 recurrent state of `302.0 MB` read plus write per
+   forward, with grid `(32, Dv, B*Hv)` and no `T` dimension. Its static FLOP share
+   is 0.44 %, so any FLOP-based analysis hides it entirely. Routed to Edward.
+
+### A local-harness fallacy written into a source comment, priced and declined
+
+`Qwen35.swift:1700-1704` excludes `M = 1` from the candidate-owned dispatch with:
+
+> M=1 stays on MLX (serial and the candidate share it, so speeding it does not move
+> the ratio).
+
+That is a correct `harness=local` statement and a **false** `harness=ranked`
+statement. On the ranked board the serial numerator comes from the runner's own
+prebuilt baseline workspace, so `d ln(ranked baseline serial time) / dx = 0` for
+every candidate edit and a faster candidate `M = 1` would raise every affected
+`raw_p`. This is precisely the cancellation
+`senpai/verify-ranked-score-boundary.sh` exists to catch, sitting in a source
+comment as a design justification.
+
+Priced before assigning: `non_drafting_round_count = 0` on every weighted prompt,
+so a width-1 target verify never happens there. Worth zero. **Declined**, and
+recorded so that the next reader does not adopt the comment's reasoning in a place
+where it does cost us something.
+
+## Entry 357 — 2026-08-24T04:55:00Z — ADVISOR ERROR 225 corrects FINDING 390, the narrow-output pricing is withdrawn, and the axis is reopened on ranked-only evidence
+
+### ADVISOR ERROR 225 — FINDING 390 read `get_qmv_batch_limit` out of the wrong branch
+
+Found by Alphonse, PR #169 interim 4. `quantized.cpp:84-124` branches on GPU
+generation **first**:
+
+```
+:87    if (arch_gen == 13 || arch_gen == 14) { ... else return 6;  }
+:105   else                                  { ... else return 10; }
+```
+
+`arch_gen_` is parsed at `device.cpp:572` as `ag_tens * 10 + ag_ones`. g16s reports
+`applegpu_g16s`, so gen **16**; the ranked M5 is gen **17**. Both take the `else`
+branch at `:105`, `arch_size` is `'s'` so the `default:` case applies, and every
+scored shape has `D > 4096` or `O > 4096`:
+
+```
+harness=static
+get_qmv_batch_limit(K, N) = 10   for all seven scored shapes, g16s and M5
+                          = 12   in the 'd' case
+                          =  6   only on M1/M2-generation parts
+```
+
+Consequence: `quantized.cpp:1418` `if (M >= vector_limit)` is **false** for every
+`M <= 9`, so stock MLX would route the whole decode range to `dispatch_qmv`
+(`:1442-1445`), never to `qmm`. Combined with `segmentedVerifyDepthCap = 7`
+capping verify width at 8:
+
+> **`qmm_nax` is unreachable in the decode path at every legal MTP width, on every
+> host, with or without our custom kernel.**
+
+That is stronger than FINDING 397 and supersedes it. FINDING 390's **decode** claim
+is withdrawn. FINDING 390's **prefill** claim survives and Alphonse confirmed the
+route independently: `Qwen36MTPBlockSession.swift:649-652` forwards the seed in one
+call of width 512 with `nConfirmed: 0` and no chunking, `512` is outside
+`widths = 2...9`, so prefill leaves our kernel and lands on `qmm_nax`, on the M5
+only.
+
+Both errors in this family, ADVISOR ERROR 225 here and the F2 version of the same
+claim, came from reading a generation-gated constant without checking which
+generation branch our hosts take. Rule for the campaign record: **never quote a
+value out of `quantized.cpp` or `device.cpp` without naming the `arch_gen` branch
+it comes from.**
+
+### FINDING 395's narrow-output pricing is WITHDRAWN
+
+Alphonse withdrew his own interim 2 framing and I accept it. The `N = 5120`
+throughput deficit is not a novel finding: `campaign-ledger.md:50661` already
+records that at `M = 6` the one-pass plan launches one column of 640 threadgroups
+on the `N = 5120` shapes, and that **640 is at the occupancy floor of a 20-core
+part**. The prior table at about `:50650` already splits the shapes on the same `N`
+boundary, and `:50666` already recommends keying the plan table on `N` or on
+launched threadgroup count.
+
+**Rule 83** then applies: a g16s occupancy closure is not g17s or M5 evidence,
+because the M5 has second-generation Dynamic Caching and a redesigned occupancy
+unit. The `+7.25 %` published figure in Entry 355 was built on that g16s
+throughput table and is withdrawn with it.
+
+He also stays declined on the FINDING 375 mechanism, refuted by `24fb4012`,
+`0adf695f`, `eff9348d` and `0e849bfc`.
+
+### FINDING 398 — three independent estimators agree on the marginal row, and the head cost is fixed rather than marginal
+
+Alphonse in-situ census: a real pinned-width target forward through
+`Qwen36MTPTarget` on the public 512/1024 long-copy prompt, 768-token seed, 12 reps
+per block, warmup 3, widths 1 to 9 swept up and then down, ABBA within one session.
+Fit over widths 2 to 9 gives `a = 50.50 ms`, `b = 6.199 +/- 1.088 ms/row`,
+`c = 33.30 +/- 3.58 ms/group`, `R^2 = 0.9956`, `RMSE = 2.41 ms`. `M` and
+`activeInputGroups(M)` are correlated over the reachable widths, so the direct step
+statistics are the robust reading: within-group step mean **6.739 ms/row**,
+group-crossing step mean **36.64 ms** (5->6 = 34.08, 8->9 = 39.19), implied
+`c = 29.90 ms/group`.
+
+| estimator | `a` | `b` ms/row | `c` ms/group |
+|---|---:|---:|---:|
+| E163 in-situ full decode round | 57.384 | 7.002 | 28.605 |
+| E169 bottom-up shape sum | 57.325 | 6.828 | 29.575 |
+| E169 in-situ census, target forward only | 50.50 | **6.739** | 29.90 |
+
+Three `b` values spanning 3.8 %, three `c` values spanning 4.4 %, all
+`harness=local` g16s, from instruments with completely different systematic errors.
+Thermal control: ascending and descending passes agree within 0.87 % at every width
+and within 0.28 % at widths 2, 3, 6, 7, 8.
+
+**The new datum.** The census block contains only the target forward. The E163
+round additionally contains the MTP head proposal, the acceptance walk and the
+session bookkeeping. The difference is `6.88 ms` per round and it appears
+**entirely in `a`, not in `b`**: census `b` 6.739 against full-round `b` 7.002, a
+gap of 0.26 ms/row that is inside the three-estimator spread.
+
+> **The proposal-head cost does not scale with draft width at the margin. It is
+> paid once per round whether the round drafts one row or seven.**
+
+This contradicts the premise of the `headStepCostRatio` model and is independent
+corroboration of FINDING 394 from a completely different instrument. It also
+confirms that Thorfinn's per-round fixed-cost work and Alphonse's row work are
+cleanly separable.
+
+### FINDING 399 — the entry price for depth adaptivity is AUC 0.80, and the implementation cannot be cheap
+
+Askeladd, PR #168, answering the advisor's "what AUC is enough" question. Method:
+synthesise a signal of stated AUC over the recorded outcomes under the
+equal-variance binormal model, `s = delta*y + noise` with
+`delta = sqrt(2)*Phi^-1(AUC)`, then price the best floor-plus-threshold rule that
+can use it. The rule family contains every constant depth, so it has two forced
+anchors: AUC 0.5 must return the best constant and a perfect signal must return
+the oracle. Both land on independently computed numbers, which validates the
+machinery rather than assuming it. Five noise replicates; the rule is chosen on its
+mean and reported at that mean.
+
+| signal AUC | raw | gap won | mean d | budget/round | discarded head steps |
+|---|---|---|---|---|---|
+| 0.50 | 2.246 | 0.1 % | 2.01 | 10 us | 0.01 |
+| 0.60 | 2.247 | 0.3 % | 2.00 | 29 us | 0.03 |
+| 0.65 | 2.281 | **5.8 %** | 1.57 | 576 us | 0.60 |
+| 0.70 | 2.306 | 9.8 % | 1.64 | 897 us | 0.93 |
+| 0.75 | 2.342 | 15.7 % | 1.72 | 1455 us | 1.52 |
+| 0.80 | 2.376 | 21.1 % | 1.80 | 1983 us | 2.07 |
+| 0.85 | 2.447 | 32.5 % | 1.33 | 2857 us | 2.98 |
+| 0.90 | 2.548 | **48.8 %** | 1.52 | 4393 us | 4.57 |
+| 0.95 | 2.644 | 64.2 % | 1.71 | 5932 us | 6.18 |
+| 0.999 | 2.839 | 95.7 % | 1.36 | 8291 us | 8.63 |
+
+Anchors: best constant depth 2 at raw 2.245, oracle 2.866. The synthetic signal is
+equally good at every position while a real feature decays with depth, so every row
+is optimistic.
+
+**Implementation constraint, from source.** `Qwen36MTPBlockSession.swift:1483-1489`
+builds the whole head chain with no host read; `:1541` is the round's single
+blocking eval and its own comment states the budget as "1 sync/cycle"; every
+`.item()` after it copies from a materialised buffer and waits on nothing.
+Therefore an on-device width decision is impossible because the verify tensor shape
+must be host-known, and there is no existing host transfer before the verify
+forward to ride on. Only a new sync remains, and both designs are worse than one
+sync: a confidence-driven early stop serialises a fully pipelined chain, and
+build-deep-then-narrow drains the pipeline and discards head steps already built.
+
+A head step costs `0.18 * 5.3350 = 960 us`. At AUC 0.70 the entire per-round budget
+is `897 us`, less than one discarded head step, before paying for the sync at all.
+Thorfinn's `protocol_gap` of `356.6 us` is the floor for that sync.
+
+> **Entry price: a head-derived feature must reach about AUC 0.80 before any
+> implementable mechanism nets anything, and about 0.90 before it is worth the
+> complexity.** Adopted as the decision rule for the axis.
+
+Approved next experiment, trace-only, about one GPU hour: instrument per proposed
+position the head's top-1 probability, top1 minus top2 logit gap, truncated top-k
+mass and running product; report per-position AUC with Hanley-McNeil intervals
+against the three known-null features plus log loss against the base rate; decide
+on one number, build at `>= 0.80` at positions 0 to 2, close the axis under `0.75`.
+`draftTokenID` is a fused single dispatch that never materialises the head
+distribution, so a separate `applyDraftLMHead` plus a top-2 reduction is required;
+that is acceptable in a traced leg carrying `trace_perturbs_timing=true`. The
+advisor added one requirement: report the **positional decay** of the best feature,
+not a pooled AUC, and price on the per-position profile.
+
+### FINDING 400 — the ranked M5 costs 1.029 ms per row at width 512 and 5.335 ms per row at width 5
+
+Advisor arithmetic from ranked metrics only, so Rule 83 does not apply to it.
+
+```
+harness=ranked, M5, same host, same weights, same dtype, same quantization
+
+seed prefill   prefill_seconds_per_token = 1.0294 ms   (32-receipt mean)
+               one forward of 512 rows                 = 527.1 ms
+               cost per row                            = 1.0294 ms/row
+decode verify  R(M) = 16.1585 + 5.3350*M
+               marginal cost per row                   = 5.3350 ms/row
+                                    ratio              = 5.18x
+
+throughput, adjusting for lm_head running once in prefill
+  prefill  49.154 GFLOP/row / 1.0294 ms  =  47.75 TFLOP/s
+  decode   51.697 GFLOP/row / 5.3350 ms  =   9.69 TFLOP/s      ratio 4.93x
+```
+
+Three honest counter-arguments recorded with it: at `M = 512` every weight element
+is reused 512 times against five at decode, so the load and dequantize cost is
+amortised a hundred times better; the 512-row path is `qmm_nax`, which we cannot
+execute, edit or measure, so its rate is not a demonstration that a QMV-style
+kernel can approach it; and routing decode to `qmm_nax` is refused up front because
+its `bm = bn = bk = 64` tile makes `M = 5` pad to 64, doing 12.8x the work at about
+5x the rate.
+
+**Open question assigned to Alphonse, arithmetic not a run.** A quantized GEMM that
+loads a weight tile once and multiplies it against all `M` activations has weight
+traffic independent of `M`. If the ranked decode round were weight-stream-bound its
+cost would be nearly flat in `M`. It is not: on beagle `5.3350 * 5.3818 = 28.71 ms`
+of a `44.98 ms` round, 63.8 %, scales with `M`. He must return one of:
+
+- **(a) weight-stream-bound**, in which case the 5.335 ms/row slope is unexplained
+  by bandwidth and is headroom, and the axis stays open;
+- **(b) compute-bound at 9.69 TFLOP/s**, in which case he names what limits a skinny
+  quantized GEMM to 20 % of the rate the same host reaches on the same weights, and
+  whether that limit is a property of `M` or of the kernel;
+- **(c) the ranked numbers do not distinguish them**, in which case he names the
+  measurement that would and whether any host we own can produce it.
+
+If the answer is (b) with a structural limit, the axis closes and the ledger records
+it. The F3 split-K prior sent to him is conditional on (a).
+
+## Entry 358 — 2026-08-24T05:05:00Z — there was never a sign inversion, and the depth axis now has a ranked-priced ladder
+
+### ADVISOR ERROR 226 — I handed Edward a false per-receipt file attribution
+
+In F5 I told Edward that `7226dc9a` edited `quantized.h` only, non-`_nax`. That is wrong.
+`7226dc9a` was alphonse's E147 **rung A plus rung B**. The campaign had already settled the
+attribution at `campaign-ledger.md:55278` and `:56583`:
+
+```
+e147_rungA_prefill_pct            local -1.0489 %   ranked 0 by dispatch
+e147_rungB_marginal_prefill_pct   ranked +2.1451 %  local 0 by dispatch
+```
+
+Edward built a correct falsifier on that premise and reached a wrong conclusion, that local
+screening of the affine 4-bit GEMM is sign-unreliable. The fault is mine.
+
+**Rule: never hand a student a per-receipt file attribution without quoting the ledger line
+that established it.**
+
+### FINDING 401 — the local and ranked prefill arms measure two different kernel families
+
+Edward's structural objection was valid and I confirmed it at the source:
+
+- `quantized_nax.h:575` **defines its own** `QuantizedBlockLoader`. It imports none.
+- `quantized_nax.metal` includes `utils.h`, `steel/gemm/gemm.h`, `steel/gemm/nax.h`,
+  `steel/gemm/loader.h` and `quantized_nax.h`. It **does not include `quantized.h`**.
+
+The two families are source-independent, so editing `quantized.h` alone cannot change a
+`_nax` kernel. With the corrected premise the paradox dissolves:
+
+| host | `is_nax_available()` | prefill GEMM reached | rung the revert removes | measured |
+|---|---|---|---|---|
+| M4 Pro, gen 16 | false | `qmm_t_impl`, `quantized.h` | rung A | local −2.1379 %, t = −47.5 |
+| ranked M5, gen 17 | true | `qmm_nax`, `quantized_nax.h` | rung B | ranked +1.99 %, +10.0 sigma |
+
+Dispatch gate `quantized.cpp:697`: `is_nax_available() && transpose && (K % 64 == 0) &&
+(enable_tf32() || x.dtype() != float32)`. Every scored prefill GEMM is transposed, has
+`K` in `{5120, 6144, 17408}`, and runs bf16.
+
+**Each host measured the only rung it executes. Software pipelining helps `qmm_t_impl` on
+gen 16 and hurts `qmm_nax` on gen 17. Different kernels, different loaders, different tile
+geometry. There is no sign inversion of a single mechanism.**
+
+FINDING 397 stands, corroborated by the earlier dispatch census `ranked_all_nax = true` and
+`local_all_qmm_t_impl = true`.
+
+Corrected rule, replacing the one in E167 F4 item 5: **local screening of the affine 4-bit
+GEMM is not sign-unreliable, it is family-blind.** A gen-16 host is a valid instrument for
+the non-`_nax` family and a null instrument for `_nax`.
+
+Evidence: Edward's 8-leg ABBA, `P C C P P C C P`, 512 tokens, depth 8, commit `0621a760`,
+`git_dirty=0`, all eight legs `cool_gate_passed_real_gate=true` and
+`gate_qualified_for_timing=true`, zero witness violations, `all_tokens_matched=true` against
+reference rows generated once from the reverted arm, schedule class identical on all legs
+(`edl=6.3766233766233764`, `accepted=435`, `rounds=77`), arm-mean entry temperature gap 0.1 C.
+
+Decode moved +0.3034 % at t = +1.59, not significant. **The mechanism is prefill-only in
+measurement as well as in dispatch**, which independently reproduces the F4 decomposition on
+a second host.
+
+### FINDING 402 — LAW 377's seed-prefill transfer factor was wall-contaminated
+
+Local `seed_prefill_seconds` spans the whole of `begin()`, including lazy graph construction
+and cold JIT, and every ABBA leg is a fresh process that pays it. Edward's trace:
+`build_us` about 2.90 s, `eval_wall_us` about 1.03 s, `wall_us` about 3.92 s, `cpu_us` 8.8 ms.
+
+```
+local GPU prefill 1.03 s / 512 = 2.012 ms/tok
+ranked anchor                    1.0294 ms/tok
+GPU-side transfer                1.955x     (LAW 377 recorded 7.593x, wall-contaminated)
+```
+
+E83 corroborates independently and on a different day: `target_forward_eval` was 24.5 % of a
+4046.1 ms seed prefill, which is 991 ms, within 4 % of 1.03 s.
+
+Corrected transfer table:
+
+```
+seed prefill, GPU-side   M5 about 1.96x faster
+decode round             M5 about 2.95x faster
+```
+
+The M5's advantage over a gen-16 host is substantially smaller on prefill than on decode.
+This makes the F7 prefill programme materially cheaper to screen than assumed.
+
+Standing hygiene rule: local absolute prefill is never a proxy for ranked
+`prefill_seconds_per_token`. Only arm-to-arm deltas are meaningful, and only within one
+kernel family.
+
+### Board semantics, confirmed from the receipt fields
+
+Status vocabulary is `accepted`, `rejected`, `failed`, `cancelled`, `validating`. There is no
+`promoted` status; promotion appears as `promotionStatus`. Acceptance is **global**:
+`rejectionReason` on both of our recent receipts is literally `score did not improve current
+best`. The bar is the crown `ec24d591` at **3.7291100105909**, `promotedSourceRef`
+`0863b06ac16e`, promoted 2026-08-23T11:43Z.
+
+At 04:52Z the official slot was free. Five submissions in flight, none ours: `7511978b` ofou,
+`662e272e` newjordan, `10f3a0d1` vibecodooor, `8886ec88` jungjipdo, `144b5048` scarletbright.
+`c7a418c3` igneous-prose went terminal at 3.71007853205938, rejected.
+
+### Our live surface is organizer main plus two files
+
+`origin/senpai/qwen38-mtp-r1` against `upstream/main` on the submitted surface:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift        30
+Vendor/.../MLXLLM/Models/Qwen35.swift                   88
+Vendor/.../mlx-generated/quantized.cpp                 138   <- revert target
+Vendor/.../mlx-generated/quantized_nax.cpp              80   <- revert target
+Vendor/.../kernels/quantized.h                         138   <- revert target
+Vendor/.../kernels/quantized_nax.h                      80   <- revert target
+```
+
+`upstream/main` contains zero `shift_dst`. FINDING 389's four-file inventory is confirmed
+against the live tip. **After the revert our candidate is organizer main plus exactly two
+files, 30 and 88 changed lines.**
+
+Predicted receipt, from `180db842` at 3.70465399:
+
+```
+beagle   prefill share 9.65 %  -> 0.0965 * 1.992 = 0.1922 %
+essays   prefill share 10.49 % -> 0.1049 * 1.992 = 0.2090 %
+published = 0.4781*0.1922 + 0.5219*0.2090          = 0.2010 %
+3.70465399 * 1.002010                              = 3.71209
+```
+
+That is 0.46 % under the crown, so it will be rejected on score. It is submitted anyway: it
+is the first isolated, unbundled, 10-sigma measurement of this mechanism, and at 3.7121 it
+would be our best receipt ever and the first time a Senpai tree beat unmodified organizer
+main (`5a9f130a`, 3.70784519). It prices our two surviving deltas at about +0.11 % together.
+
+### Advisor ruling — re-pin the twin-audit waiver
+
+Reverting the four files de-pins a `KNOWN_COMMENT_DIVERGENCES` row that is digest-pinned to
+the pipelined body, so `twin_audit.py` reports `STALE quantized: section drift`. Ruling:
+**re-pin to the organizer-clean body.** The divergence is pre-existing in `upstream/main`,
+comment-only and inert to the Metal compiler; pinning to the upstream text is strictly
+stricter than pinning to the pipelined text; and `research/twin_audit.py` is not in
+`editablePaths`, so it cannot reach the submitted archive. Conditions: change only the two
+digest fields and the descriptive text, never the audit logic, and require a clean self-test
+and negative control before freezing.
+
+### FINDING 403 — the ranked-priced break-even acceptance ladder
+
+The shipped cost model at `Qwen36MTPBlockSession.swift:919-930` is flat:
+`marginal[d] = h = 0.18`, `cumulative[d] = 1 + d*h`, with the rule at `:1152` extending when
+`reach > h*(1 + expected)/(1 + d*h)`.
+
+The true ranked price follows from `R(M) = 16.1585 + 5.3350*M`, `M = 1 + d`:
+
+```
+R(d)/R(0) = (21.4935 + 5.3350*d)/21.4935 = 1 + 0.248215*d
+```
+
+**True ranked `h` is 0.248215. The shipped 0.18 underprices a draft step by 37.9 %.** This
+reproduces FINDING 385's `c* = 0.24821` from a second direction.
+
+Break-even homogeneous acceptance for taking step `d -> d+1`, priced by the ranked law:
+
+```
+ 0 -> 1   0.50000        4 -> 5   0.86039
+ 1 -> 2   0.55631        5 -> 6   0.89441
+ 2 -> 3   0.71829        6 -> 7   0.91742
+ 3 -> 4   0.80727        7 -> 8   0.93369
+```
+
+`harness=ranked`. Depends only on `A` and `B`. The shipped greedy rule with `h = 0.248215`
+reproduces this ladder exactly under homogeneous `q`, so **the rule is structurally correct
+and every defect is in its inputs**.
+
+**Immediate use: the cap `7 -> 8` at `:1060` pays if and only if `p_7 > 0.93369.`** Saturated-round
+sensitivity: 0.920 gives −0.580 %, 0.934 is break-even, 0.950 gives +0.723 %, 0.967 gives
++1.512 %, 0.980 gives +2.140 %. Pre-registered before Askeladd's census is read.
+
+### The 2.6-step gap, and the two explanations it admits
+
+Homogeneous fits to the board give beagle `q = 0.932` and essays `q = 0.967`, both above
+`q*(6 -> 7) = 0.91742`, so a homogeneous model says both should draft to depth 7. The board
+says they do not:
+
+```
+ prompt     tok/round   mean depth   implied M   ms/tok
+ beagle       4.6545      4.382        5.382      9.6643
+ essays       5.5652      5.087        6.087      8.7925
+ botany       6.3210      6.148        7.148      8.6180
+ medicine     5.6889      5.255        6.255      8.6748
+ republic     5.5054      4.989        5.989      8.6684
+ drama        2.0317      2.297        3.297     16.8530
+ travel       2.4038      2.648        3.648     14.6059
+ plutarch     1.0492      0.156        1.156     29.0913
+```
+
+**(a) Acceptance decays with position.** The pooled `q` is a blend that overstates deep
+positions, the controller sees the decay through `positionAcceptEMA`, and the axis is nearly
+closed.
+
+**(b) The controller is held shallow by its inputs.** Moving beagle from 4.382 to depth 7 at
+`q = 0.932` is 9.6643 to 9.2892 ms/token, +4.04 % of decode; essays is +6.6 %. Weighted
+through the published formula that is roughly **+4.8 %**, several times the crown gap.
+
+Askeladd's per-position census discriminates them and nothing else does. Mechanism to check
+under (b): `positionAcceptEMA` seeds at `0.85*pow(0.98,i)` at `:856-857`, giving 0.768, 0.754
+and 0.739 at positions 5, 6 and 7 — every one below its ladder threshold. `recordAcceptOutcome`
+at `:1194-1223` counters this with an optimism transfer toward 0.95 on fully accepted rounds,
+but **the 0.95 cap sits only 0.016 above `q*(7 -> 8) = 0.93369`**, and `reach` is a product of
+these estimates.
+
+### Closed sub-axis — `headStepCostRatio` alone
+
+Do not correct 0.18 to 0.248215 on its own. FINDING 394's ranked arms are 0.14 (2.766),
+0.15 (2.667), 0.18 (2.920), 0.32 (2.846). The underpriced `h` pushes deeper and the two margin
+clamps pull shallower; they were fitted jointly and partly cancel. Changing one alone is a
+guaranteed loss. Reopen only with a joint (price, clamp) arm.
+
+### Composition arithmetic for the crown attempt
+
+Thorfinn's per-round fixed-cost mechanism, priced against the ranked law rather than the
+local leg:
+
+```
+local -654.8 us/round, LAW 377 fixed channel 0.34x -> ranked -222.6 us/round
+beagle  -0.2226/44.983 = -0.4949 % of round, x 0.9035 decode share = -0.4472 % of leg
+essays  -0.2226/48.932 = -0.4549 % of round, x 0.8951 decode share = -0.4072 % of leg
+published = 0.4781*0.4472 + 0.5219*0.4072 = +0.4263 %
+
+revert          3.70465399 x 1.002010 -> 3.712098
+plus mechanism             x 1.004263 -> 3.727925
+crown                                    3.729110
+shortfall                                0.032 %
+```
+
+A dead heat. At 0.271 % sigma on `officialScore` that is roughly a 45 % chance of taking the
+crown outright. The shot is worth firing, and it is also why the ladder in FINDING 403
+matters more than the composition does.
+
+### Dispatch note recorded for reuse
+
+The reverted mechanism cannot touch the decode round at our widths. Decode runs `M` in 2 to 9,
+so `Qwen35CustomQMV.routable` takes it or MLX falls back to the `qmv`/`qvm` vector path;
+`get_qmv_batch_limit` returns 10 on both gen 16 and gen 17, so `quantized.cpp:1418
+if (M >= vector_limit)` is false at every decode width and the `qmm` family is never entered.
+Thorfinn's contrast is therefore additive with the revert and needs no replay. Pre-authorised.
+
+### Assignments issued
+
+- **edward, PR #166, F9.** Error 226 recorded, FINDING 401 and 402 delivered, waiver re-pin
+  ruled, traced-leg experiment declined, submit the revert alone with an honest predicted
+  3.7121 and an expected rejection on score.
+- **thorfinn, PR #165, I7.** Base change is prefill-only and additive, pre-authorised without
+  replay; warned that local full-leg numbers become incomparable across the revert boundary
+  because local prefill gets 2.14 % slower; cherry-pick the revert now and prepare the
+  composed crown attempt; cap 7 to 8 stays queued behind it.
+- **askeladd, PR #168, F4.** FINDING 403 delivered; census reframed from pooled statistics to
+  a per-position `p_d` table set beside the ladder; `p_7 > 0.93369` pre-registered as the
+  decision rule for another student's lever; optimism-transfer firing rate and 0.95-cap cost
+  added.
+- **alphonse, PR #169.** Unchanged. FINDING 400 (a)/(b)/(c) arithmetic remains priority 1.
+
+## Entry 359 — 2026-08-24T05:35:00Z — the marginal row is a weight stream, the per-round fixed cost is real, and the next two receipts measure the transfer coefficient we have been guessing at
+
+Two terminal results landed together and both are merged. Between them they close one long-running
+measurement question, withdraw a rule the campaign has been pricing against for several rounds, and
+turn the next pair of official submissions into a direct instrument.
+
+Base moved twice this cycle:
+
+```
+1a90f503  ledger 358
+99a81d6a  merge E169  (Alphonse, PR 169)   candidate surface unchanged
+b51f893a  merge E165  (Thorfinn, PR 165)   Qwen36MTPBlockSession.swift +319 -124
+```
+
+---
+
+### FINDING 404 — the marginal verified row is a weight stream, and it is a step function, not a rate
+
+Alphonse, E169, PR 169, commit `ab733b4e`, W&B `ak9rx812`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ak9rx812
+
+The local pass-cost model on g16s is
+
+```
+T(M) = fixed + sum over groups of pass(NA)
+fixed     = 11.792 ms
+pass(2)   = 55.008 ms   96.0 % of the 273 GB/s roof
+pass(3)   = 53.841 ms   98.1 %
+pass(4)   = 61.336 ms   86.1 %
+pass(5)   = 71.758 ms   73.6 %
+max residual 2.09 % over all eight routed widths
+```
+
+Compute sits at 23-47 % of the 7.506 TFLOP/s roof at every width. The rate tracks `NA`, the number
+of active inputs in the group, and not `M`. **Compute never binds. The stream always nearly binds.**
+
+The row is therefore a step function and the 7.002 ms/row figure is an average over it:
+
+```
+NA 2 -> 3   -1.167 ms   free
+NA 3 -> 4   +7.494 ms
+NA 4 -> 5  +10.422 ms
+group crossing  +53.8 to +71.8 ms
+```
+
+Attribution with a null control: a null wrapper costs +0.06 to +0.48 ms, the mlp arm removes 3.7 to
+70.2 ms, and mlp is 64.08 % of the marginal row. Bottom-up gives 63.6 % and a static FLOP count
+gives 66.20 %. The 30.8 % residual is **un-intercepted rather than unattributed** — the fast path
+calls free routing functions, not `callAsFunction`, so only the mlp arm has an interception point.
+
+Three independent estimators of `b` close at 7.002, 7.1883 and 6.739 ms/row, a 3.8 % spread. The
+census intercept of 50.50 against E163's 57.384 puts **6.88 ms/round of head cost in `a`, not `b`**.
+
+Sub-hypotheses closed: H1 GDN, 23.47 % over 48 layers against full attention at 7.43 % over 16, with
+recurrence at 2.29 %. H2 readout, lm_head 4.09 % and top-2 at +0.07 %. H3 confirms ADVISOR ERROR 224
+— wasted rows are 8.63 %, not the 20 % I claimed.
+
+#### LAW 377 loses its disjointness, distribution-free
+
+This is the part that changes pricing everywhere.
+
+```
+B_w  = 14.41235 GB per forward
+roof = 614 GB/s on M5
+one weight pass = 23.47 ms
+
+ranked round model  T(M) = 16.1585 + 5.3350 * M   ms
+```
+
+One weight pass is **larger than the entire M-independent term**. Fitting a pass inside `a` needs
+891.9 GB/s, 145 % of roof. So at least 7.31 ms of weight stream sits inside the `5.3350 * M` term,
+which is at least 1.359 ms/row and at least 25.5 % of the ranked marginal row on beagle.
+
+**LAW 377 channels 1 and 2 are not disjoint. "Price c at zero, price b at 1.31x" is WITHDRAWN.**
+
+Every transfer coefficient derived from that decomposition is now unsupported. Unsupported is not
+refuted — the numbers may still be right — but nothing currently justifies them.
+
+#### Two retractions from the same experiment
+
+1. **FINDING 395's narrow-output deficit has no measured basis.** Matched-weight-byte cells with `n`
+   and `k` transposed differ by 3.2 % or less. A byte law fitted on the synthetic grid predicts all
+   seven scored shapes out of sample within -0.97 % / +0.75 %, including lm_head at 715 MB, which is
+   14x outside the fitted range, at +0.10 %.
+2. **Split-K is not bit-exact.** `acc[r]` is lane-private with a sequential ascending-block chain and
+   a single `simd_sum` after the loop, so any split reassociates floating-point addition. Drop the
+   prior.
+
+#### The named mechanism, now assigned as E170
+
+`Qwen35.swift:1442  constexpr int rows_per_simd = 4`, inside `qwen_e120_qmv_wide` at `:1427`, with
+`VF acc[rows_per_simd]` at `:1449` and `VF partial[rows_per_simd]` at `:1483`. Register state is
+about 60 vector floats per thread at NA=5. Halving at high NA is bit-exact by construction because
+the per-row `k` chain and the `simd_sum` width are both unchanged.
+
+Local upper bounds: T(4) -9.2 %, T(5) -21.4 %, T(7) -6.4 %, T(8) -11.2 %. NA=5 is beagle's modal
+width. Shipped `inputsPerGroup` is optimal at every reachable width, confirming LAW 354.
+
+Gates on `ab733b4e`: ranked-score-boundary PASS, source budget 2,619,256 of 3,000,000, growth 0 of
+262,144, and 0 of 89 editablePaths touched.
+
+---
+
+### FINDING 405 — cross-round head-chain prefetch is real at 4.8 sigma and recovers 58 % of the idle window
+
+Thorfinn, E165, PR 165, commit `471c0b17`, W&B `w6of7408` and `h98ly6un`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/w6of7408
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/h98ly6un
+
+Pooled over sixteen thermally gated 512-token legs, two ABBA palindrome replicates, natural schedule:
+
+```
+rep1    n=4/4  off 0.028612  on 0.028513   -0.3486 %  (2s 0.1644)   -654.8 us/round
+rep2    n=4/4  off 0.028578  on 0.028513   -0.2256 %  (2s 0.1736)   -423.2 us/round
+POOLED  n=8/8  off 0.028595  on 0.028513   -0.2872 %  (2s 0.1196)   -539.0 us/round
+effect / sigma = 4.80
+```
+
+Gates, all sixteen legs: one accept-ledger tuple `(rounds=78, proposed=496, accepted=435)`; `edl` and
+`accepted_draft_rate` each single-valued; 513/513 hexfloat rows exact in both replicates with a firing
+one-ulp positive control; `all_tokens_matched` true and `residual_divergence_count` 0 everywhere; real
+40 C gate passed on every leg; one worker digest `ed085186` asserted before and after every leg; one
+session commit `5a7e765d`.
+
+Serial-leg negative control is null at -0.0209 % with a 2 sigma of 0.1095 % containing zero, so the
+effect is confined to the candidate MTP leg. Thermal balance runs against the mechanism: the off arm
+entered 0.59 C hotter.
+
+Recovery is 58 % of the 925 us of measured hardware idle at the natural `edl = 6.359`. `commit` at
+433.1 us is untouched and is now the largest single remaining term.
+
+#### Two corrections to campaign record, both accepted
+
+1. **Per-leg timing noise on Thorfinn's host is 0.120 %**, about 3x the 0.039 % floor several
+   assignments have been quoting. The 0.039 % figure is retired campaign-wide. Any contrast targeting
+   less than about 0.3 % on that host needs two replicates.
+2. **The earlier 4.33 % GPU-idle figure was a six-second sampling artefact.** Full legs put it at
+   0.87 % and 0.66 %. The intra-queue bubble it implied does not exist.
+
+#### Advisor decision: MERGED over the student's own bar
+
+Thorfinn predeclared -0.35 % and reported -0.2872 %, 82 % of it, and correctly recorded that his
+promotion rule did not fire. He led with the pooled figure rather than rep 1's more favourable
+-0.3486 %, refused to reclassify by switching to the ranked pricing channel after measuring, and
+revised my composed arithmetic downward unprompted.
+
+I merged it anyway. A predeclared minimum useful effect is a stop rule against noise and against
+sunk GPU cost. Neither condition binds here: 4.80 sigma, a null serial control, a thermal bias
+against the mechanism, a digit-identical accept ledger and exact rows. The campaign rule is to merge
+a real improvement even when small unless the complexity is disproportionate, and 319/-124 lines in
+one editable file for the largest per-round mechanism this campaign has produced is not
+disproportionate.
+
+Recorded so future bars are calibrated: **a student's predeclared bar governs the student's decision
+to continue spending, not the advisor's decision to compose.**
+
+---
+
+### FINDING 406 — the next two receipts measure the LAW 377 transfer coefficient directly
+
+`fda590bb-e1c7-4b2b-b65b-1de67aa15e52` was submitted by Edward at 2026-08-24T05:00:39Z and is
+validating. It is the revert **alone**. Thorfinn's E171 candidate is the revert **plus E165 and
+nothing else**. The pair is a matched ranked A/B of one mechanism on the official runner.
+
+With `tau` the true ranked transfer coefficient of the `per_round_fixed` channel, using FINDING 382
+published weights and FINDING 387 decode shares:
+
+```
+beagle   539.0*tau / 44983 us = 1.1982 %*tau of round, x 0.9035 = 1.0826 %*tau of leg
+essays   539.0*tau / 48932 us = 1.1015 %*tau of round, x 0.8951 = 0.9860 %*tau of leg
+published gain = 0.4781*1.0826 + 0.5219*0.9860 = 1.0322 % * tau
+
+composed score = 3.712098 * (1 + 0.010322 * tau)
+
+  tau = 0.34   ->  3.725128     Thorfinn's figure, reproduced exactly
+  tau = 0.444  ->  3.729110     dead level with the crown
+  tau = 0.50   ->  3.731259
+  tau = 1.00   ->  3.750408
+```
+
+**PRE-REGISTERED before either receipt: the composed candidate takes the crown if and only if
+`tau > 0.444`.**
+
+Inversion once both land:
+
+```
+tau_measured = (composed published score / 3.712098 - 1) / 0.010322
+sigma_tau    = 0.271 % * sqrt(2) / 1.0322 % = 0.371
+```
+
+That separates `tau = 0.34` from `tau = 1.0` at about 1.8 sigma. Not decisive alone, but it is the
+first direct ranked measurement of a LAW 377 transfer coefficient the campaign has ever had, and it
+costs nothing because both candidates were going to be fired regardless.
+
+#### The two readings, stated so the receipt can adjudicate them
+
+**(a) Host-serial, `tau` near 1.** The 539.0 us came out of measured hardware GPU idle. Host CPU work
+and protocol round-trips do not accelerate because the GPU does. On M5 the GPU finishes each round
+sooner, so a fixed host cost is a larger share of the round and less likely to be hidden. This
+reading is if anything conservative on M5.
+
+**(b) Overlapped, `tau` near 0.** `a = 16.1585` ms is almost exactly the 16.16 ms of the 23.47 ms
+weight pass not already carried by the slope, leaving no room for exposed host cost in the ranked
+M-independent term. On that reading MLX already hides the host chain on M5.
+
+The local half is settled cheaply by one powermetrics residency leg with the mechanism ON, comparing
+`gpu_idle_window` against the 925 us measured OFF at the same `edl`. Assigned as E171 item 2, after
+the submission is away.
+
+Under reading (a), `commit` at 433.1 us is worth `433.1/539.0 * 1.0322 = 0.829 %` published on its
+own. That is the largest single unclaimed per-round item on the board.
+
+---
+
+### Composition plan, revised on the student's own pooled number
+
+```
+last receipt       3.70465399   180db842
+revert alone       x 1.002010 = 3.712098   fda590bb, validating
++ E165 at tau=0.34 x 1.003510 = 3.725128
++ E165 at tau=1.00 x 1.010322 = 3.750408
+crown                           3.729110   ec24d591 newjordan
+```
+
+At `tau = 0.34` the shortfall is 0.1069 %, which is 0.39 sigma at an `officialScore` sd of 0.271 %,
+so about a 35 % crown probability. The probability is a strictly increasing function of a number we
+cannot measure any other way, and 0.34 is the low end of its plausible range, not the centre.
+
+---
+
+### Advisor error 227
+
+I told Thorfinn to price his mechanism on the LAW 377 `per_round_fixed` channel at 0.34, and he did,
+faithfully. FINDING 404 landed the same hour and withdrew the decomposition that produced 0.34. The
+error is not the coefficient — it is that I handed out a transfer coefficient as a constant without
+recording the derivation that would let a student notice when it stopped being supported. Transfer
+coefficients now travel with their derivation or they do not travel.
+
+---
+
+### State after this entry
+
+```
+base                b51f893a   organizer main + Qwen35.swift(88) + Qwen36MTPBlockSession(30 + E165)
+official slot       occupied by fda590bb since 05:00:39Z
+next candidate      E171, revert composed onto b51f893a, frozen and held for the slot
+edward   PR 166     receipt watcher on fda590bb, push the submitted commit
+thorfinn PR 171     compose, freeze, fire, then the residency verdict
+askeladd PR 168     per-position p_d census against the FINDING 403 ladder
+alphonse PR 170     rows_per_simd occupancy, local upper bound -21.4 % at NA=5
+```
+
+## Entry 360 — 2026-08-24T05:50:00Z — FINDING 407: the ranked round is a step function in M, the linear model is physically impossible, and the optimal draft depth is a constant
+
+This is the largest result of the campaign and it came out of arithmetic, not measurement. Alphonse's
+FINDING 404 supplied the weight-byte count. The rest was already on the record and nobody had put it
+together, including me.
+
+### The refutation, which requires no fitting
+
+```
+backbone weight bytes per forward   B_w = 14.41235 GB      FINDING 404
+M5 DRAM roof                              614 GB/s
+one backbone weight pass on M5            23.473 ms
+```
+
+A decode round must read every backbone weight at least once. That is a floor.
+
+The ranked cost model this campaign has priced against for many rounds is
+
+```
+T(M) = 16.1585 + 5.3350 * M
+T(1) = 21.494 ms
+```
+
+**`T(1)` is 1.979 ms below the physical stream floor.** The linear model describes a round that reads
+the weights faster than the memory system can deliver them. It is not imprecise, it is impossible.
+
+The data says the same thing. Plutarch runs 449 of 488 rounds non-drafting and is therefore very
+nearly a bare `M = 1` measurement:
+
+```
+plutarch observed         30.522 ms/round
+linear model              22.326 ms/round     -26.85 %
+step model                30.522 ms/round      -0.00 %
+```
+
+The linear fit was dominated by the seven high-`M` prompts, where mean `M` and the fraction of
+two-pass rounds are collinear, so a line through the mixture fits and hides the step.
+
+### What is actually happening
+
+`inputsPerGroup` at `Qwen35.swift:1567` is a **static candidate-side table**. `groups(M)` is therefore
+host-independent:
+
+```
+M         2  3  4  5  6  7  8  9
+IPG       2  3  4  5  3  4  4  3
+groups    1  1  1  1  2  2  2  3
+```
+
+`groups(M)` counts full passes over the 14.41 GB backbone. `M <= 5` makes one pass. `M = 6, 7, 8`
+makes two. `M = 9` makes three.
+
+Fit that structure to the eight ranked prompts with one calibrated constant `F = 6.899 ms` and the
+measured 0.96 ms head step:
+
+```
+prompt         M   observed   f(at cap 7)   implied shallow depth
+plutarch   1.156     30.522        0.000         0.156
+drama      3.297     34.241        0.071         1.938
+travel     3.648     35.109        0.093         2.199
+beagle     5.382     44.983        0.443         2.298
+republic   5.989     47.723        0.535         2.674
+essays     6.087     48.932        0.583         2.416
+medicine   6.255     49.350        0.594         2.706
+botany     7.148     54.474        0.775         3.207
+```
+
+Every prompt resolves into a fraction `f` at the depth-7 cap plus a shallow remainder. `f` is monotone
+in mean `M`. Every implied shallow depth is at or below 4, which is exactly the region required for
+those rounds to make one pass. Sixteen derived quantities, all inside the permitted region, from one
+fitted constant. This is also FINDING 386's two-state mixture, now with a physical cause.
+
+Independent confirmation from two datasets that were never compared before:
+
+```
+Askeladd E159 observed local step M=5 -> M=6              35.451 ms
+Alphonse E169 pass(NA): 2*pass(3) - pass(5)
+                        = 2*53.841 - 71.758              35.924 ms
+agreement                                                  1.33 %
+```
+
+### The consequence
+
+Break-even acceptance for draft row `d`, step model at roof:
+
+```
+row d   cost(d-1)   cost(d)      q* needed
+  1        30.372    31.332        0.0316
+  2        31.332    32.292        0.0591
+  3        32.292    33.252        0.0831
+  4        33.252    34.212        0.1039
+  5        34.212    58.645        IMPOSSIBLE, 3.10
+  6        58.645    59.605        0.0826
+  7        59.605    60.565        0.0916
+```
+
+Rows 1 to 4 share one weight pass and cost 0.96 ms each, so they break even at 3 to 11 percent
+acceptance. Row 5 buys a second full pass of the backbone and would need an acceptance above 1.
+
+The cost surface is two basins, not a ramp:
+
+```
+depth 4   34.212 ms, up to 5 tokens  ->  6.842 ms/token at perfect acceptance
+depth 7   60.565 ms, up to 8 tokens  ->  7.571 ms/token at perfect acceptance
+```
+
+**The deep basin is 10.6 % worse than the shallow basin even if every draft is accepted.** At a
+realistic per-row acceptance of 0.93 the gap is 18.2 %.
+
+> **The optimal draft depth is 4, for every prompt, at every acceptance rate.**
+
+This also disposes of FINDING 393. The controller has no acceptance signal, AUC near 0.5 on every
+feature — and it does not need one, because the optimal policy is a constant. FINDING 386's two-state
+behaviour is not adaptation. It is waste: on the four prompts that decide the published score, 44 to
+78 percent of rounds buy a second 23.5 ms weight pass that can never repay itself.
+
+The cap 7-to-8 lever is **dead**. `M = 9` makes a third pass. The pre-registered `p_7 > 0.93369` test
+from FINDING 403 is withdrawn along with the ladder that produced it.
+
+### Sensitivity, stated honestly
+
+The 10.6 % margin assumes the M5 runs the `NA = 5` group near roof. On g16s Alphonse measured
+`NA = 5` at 73.6 % of roof against 98.1 % at `NA = 3`. Transfer those efficiencies literally and the
+two basins tie at perfect acceptance. At a realistic 0.93 acceptance depth 4 still wins under both:
+
+```
+                     depth 4    depth 7    depth 4 advantage
+M5 roof efficiency     7.870      9.626          18.2 %
+g16s NA efficiency     9.809     10.833           9.5 %
+```
+
+The ranked per-prompt data prefers roof efficiency: transferring the g16s curve over-predicts beagle.
+Two readings survive — the M5 has no `NA = 5` occupancy dip, or the dip is real there and `F` is
+absorbing the difference. Alphonse's E170 is now pointed at exactly that cell.
+
+### Modelled value
+
+```
+beagle          -6.84 %      botany   -11.64 %      medicine  -7.41 %
+essays          -6.49 %      republic  -6.04 %      travel   -20.01 %
+drama          -26.70 %      plutarch   0.00 %
+
+published = 0.4781 * 6.84 + 0.5219 * 6.04 = +6.42 %
+3.712098 * 1.0642 = 3.9504      crown 3.7291100105909
+```
+
+Treat that as model-dependent. The measured end-to-end version already exists in Askeladd's E159 and
+is smaller but real:
+
+```
+shipped adaptive     21.037 ms/token
+fixed M = 5          19.530 ms/token     -7.16 %   harness=local
+```
+
+A draft-depth schedule change is confined to the candidate MTP leg, so `program.md` makes the local
+ratio direct evidence for it with no cancellation risk. **That −7.16 % has been sitting unclaimed in
+a merged result.**
+
+### ADVISOR ERROR 228
+
+Askeladd's E159 concluded that the local optimum at `M = 5` was an artefact of the group-crossing step
+and that, ranked-priced, the same acceptance profile was monotone decreasing to `M = 8`. I accepted
+it. The second half is wrong.
+
+`groups(M)` comes from a static table in candidate source. The group-crossing step is not a g16s
+artefact; it exists on M5 with the same shape and a height of 23.5 ms. I let Rule 83 talk me out of a
+conclusion Rule 83 does not cover — it scopes g16s **occupancy** closures, and a group count is not
+an occupancy property.
+
+The cost of the error is that the campaign has shipped a depth-7 controller for its entire life, and
+has spent several experiments tuning the clamps of a controller whose optimal policy is a constant.
+
+**Rule 195: before transferring or refusing to transfer a local result, state whether the mechanism is
+fixed by candidate source or by hardware. Source-fixed structure transfers exactly. Only
+hardware-dependent structure is subject to Rule 83.**
+
+### Assigned
+
+- **Askeladd, PR 168, F5.** Timing arms for the clamp calibration, the head-signal AUC arm and the
+  cap-8 pre-registration are all dropped. New priority: a thermally gated 512-token ABBA palindrome
+  contrasting the shipped adaptive controller against `MLX_E159_FIXED_DRAFT_DEPTH=4` on base
+  `b51f893a`, with full exactness gates and both accept ledgers reported. LAW 364 ledger identity does
+  not apply — the ledgers must differ, that is the mechanism. Then a 3/4/5 fixed-depth sweep, because
+  a smooth curve through those three points falsifies the step model. Promote above 3 %.
+- **Alphonse, PR 170, F1.** Re-ordered onto `NA = 5` first, since fixed depth 4 would make it the only
+  routed width. Deprioritise `NA = 7`, `NA = 8`, drop `NA = 9`. Report an occupancy law with register
+  accounting and the M5 threshold it would take to remove the dip, not a bare percentage.
+
+### Withdrawn by this entry
+
+- the linear ranked round model `T(M) = 16.1585 + 5.3350 * M` as a physical cost model. It remains a
+  usable interpolant for `M` in 3 to 8 and nothing else. **`b = 5.3350 ms` is not a marginal row cost.
+  It is the slope of a line through a two-level step smoothed by the depth mixture.**
+- FINDING 403's break-even ladder and the `q*(d)` table.
+- the cap 7-to-8 lever and its `p_7 > 0.93369` pre-registration.
+- FINDING 385's depth-price identity `c* = h/(s+h)`, which assumed a linear marginal row.
+- any pricing that multiplies a saving by `b` per row.
+
+### Entry 360 addendum — FINDING 407 verified in source, not inferred
+
+I read the dispatch rather than trusting the note that carried the table.
+
+`Qwen35.swift:1709-1728`, `activeInputGroups(_ m: Int)`:
+
+```
+case 2: inputsPerGroup = 2      case 6: inputsPerGroup = 3
+case 3: inputsPerGroup = 3      case 7: inputsPerGroup = 4
+case 4: inputsPerGroup = 4      case 8: inputsPerGroup = 4
+case 5: inputsPerGroup = 5      case 9: inputsPerGroup = 3
+return (m + inputsPerGroup - 1) / inputsPerGroup
+```
+
+Launch sites `Qwen35.swift:1834` and `:1883`:
+
+```
+grid: (Self.activeInputGroups(cell.m) * 32, (cell.n / 8) * 2, 1)
+```
+
+Kernel body `:1585-1588`:
+
+```
+const uint3 qmv_tid = threadgroup_position_in_grid;
+const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
+const int qmv_gx      = int(qmv_tid.x);
+```
+
+and `:1543`, `const int first_m = group_x * IPG`.
+
+So `tid.y` indexes **output rows** and `tid.x` indexes **input groups**. Each of the `groups(M)`
+threadgroups along x reads the weight rows for its `out_row` independently. **`G` groups therefore
+perform `G` complete reads of the weight matrix.** This is a dispatch geometry, not a cache effect,
+and it is fixed by candidate source on every host.
+
+Coverage check, because the step only matters for bytes that actually route. `Qwen35CustomQMV.routable`
+at `:1770-1794` requires `bits == 4`, `groupSize == 64`, `mode == .affine`, bf16 activations and
+scales, `k % 512 == 0`, `n % 8 == 0` and **`n >= 4096`**. Against the Qwen 3.8 27B shapes:
+
+```
+routed        q_proj 6144, o_proj 5120, gate_proj 17408, up_proj 17408,
+              down_proj 5120, lm_head 248320
+not routed    k_proj 1024, v_proj 1024   (n < 4096)
+```
+
+The unrouted pair is about 84 MB of the 14.41235 GB backbone, roughly 0.6 %. The mlp projections,
+which FINDING 404 attributes 64.08 % of the marginal row and 66.20 % of static FLOPs, all route.
+`widths = 2 ... 9` at `:1704`, so `M = 1` stays on MLX and makes one pass, which is what the plutarch
+calibration assumes.
+
+**Better than 99 % of the backbone bytes are subject to `groups(M)`.** FINDING 407 stands on read
+source and measured bytes, with no fitted quantity in the mechanism itself.
