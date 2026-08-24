@@ -425,3 +425,29 @@ Do not run Laguna/DFlash setup or benchmark scripts, use their score formulas,
 or copy their MoE/NVFP4 kernels without a Qwen-specific call-path and geometry
 proof.
 <!-- SENPAI-CAMPAIGN-END -->
+
+## Local Measurement Hygiene
+
+`research/e79_trace_leg.sh` stamps `base_sha=$(git rev-parse HEAD)` into
+every leg's `meta.txt`. Do not commit anything while a multi-leg session
+runs, or legs from one session will report different bases. The session
+scripts capture `e165_session_commit` once and assert the worker digest
+between legs; those two fields, not `base_sha`, prove the legs are
+comparable.
+
+`e79_trace_leg.sh` also records `dirty_candidate_paths` from `Sources`,
+`Vendor` and `Package.swift`. An uncommitted source file makes every leg
+report a dirty tree even when the leg builds nothing, so park unrelated work
+on a side branch before a session rather than leaving it in the tree.
+
+The GPU-idle fraction can be MEASURED, not just bounded. Passwordless sudo is
+available, and `powermetrics --samplers gpu_power` reports `GPU idle
+residency`, `GPU HW active residency`, the DVFS frequency histogram and GPU
+power. Host clocks cannot see a bubble that opens after a command buffer is
+committed and closes before it completes, so a host-clock budget only bounds
+idle from below; these counters close it from above. Measured on this M4 Pro:
+about 96.8% idle between legs, about 4.3% idle during pinned-width decode,
+with 99.8% of active GPU time in the top DVFS bin. The sampler is
+system-wide, and "active" means the block is clocked, not that the shader
+cores are issuing, so a memory-stalled GPU still reads as active. Wrappers:
+`research/e165_residency_leg.sh`, `research/e165_residency.py`.
