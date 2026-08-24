@@ -1,0 +1,117 @@
+{
+  "cells" : [
+    {
+      "control_differing_elements" : 22935,
+      "control_max_abs_delta" : 0.001953125,
+      "differing_elements" : 0,
+      "elements" : 36864,
+      "kv" : 512,
+      "max_abs_delta" : 0,
+      "qL" : 6
+    },
+    {
+      "control_differing_elements" : 23184,
+      "control_max_abs_delta" : 0.00390625,
+      "differing_elements" : 0,
+      "elements" : 43008,
+      "kv" : 512,
+      "max_abs_delta" : 0,
+      "qL" : 7
+    },
+    {
+      "control_differing_elements" : 23038,
+      "control_max_abs_delta" : 0.001953125,
+      "differing_elements" : 0,
+      "elements" : 49152,
+      "kv" : 512,
+      "max_abs_delta" : 0,
+      "qL" : 8
+    },
+    {
+      "control_differing_elements" : 22529,
+      "control_max_abs_delta" : 0.001953125,
+      "differing_elements" : 0,
+      "elements" : 55296,
+      "kv" : 512,
+      "max_abs_delta" : 0,
+      "qL" : 9
+    },
+    {
+      "control_differing_elements" : 24049,
+      "control_max_abs_delta" : 0.0009765625,
+      "differing_elements" : 0,
+      "elements" : 36864,
+      "kv" : 1024,
+      "max_abs_delta" : 0,
+      "qL" : 6
+    },
+    {
+      "control_differing_elements" : 24055,
+      "control_max_abs_delta" : 0.001953125,
+      "differing_elements" : 0,
+      "elements" : 43008,
+      "kv" : 1024,
+      "max_abs_delta" : 0,
+      "qL" : 7
+    },
+    {
+      "control_differing_elements" : 24044,
+      "control_max_abs_delta" : 0.001953125,
+      "differing_elements" : 0,
+      "elements" : 49152,
+      "kv" : 1024,
+      "max_abs_delta" : 0,
+      "qL" : 8
+    },
+    {
+      "control_differing_elements" : 24029,
+      "control_max_abs_delta" : 0.00146484375,
+      "differing_elements" : 0,
+      "elements" : 55296,
+      "kv" : 1024,
+      "max_abs_delta" : 0,
+      "qL" : 9
+    },
+    {
+      "control_differing_elements" : 24277,
+      "control_max_abs_delta" : 0.00146484375,
+      "differing_elements" : 0,
+      "elements" : 36864,
+      "kv" : 2048,
+      "max_abs_delta" : 0,
+      "qL" : 6
+    },
+    {
+      "control_differing_elements" : 24215,
+      "control_max_abs_delta" : 0.001220703125,
+      "differing_elements" : 0,
+      "elements" : 43008,
+      "kv" : 2048,
+      "max_abs_delta" : 0,
+      "qL" : 7
+    },
+    {
+      "control_differing_elements" : 23835,
+      "control_max_abs_delta" : 0.001220703125,
+      "differing_elements" : 0,
+      "elements" : 49152,
+      "kv" : 2048,
+      "max_abs_delta" : 0,
+      "qL" : 8
+    },
+    {
+      "control_differing_elements" : 23713,
+      "control_max_abs_delta" : 0.00146484375,
+      "differing_elements" : 0,
+      "elements" : 55296,
+      "kv" : 2048,
+      "max_abs_delta" : 0,
+      "qL" : 9
+    }
+  ],
+  "dtype" : "bfloat16",
+  "harness" : "local",
+  "positive_control_fired_everywhere" : true,
+  "probe" : "e194-value-gate",
+  "worst_differing_elements" : 0
+}
