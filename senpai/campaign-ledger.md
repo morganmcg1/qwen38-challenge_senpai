@@ -72028,3 +72028,23 @@ Receipt `2681c3ac` (E193) still validating (~2 h 20 m). E199 frozen at `4b967648
 **Base-change events.** research_base_changed notices for PRs #190/#195/#196 against `cd3e7688` (E195 merge, submitted-surface) and `fb67c8a7` (Entry 402, ledger-only) require no in-flight action: E193 froze and submitted before the merge (receipt decides; base validity assessed at terminal review); E199 submits its own tree by design (conditional re-confirmation only if E193 promotes); E198's ABBA is internally valid on its own tree, and any freeze rebases onto the live tip.
 
 **State.** Receipt `2681c3ac` (E193) still validating (~2 h 21 m). E199 frozen, holding, watcher live. E200 screen in progress (no interim yet). E198 repair session running on Edward's Mac.
+
+---
+
+## Entry 404 — 2026-08-24T20:55Z — E200 desk pricing decisively negative (step-priced greedy depth rule is self-blocking); no timed ABBA; E193 routing marked blocked-on-receipt; E199 latency ruling
+
+**E200 interim 1 (Askeladd, PR #197).** Desk-first inversion approved retroactively: RULE 79 makes the offline replay against a measured cost table the only admissible decision instrument for a depth-price contrast, and the walk cost 11 seconds.
+
+**Desk result (harness=ranked, cap 7, anchored on receipt A 3.70785):** E197 smooth-step dR(m) priced into the greedy rule scores −5.13 % (level held at 1.26), −3.49 % (measured level), −0.36 % (global argmin variant). Shape sweep from uniform (w=0) to the full measured law (w=1) peaks at +0.17 % (w=0.1) — nothing on the axis clears the +0.2 % assignment floor.
+
+**Mechanism (provisional finding; formal numbering at terminal review).** The width-6 step is real, and pricing it honestly is what breaks the rule: with `marginal[4]` = 0.35 the depth-4 guard bar becomes ≈0.99 for deep prompts and closes for EVERY round, because the bar depends only on (1+expected), which is larger for strong rounds — a one-step hill climb blocks strong rounds hardest. Deep prompts collapse from edl 4.4–6.1 to 3.2–3.7, i.e. the cap-4 schedule, which is a PAID receipt at 3.54743 (−4.3 %); the desk number is receipt-anchored, not model freedom. Consequence: the price side of the greedy rule cannot express "weak rounds stop before the step, strong rounds jump it" — that mechanism needs LOOKAHEAD. This closes the price-side path to the FINDING 515 oracle ceiling (+3.02 %); lookahead scheduling is the surviving direction (queued idea).
+
+**Instrument caveat (provisional).** The merged E197 `chain` convention S_k carries depth-selection bias: S_k was measured on rounds the shipped rule selected for depth k, so it over-values added depth when pricing schedule changes (Askeladd's biased sweep ran monotone to +3.91 %). Corrected instrument: survival-pinned latent-q — paid per-prompt survival t_k pins P(q > Q_k) at seven knots with no family assumed, and a different price is a different Q'_k on the same pinned curve. Standing caveat on future desk pricing of schedule changes; softens the desk cap-8 expectation but changes nothing for E199 (the receipt was bought under a predeclared rule because the desk could not settle it, and the receipt answers).
+
+**Rulings (feedback `e200-fb-desk-approve-408`):** No full timed ABBA (RULE 79 — zero admissible evidence at nonzero GPU cost). Approved continuation: (1) live-feed validation via printed `sched=` thresholds vs closed form = RULE 391(b) arm witness; (2) exact offline replay of the real per-round `ema=`/`m=` trace under each candidate table — decisive, removes the latent-q proxy; (3) one live candidate leg behind `MLX_E200_DEPTH_PRICE` (RULE 391(a)-compliant prefix) for exactness, row-ledger closure, and EMA-loop confirmation only. Stop-rule mapping agreed: replay confirms the walk → terminal NOT USEFUL, no table iteration (failure is structural). RULE 198 at terminal: measurement arm deleted, research-only diff.
+
+**E193 routing.** Controller flagged PR #190 `stale_wip`; repaired to wip + blocked. The assignment is intentionally idle awaiting official receipt `2681c3ac` (validating since 17:58Z); Alphonse's watcher wakes him at terminal. No student work is expected until then.
+
+**E199.** Interim latency question answered (feedback `e199-fb-receipt-latency-407`): ~61 min validating is normal (E190 precedent ~2 h 23 m); escalation threshold set at ~21:30Z (~3.5 h), after which the advisor treats the board as possibly stalled. Thorfinn acknowledged; posture unchanged, frozen tip `4b967648` closed.
+
+**State.** Receipt `2681c3ac` validating (~2 h 50 m at entry time). E198 witnessed repair session running (liveness → exactness → ABBA). E200 replay steps 1–3 in progress. E199 holding.

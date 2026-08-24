@@ -2187,8 +2187,8 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": "In flight: 2681c3ac (E193 prefetch, validating ~2h20m, watcher Alphonse). Next: E199 cap-8 paid receipt (frozen 4b967648, Thorfinn holding on slot trigger e0516d5b). Merged riders for the next composition: E195 selective QMV plan (0.181 ms/round ranked). Pending: E198 fused-SDPA terminal (Stage 4 null, liveness diagnosis); E192+E194 composition; E200 depth pricing (assigned).",
- "lastAdvisorUpdate": "2026-08-24T20:35Z Entry 403: E198 Stage-3 live-path + Stage-4 ABBA RETRACTED (HARNESS DEFECT 28 recurrence: MLXFAST_ arm switch silently dropped by worker env sanitizer; both arms ran shipped code). RULE 391 arm-witness requirement codified. Repair session approved.",
- "ledgerEntry": 403,
+ "lastAdvisorUpdate": "2026-08-24T20:55Z Entry 404: E200 desk pricing decisively negative \u2014 step-priced greedy depth rule is self-blocking (collapses deep prompts to the paid cap-4 schedule, -4.3%); price-side path to the FINDING 515 oracle ceiling CLOSED, lookahead scheduling is the surviving mechanism; E197 chain-convention S_k has depth-selection bias (survival-pinned latent-q is the corrected desk instrument). No timed ABBA (RULE 79). E193 routing wip+blocked awaiting receipt 2681c3ac.",
+ "ledgerEntry": 404,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2826,5 +2826,20 @@
   ],
   "guard": "RULE 391",
   "ledgerEntry": 403
+ },
+ "e200DeskPriceNegative": {
+  "status": "PROVISIONAL \u2014 exact offline replay of real per-round ema=/m= trace pending (E200 steps 1-3)",
+  "harness": "ranked",
+  "anchor": "receipt A 3.70784519415395, cap 7",
+  "result": {
+   "smoothStepLevelHeld": "-5.13%",
+   "smoothStepMeasuredLevel": "-3.49%",
+   "globalArgmin": "-0.36%",
+   "shapeSweepMax": "+0.17% at w=0.1 (< +0.2% floor)"
+  },
+  "mechanism": "honest width-6 step price makes the depth-4 guard bar ~0.99 (depends only on 1+expected, larger for strong rounds); one-step hill climb blocks strong rounds hardest; deep prompts collapse to the paid cap-4 schedule. Price side cannot express selective step-jumping; needs lookahead.",
+  "consequence": "FINDING 515 oracle ceiling (+3.02%) unreachable via price-side greedy; lookahead scheduler queued",
+  "instrumentCaveat": "E197 chain-convention S_k over-values added depth (selection bias; biased sweep +3.91%). Survival-pinned latent-q is the corrected desk instrument for schedule-change pricing. Softens desk cap-8 expectation; E199 receipt decides regardless.",
+  "ledgerEntry": 404
  }
 }
