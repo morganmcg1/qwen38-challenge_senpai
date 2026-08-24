@@ -1,0 +1,59 @@
+==============================================================================
+E203 POSITIVE CONTROL  does the shipped loop manufacture structure?
+==============================================================================
+  input: fixed-depth-7 run lengths of the SAME prompt, permuted, so
+         the input carries no serial structure at all
+  loop:  replayed costModelDepth + recordAcceptOutcome (E128)
+  draws: 400 permutations per prompt
+
+  rho1: lag-1 autocorrelation of accepted length.  carry: the run
+  remainder survives a censored round, which is what the token
+  stream does; discard: it does not, the conservative reading.
+  prompt            trunc | rho1_obs  sim_disc sim_carry |  trk_obs  sim_disc sim_carry
+  benchfixture      0.792 |   0.5501    0.0504   -0.0491 |   0.5969    0.2614    0.4065
+  dramatic          0.021 |   0.0436    0.0427    0.1231 |   0.1619    0.1671    0.1986
+  english           0.014 |   0.0398    0.0459    0.1328 |   0.1566    0.1243    0.1781
+  medicine          0.010 |   0.1411    0.0541    0.1176 |   0.1455    0.1578    0.1844
+  narrative         0.005 |   0.1490    0.0436    0.0863 |   0.1313    0.1179    0.1515
+  natural_history   0.000 |   0.0141    0.0657    0.1073 |   0.1202    0.1249    0.1396
+  philosophy        0.005 |   0.0939    0.0305    0.0612 |   0.0737    0.0823    0.1091
+  technical         0.005 |   0.1946    0.0356    0.0990 |   0.2617    0.1415    0.1783
+  travel            0.005 |   0.1302    0.0431    0.1037 |   0.1428    0.1345    0.1658
+
+  POOLED (weighted by rounds).  The simulated input is EXCHANGEABLE
+  by construction, so anything the simulated columns show is
+  manufactured by the rule's own depth feedback and censoring.
+   statistic         shipped sim discard  sim carry
+   lag-1 acf          0.1168     0.0457     0.0980
+   tracker corr       0.1662     0.1361     0.1725
+
+  FIDELITY of the simulated leg against the real adaptive leg
+   prompt           depth_obs depth_sim |  acc_obs  acc_sim | cens_obs cens_sim
+   benchfixture         6.359     5.539 |    5.577    4.107 |    0.782    0.604
+   dramatic             2.692     2.475 |    1.286    1.311 |    0.344    0.360
+   english              2.337     2.259 |    1.081    1.129 |    0.317    0.337
+   medicine             2.638     2.482 |    1.236    1.245 |    0.328    0.353
+   narrative            2.364     2.257 |    1.174    1.140 |    0.352    0.349
+   natural_history      2.204     2.159 |    0.969    0.997 |    0.323    0.334
+   philosophy           2.572     2.308 |    1.236    1.158 |    0.328    0.343
+   technical            2.516     2.430 |    1.296    1.275 |    0.354    0.364
+   travel               2.470     2.324 |    1.226    1.210 |    0.343    0.355
+
+READING
+  The `carry` column is the physically correct accounting: when the
+  adaptive rule offers a depth shorter than the latent run, the run
+  remainder is not destroyed, it is accepted on the next round.  With
+  that accounting the loop manufactures pooled rho1 = 0.0980 out of a
+  provably exchangeable input, against 0.1168 observed on the real
+  adaptive leg, i.e. 84% of the observed lag-1 autocorrelation.  It
+  manufactures tracker correlation 0.1725 against 0.1662 observed,
+  i.e. all of it.
+  benchfixture is the one prompt where the observed value is far above
+  the manufactured value, and it is also the one prompt that is 79%
+  truncated at depth 7, so its fixed-depth-7 input is itself censored
+  and the control cannot be trusted there.
+  Conclusion: the apparent within-prompt serial structure on the
+  adaptive arm is an artefact of the rule's own depth feedback plus
+  censoring.  It is not exploitable signal.  The open-loop p7 arm,
+  which has ~1% censoring, is the arm that carries the real answer,
+  and there rho1 = +0.0014.

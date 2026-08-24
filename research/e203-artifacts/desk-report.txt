@@ -1,0 +1,258 @@
+==============================================================================
+E203  within-prompt lookahead depth rules  DESK REPORT
+==============================================================================
+harness   = ranked   (all score numbers are ranked-equation medians)
+gpu_used  = false    (no GPU work, no timed leg, no build)
+base_sha  = 7f10e147f2e270a8893c7c3a4ebe0e05cdc2fdd8
+verdict   = NOT USEFUL, terminal at both stopping-rule branches
+
+------------------------------------------------------------------------------
+1  QUESTION
+------------------------------------------------------------------------------
+Does a prompt's accepted-length stream carry serial structure that a causal
+within-prompt rule could turn into extra ranked score, and if it does, is the
+ceiling of that structure worth an implementation?
+
+The comparator is NOT receipt A.  FINDING 523 established that the best static
+global cap is 8, worth 3.829386, which is +3.28% over receipt A (paid, cap 7,
+3.70784519415395).  A within-prompt rule must beat cap 8, because cap 8 costs
+nothing to implement.  The assignment's promotion bar is +0.5% over cap 8.
+
+------------------------------------------------------------------------------
+2  CORPUS AND ITS PROVENANCE
+------------------------------------------------------------------------------
+research/out/e168/ is the only multi-prompt per-round trace set in the repo.
+
+  arm p7     fixed_draft_depth=7, open loop.  9 prompts, 512 decode tokens
+             each, 73..234 traced rounds, ~1% of rounds censored at the depth
+             limit.  This is the PRIMARY arm: the depth does not react to the
+             acceptance history, so the accepted-length stream is close to the
+             latent process.
+  arm adapt  the shipped adaptive rule, closed loop, 32..35% censoring.  This
+             is the SECONDARY arm and it is confounded by its own feedback.
+
+Provenance.  The traces were produced at commit 5a5eb96 in an r3 workspace
+with dirty=1 and phase_trace=1.  Two consequences:
+
+  a) No timing from those runs is used anywhere in E203.  meta.txt records
+     timing_claims_permitted=false and trace_perturbs_timing=true, and E203
+     honours that: only the accepted-length streams are read.  Every second in
+     this report comes from the E201/E197 cost laws refit on the current base.
+  b) The acceptance process is unchanged between 5a5eb96 and BASE_SHA.  The
+     proposal head is byte-identical (both manifests declare
+     hf:amal-david/qwen38-mtp-head-q2-q4-rerank-v1@ae62827, sha256
+     559b24eb...), and the only submitted-surface changes in between are the
+     exactness-preserving xsums fusion in Qwen35.swift and scheduling work in
+     Qwen36MTPBlockSession.swift.  The head proposes the same tokens and the
+     target accepts the same prefix, so the accepted-length streams transfer.
+
+Transfer caveat, stated plainly.  These 9 prompts are the local prose fixtures
+(research/e11_prose_gate_*), not the 8 hidden ranked prompts (plutarch, drama,
+travel, beagle, republic, essays, medicine, botany).  E203 measures the SHAPE
+of within-prompt serial dependence on local prose and prices the ceiling with
+ranked cost laws.  A hidden prompt could in principle be more autocorrelated
+than any of these 9.  Section 6 shows how far it would have to be.
+
+------------------------------------------------------------------------------
+3  STAGE 0a  is there any structure?      artifacts stage0a-p7.{json,txt}
+------------------------------------------------------------------------------
+All tests are against a within-prompt permutation null (exchangeability), so a
+prompt's own marginal acceptance rate cannot create a false positive.
+
+  autocorrelation of accepted length, arm p7, 1741 rounds pooled
+    lag 1                      rho1 = +0.0014   (null sd 0.0239)
+    max over lags 1..16               +0.0429 at lag 15, p = 0.286
+                                      against the max-over-lags null
+  drift, first half vs second half of each prompt, vs block-16 null
+    pooled                            +0.0514, p = 0.058
+    sign agreement                    7/9 positive, binomial p = 0.180
+                                      technical +0.262, benchfixture -0.220
+  one-step-ahead prediction skill vs the causal running mean
+    EMA, alpha in 0.05..0.70          NEGATIVE at every alpha
+                                      best alpha 0.05 -> -0.0018
+    causal expanding-window AR(L)     NEGATIVE at every order
+                                      best L = 1 -> -0.0173
+  the shipped tracker's own forecast
+    corr(EMA forecast, realized accepted length), 1741 rounds
+                                      +0.0085   (95% band +-0.047)
+                                      only benchfixture (+0.269) tracks
+  leave-one-prompt-out
+    rho1 range                        -0.019 .. +0.017
+    EMA skill range                   -0.008 .. +0.001
+
+Reading.  The p7 accepted-length stream is compatible with exchangeability at
+every lag tested.  Neither an EMA nor a causal AR beats the running mean, so
+there is nothing for a lookahead rule to condition on.  The drift term is the
+only marginally interesting statistic and it fails its own sign test.
+
+STRUCTURE BUDGET.  Converting the 95% upper confidence bounds into the share
+of accepted-length variance a perfect causal predictor could explain:
+
+    from rho1                         psi <= 0.2324%
+    from best-of-16-lags              psi <= 0.8033%
+
+Stage 0a therefore fires the first branch of the stopping rule on its own.
+Stage 0b was still run, because a small psi is only worthless if the score is
+also insensitive to it, and that has to be priced rather than assumed.
+
+------------------------------------------------------------------------------
+4  THE CLOSED-LOOP ARM IS A TRAP     artifacts stage0a-adapt.{json,txt},
+                                               censoring-control.{json,txt}
+------------------------------------------------------------------------------
+The adapt arm looks like it has strong structure:
+
+    rho1 = +0.1167 (p < 1e-4),  EMA skill +0.010 (positive),
+    AR(1) skill +0.033,  tracker corr +0.2512
+
+A positive control settles what that is.  research/e203_censoring_control.py
+feeds the replayed shipped closed loop (E128 costModelDepth +
+recordAcceptOutcome) a provably exchangeable input: the same prompt's
+fixed-depth-7 run lengths, permuted, 400 draws.  Anything the output shows is
+manufactured by the rule itself.  Two accountings for a censored round are
+reported; `carry` is the physically correct one, because a run remainder that
+exceeds the offered depth is accepted on the following round rather than lost.
+
+    statistic          shipped   sim discard   sim carry
+    lag-1 acf           0.1168      0.0457      0.0980
+    tracker corr        0.1662      0.1361      0.1725
+
+The loop manufactures 84% of the observed lag-1 autocorrelation and all of the
+observed tracker correlation out of an input with none.  Simulator fidelity is
+good (e.g. english: mean depth 2.337 observed / 2.259 simulated, accepted
+1.081 / 1.129, censored fraction 0.317 / 0.337), so the control is credible.
+
+The one prompt where observed far exceeds manufactured is benchfixture, and
+benchfixture is 79% truncated even at fixed depth 7, so its p7 input is itself
+censored and the control does not apply there.
+
+Conclusion: the adaptive arm's apparent within-prompt structure is an artefact
+of depth feedback plus censoring.  Any experiment that measures acceptance
+autocorrelation on a closed-loop trace will find structure that is not there.
+
+------------------------------------------------------------------------------
+5  STAGE 0b  what is the ceiling worth?   artifact stage0b-ceiling.json
+------------------------------------------------------------------------------
+Pricing uses the E201 instrument imported unchanged
+(e201_online_cap.build_instrument / cost_laws / cap_grid), which is the same
+survival-grid instrument that produced FINDING 520 and 523.
+
+VALIDATION GATE, the same bar FINDING 520 had to clear.  Receipt channel
+sigma = 0.689%.
+
+    arm                       instrument     paid receipt     delta
+    cap 7   (in sample)       3.70784519     3.70784519      -0.0000%
+    cap 4   (out of sample)   3.531905       3.547429        -0.44%
+    cap 5   (out of sample)   3.532206       3.523636        +0.24%
+    PASS: both out-of-sample errors inside the receipt channel.
+
+CEILING ARMS, smooth 9-row cost law (step9 law in brackets):
+
+  arm                                     median      vs A     vs cap8
+  best constant depth, global d=8       3.744526    +0.99%     -2.22%
+  best constant depth, per prompt       3.744526    +0.99%     -2.22%
+  SHIPPED greedy price, cap 8           3.829386    +3.28%     +0.00%
+  oracle_q, knows the round's rate      3.963760    +6.90%     +3.51%
+  oracle_a, knows the round's run       4.368830   +17.83%    +14.09%
+    [step9: const global d=4 3.570432; const per prompt 3.607890;
+     cap8 3.681378; oracle_q 3.781543 +2.72%; oracle_a 4.120362 +11.92%]
+
+oracle_a is the assignment's literal oracle: it is told the realized run length
+before it picks the depth.  It is not attainable and it is not the ceiling for
+a causal rule; it is quoted so the gap to oracle_q is visible.
+
+oracle_q is the right upper envelope for a rule that predicts the round's
+latent acceptance rate perfectly.  It is worth +3.51% over cap 8.  That is the
+value of PERFECT within-round information, i.e. psi = 100%.
+
+THE E203 ANSWER.  A causal rule cannot have psi = 100%; Stage 0a bounds psi at
+0.23%..0.80%.  Interpolating the ceiling on the shipped cap-8 base at the
+measured psi:
+
+    psi                       ceiling      vs cap 8
+    0.2324%  (rho1 bound)    3.829726      +0.009%
+    0.8033%  (any-lag bound) 3.830560      +0.031%
+    1%                       3.830848      +0.038%
+    5%                       3.836666      +0.190%
+    10%                      3.843878      +0.378%
+    25%                      3.865119      +0.933%
+    50%                      3.899306      +1.826%
+    100%     (= oracle_q)    3.963760      +3.509%
+
+BREAK-EVEN.  The evidence a within-prompt rule would need to clear the bars:
+
+    to reach +0.2% over cap 8   psi >= 5.26%    [step9: 7.40%]
+    to reach +0.5% over cap 8   psi >= 13.29%   [step9: 18.49%]
+
+Measured 95% upper bound on psi is 0.2324% (lag 1) to 0.8033% (best of 16
+lags).  The shortfall is a factor of 6.5x to 22.6x for the +0.2% bar and 16.5x
+to 57x for the +0.5% bar.  This is not a near miss.
+
+------------------------------------------------------------------------------
+6  HOW WRONG WOULD THE TRANSFER CAVEAT HAVE TO BE?
+------------------------------------------------------------------------------
+For the hidden prompts to reach even the weakest useful bar, their accepted
+length would need a causal predictable variance share of 5.26% against the
+0.23% measured here at lag 1.  In rho1 terms that is rho1 ~ 0.23 sustained,
+against +0.0014 measured, i.e. the same magnitude as the value the closed-loop
+control MANUFACTURES from an exchangeable input.  Nothing in the 9-prompt
+spread supports that: the per-prompt rho1 range on p7 spans a band consistent
+with zero, and leave-one-prompt-out moves the pooled estimate by less than
+0.02.  The corpus is local prose and the hidden set is also prose; the two are
+not so different that a 100x change in serial dependence is credible.
+
+------------------------------------------------------------------------------
+7  STOPPING RULE
+------------------------------------------------------------------------------
+The assignment's rule:
+  Stage 0a compatible with exchangeability  ->  terminal NOT USEFUL
+  OR Stage 0b ceiling - cap 8 < +0.5%       ->  terminal NOT USEFUL
+
+BOTH branches fire.
+  Stage 0a: rho1 = +0.0014, max-lag p = 0.286, EMA and AR skill both negative.
+  Stage 0b: ceiling at the measured psi is +0.009% to +0.031% over cap 8, and
+            +0.5% would need 16x to 57x more structure than exists.
+
+Stage 1 is NOT entered.  No GPU time, no build, no submitted-surface change.
+The within-prompt lookahead / drift / EMA family is closed for this base.
+
+------------------------------------------------------------------------------
+8  SECONDARY FINDING, reported because it is uncomfortable
+------------------------------------------------------------------------------
+On the open-loop p7 corpus the SHIPPED EMA tracker's own forecast correlates
++0.0085 with the realized accepted length over 1741 rounds, inside a +-0.047
+band.  The tracker is not tracking anything within a prompt.  The E201/E197
+instrument nevertheless credits the shipped adaptive rule with +2.27% over the
+best constant depth (3.829386 vs 3.744526).  Both statements can be true: the
+instrument's credit can come from the rule's BETWEEN-prompt and marginal-rate
+behaviour, or from the depth trajectory it happens to walk, rather than from
+any within-prompt prediction.  E203 does not resolve which, and it is out of
+this assignment's scope to resolve it.
+
+SUGGESTED FOLLOW-UP, NOT IMPLEMENTED
+  Test whether replacing the within-prompt EMA adaptation with a well-chosen
+  constant or purely between-prompt depth policy is neutral or better on the
+  ranked score.  This sits on the E199 cap-8 axis, it is a SUBTRACTION rather
+  than an addition, and it needs a GPU confirmation because the instrument
+  cannot arbitrate its own credit assignment.  If the tracker really collects
+  nothing within a prompt, removing it is free simplification; if it collects
+  something, the mechanism is not the one its name implies and it is worth
+  knowing what it is.
+
+------------------------------------------------------------------------------
+9  REPRODUCTION
+------------------------------------------------------------------------------
+  python3 research/e203_stage0a.py --arm p7 --fixed-depth 7 \
+      --draws 20000 --ar-draws 600 --seed 203 \
+      --json research/e203-artifacts/stage0a-p7.json
+  python3 research/e203_stage0a.py --arm adapt \
+      --draws 20000 --ar-draws 600 --seed 203 \
+      --json research/e203-artifacts/stage0a-adapt.json
+  python3 research/e203_stage0b.py \
+      --json research/e203-artifacts/stage0b-ceiling.json
+  python3 research/e203_censoring_control.py --draws 400 \
+      --json research/e203-artifacts/censoring-control.json
+
+  research/e203_traces.py is the shared reader.  e128_replay.read_rounds could
+  not parse the e168 traces: its SIGNAL_RE expects `streak=N cap=N` and these
+  traces emit `streak=0 offer=8 wcap=7 cap=7`, so E203 uses a generic
+  key=value reader instead.  No existing research module was modified.
