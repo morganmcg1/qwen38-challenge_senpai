@@ -122,6 +122,12 @@ public func attentionWithCacheUpdate(
         if queries.dim(0) == 1, qL >= 6, qL <= 9, kL >= qL,
            case .causal = mask
         {
+            if let fused = FusedRowAmortizedSDPA.attend(
+                queries: queries, keys: cachedKeys, values: cachedValues,
+                scale: scale)
+            {
+                return fused
+            }
             let split = 5
             let kSplit = kL - (qL - split)
             let outA = MLXFast.scaledDotProductAttention(
@@ -148,6 +154,238 @@ public func attentionWithCacheUpdate(
             mask: mask
         )
     }
+}
+
+/// One-pass, row-amortized fused SDPA for the wide-decode split (E198).
+///
+/// The vendored `sdpa_vector` kernel gives one threadgroup to every (query
+/// head, query row) pair, so each of the `gqa * qL` threadgroups that share a
+/// KV head streams the whole KV window itself. At the scored decode cell that
+/// load traffic is ~30x redundant and it is the binding resource: the dispatch
+/// sits at ~9% ALU and ~9% DRAM while asking for 727 GB/s (FINDING 507).
+///
+/// This kernel removes the row half of that redundancy. It keeps the vendored
+/// per-row arithmetic exactly — 32 simdgroups x 32 lanes, the same
+/// key-to-simdgroup assignment, the same online-softmax update order, the same
+/// cross-simdgroup max/sum reduction and transposed output combine — and only
+/// holds the M query rows of one head in registers, so a KV tile is read once
+/// per head instead of once per row. Every row therefore reproduces the
+/// two-call split bit for bit, including the top-2 evidence the split exists to
+/// protect (`attentionWithCacheUpdate`, the qL 6...9 branch).
+///
+/// Bit-exactness needs the full 1024-thread threadgroup: a narrower group would
+/// change which keys a simdgroup accumulates and so change the summation order.
+/// Register pressure that pushes the pipeline's `maxTotalThreadsPerThreadgroup`
+/// below 1024 is therefore a hard wall, not a slow path, and MLX reports it as
+/// a thrown dispatch error.
+public enum FusedRowAmortizedSDPA {
+    public static let headDim = 256
+    public static let bn = 32
+    public static let bd = 32
+
+    /// Query-row counts the fused kernel serves. `MLXFAST_QWEN_FUSED_SDPA_ROWS`
+    /// overrides it for measurement arms; an empty value disables the kernel
+    /// and restores the two-call split.
+    public static let enabledRows: Set<Int> = {
+        guard let raw = ProcessInfo.processInfo
+            .environment["MLXFAST_QWEN_FUSED_SDPA_ROWS"]
+        else {
+            return [6]
+        }
+        return Set(raw.split(separator: ",").compactMap { Int($0) })
+    }()
+
+    private static let kernel = MLXFast.metalKernel(
+        name: "qwen_mtp_fused_row_amortized_sdpa",
+        inputNames: ["queries", "keys", "values", "scale"],
+        outputNames: ["out"],
+        source: kernelSource,
+        header: "#include <metal_simdgroup>\n",
+        ensureRowContiguous: false
+    )
+
+    /// The fused output for a `[1, H, M, 256]` causal wide-decode step, or nil
+    /// when this shape is not served and the caller must keep the split.
+    ///
+    /// `serving` is the set of query-row counts to fuse. Research harnesses
+    /// pass an explicit set to price a width the shipped default does not
+    /// serve; production takes the default.
+    public static func attend(
+        queries: MLXArray, keys: MLXArray, values: MLXArray, scale: Float,
+        serving: Set<Int> = enabledRows
+    ) -> MLXArray? {
+        let rows = queries.dim(2)
+        guard serving.contains(rows) else { return nil }
+        guard queries.dim(0) == 1, keys.dim(0) == 1, values.dim(0) == 1,
+            queries.dim(3) == headDim, keys.dim(3) == headDim,
+            values.dim(3) == headDim,
+            queries.dtype == .bfloat16, keys.dtype == .bfloat16,
+            values.dtype == .bfloat16
+        else { return nil }
+
+        let heads = queries.dim(1)
+        let kvHeads = keys.dim(1)
+        guard kvHeads > 0, heads % kvHeads == 0, values.dim(1) == kvHeads,
+            values.dim(2) == keys.dim(2), keys.dim(2) >= rows
+        else { return nil }
+
+        // The kernel reads each thread's 8 head-dim elements as one contiguous
+        // run, which is what every cache layout in this tree provides.
+        guard keys.strides[3] == 1, values.strides[3] == 1 else { return nil }
+
+        return kernel(
+            [queries, keys, values, MLXArray(scale)],
+            template: [("M", rows)],
+            grid: (bd, bn, heads),
+            threadGroup: (bd, bn, 1),
+            outputShapes: [[1, heads, rows, headDim]],
+            outputDTypes: [.bfloat16]
+        )[0]
+    }
+
+    /// The kernel body, public so an exactness harness can build its
+    /// positive control from the exact shipped source with one substitution.
+    public static let kernelSource = """
+        constexpr int BN = 32;
+        constexpr int BD = 32;
+        constexpr int D = 256;
+        constexpr int QK = D / BD;
+        constexpr int VP = D / BD;
+        // Rows transposed through threadgroup memory in one round. Six rows
+        // cost 24 KiB and hold the combine at the vendored kernel's 16
+        // barriers for M = 6; wider M adds rounds, never memory.
+        constexpr int TG_ROWS = M < 6 ? M : 6;
+
+        threadgroup float max_scores[M][BN];
+        threadgroup float sum_exp_scores[M][BN];
+        threadgroup float outputs[TG_ROWS * BN * BD];
+
+        const int simd_gid = int(simdgroup_index_in_threadgroup);
+        const int simd_lid = int(thread_index_in_simdgroup);
+        const int q_head = int(threadgroup_position_in_grid.z);
+
+        const int num_q_heads = int(queries_shape[1]);
+        const int num_kv_heads = int(keys_shape[1]);
+        const int kv_head = q_head / (num_q_heads / num_kv_heads);
+        const int N = int(keys_shape[2]);
+
+        const int64_t q_seq_stride = queries_strides[2];
+        const int64_t q_dim_stride = queries_strides[3];
+        const int64_t k_seq_stride = keys_strides[2];
+        const int64_t v_seq_stride = values_strides[2];
+
+        thread float q[M][QK];
+        thread float o[M][VP];
+        thread float row_max[M];
+        thread float row_sum[M];
+
+        const int64_t q_base = int64_t(q_head) * queries_strides[1]
+            + int64_t(simd_lid * QK) * q_dim_stride;
+        for (int r = 0; r < M; r++) {
+            const int64_t base = q_base + int64_t(r) * q_seq_stride;
+            for (int j = 0; j < QK; j++) {
+                q[r][j] = scale
+                    * static_cast<float>(queries[base + int64_t(j) * q_dim_stride]);
+            }
+            for (int j = 0; j < VP; j++) {
+                o[r][j] = 0;
+            }
+            row_max[r] = Limits<float>::finite_min;
+            row_sum[r] = 0;
+        }
+
+        const device bfloat16_t* k_ptr = keys
+            + int64_t(kv_head) * keys_strides[1]
+            + int64_t(simd_gid) * k_seq_stride + int64_t(simd_lid * QK);
+        const device bfloat16_t* v_ptr = values
+            + int64_t(kv_head) * values_strides[1]
+            + int64_t(simd_gid) * v_seq_stride + int64_t(simd_lid * VP);
+        const int64_t inner_k_stride = int64_t(BN) * k_seq_stride;
+        const int64_t inner_v_stride = int64_t(BN) * v_seq_stride;
+
+        // Bottom-right causal alignment: row r attends keys 0 ... N - M + r.
+        // Row M - 1 accepts every key this loop visits, so the tile is always
+        // live and both loads stay unconditional.
+        for (int i = simd_gid; i < N; i += BN) {
+            float kt[QK];
+            for (int j = 0; j < QK; j++) {
+                kt[j] = static_cast<float>(k_ptr[j]);
+            }
+            float vt[VP];
+            for (int j = 0; j < VP; j++) {
+                vt[j] = static_cast<float>(v_ptr[j]);
+            }
+            for (int r = 0; r < M; r++) {
+                if (i <= N - M + r) {
+                    float score = 0;
+                    for (int j = 0; j < QK; j++) {
+                        score += q[r][j] * kt[j];
+                    }
+                    score = simd_sum(score);
+
+                    float new_max = max(row_max[r], score);
+                    float factor = fast::exp(row_max[r] - new_max);
+                    float exp_score = fast::exp(score - new_max);
+                    row_max[r] = new_max;
+                    row_sum[r] = row_sum[r] * factor + exp_score;
+                    for (int j = 0; j < VP; j++) {
+                        o[r][j] = o[r][j] * factor + exp_score * vt[j];
+                    }
+                }
+            }
+            k_ptr += inner_k_stride;
+            v_ptr += inner_v_stride;
+        }
+
+        if (simd_lid == 0) {
+            for (int r = 0; r < M; r++) {
+                max_scores[r][simd_gid] = row_max[r];
+                sum_exp_scores[r][simd_gid] = row_sum[r];
+            }
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+
+        // row_max becomes this lane's rescale factor and row_sum the shared
+        // denominator, exactly as the vendored kernel reuses its own locals.
+        for (int r = 0; r < M; r++) {
+            float lane_max = max_scores[r][simd_lid];
+            float new_max = simd_max(lane_max);
+            row_max[r] = fast::exp(lane_max - new_max);
+            row_sum[r] = simd_sum(sum_exp_scores[r][simd_lid] * row_max[r]);
+        }
+
+        for (int r0 = 0; r0 < M; r0 += TG_ROWS) {
+            for (int j = 0; j < VP; j++) {
+                for (int s = 0; s < TG_ROWS; s++) {
+                    if (r0 + s < M) {
+                        outputs[s * BN * BD + simd_lid * BD + simd_gid]
+                            = o[r0 + s][j];
+                    }
+                }
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+                for (int s = 0; s < TG_ROWS; s++) {
+                    if (r0 + s < M) {
+                        const int r = r0 + s;
+                        float acc = simd_sum(
+                            outputs[s * BN * BD + simd_gid * BD + simd_lid]
+                            * row_max[r]);
+                        o[r][j] = row_sum[r] == 0 ? acc : acc / row_sum[r];
+                    }
+                }
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+            }
+        }
+
+        if (simd_lid == 0) {
+            for (int r = 0; r < M; r++) {
+                device bfloat16_t* out_ptr = out
+                    + (int64_t(q_head) * M + r) * D + simd_gid * VP;
+                for (int j = 0; j < VP; j++) {
+                    out_ptr[j] = static_cast<bfloat16_t>(o[r][j]);
+                }
+            }
+        }
+        """
 }
 
 /// Custom-mask guard for the CBv2 branch of `attentionWithCacheUpdate` (see
