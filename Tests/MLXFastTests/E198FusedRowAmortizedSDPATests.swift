@@ -345,32 +345,71 @@ struct E198FusedExactnessTests {
 
 // MARK: - Stage 2: isolated dispatch pricing
 
-/// One macmon sample. The pricing session runs ABBA-counterbalanced under no
-/// thermal gate, so the entry and exit temperature of every arm is the thermal
-/// record required for an ungated timed arm.
-private func e198GPUTemperature() -> Double? {
-    let binary =
-        ProcessInfo.processInfo.environment["MLXFAST_E198_MACMON"]
-        ?? "/opt/homebrew/bin/macmon"
-    guard FileManager.default.isExecutableFile(atPath: binary) else { return nil }
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: binary)
-    process.arguments = ["pipe", "-s1"]
-    let pipe = Pipe()
-    process.standardOutput = pipe
-    process.standardError = FileHandle.nullDevice
-    do { try process.run() } catch { return nil }
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    process.waitUntilExit()
-    for line in String(decoding: data, as: UTF8.self).split(separator: "\n") {
-        guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)),
-            let root = object as? [String: Any],
-            let temp = root["temp"] as? [String: Any],
-            let gpu = temp["gpu_temp_avg"] as? Double
-        else { continue }
-        return gpu
+/// A streaming macmon sampler. The pricing session runs ABBA-counterbalanced
+/// under no thermal gate, so the entry and exit temperature of every arm is the
+/// required thermal record. One `macmon pipe` process feeds every reading, so a
+/// reading costs nothing at the arm boundary and is at most one interval stale.
+/// A single blocking `macmon pipe -s1` call costs about 2.7 s here and would
+/// insert more idle time between arms than the arms themselves take.
+private final class E198TemperatureSampler {
+    private let process = Process()
+    private let pipe = Pipe()
+    private let lock = NSLock()
+    private var latest: Double?
+    private var pending = Data()
+
+    static func binaryPath() -> String? {
+        var candidates: [String] = []
+        if let explicit = ProcessInfo.processInfo.environment["MLXFAST_E198_MACMON"] {
+            candidates.append(explicit)
+        }
+        candidates.append("/opt/homebrew/bin/macmon")
+        candidates.append("/usr/local/bin/macmon")
+        candidates.append(
+            NSHomeDirectory() + "/bin/macmon")
+        return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
-    return nil
+
+    init?(intervalMilliseconds: Int = 500) {
+        guard let binary = Self.binaryPath() else { return nil }
+        process.executableURL = URL(fileURLWithPath: binary)
+        process.arguments = ["pipe", "-s0", "-i", String(intervalMilliseconds)]
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            self?.consume(handle.availableData)
+        }
+        do { try process.run() } catch { return nil }
+    }
+
+    private func consume(_ data: Data) {
+        guard !data.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        pending.append(data)
+        while let newline = pending.firstIndex(of: 0x0A) {
+            let line = pending[pending.startIndex ..< newline]
+            pending = pending[pending.index(after: newline)...]
+            if let object = try? JSONSerialization.jsonObject(with: Data(line)),
+                let root = object as? [String: Any],
+                let temp = root["temp"] as? [String: Any],
+                let gpu = temp["gpu_temp_avg"] as? Double
+            {
+                latest = gpu
+            }
+        }
+    }
+
+    func read() -> Double? {
+        lock.lock()
+        defer { lock.unlock() }
+        return latest
+    }
+
+    func stop() {
+        pipe.fileHandleForReading.readabilityHandler = nil
+        if process.isRunning { process.terminate() }
+    }
 }
 
 private enum E198Mode: String {
@@ -517,6 +556,10 @@ struct E198DispatchPricingTests {
         eval(settleWeights, settleInput)
         let settle = { eval(matmul(settleInput, settleWeights)) }
 
+        // Started before warmup so the first block already has a reading.
+        let sampler = E198TemperatureSampler()
+        defer { sampler?.stop() }
+
         for _ in 0 ..< 40 { settle() }
         for cell in cells {
             for _ in 0 ..< warmup { cell.run() }
@@ -529,11 +572,11 @@ struct E198DispatchPricingTests {
             for _ in 0 ..< 20 { settle() }
             for (position, index) in order.enumerated() {
                 let cell = cells[index]
-                let entryTemperature = e198GPUTemperature()
+                let entryTemperature = sampler?.read()
                 let start = DispatchTime.now().uptimeNanoseconds
                 for _ in 0 ..< reps { cell.run() }
                 let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start)
-                let exitTemperature = e198GPUTemperature()
+                let exitTemperature = sampler?.read()
                 samples.append([
                     "arm": cell.arm, "mode": cell.mode.rawValue, "m": cell.m,
                     "kv": cell.kv, "kL": cell.kL, "chain": chain,
@@ -554,6 +597,7 @@ struct E198DispatchPricingTests {
                 "cool_gate_passed_real_gate": false,
                 "gate_qualified_for_timing": false,
                 "abba_counterbalanced": true,
+                "temperature_source": E198TemperatureSampler.binaryPath() ?? "unavailable",
                 "blocks": blocks, "reps": reps, "warmup": warmup, "chain": chain,
                 "full_attention_layers": E198Probe.fullAttentionLayers,
                 "gqa_factor": E198Probe.gqa, "split_row": E198Probe.split,

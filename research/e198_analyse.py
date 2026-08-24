@@ -80,6 +80,32 @@ def reduce_samples(timing):
     return reduced
 
 
+def thermal_record(timing):
+    """Entry-temperature spread, which an ungated ABBA session must report."""
+    entries = [
+        sample["entry_gpu_temperature_c"]
+        for sample in timing["samples"]
+        if sample.get("entry_gpu_temperature_c", -1) > 0
+    ]
+    exits = [
+        sample["exit_gpu_temperature_c"]
+        for sample in timing["samples"]
+        if sample.get("exit_gpu_temperature_c", -1) > 0
+    ]
+    if not entries:
+        return {"available": False}
+    return {
+        "available": True,
+        "entry_min_c": min(entries),
+        "entry_max_c": max(entries),
+        "entry_spread_c": max(entries) - min(entries),
+        "entry_median_c": statistics.median(entries),
+        "exit_min_c": min(exits) if exits else None,
+        "exit_max_c": max(exits) if exits else None,
+        "samples": len(entries),
+    }
+
+
 def price(reduced, mode):
     """Per-cell fused-vs-pair pricing against the FINDING 507 floor."""
     cells = []
@@ -128,7 +154,7 @@ def project(cells, enabled_widths):
     A scored 512-token leg sweeps the cache offset from 512 to 1024, so the
     two measured cells bracket the leg. Averaging them is an interpolation
     WITHIN the one-pass family; the kL = 1024 family boundary is never
-    crossed.
+    crossed, and the fused path declines above it.
     """
     by_m = {}
     for cell in cells:
@@ -186,15 +212,23 @@ def main():
     if Path(args.exactness).exists():
         exactness = load(args.exactness)
         report["exactness"] = exactness
+        all_cells = exactness.get("cells", [])
+        served = [cell for cell in all_cells if cell.get("served")]
+        declined = [cell for cell in all_cells if not cell.get("served")]
         report["exactness_verdict"] = {
-            "cells": len(exactness.get("cells", [])),
+            "cells": len(all_cells),
+            "served_cells": len(served),
+            "declined_cells": len(declined),
             "all_zero_differing": all(
-                cell["differing_elements"] == 0 for cell in exactness.get("cells", [])
+                cell["differing_elements"] == 0 for cell in served
             ),
             "control_fired_everywhere": all(
-                cell["control_differing_elements"] > 1000
-                for cell in exactness.get("cells", [])
+                cell["control_differing_elements"] > 1000 for cell in served
             ),
+            "declines_only_at_two_pass_boundary": all(
+                cell.get("declined_at_two_pass_boundary") for cell in declined
+            ),
+            "served_key_lengths": sorted(cell["kL"] for cell in served),
         }
 
     if Path(args.timing).exists():
@@ -204,6 +238,7 @@ def main():
         report["blocks"] = timing.get("blocks")
         report["reps"] = timing.get("reps")
         report["chain"] = timing.get("chain")
+        report["thermal_record"] = thermal_record(timing)
         report["modes"] = {}
         for mode in ("serial", "indep"):
             cells = price(reduced, mode)
@@ -261,6 +296,14 @@ def main():
         if verdict:
             summary["exactness/all_zero_differing"] = verdict["all_zero_differing"]
             summary["exactness/control_fired"] = verdict["control_fired_everywhere"]
+            summary["exactness/declines_only_at_two_pass_boundary"] = verdict[
+                "declines_only_at_two_pass_boundary"
+            ]
+        thermal = report.get("thermal_record", {})
+        if thermal.get("available"):
+            summary["thermal/entry_spread_c"] = thermal["entry_spread_c"]
+            summary["thermal/entry_min_c"] = thermal["entry_min_c"]
+            summary["thermal/entry_max_c"] = thermal["entry_max_c"]
         for mode, payload in report.get("modes", {}).items():
             for cell in payload["cells"]:
                 tag = f"{mode}/m{cell['m']}/kv{cell['kv']}"
