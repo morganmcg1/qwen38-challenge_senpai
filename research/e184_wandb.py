@@ -40,6 +40,7 @@ def git(*args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--reduction", required=True)
+    parser.add_argument("--model", help="e184_model.py report: roofline and MUE ladder")
     parser.add_argument("--run-name", default="e184-prefill-cost-decomposition")
     args = parser.parse_args()
 
@@ -136,6 +137,35 @@ def main():
                      "n", "sd_rel"],
             data=phase_rows),
     })
+
+    if args.model:
+        with open(args.model) as handle:
+            model = json.load(handle)
+        run.log({
+            "roofline": wandb.Table(
+                columns=["phase", "kind", "mean_seconds", "share_of_bracketed_pct",
+                         "tflop", "achieved_tflops", "pct_of_peak"],
+                data=[[r["phase"], r["kind"], r["mean_seconds"],
+                       r["share_of_bracketed_pct"], r.get("tflop"),
+                       r.get("achieved_tflops"), r.get("pct_of_peak")]
+                      for r in model["phase_table"]]),
+            "mue_ladder": wandb.Table(
+                columns=["mechanism", "prefill_seconds_saved",
+                         "prefill_reduction_pct", "published_score_gain_pct",
+                         "clears_mue", "feasibility"],
+                data=[[r["mechanism"], r["prefill_seconds_saved"],
+                       r["prefill_reduction_pct"], r["published_score_gain_pct"],
+                       r["clears_mue"], r["feasibility"]]
+                      for r in model["mue_ladder"]["ladder"]]),
+        })
+        for key, value in model["e16_residual_attribution"].items():
+            if isinstance(value, (int, float)):
+                run.summary[f"e16_{key}"] = value
+        for key, value in model["reconciliation"].items():
+            if isinstance(value, (int, float)):
+                run.summary[f"recon_{key}"] = value
+        run.summary["gemm_seconds"] = model["gemm_seconds"]
+        run.summary["non_gemm_seconds"] = model["non_gemm_seconds"]
 
     summary = dict(scan_metrics)
     if off_prefill:
