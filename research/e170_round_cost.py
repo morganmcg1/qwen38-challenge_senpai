@@ -46,8 +46,15 @@ def load_rounds(directory: str) -> list[tuple[int, float]]:
             f"{path}: {len(widths)} widths against {len(seconds)} round times"
         )
     meta = pathlib.Path(directory) / "meta.txt"
-    if meta.exists() and "rounds_traced=0" not in meta.read_text():
-        raise SystemExit(f"{directory}: traced leg, its wall time is perturbed")
+    if meta.exists():
+        text = meta.read_text()
+        untraced = (
+            "rounds_traced=0" in text or "trace_perturbs_timing=false" in text
+        )
+        if not untraced:
+            raise SystemExit(
+                f"{directory}: traced leg, its wall time is perturbed"
+            )
     return [(1 + w, s * 1000.0) for w, s in zip(widths, seconds)]
 
 
