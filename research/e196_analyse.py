@@ -333,6 +333,36 @@ def interpolate(priced_by_m, m, kv, field, boundary=1024):
     return low[field] + weight * (high[field] - low[field]), True
 
 
+def generic_row_amortization(scaling, boundary=1024):
+    """The Route-1 prize that has nothing to do with the split.
+
+    A row-amortized kernel also serves the m <= 5 rounds, which issue ONE
+    call. Their per-row KV traversal is still redundant, so such a round
+    recovers (m - 1) * b1 * kL per layer. This prize belongs to a different
+    experiment from removing the second SDPA call, so report it separately
+    and never add it to the split-removal price.
+    """
+    if scaling is None:
+        return None
+    rounds, total, _ = round_weights()
+    per_round_us = 0.0
+    covered = 0
+    for entry in rounds:
+        if entry["m"] >= 6 or entry["kL"] >= boundary:
+            continue
+        recoverable = (entry["m"] - 1) * scaling["b1_per_key"] * entry["kL"]
+        per_round_us += recoverable * FULL_ATTENTION_LAYERS * entry["weight"]
+        covered += 1
+    return {
+        "field": "generic_row_amortization_us",
+        "per_round_us": per_round_us,
+        "per_round_ms": per_round_us / 1000.0,
+        "mue": per_round_us / MUE_US_PER_ROUND,
+        "non_split_rounds": covered,
+        "total_rounds": total,
+    }
+
+
 def weighted_aggregate(priced, field):
     rounds, total, tokens_per_round = round_weights()
     per_round_us = 0.0
@@ -611,6 +641,8 @@ def main():
         aggregates = {
             field: weighted_aggregate(priced, field)
             for field in [
+                "call_b_us",
+                "overlap_us",
                 "step_vs_m5_us",
                 "recoverable_conservative_us",
                 "recoverable_route1_us",
@@ -628,6 +660,10 @@ def main():
             ),
             "occupancy": occupancy_model(slopes, mode),
             "roofline_m5_kv512": roofline(model, kv=512, m=SPLIT),
+            "generic_row_amortization": generic_row_amortization(one_pass_scaling),
+            "split_removal_only_ms_per_round": aggregates[
+                "recoverable_conservative_us"
+            ]["per_round_ms"],
         }
         report["modes"][mode]["occupancy_verdict"] = occupancy_verdict(
             report["modes"][mode]["occupancy"],
@@ -697,6 +733,12 @@ def main():
                 "elasticity"
             )
             summary[f"{mode}/occupancy/scaling"] = verdict.get("scaling")
+            generic = payload["generic_row_amortization"]
+            if generic:
+                summary[f"{mode}/generic_row_amortization/ms_per_round"] = generic[
+                    "per_round_ms"
+                ]
+                summary[f"{mode}/generic_row_amortization/mue"] = generic["mue"]
             summary[f"{mode}/occupancy/binding_resource"] = verdict.get(
                 "binding_resource"
             )
