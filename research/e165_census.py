@@ -410,11 +410,19 @@ def main() -> None:
         recs = components(anchors(tag))
         use = [r for r in recs if r["full_accept"]] if args.accept_only else recs
         depths = sorted({r["d"] for r in recs})
+        depth_counts = {str(d): sum(1 for r in recs if r["d"] == d)
+                        for d in depths}
+        # The parent clips the last round to land exactly on the token window,
+        # so an off-pin width in the FINAL round is a clip, not a failed pin.
+        off_pin_tail = bool(recs) and len(depths) == 2 and \
+            recs[-1]["d"] == min(depths) and depth_counts[str(min(depths))] == 1
         leg = {
             "tag": tag,
             "rounds": len(recs),
             "rounds_used": len(use),
             "depths": depths,
+            "depth_counts": depth_counts,
+            "off_pin_is_clipped_tail": off_pin_tail,
             "sync_head": meta.get("sync_head"),
             "trace": meta.get("trace"),
             "ladder": meta.get("e165_ladder", "default"),

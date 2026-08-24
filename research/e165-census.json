@@ -7,6 +7,10 @@
       "depths": [
         1
       ],
+      "depth_counts": {
+        "1": 259
+      },
+      "off_pin_is_clipped_tail": false,
       "sync_head": "0",
       "trace": "1",
       "ladder": "default",
@@ -81,6 +85,10 @@
       "depths": [
         4
       ],
+      "depth_counts": {
+        "4": 109
+      },
+      "off_pin_is_clipped_tail": false,
       "sync_head": "0",
       "trace": "1",
       "ladder": "default",
@@ -155,6 +163,10 @@
       "depths": [
         4
       ],
+      "depth_counts": {
+        "4": 109
+      },
+      "off_pin_is_clipped_tail": false,
       "sync_head": "0",
       "trace": "1",
       "ladder": "default",
@@ -230,6 +242,11 @@
         4,
         7
       ],
+      "depth_counts": {
+        "4": 1,
+        "7": 72
+      },
+      "off_pin_is_clipped_tail": true,
       "sync_head": "0",
       "trace": "1",
       "ladder": "default",
@@ -304,6 +321,10 @@
       "depths": [
         4
       ],
+      "depth_counts": {
+        "4": 109
+      },
+      "off_pin_is_clipped_tail": false,
       "sync_head": "0",
       "trace": "1",
       "ladder": "off",
@@ -378,6 +399,10 @@
       "depths": [
         4
       ],
+      "depth_counts": {
+        "4": 109
+      },
+      "off_pin_is_clipped_tail": false,
       "sync_head": "1",
       "trace": "1",
       "ladder": "default",
@@ -453,6 +478,11 @@
         4,
         7
       ],
+      "depth_counts": {
+        "4": 1,
+        "7": 72
+      },
+      "off_pin_is_clipped_tail": true,
       "sync_head": "1",
       "trace": "1",
       "ladder": "default",
@@ -525,6 +555,8 @@
       "rounds": 0,
       "rounds_used": 0,
       "depths": [],
+      "depth_counts": {},
+      "off_pin_is_clipped_tail": false,
       "sync_head": "0",
       "trace": "0",
       "ladder": "default",

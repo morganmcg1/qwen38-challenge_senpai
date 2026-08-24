@@ -65,16 +65,26 @@ def main() -> int:
     # THE PIN GATE. `MLX_E159_FIXED_DRAFT_DEPTH` replaces `draftPolicy`
     # outright, so a leg that reports more than one width did not pin and its
     # components cannot be read as a single-width measurement.
+    #
+    # The one permitted exception is the FINAL round. The parent clips it to
+    # land exactly on the token window, so a single narrower round at the end
+    # is a clip rather than a failed pin. The exception is deliberately narrow:
+    # exactly two widths, exactly one round at the narrower width, and that
+    # round is the last one. Anything else is still refused.
     for leg in legs:
-        if leg["rounds"] and len(leg["depths"]) != 1:
+        if not leg["rounds"]:
+            continue
+        widths = leg["depths"]
+        if len(widths) != 1 and not leg.get("off_pin_is_clipped_tail"):
             raise SystemExit(
-                f"leg {leg['tag']} reports widths {leg['depths']}; the pin "
-                "did not hold and the census cannot be published")
-        if leg["pinned_depth"] and leg["depths"]:
-            if int(leg["pinned_depth"]) != leg["depths"][0]:
-                raise SystemExit(
-                    f"leg {leg['tag']} pinned {leg['pinned_depth']} but ran "
-                    f"width {leg['depths'][0]}")
+                f"leg {leg['tag']} reports widths {widths} with counts "
+                f"{leg.get('depth_counts')}; the pin did not hold and the "
+                "census cannot be published")
+        held = max(widths)
+        if leg["pinned_depth"] and int(leg["pinned_depth"]) != held:
+            raise SystemExit(
+                f"leg {leg['tag']} pinned {leg['pinned_depth']} but ran "
+                f"width {held}")
 
     config = {
         "experiment": "e165",
