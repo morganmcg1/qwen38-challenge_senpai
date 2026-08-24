@@ -26,8 +26,7 @@ export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
 export MLXFAST_SCORE_PATH="${PWD}/${out}/score.json"
 rm -f "${DARKBLOOM_E198_LIVENESS_OUT}"
 # Clear stale fallback files so this leg cannot read an earlier run's evidence.
-find "${TMPDIR:-/tmp}" /tmp /var/folders -maxdepth 4 -name 'e198-liveness.json' \
-  -delete 2>/dev/null
+rm -f "${HOME}/e198-liveness.json"
 
 echo "e198_liveness: rows=${rows} tokens=${tokens}"
 ./benchmark-qwen-mtp.sh --local-iterate > "${out}/run.log" 2>&1
@@ -41,12 +40,9 @@ grep -m 2 "e198-liveness: FAILED" "${out}/run.log"
 echo "--- counts (requested path) ---"
 cat "${DARKBLOOM_E198_LIVENESS_OUT}" 2>/dev/null || echo "NO COUNTS FILE AT REQUESTED PATH"
 echo
-# The probe falls back to NSTemporaryDirectory() when the requested path did
-# not arrive, so a file here and not above isolates environment delivery.
-# NSTemporaryDirectory() is the CoreFoundation per-user directory under
-# /var/folders, which is NOT $TMPDIR in this workspace.
-echo "--- counts (NSTemporaryDirectory fallback) ---"
-find "${TMPDIR:-/tmp}" /tmp /var/folders -maxdepth 4 -name 'e198-liveness.json' \
-  -print -exec cat {} \; 2>/dev/null
+# The probe falls back to HOME when the requested path did not arrive, so a
+# file here and not above isolates environment delivery.
+echo "--- counts (HOME fallback) ---"
+cat "${HOME}/e198-liveness.json" 2>/dev/null || echo "NO COUNTS FILE AT HOME FALLBACK"
 echo
 exit "${rc}"

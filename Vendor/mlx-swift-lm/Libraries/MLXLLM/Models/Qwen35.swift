@@ -3673,6 +3673,12 @@ final class Qwen35Attention: Module {
     ) -> MLXArray {
         let B = x.dim(0)
         let L = x.dim(1)
+        // E198 research probe (positive control): this is the vendored
+        // full-attention entry that program.md names as the scored target. It
+        // proves the worker reaches this class at all, so a silent liveness
+        // counter downstream means "that branch did not fire", not "the probe
+        // is broken". Delete with the rest of the E198 probe.
+        FusedRowAmortizedSDPA.Liveness.reached("qwen35_attn_entry_L\(L)")
 
         let (qProjOutput, keysIn, valuesIn) = qkv(x)
         let qSplit = qProjOutput.reshaped(B, L, attentionHeads, -1).split(parts: 2, axis: -1)

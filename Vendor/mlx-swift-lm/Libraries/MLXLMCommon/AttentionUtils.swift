@@ -224,18 +224,22 @@ public enum FusedRowAmortizedSDPA {
     /// counts served calls and declines by reason, and writes the totals to
     /// `DARKBLOOM_E198_LIVENESS_OUT` when the process exits. It is inert unless
     /// that variable is set, and no timed arm sets it.
-    enum Liveness {
+    public enum Liveness {
         nonisolated(unsafe) private static var servedCounts: [Int: Int] = [:]
         nonisolated(unsafe) private static var declinedCounts: [String: Int] = [:]
         nonisolated(unsafe) private static var reachedCounts: [String: Int] = [:]
 
-        /// The requested path, or a temporary-directory fallback. The fallback
+        /// The requested path, or a home-directory fallback. The fallback
         /// exists so that "no file" means "this code did not run" and can never
-        /// also mean "the environment variable did not arrive".
+        /// also mean "the environment variable did not arrive". `HOME` is
+        /// allowlisted by `sanitizedRuntimeWorkerEnvironment` and its value is
+        /// known from outside the worker, so the search cannot look in the
+        /// wrong place; `NSTemporaryDirectory()` is not, because this workspace
+        /// overrides `TMPDIR` while CoreFoundation answers with /var/folders.
         nonisolated(unsafe) private static let envPath = ProcessInfo.processInfo
             .environment["DARKBLOOM_E198_LIVENESS_OUT"]
         nonisolated(unsafe) private static let path =
-            envPath ?? (NSTemporaryDirectory() as NSString)
+            envPath ?? (NSHomeDirectory() as NSString)
             .appendingPathComponent("e198-liveness.json")
 
         private static let armed: Bool = {
@@ -245,7 +249,7 @@ public enum FusedRowAmortizedSDPA {
 
         /// Count a call site upstream of `attend`, so a missing `attend` call
         /// is distinguishable from a declined one.
-        static func reached(_ key: String) {
+        public static func reached(_ key: String) {
             guard armed else { return }
             reachedCounts[key, default: 0] += 1
             flushIfDue()
