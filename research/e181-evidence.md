@@ -98,9 +98,31 @@ across all eight legs, so the decode work itself is unchanged by Q.
 | MTP charged s/token | 0.03162818 | 0.03143012 | -0.626 % | | prefill-dominated, see below |
 | local charged ratio serial/MTP | 2.321031 | 2.329720 | +0.374 % | | prefill-dominated, see below |
 
-Warm-only sensitivity, dropping the cold first leg and one PQ leg for balance
-(n = 3 per arm): MTP decode-only -0.0697 %, serial decode-only -0.0576 %, MTP
-prefill -2.161 %, serial prefill -2.129 %. The branch does not change.
+Warm-only sensitivity. The cut is the two session-opening legs, leg 1 (the only
+cold leg, P) and leg 2 (the first PQ leg), leaving n = 3 per arm: MTP decode-only
+-0.0697 %, serial decode-only -0.0576 %, MTP prefill -2.161 %, serial prefill
+-2.129 %.
+
+Because "drop one PQ leg for balance" is a choice, here is every variant, so the
+cut cannot be doing the work. Dropping leg 1 plus each possible PQ leg in turn
+(and dropping leg 1 alone, P n = 3 vs PQ n = 4):
+
+| dropped with leg 1 | MTP decode-only | MTP prefill |
+|---|---|---|
+| nothing | -0.0846 % | -2.161 % |
+| leg 2 | -0.0697 % | -2.161 % |
+| leg 3 | -0.0559 % | -2.154 % |
+| leg 6 | -0.0859 % | -2.163 % |
+| leg 7 | -0.1270 % | -2.164 % |
+
+Decode stays inside the predeclared +/-0.2 % band in all five variants, worst
+case -0.127 %, and prefill stays within 0.01 pp of -2.16 %. The branch does not
+change under any cut.
+
+This enumeration is not hand arithmetic: `research/e181_analyze.py` emits it as
+`warm_only_sensitivity` in `summary.json`, picks the dropped cold leg by lowest
+entry temperature rather than by position, and reports
+`branch_stable_within_band=true` with `mtp_decode_only_pct_worst_abs=-0.127`.
 
 ## Two confounds this session measures directly
 
@@ -109,7 +131,7 @@ prefill -2.161 %, serial prefill -2.129 %. The branch does not change.
    fixed predicts -0.566 %. About 90 % of the charged "decode win" is prefill
    spread over 512 tokens.
 2. **The local ratio moves the wrong way.** The charged serial/MTP ratio rises
-   by +0.374 % for PQ, and moving only prefill predicts +0.324 %. Prefill is a
+   by +0.374 % for PQ, and moving only prefill predicts +0.337 %. Prefill is a
    larger fraction of the shorter MTP leg, so a real prefill SPEEDUP makes the
    local ratio look like a regression. Read absolute candidate time, never the
    local ratio, for any change that touches prefill.
@@ -137,3 +159,40 @@ prefill -2.161 %, serial prefill -2.129 %. The branch does not change.
   effect. The SIGN disagrees with FINDING 447, which recorded a derived local
   penalty of +1.936 %. Here Q makes prefill 2.17-2.29 % FASTER, 8 legs of 8 with
   the same sign, and the thermal bias ran against the observation.
+
+## The prefill sign flip, against F3's registered candidate reads
+
+The flip survives the design that was supposed to explain it away.
+
+- **(c) n=1 cold-first-leg artifact: ELIMINATED, and I price its contribution
+  rather than waving at it.** The effect is -2.293 % with a 95 % CI of
+  [-2.560 %, -2.026 %] over 4 legs per arm, and every one of the 8 legs orders
+  the same way (max PQ prefill 3.9080 s < min P prefill 3.9929 s, so the two
+  arms do not overlap leg-wise). The cold leg IS a P leg and it is the slowest P
+  leg (4.0078 s), so the cold-cache term biases FOR the observed speedup — but
+  dropping it costs only 0.13 pp: the warm-only cut (n = 3 per arm) still gives
+  -2.161 %. Temperature runs the other way: PQ entered 5.8 C hotter on average
+  (60.34 C vs 54.53 C), and in the warm-only cut the arms are balanced to 0.6 C
+  (PQ 60.34 C vs P 60.93 C) with the effect intact. Neither the cache term nor
+  the thermal term can produce a 2 % flip.
+- **(a) instrument difference: LIVE, and now the leading read.** This is the
+  first local prefill reading through the trusted `seed_prefill_seconds` field;
+  FINDING 447's +1.936 % was derived from `parent_measured_seconds_per_token`
+  arithmetic. Section "Two confounds" shows exactly how a charged-time
+  instrument mis-signs prefill work on this host: the charged serial/MTP ratio
+  RISES 0.374 % for PQ while absolute prefill FALLS 2.293 %, because prefill is
+  a bigger fraction of the shorter MTP leg. Any derived split that reads a
+  charged quantity can therefore report a penalty where the trusted field
+  reports a speedup. Edward's E184 bracket-sum-vs-trusted-field reconciliation
+  is the independent test; FINDING 447 should be scoped to its instrument until
+  that lands.
+- **(b) host difference within the M4 class: LIVE and not excluded.** My host is
+  M4 Pro, 48 GiB. Nothing here separates an M4-vs-M4-Pro dispatch difference in
+  the non-nax path from an instrument artifact; only a same-instrument reading
+  on a plain M4 can.
+- **The ranked fact is untouched.** FINDING 457's +1.9705 % ranked prefill price
+  (8/8, replicated 0.035 pp across receipts B and F, `harness=ranked`, M5)
+  remains the operative number for ship decisions. It prices Q's `_nax` edits;
+  this local contrast prices Q's non-nax `quantized.cpp` edits. Different code
+  objects, so the disagreement is not a contradiction, and it constrains
+  TRANSFER claims only. Q is out of the ship set either way.

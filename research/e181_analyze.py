@@ -226,6 +226,61 @@ def main() -> int:
                 )
             }
 
+    # Warm-only sensitivity. "Drop the cold opening leg, plus one candidate leg
+    # for balance" is a judgement call, so enumerate EVERY choice of the dropped
+    # candidate leg. If the branch decision survives all of them, the cut is not
+    # doing the work; if it does not, the cut is the finding.
+    sensitivity = {}
+    if "P" in per_arm and len(arms) > 1:
+        cold_leg = min(legs, key=lambda leg: leg.get("gpu_temp_entry", math.inf))["leg"]
+        keys = (
+            "mtp_decode_only_spt",
+            "mtp_prefill_seconds",
+            "serial_decode_only_spt",
+            "serial_prefill_seconds",
+        )
+        metric_path = {
+            "mtp_decode_only_spt": ("mtp", "decode_only_seconds_per_token"),
+            "mtp_prefill_seconds": ("mtp", "prefill_seconds"),
+            "serial_decode_only_spt": ("serial", "decode_only_seconds_per_token"),
+            "serial_prefill_seconds": ("serial", "prefill_seconds"),
+        }
+
+        def arm_stats(arm: str, drop: set[int]) -> dict:
+            rows = [l for l in legs if l["arm"] == arm and l["leg"] not in drop]
+            return {
+                key: summarize([r.get(sec, {}).get(field) for r in rows])
+                for key, (sec, field) in metric_path.items()
+            }
+
+        for arm in arms:
+            if arm == "P":
+                continue
+            cand_legs = [l["leg"] for l in legs if l["arm"] == arm]
+            variants = {}
+            for extra in [None, *cand_legs]:
+                drop_p = {cold_leg}
+                drop_c = {cold_leg} | ({extra} if extra is not None else set())
+                label = "cold_only" if extra is None else f"cold_plus_{arm}_leg{extra}"
+                a = arm_stats("P", drop_p)
+                b = arm_stats(arm, drop_c)
+                variants[label] = {
+                    key: contrast(a[key], b[key]) for key in keys
+                }
+            decode = [
+                v["mtp_decode_only_spt"].get("delta_pct")
+                for v in variants.values()
+                if v.get("mtp_decode_only_spt")
+            ]
+            sensitivity[f"P_to_{arm}"] = {
+                "cold_leg_dropped": cold_leg,
+                "variants": variants,
+                "mtp_decode_only_pct_worst_abs": max(decode, key=abs) if decode else None,
+                "branch_stable_within_band": (
+                    all(abs(d) <= 0.2 for d in decode) if decode else None
+                ),
+            }
+
     summary = {
         "session": str(args.session),
         "harness": "local",
@@ -235,6 +290,7 @@ def main() -> int:
         "legs": legs,
         "per_arm": per_arm,
         "contrasts": contrasts,
+        "warm_only_sensitivity": sensitivity,
     }
     out_path = args.session / "summary.json"
     out_path.write_text(json.dumps(summary, indent=2, sort_keys=True))
