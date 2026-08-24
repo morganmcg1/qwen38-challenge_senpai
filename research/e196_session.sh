@@ -16,7 +16,10 @@ export MLX_E196_BLOCKS="${1:-6}"
 export MLX_E196_REPS="${2:-20}"
 export MLX_E196_WARMUP="${3:-6}"
 export MLX_E196_TIMING_OUT="${4:-research/e196-timing.json}"
-export MLX_E196_KV="${MLX_E196_KV:-512,768,1024,2048}"
+# A scored 512-token leg runs the cache offset from 512 to 1024, so the
+# one-pass family covers almost the whole leg. Measure four windows inside it
+# instead of extrapolating the price of the second half of the leg from two.
+export MLX_E196_KV="${MLX_E196_KV:-512,768,896,1008,1024,2048}"
 export MLX_E196_M="${MLX_E196_M:-6,7,8,9}"
 export MLX_E196_CHAINS="${MLX_E196_CHAINS:-1,2,4,8,16}"
 export MLX_E196_ARM_CHAINS="${MLX_E196_ARM_CHAINS:-1,8}"
