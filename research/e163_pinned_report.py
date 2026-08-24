@@ -32,6 +32,7 @@ import math
 import pathlib
 import re
 import statistics
+import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -172,6 +173,26 @@ def load_leg(path: pathlib.Path) -> dict:
     return leg
 
 
+def scored_surface_differs(first: str, second: str) -> list[str]:
+    """Files on the SUBMITTED surface that differ between two commits.
+
+    A leg records `git rev-parse HEAD` when it starts, so a research-only or
+    test-only commit landing mid-session gives the legs different commits while
+    the timed bytes are identical. What binds a timing contrast is the built
+    worker digest, which the caller already asserts equal across every leg.
+    This decides whether a commit difference is cosmetic or real.
+    """
+    result = subprocess.run(
+        ["git", "diff", "--name-only", first, second, "--", "Sources", "Vendor", "Package.swift"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return [f"<git diff {first}..{second} failed: {result.stderr.strip()}>"]
+    return [line for line in result.stdout.splitlines() if line]
+
+
 def contrast(name: str, base: list[dict], arm: list[dict], key: str) -> dict:
     """Per-cent by which `arm` is FASTER than `base` on `key`, with a range.
 
@@ -242,6 +263,33 @@ def main() -> int:
                     f"{leg['tag']}: R disagrees between the leg total "
                     f"({r_leg:.2f} ms) and the traced rounds ({r_trace:.2f} ms)"
                 )
+
+    # Every leg must have been driven by one session script and one worker.
+    session_commits = {leg["session_commit"] for leg in legs}
+    if len(session_commits) > 1:
+        problems.append(f"legs came from different sessions {sorted(session_commits)}")
+
+    # A leg records HEAD when it starts, so a research-only commit landing
+    # mid-session gives the legs different commits over identical timed bytes.
+    # Cosmetic differences are recorded; a moved scored surface is a problem.
+    leg_commits = sorted({leg["base_sha"] for leg in legs})
+    commit_note = None
+    if len(leg_commits) > 1:
+        moved: list[str] = []
+        for other in leg_commits[1:]:
+            moved.extend(scored_surface_differs(leg_commits[0], other))
+        if moved:
+            problems.append(
+                f"the scored surface moved between leg commits {leg_commits}: "
+                f"{sorted(set(moved))}"
+            )
+        else:
+            commit_note = (
+                f"legs recorded {len(leg_commits)} commits {leg_commits}, and no file "
+                "under Sources, Vendor or Package.swift differs between them. The "
+                "worker digest is identical on every leg, so the timed bytes did not "
+                "move."
+            )
 
     # The accept ledger must be identical inside one pinned depth, or the
     # arithmetic moved and the timing contrast is void.
@@ -381,6 +429,8 @@ def main() -> int:
         "official_or_ranked_score": False,
         "identity": {
             "base_sha": legs[0]["base_sha"],
+            "leg_commits": leg_commits,
+            "leg_commit_note": commit_note,
             "session_commit": legs[0]["session_commit"],
             "worker_sha256": legs[0]["worker_sha256"],
             "host": legs[0]["host"],
@@ -407,6 +457,8 @@ def main() -> int:
 
     print(f"=== E163 pinned session {args.label} (harness=local) ===")
     print(f"artifact {path.relative_to(ROOT)}")
+    if commit_note:
+        print(f"note: {commit_note}")
     print(
         f"{'pos':>3} {'arm':>16} {'W':>2} {'mtp s/tok':>11} {'R ms':>8} "
         f"{'rounds':>6} {'edl':>7} {'Tin':>6} {'Tout':>6}"
