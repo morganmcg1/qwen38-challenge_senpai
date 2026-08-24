@@ -943,10 +943,11 @@
   "E189 (Askeladd, assigned)": "Single-weight-pass QMV at rows 6-8 (FINDING 485 lever): exactness gate (real float values + positive control) then ABBA absolute candidate time at pinned rows 5/6/7/8; local prediction ~35.6 ms/round saving at rows 6-8; ceiling +5.7% published, realistic ~1.9%+",
   "E190 (Thorfinn, assigned)": "Cap-5 paid ranked receipt: discriminates staircase vs parabola by ~12.6 MUE at M=5, measures how much of the weight-pass step M5 hides (calibrates E189's prize), tests _nax step boundaries; expected score ~3.55-3.65, production measurement not promotion; owns the receipt watcher",
   "widthSixWall-two-append-fix": "assigned as E191 (Edward, PR pending) - see E191 entry",
-  "E191 (Edward, assigned)": "widthSixWall two-append fix: SDPA m>=6 cache-slice copies, 1.403-2.772 ms/round = 2.5-4.9 MUE (FINDING 489). Stage 0 prove M1; Stage 1 two-append fix + exact-token gate; Stage 2 ABBA rows {5,6,7,8} with early/late-KV sensitivity.",
+  "E191 (Edward, assigned)": "DONE - merged Entry 392 (6c11b86c): decisive negative. M1 refuted (FINDING 496: census shows zero KV-sized copies on shipped path; two-append manufactures the copy, -1.903 ms/round regression, 16/16 rows). widthSixWall repriced (FINDING 497: dispatch count + extra SDPA call, +1.58..+3.04 ms/round = 2.8-5.4 MUE; split saves 1.14-2.31 ms/round vs composed fallback; FINDING 489 measured the wrong arm). Tests/+research/ only.",
   "gdnStateTrafficFusion (unassigned)": "Value-preserving GDN state traffic reduction (E187 follow-up 1): fuse state read+write into the recurrence kernel or keep state resident across the layer chunk. Ceiling <=2.087 ms/round GPU = 3.7 MUE; avoidable fraction unmeasured. HARD constraint: bit-identical values only (RULE 383); celllate detector available as the corruption gate (FINDING 491).",
   "E192 (Alphonse, assigned)": "RE-QUEUED UNASSIGNED (Entry 390): persistent in-place rollback slot (FINDING 495 lever). Stage 0 = 3.5-min barrier-timing discriminator (in-flight-reference vs allocator-free), then the slot only if in-flight-reference survives. Up to 0.27%/round local full-acceptance pricing = below single-mechanism MUE; composition material. Bit-identical state values mandatory. Goes to the next free student.",
-  "E193 (Alphonse, assigned)": "Build/confirm/freeze the adopted E165-prefetch retest (FINDING 486): port round-start recurrent-boundary prefetch ALONE from receipt D snapshot onto 0416ea0b, unconditional on submitted surface (RULE 198); screen ABBA vs fresh base (STOP if local -0.29% win vanished); 512-token confirmation on frozen SHA; preauthorized autonomous submission when E190 receipt terminal + frontier check passes (merge-base guard argument 770a3ff2). PR 190. Expected mechanism gain 0.38-0.73%, P(beat crown) 0.35-0.55."
+  "E193 (Alphonse, assigned)": "Build/confirm/freeze the adopted E165-prefetch retest (FINDING 486): port round-start recurrent-boundary prefetch ALONE from receipt D snapshot onto 0416ea0b, unconditional on submitted surface (RULE 198); screen ABBA vs fresh base (STOP if local -0.29% win vanished); 512-token confirmation on frozen SHA; preauthorized autonomous submission when E190 receipt terminal + frontier check passes (merge-base guard argument 770a3ff2). PR 190. Expected mechanism gain 0.38-0.73%, P(beat crown) 0.35-0.55.",
+  "E194 (Edward, assigned)": "Remove or hide the m>=6 SDPA step (FINDING 497 lever, 2.8-5.4 MUE at 85.9% duty cycle; m=6 is every drafting round under cap-5): Stage 0 source-read chooses ONE route from the Entry 392 menu (stream overlap / concat removal / query-chunk fusion / single vector call), predeclares expected recovery from the census, posts for advisor ack before building. Bit-exactness contract: no per-row accumulation-order change."
  },
  "organizer": {
   "branch": "main",
@@ -1671,7 +1672,16 @@
   "shareOfCandidateRoundPct": 14.4,
   "whyItCannotBeRemoved": "Above the fused vector path the dispatch changes kernel family and the accumulation order of every score. Widths 6 to 9 then drift from the serial trajectory in top-2 values while ids hold, and the drifted K/V rows contaminate every later round under the ranked exact-value replay. Width 5 measured 5/5 bit-exact.",
   "pricedEntry387": "FINDING 489: +87.7 us/invocation kv=512 / +173.3 us kv=1024, x16 layers = 1.403/2.772 ms per round = 2.5/4.9 MUE, flat m=6..9, grows with KV length (mechanism M1 signature).",
-  "assignedTo": "E191 (Edward, r0) - Entry 388"
+  "assignedTo": "E194 (Edward, Entry 392): remove or hide the step; route chosen at Stage 0",
+  "m1Refuted": "FINDING 496, Entry 392 (E191): shipped split path issues ZERO KV-sized copies; slices are zero-kernel views; KVCacheSimple returns slices by construction; the two-append candidateFix MANUFACTURES a whole-KV vn_copy x2 (second slice-assign cannot donate while first update result is live) and loses 1.636-2.300 ms/round in 16/16 rows (-1.903 mean, -3.35 MUE). candidateFix WITHDRAWN.",
+  "repricedMechanism": "FINDING 497: production m5->m step = +1.58..+3.04 ms/round (2.8-5.4 MUE), rising with m and KV; mechanism = dispatch/launch count + 1 extra SDPA call (2 extra 2-pass kernels at kv>=1024), NOT copy bandwidth. The split SAVES 1.14-2.31 ms/round vs the unsplit composed fallback and is also the exactness fix for the top-2 drift (AttentionUtils.swift:106-122). FINDING 489 figure was accurate but measured the unsplit fallback arm (probe bypassed the split; use_fallback fails at qL*gqa>32, gqa=6). harness=local g16s; census transfers exactly, timings directional.",
+  "routes": {
+   "1": "emit query chunks from fused qwen35AttentionQKRMSRoPE (removes g2_copy x2/FA layer; collides with E189 file, sequence behind Askeladd)",
+   "2": "remove concatenated([outA,outB]) via preallocated output buffer or row-wise o_proj passthrough (removes gg2_copy x2/FA layer)",
+   "3": "overlap chunk A/B on two MLX streams (bit-exact by construction; only route attacking the KV-proportional part; chunks under-occupied 24x5 and 24x(m-5) threadgroups)",
+   "4": "single vector call for m=6..9 by lowering effective gqa (batch-major reshape) under supports_sdpa_vector; RISK: broadcast keys likely fail kv_copy_unless and reintroduce a real KV copy"
+  },
+  "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jf8cin0o"
  },
  "withdrawnRules": {
   "CAMPAIGN_LAW_364": "ADVISOR ERROR 215, ledger 350.3. A timing contrast whose accept ledger differs between arms is not a runtime contrast and must never be priced with a runtime elasticity. Report the accept ledger next to every timing delta. If the ledger moved, decompose into a round-cost term and an acceptance term before quoting any score. Alphonse leg-2 protocol is the reference implementation.",
@@ -2237,8 +2247,8 @@
   "frozenNext": "E193 E165-prefetch retest (PR 190): Stage 1 palindrome screen running; freeze after 512-token confirmation; preauthorized autonomous submit behind the E190 receipt",
   "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
  },
- "lastAdvisorUpdate": "2026-08-24T15:55Z Entry 391: E190 SUBMITTED (04710829 validating, watcher cae28b40); HARNESS DEFECT 42 fixed (shallow upstream defeated organizer-history guard; --unshallow now applies to any remote; RULE 385); E193 Stage 0/1 accepted (port = one-line default flip of MLX_E165_HEAD_PREFETCH, byte-identical to receipt D otherwise; 8-leg palindrome screen predeclared and running); RULE 384 validated twice in one day",
- "ledgerEntry": 391,
+ "lastAdvisorUpdate": "2026-08-24T16:20Z Entry 392: E191 merged (decisive negative: M1 refuted by dispatch census with positive control, two-append is a -1.903 ms/round regression, FINDING 496); widthSixWall REPRICED to dispatch count + extra SDPA call, split saves 1.14-2.31 ms/round vs composed fallback (FINDING 497); E194 assigned to Edward (remove or hide the m>=6 SDPA step, route chosen at Stage 0)",
+ "ledgerEntry": 392,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
