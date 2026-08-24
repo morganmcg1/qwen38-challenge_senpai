@@ -44,6 +44,12 @@ for arm in base cap; do
       exit 2
     }
   done
+  # The benchmark resolves the metallib beside the worker, so a missing one
+  # aborts the leg AFTER the cool gate has already been paid.
+  [[ -s "${bin_root}/${arm}/mlx.metallib" ]] || {
+    echo "e168_confirm: missing ${bin_root}/${arm}/mlx.metallib" >&2
+    exit 2
+  }
 done
 
 export MLXFAST_MACMON_BIN="${MLXFAST_MACMON_BIN:-/opt/homebrew/bin/macmon}"

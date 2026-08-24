@@ -56,10 +56,17 @@ have="$(git rev-parse HEAD)"
 mkdir -p "${dest}"
 cp .build/release/mlxfast-swift "${dest}/mlxfast-swift"
 cp .build-worker/release/mlxfast-runtime-worker "${dest}/mlxfast-runtime-worker"
+# benchmark-qwen-mtp.sh resolves the metallib as
+# `$(dirname "${RUNTIME_WORKER_BIN}")/mlx.metallib`, so a staged worker without
+# one beside it cannot run. Neither arm of this experiment changes Metal
+# source, so both arms stage the same library; its digest is recorded so a
+# reader can check that rather than take it on trust.
+cp .build-worker/arm64-apple-macosx/release/mlx.metallib "${dest}/mlx.metallib"
 
 {
   echo "arm=${arm}"
   echo "commit=${have}"
+  echo "metallib_sha256=$(shasum -a 256 "${dest}/mlx.metallib" | cut -d' ' -f1)"
   echo "commit_subject=$(git log -1 --pretty=%s)"
   echo "staged_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "cli_sha256=$(shasum -a 256 "${dest}/mlxfast-swift" | cut -d' ' -f1)"
