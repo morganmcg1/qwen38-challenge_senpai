@@ -5,19 +5,21 @@
 # not a decode leg, so RULE 388's leg-level floor does not bind it.
 # harness=local, no thermal gate: cool_gate_passed_real_gate=false and
 # gate_qualified_for_timing=false are written verbatim into the report.
+#
+# Usage: research/e196_session.sh [blocks] [reps] [warmup] [out]
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
 export MLX_E196_TIMING=1
-export MLX_E196_TIMING_OUT="${MLX_E196_TIMING_OUT:-research/e196-timing.json}"
+export MLX_E196_BLOCKS="${1:-6}"
+export MLX_E196_REPS="${2:-20}"
+export MLX_E196_WARMUP="${3:-6}"
+export MLX_E196_TIMING_OUT="${4:-research/e196-timing.json}"
 export MLX_E196_KV="${MLX_E196_KV:-512,768,1024,2048}"
 export MLX_E196_M="${MLX_E196_M:-6,7,8,9}"
 export MLX_E196_CHAINS="${MLX_E196_CHAINS:-1,2,4,8,16}"
 export MLX_E196_ARM_CHAINS="${MLX_E196_ARM_CHAINS:-1,8}"
-export MLX_E196_BLOCKS="${MLX_E196_BLOCKS:-6}"
-export MLX_E196_REPS="${MLX_E196_REPS:-20}"
-export MLX_E196_WARMUP="${MLX_E196_WARMUP:-6}"
 
 echo "E196 timing session"
 echo "  kv=${MLX_E196_KV} m=${MLX_E196_M}"
