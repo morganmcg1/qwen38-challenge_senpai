@@ -3,7 +3,7 @@
 
 The E173 instruments are host and static analyses, not training runs, so this
 run carries tables and summary scalars rather than a loss curve. The point is
-durability: the advisor asked for the census to survive a workspace recycle.
+durability: the census must survive a workspace recycle.
 
 harness=local throughout. No ranked claim is made or implied.
 """
@@ -37,17 +37,17 @@ def git(*args: str) -> str:
 def admission_tables(payload: dict, config: str) -> dict[str, wandb.Table]:
     out: dict[str, wandb.Table] = {}
 
-    t = wandb.Table(
+    routable = wandb.Table(
         columns=[
             "build", "shape", "k", "n", "m", "calls_per_round", "accepted",
             "refusing_guard", "host_ns_per_call", "ms_per_round_all_cells",
         ]
     )
     per_m: dict[int, dict[str, float]] = collections.defaultdict(
-        lambda: {"ns": 0.0, "cells": 0, "accepted": 0}
+        lambda: {"ns": 0.0, "cells": 0.0, "accepted": 0.0}
     )
     for r in payload["routable"]:
-        t.add_data(
+        routable.add_data(
             config, r["shape"], r["k"], r["n"], r["m"], r["calls_per_round"],
             r["accepted"], r["refusing_guard"], r["host_ns_per_call"],
             r["host_ns_per_call"] * r["calls_per_round"] / 1e6,
@@ -56,7 +56,7 @@ def admission_tables(payload: dict, config: str) -> dict[str, wandb.Table]:
         slot["ns"] += r["host_ns_per_call"] * r["calls_per_round"]
         slot["cells"] += r["calls_per_round"]
         slot["accepted"] += r["calls_per_round"] if r["accepted"] else 0
-    out[f"admission/routable_{config}"] = t
+    out[f"admission/routable_{config}"] = routable
 
     census = wandb.Table(
         columns=[
@@ -115,6 +115,17 @@ def admission_tables(payload: dict, config: str) -> dict[str, wandb.Table]:
     return out
 
 
+def entry_point_us_per_round(payload: dict, m: int) -> float:
+    return (
+        sum(
+            r["host_ns_per_call"] * r["calls_per_round"]
+            for r in payload["routed_entry_point_graph_build"]
+            if r["m"] == m
+        )
+        / 1e3
+    )
+
+
 def main() -> int:
     release = load("admission.json")
     debug = load("admission-debug.json")
@@ -123,6 +134,7 @@ def main() -> int:
     tablepays = load("tablepays.json")
     phases = load("trace-phase-split.json")
     inventory = load("f-inventory.json")
+    e168 = load("e168-curvature.json")
 
     run = wandb.init(
         entity=ENTITY,
@@ -130,8 +142,8 @@ def main() -> int:
         name="e173-decompose-per-round-fixed-cost",
         job_type="analysis",
         tags=[
-            "e173", "qwen-alphonse", "harness=local", "host-census",
-            "no-ranked-claim", "gate_qualified_for_timing=false",
+            "e173", "qwen-alphonse", "harness-local", "host-census",
+            "no-ranked-claim", "not-gate-qualified",
         ],
         config={
             "experiment": "e173-decompose-the-per-round-fixed-cost",
@@ -164,125 +176,146 @@ def main() -> int:
             logs.update(admission_tables(payload, label))
 
     if release and debug:
-        # The debug-to-release ratio is the reason the first pass could not be
-        # quoted. Keep it visible instead of silently dropping the debug run.
+        # The debug-to-release ratio is why the first pass could not be quoted.
+        # Keep it visible instead of dropping the debug run.
         ratio = wandb.Table(columns=["item", "m", "debug_us", "release_us", "ratio"])
         for m in (1, 3, 4):
-            for payload, key in ((debug, "debug"), (release, "release")):
-                pass
-            d = sum(
-                r["host_ns_per_call"] * r["calls_per_round"]
-                for r in debug["routed_entry_point_graph_build"]
-                if r["m"] == m
-            ) / 1e3
-            rel = sum(
-                r["host_ns_per_call"] * r["calls_per_round"]
-                for r in release["routed_entry_point_graph_build"]
-                if r["m"] == m
-            ) / 1e3
+            d = entry_point_us_per_round(debug, m)
+            rel = entry_point_us_per_round(release, m)
             ratio.add_data("entry_point_build_per_round", m, d, rel, d / rel)
         logs["admission/debug_release_ratio"] = ratio
 
     for payload, label in ((gpu, "amortised"), (gpu_floor, "inner8_floor")):
         if not payload:
             continue
-        t = wandb.Table(
+        table = wandb.Table(
             columns=[
                 "arm", "name", "family", "m", "calls_per_round", "bytes_per_call",
                 "us_per_call", "ms_per_round", "implied_gb_per_s", "inner",
             ]
         )
         for i in payload["items"]:
-            t.add_data(
+            table.add_data(
                 label, i["name"], i["family"], i["m"], i["calls_per_round"],
                 i["bytes_per_call"], i["seconds_per_call"] * 1e6, i["ms_per_round"],
                 i["bytes_per_call"] / i["seconds_per_call"] / 1e9,
                 payload["inner_calls_per_timed_region"],
             )
-        logs[f"gpu/line_items_{label}"] = t
+        logs[f"gpu/line_items_{label}"] = table
 
     if tablepays:
-        t = wandb.Table(
-            columns=["m", "n_rounds", "median_round_ms", "increment_ms"]
+        table = wandb.Table(
+            columns=[
+                "m_verify", "n_rounds", "table_path", "median_round_ms",
+                "median_verify_build_ms", "median_eval_wall_ms",
+                "median_host_tail_ms", "mean_acc", "mean_shortfall",
+                "mean_cache_pos",
+            ]
         )
-        prev = None
         for row in tablepays["per_width"]:
-            inc = None if prev is None else row["median_round_ms"] - prev
-            t.add_data(row["m"], row["n"], row["median_round_ms"], inc)
-            prev = row["median_round_ms"]
-        logs["tablepays/per_width"] = t
+            table.add_data(
+                row["m_verify"], row["n"], row["table_path"],
+                row["median_round_ms"], row["median_verify_build_ms"],
+                row["median_eval_wall_ms"], row["median_host_tail_ms"],
+                row["mean_acc"], row["mean_shortfall"], row["mean_cache_pos"],
+            )
+        logs["tablepays/per_width"] = table
+
         contrast = tablepays["boundary_contrast"]
-        logs["tablepays/contrast"] = wandb.Table(
-            columns=["quantity", "value_ms", "ci_low_ms", "ci_high_ms"],
-            data=[
-                [
-                    "boundary_curvature_m3",
-                    contrast["boundary_curvature_ms"],
-                    contrast["boundary_ci"][0],
-                    contrast["boundary_ci"][1],
-                ],
-                [
-                    "non_boundary_curvature_m4",
-                    contrast["non_boundary_curvature_ms"],
-                    contrast["non_boundary_ci"][0],
-                    contrast["non_boundary_ci"][1],
-                ],
-                [
-                    "contrast",
-                    contrast["contrast_ms"],
-                    contrast["contrast_ci"][0],
-                    contrast["contrast_ci"][1],
-                ],
-            ],
+        curvature = contrast["point"]["curvature_ms"]
+        ci = contrast["curvature_ci95_ms"]
+        rows = [
+            [f"curvature_m{m}", curvature[m], ci[m][0], ci[m][1]]
+            for m in sorted(curvature)
+        ]
+        rows.append(
+            [
+                "contrast_m3_minus_m4",
+                contrast["point"]["contrast_ms"],
+                contrast["contrast_ci95_ms"][0],
+                contrast["contrast_ci95_ms"][1],
+            ]
         )
-        summary["tablepays_contrast_ms"] = contrast["contrast_ms"]
-        summary["tablepays_contrast_ci_low_ms"] = contrast["contrast_ci"][0]
-        summary["tablepays_contrast_ci_high_ms"] = contrast["contrast_ci"][1]
+        logs["tablepays/contrast"] = wandb.Table(
+            columns=["quantity", "value_ms", "ci_low_ms", "ci_high_ms"], data=rows
+        )
+        summary["e37_contrast_ms"] = contrast["point"]["contrast_ms"]
+        summary["e37_contrast_ci_low_ms"] = contrast["contrast_ci95_ms"][0]
+        summary["e37_contrast_ci_high_ms"] = contrast["contrast_ci95_ms"][1]
+
+    if e168:
+        table = wandb.Table(
+            columns=[
+                "dataset", "n_rounds", "boundary_curvature_m3_ms", "boundary_ci_low",
+                "boundary_ci_high", "control_curvature_m4_ms", "control_ci_low",
+                "control_ci_high", "contrast_ms", "contrast_ci_low",
+                "contrast_ci_high", "identified",
+            ]
+        )
+        for res in e168["results"]:
+            if not res.get("usable"):
+                continue
+            identified = res["label"].startswith("adaptive")
+            table.add_data(
+                res["label"], res["n_rounds"], res["boundary_curvature_m3_ms"],
+                res["boundary_ci"][0], res["boundary_ci"][1],
+                res["control_curvature_m4_ms"], res["control_ci"][0],
+                res["control_ci"][1], res["contrast_ms"], res["contrast_ci"][0],
+                res["contrast_ci"][1], identified,
+            )
+            if identified:
+                summary["e168_adaptive_contrast_ms"] = res["contrast_ms"]
+                summary["e168_adaptive_contrast_ci_low_ms"] = res["contrast_ci"][0]
+                summary["e168_adaptive_contrast_ci_high_ms"] = res["contrast_ci"][1]
+        logs["e168/curvature_contrast"] = table
+        run.summary["e168_coverage_note"] = e168["coverage_note"]
 
     if phases:
-        t = wandb.Table(
+        table = wandb.Table(
             columns=[
                 "m", "n_rounds", "round_ms", "verify_build_ms", "eval_wall_ms",
                 "draft_build_ms", "readout_ms", "commit_ms", "upkeep_ms",
             ]
         )
         for row in phases["per_width"]:
-            t.add_data(
+            table.add_data(
                 row["m"], row["n"], row["round_ms"], row["verify_build_ms"],
                 row["eval_wall_ms"], row["draft_build_ms"], row["readout_ms"],
                 row["commit_ms"], row["upkeep_ms"],
             )
-        logs["trace/phase_split"] = t
+        logs["trace/phase_split"] = table
 
     if inventory:
-        t = wandb.Table(columns=["name", "ms_per_round", "side", "method", "mechanism"])
+        table = wandb.Table(
+            columns=["name", "ms_per_round", "side", "method", "mechanism"]
+        )
         for row in inventory["rows"]:
-            t.add_data(
+            table.add_data(
                 row["name"], row["ms_per_round"], row["side"], row["method"],
                 row["mechanism"],
             )
-        logs["inventory/rows"] = t
+        logs["inventory/rows"] = table
         summary.update(
             {
                 "inventory_explained_ms": inventory["explained_ms"],
                 "inventory_host_ms": inventory["host_ms"],
                 "inventory_gpu_ms": inventory["gpu_ms"],
+                "inventory_mixed_ms": inventory["mixed_ms"],
                 "inventory_residual_ms": inventory["residual_ms"],
             }
         )
         run.summary["inventory_verdict"] = inventory["verdict"]
 
     if release:
-        per_m = collections.defaultdict(float)
+        per_m: dict[int, float] = collections.defaultdict(float)
         for r in release["routable"]:
             per_m[r["m"]] += r["host_ns_per_call"] * r["calls_per_round"]
         summary["admission_routable_ms_per_round_m4_release"] = per_m[4] / 1e6
         summary["admission_routable_ms_per_round_m1_release"] = per_m[1] / 1e6
-        build_m = collections.defaultdict(float)
-        for r in release["routed_entry_point_graph_build"]:
-            build_m[r["m"]] += r["host_ns_per_call"] * r["calls_per_round"]
-        for m, ns in build_m.items():
-            summary[f"entry_point_build_ms_per_round_m{m}_release"] = ns / 1e6
+        for m in (1, 3, 4):
+            summary[f"entry_point_build_ms_per_round_m{m}_release"] = (
+                entry_point_us_per_round(release, m) / 1e3
+            )
 
     run.log(logs)
     for key, value in summary.items():
