@@ -1,0 +1,256 @@
+{
+  "experiment": "e166-ranked-depth-optimum",
+  "step1_constants": {
+    "depthPriceArm": "ship (uniform)",
+    "ema_alpha": 0.15,
+    "ema_prior": [
+      0.85,
+      0.833,
+      0.81634,
+      0.8000131999999999,
+      0.7840129359999999,
+      0.7683326772799999,
+      0.7529660237343999,
+      0.737906703259712
+    ],
+    "headStepCostRatio": 0.18,
+    "maxDepth": 8,
+    "segmentedVerifyDepthCap": 7
+  },
+  "step1_flat_q_map": [
+    {
+      "d_ranked": 1,
+      "d_ship": 1,
+      "q": 0.3
+    },
+    {
+      "d_ranked": 1,
+      "d_ship": 1,
+      "q": 0.35
+    },
+    {
+      "d_ranked": 1,
+      "d_ship": 1,
+      "q": 0.4
+    },
+    {
+      "d_ranked": 1,
+      "d_ship": 1,
+      "q": 0.45
+    },
+    {
+      "d_ranked": 1,
+      "d_ship": 2,
+      "q": 0.5
+    },
+    {
+      "d_ranked": 1,
+      "d_ship": 2,
+      "q": 0.55
+    },
+    {
+      "d_ranked": 2,
+      "d_ship": 2,
+      "q": 0.6
+    },
+    {
+      "d_ranked": 2,
+      "d_ship": 3,
+      "q": 0.65
+    },
+    {
+      "d_ranked": 2,
+      "d_ship": 3,
+      "q": 0.7
+    },
+    {
+      "d_ranked": 3,
+      "d_ship": 3,
+      "q": 0.75
+    },
+    {
+      "d_ranked": 3,
+      "d_ship": 4,
+      "q": 0.8
+    },
+    {
+      "d_ranked": 4,
+      "d_ship": 5,
+      "q": 0.85
+    },
+    {
+      "d_ranked": 6,
+      "d_ship": 7,
+      "q": 0.9
+    },
+    {
+      "d_ranked": 7,
+      "d_ship": 7,
+      "q": 0.95
+    }
+  ],
+  "step1_price_translation": {
+    "harness=local": {
+      "implied_ratio": 0.15328793281053585,
+      "law": "R(M) = 47.756 + 8.6457*M  (E159 destepped)",
+      "marginal_row_ms": 8.6457,
+      "round_at_d0_ms": 56.4017,
+      "shipped_over_truth": 1.1742607307678963,
+      "shipped_ratio_in_ms": 10.152306
+    },
+    "harness=local_raw_with_law354_step": {
+      "mean_marginal_row_ms": 12.821499999999999,
+      "note": "raw curve, LAW 354 weight-stream step still inside it"
+    },
+    "harness=ranked": {
+      "implied_ratio": 0.24821457649987205,
+      "law": "R(M) = 16.1585 + 5.3350*M",
+      "marginal_row_ms": 5.335,
+      "round_at_d0_ms": 21.4935,
+      "shipped_over_truth": 0.7251790065604499,
+      "shipped_ratio_in_ms": 3.86883
+    }
+  },
+  "step1_prompt_table": [
+    {
+      "accepted_at_cap7": 5.378985986772951,
+      "d_ranked_greedy_at_flat_q": 7,
+      "d_ship_greedy_at_flat_q": 7,
+      "d_star_ranked_global": 7,
+      "prompt": "beagle",
+      "q": 0.9341,
+      "shipped_edl": 4.38
+    },
+    {
+      "accepted_at_cap7": 6.078387385748165,
+      "d_ranked_greedy_at_flat_q": 7,
+      "d_ship_greedy_at_flat_q": 7,
+      "d_star_ranked_global": 7,
+      "prompt": "essays",
+      "q": 0.9647,
+      "shipped_edl": 5.09
+    },
+    {
+      "accepted_at_cap7": 6.112501401450544,
+      "d_ranked_greedy_at_flat_q": 7,
+      "d_ship_greedy_at_flat_q": 7,
+      "d_star_ranked_global": 7,
+      "prompt": "republic",
+      "q": 0.9661,
+      "shipped_edl": 4.99
+    },
+    {
+      "accepted_at_cap7": 6.058979957211095,
+      "d_ranked_greedy_at_flat_q": 7,
+      "d_ship_greedy_at_flat_q": 7,
+      "d_star_ranked_global": 7,
+      "prompt": "medicine",
+      "q": 0.9639,
+      "shipped_edl": 5.26
+    },
+    {
+      "accepted_at_cap7": 5.960494046209125,
+      "d_ranked_greedy_at_flat_q": 7,
+      "d_ship_greedy_at_flat_q": 7,
+      "d_star_ranked_global": 7,
+      "prompt": "botany",
+      "q": 0.9598,
+      "shipped_edl": 6.15
+    },
+    {
+      "accepted_at_cap7": 2.1197714986630016,
+      "d_ranked_greedy_at_flat_q": 2,
+      "d_ship_greedy_at_flat_q": 3,
+      "d_star_ranked_global": 2,
+      "prompt": "travel",
+      "q": 0.6974,
+      "shipped_edl": 2.65
+    },
+    {
+      "accepted_at_cap7": 1.4748617581287184,
+      "d_ranked_greedy_at_flat_q": 2,
+      "d_ship_greedy_at_flat_q": 2,
+      "d_star_ranked_global": 2,
+      "prompt": "drama",
+      "q": 0.603,
+      "shipped_edl": 2.3
+    },
+    {
+      "accepted_at_cap7": 0.4614163651888741,
+      "d_ranked_greedy_at_flat_q": 1,
+      "d_ship_greedy_at_flat_q": 1,
+      "d_star_ranked_global": 1,
+      "prompt": "plutarch",
+      "q": 0.3158,
+      "shipped_edl": 1.16
+    }
+  ],
+  "step2": {
+    "chain_reach_increments": [
+      0.9807,
+      0.9283,
+      0.9335000000000002,
+      0.8546999999999998,
+      0.6453000000000002,
+      0.9123000000000001,
+      0.7945999999999991
+    ],
+    "q_collapses_with_depth": false,
+    "q_mean": 0.9673120518364743,
+    "q_mean_deep_d4_7": 0.9619634145894809,
+    "q_mean_shallow_d1_3": 0.9744435681657988,
+    "q_sd": 0.008717290161305007,
+    "q_spread_pct": 2.8257022357539294,
+    "table": [
+      {
+        "accepted_count": 0.9807,
+        "accepted_draft_rate": 0.9807,
+        "implied_q": 0.9806999999999999,
+        "pinned_depth": 1,
+        "rows_M": 2
+      },
+      {
+        "accepted_count": 1.909,
+        "accepted_draft_rate": 0.9545,
+        "implied_q": 0.9693535993762699,
+        "pinned_depth": 2,
+        "rows_M": 3
+      },
+      {
+        "accepted_count": 2.8425000000000002,
+        "accepted_draft_rate": 0.9475,
+        "implied_q": 0.9732771051211266,
+        "pinned_depth": 3,
+        "rows_M": 4
+      },
+      {
+        "accepted_count": 3.6972,
+        "accepted_draft_rate": 0.9243,
+        "implied_q": 0.968759160037761,
+        "pinned_depth": 4,
+        "rows_M": 5
+      },
+      {
+        "accepted_count": 4.3425,
+        "accepted_draft_rate": 0.8685,
+        "implied_q": 0.9533666417245394,
+        "pinned_depth": 5,
+        "rows_M": 6
+      },
+      {
+        "accepted_count": 5.2548,
+        "accepted_draft_rate": 0.8758,
+        "implied_q": 0.9622237087665664,
+        "pinned_depth": 6,
+        "rows_M": 7
+      },
+      {
+        "accepted_count": 6.0493999999999994,
+        "accepted_draft_rate": 0.8642,
+        "implied_q": 0.9635041478290565,
+        "pinned_depth": 7,
+        "rows_M": 8
+      }
+    ]
+  }
+}
