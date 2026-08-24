@@ -889,7 +889,7 @@
  },
  "observedAt": "2026-08-24T05:50:00Z",
  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
- "officialSlot": "E190 cap-5 paid receipt SUBMITTING (Thorfinn, PR 188, candidate 913b0d59, confirmed EDL 4.804 <= 5; guard blocker resolved Entry 390 via merge-base argument 770a3ff2). Ready-behind candidate: E193 E165-prefetch retest (Alphonse building, PR 190, preauthorized to fire when E190 receipt terminal + frontier check passes). Then strongest of E189/E191/E192 winners.",
+ "officialSlot": "OCCUPIED: E190 cap-5 receipt in flight (submission 04710829-3c7e-4ace-9751-f1fda9e368e9, validating; Thorfinn PR 188, candidate 913b0d59; watcher job cae28b40). Decision rule: receipt > 3.5474 quadratic band (3.66501433 predicted), < 3.5474 staircase band. Ready-behind: E193 E165-prefetch retest (Alphonse, PR 190, screen running, preauthorized to fire when E190 receipt terminal + frontier check passes).",
  "onlyExactRoundCostOnBoard": {
   "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
   "optimised": {
@@ -2233,12 +2233,12 @@
  },
  "submissionQueue": {
   "ledger": 380,
-  "inFlight": null,
-  "frozenNext": null,
+  "inFlight": "E190 cap-5: submission 04710829, validating (Entry 391); candidate 913b0d59",
+  "frozenNext": "E193 E165-prefetch retest (PR 190): Stage 1 palindrome screen running; freeze after 512-token confirmation; preauthorized autonomous submit behind the E190 receipt",
   "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
  },
- "lastAdvisorUpdate": "2026-08-24T16:10Z Entry 390: E190 submit blocker resolved (merge-base guard argument, Entry 366 rule; unblock sent, submission proceeding); E193 assigned to Alphonse (E165-prefetch retest build/confirm/freeze, preauthorized submit when slot frees, PR 190); E192 rollback slot re-queued unassigned (below single-mechanism MUE); E189 seven-cell gate accepted (0/8,043,904 diffs), probe instrument fault self-caught",
- "ledgerEntry": 390,
+ "lastAdvisorUpdate": "2026-08-24T15:55Z Entry 391: E190 SUBMITTED (04710829 validating, watcher cae28b40); HARNESS DEFECT 42 fixed (shallow upstream defeated organizer-history guard; --unshallow now applies to any remote; RULE 385); E193 Stage 0/1 accepted (port = one-line default flip of MLX_E165_HEAD_PREFETCH, byte-identical to receipt D otherwise; 8-leg palindrome screen predeclared and running); RULE 384 validated twice in one day",
+ "ledgerEntry": 391,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2619,7 +2619,8 @@
  "e165RankedHarm": {
   "status": "UNCONFIRMED (FINDING 486, Entry 387)",
   "note": "FINDING 440 priced candidate-leg contrasts with serial-leg dispersion (4.58x understated); corrected max z = 1.28; plutarch-null defence void (channel sigma on plutarch 0.105% vs 0.58-0.95% on drafting prompts). Official retest of E165 prefetch on current best tree adopted, queued behind E190.",
-  "retestBuild": "E193 assigned Entry 390 (PR 190, Alphonse): build/confirm/freeze, preauthorized submit behind E190 receipt"
+  "retestBuild": "E193 assigned Entry 390 (PR 190, Alphonse): build/confirm/freeze, preauthorized submit behind E190 receipt",
+  "retestPortFact": "Entry 391: the E165 prefetch machinery is already on the maintained base behind MLX_E165_HEAD_PREFETCH default OFF, byte-identical to receipt D snapshot 376a43f3 except the default; eec2c14b is an ancestor of 376a43f3 so receipt D already measured the FINDING 494 rejection path with the prefetch on; E193 candidate = delete the switch (subtractive, RULE 198 hygiene)"
  },
  "e171MergePlan": {
   "status": "EXECUTED",
@@ -2800,5 +2801,13 @@
   "discriminator": "one 3.5-min barrier-timing leg separates the in-flight-reference account from the allocator-free account",
   "assignedTo": "E192 re-queued unassigned (Entry 390; superseded in priority by E193 ship-mode build)",
   "harness": "local, ungated, 128 tokens, M4 Pro"
+ },
+ "shallowUpstreamGuardDefect": {
+  "harnessDefect": 42,
+  "ledger": 391,
+  "rule": "RULE 385: if the organizer-history guard fires, check git rev-parse --is-shallow-repository before suspecting an organizer rewrite",
+  "mechanism": "depth-1 upstream fetch leaves upstream/main parentless; merge-base --is-ancestor always false; guard message reads as an organizer rewrite; fetch_remote applied --unshallow only for origin so retries never repaired it",
+  "fix": "submit-official.sh fetch_remote deepens any remote while .git/shallow exists (Entry 391 commit)",
+  "diagnosedBy": "qwen-thorfinn, E190 submission (PR 188)"
  }
 }

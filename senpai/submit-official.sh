@@ -165,8 +165,12 @@ fetch_remote() {
   local remote_name="$1"
   local tracking_ref="refs/remotes/${remote_name}/${SOURCE_BRANCH}"
   local fetch_args=(--no-tags "${remote_name}" "+refs/heads/${SOURCE_BRANCH}:${tracking_ref}")
-  if [[ "${remote_name}" == "origin" && -f "$(git rev-parse --git-path shallow)" ]]; then
-    fetch_args=(--no-tags --unshallow "${remote_name}" "+refs/heads/${source_branch}:${tracking_ref}")
+  # HARNESS DEFECT 42: a depth-limited upstream fetch leaves upstream/main
+  # parentless, so the organizer-history ancestry check can only fail, with a
+  # message that reads as an organizer rewrite. Deepen ANY remote while the
+  # repository is shallow, not just origin.
+  if [[ -f "$(git rev-parse --git-path shallow)" ]]; then
+    fetch_args=(--no-tags --unshallow "${remote_name}" "+refs/heads/${SOURCE_BRANCH}:${tracking_ref}")
   fi
   git fetch "${fetch_args[@]}"
 }
