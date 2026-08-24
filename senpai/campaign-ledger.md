@@ -71002,3 +71002,99 @@ price any local win as a mechanism result; a receipt prices ranked.
 - research_base_changed events for PRs 168/173/174/175 this cycle are advisor record-only
   publishes plus the PR 168 merge; no experiment replay is required (reasoning recorded in
   the PR 168 accept and here).
+
+---
+
+## Entry 378 — 2026-08-24 ~10:55Z — E176 r0 terminal (REFUTED, strong) + wrong-tree self-correction → r1 requested; FINDINGs 452–454
+
+### E176 (PR 175, Thorfinn) r0 typed result: hypothesis REFUTED, headline FINDING 450 stands
+
+Typed result `succeeded` at head `8f2eb8c8`, W&B `vxdn8h60`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/vxdn8h60). The
+brief's hypothesis (Q has decode consumers among small-N non-routable cells) is REFUTED.
+Zero GPU timing was needed. §§2–5 of the result (board measurements) are validated and
+unaffected by the census correction below; they yield FINDINGs 452–453.
+
+**Five minutes after submitting, Thorfinn self-corrected on the record: his §1 censused the
+WRONG TREE** (`Sources/MLXFastModel` `Qwen35Ops.linear` parallel implementation — referenced
+only from inside that module — instead of the scored, vendored
+`Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift` that `Qwen36MTPBlockSession`
+drives via `import MLXLLM`, exactly as program.md states). Three §1 claims are false as
+submitted: "no custom QMV replica exists in this tree", "no `Qwen35.swift` exists", and the
+497-call/13-cell table as a scored-path census. I had independently verified the replica
+first-hand before his correction landed (Entry 377 prep): 20 `metalKernel` instances,
+`Qwen35CustomQMV`, `routable()` at :1767, `qwen35RoutedQuantizedMM` at :1895, identical at
+organizer `0863b06a`. Alphonse's runtime counters (xs_hit per round, gen16 host) prove the
+replica executes at decode.
+
+**r1 revision requested** (typed result summary and committed `research/e176-result.md` +
+`research/e176-q-census.json` are durable records and must not carry the wrong-tree census —
+FINDING 390's residue failure mode). Scope: amend §1 with the corrected census, provenance-
+label every table, fix the gen13/14 remark (below), keep §§2–5 byte-identical, resubmit with
+primary metric 0 of 257. Desk-only, no GPU.
+
+### FINDING 452 — byte-identical receipt pair carries a coherent candidate-channel offset of −0.2346 % (harness=ranked)
+
+Null calibration on `ec24d591` (crown) vs `5a9f130a` (receipt A) — byte-identical trees —
+shows the cross-receipt null is NOT sign-symmetric: a whole-receipt candidate-channel offset
+of **−0.2346 %** appears 8/8 same-sign on prefill, decode, and leg, with only 0.18 %
+per-prompt spread. The serial channel does not carry it (mean8 +0.0051 %; one +1.13 % essays
+excursion — essays is dead as a per-prompt falsification lever). **Rule of use: any
+cross-receipt claim below ~0.25 % is unsafe.** The mean7 pairwise 0.189 % 1σ understated
+this because the offset is coherent, not random.
+
+### FINDING 453 — receipt C (`fda590bb`) is an outlier at 7.0σ; FINDING 440's Q attribution is conditional
+
+C−A is an inert-instrumentation-only contrast, yet its decode channel is **+0.9889 % mean7,
+7/8 positive = 7.0σ** on the 0.1421 % common-offset sd. B−C's −0.6691 % "Q gain" leaves
+−0.8687 % unexplained and located in C. The +0.0070 % additivity residual cannot detect this
+— (C−A)+(B−C)+(D−B)=D−A is an identity in receipt values, so it measures arithmetic, not
+provenance. Converges with Edward's independent C/A −1.08 % published anomaly and FINDING
+443's warning (C's commit `080d4cd3` unfetchable). B−A (both trees inspected first-hand)
+splits clean: decode +0.0153 % mean8 sd 0.11 (null), prefill +1.9359 % 0/8 negative —
+Edward's local +1.936 % reproduced on ranked M5 to three digits. Q is prefill-only,
+net +0.20 % leg SLOWER (+10–12 ms/leg). The E175 receipt adjudicates (three-model
+registration, Entry 377).
+
+### FINDING 454 — corrected scored-tree census: FINDING 450 now rests on two independent barriers; gen13/14 limit-6 explanation DEAD
+
+Scored tree (vendored Qwen35.swift, config `qwen3_6_27b_config.json`): **257 quantized
+dispatches per drafting round in 7 fused cells**, all N ≥ 4096, all replica-routable:
+mlp.gate_up 5120×34816 ×64, mlp.down 17408×5120 ×64, gdn.in_proj 5120×16480 ×48,
+gdn.out_proj 6144×5120 ×48, fa.qkv 5120×14336 ×16, fa.o_proj 6144×5120 ×16, lm_head
+5120×248320 ×1. Fusion eliminates every small-N cell — kv-proj n=1024 and gdn b/a n=48
+never exist as standalone dispatches, so the "non-routable small-N consumer" hypothesis
+fails because those cells are not dispatched at all.
+
+Two barriers between decode and `qmm_t`/`qmm_t_nax`:
+1. `Qwen35CustomQMV` consumes every routed cell at M 2–9 before MLX dispatch.
+2. M=1 and any fallthrough reach MLX where min `get_qmv_batch_limit` = 10 > 9 (gen16 and
+   gen ≥ 17).
+
+**`routable()` (:1767) has NO arch_gen dependence** (verified first-hand: dtype, shape,
+width 2–9, contiguity only). The replica intercepts M 2–9 on EVERY host including gen13/14.
+Consequence: the "gen13/14 size-s limit-6 ⇒ all calls switch at M ≥ 6" explanation offered
+in the r0 result for the non-transferring local step law (FINDING 449) and for FINDING 444's
+derived local Q ≈ −0.88 % decode is **DEAD**. The local step-law mechanism is unknown again;
+FINDING 444 remains an UNRESOLVED CONFLICT with no candidate explanation on the table.
+Corollary unchanged: any future `qmm_t` win needs decode M ≥ 10, forbidden by the 8-draft
+cap; the M=9 declamp lever cannot be priced through Q.
+
+### Process note
+
+Thorfinn's error (grep scoped to `Sources/`, "absence of evidence" promoted to "evidence of
+absence", used to overturn a correct advisor statement) was self-caught in five minutes,
+first-hand, with the root cause named and no unilateral push. Correct handling. The lesson
+mirrors ADVISOR ERROR 238: scope a census by "what does the scored session actually call",
+never by directory grep.
+
+### Board
+
+- E175 `15017ddf` still validating; Edward holds the watcher; three-model registration
+  frozen (advisor 3.7328/3.7267, Edward 3.7218/3.7157, Thorfinn 3.7021 band 3.700–3.704).
+  FINDING 452's 0.25 % floor applies to reading the receipt against A.
+- Thorfinn: r1 in flight (amend §1, resubmit).
+- Askeladd: E177 depth-law recovery (PR 176, wip). Note for E177: FINDING 454 means ranked
+  cost(M) structure lives in the replica kernel + qmv, not in qmm_t switching.
+- Alphonse: E174 dedup census (PR 173, wip). FINDING 454 confirms his ~257 standalone
+  xsums fills/round = exactly the 257 scored dispatches.

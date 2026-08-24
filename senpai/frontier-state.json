@@ -1845,7 +1845,7 @@
  },
  "rankedRoundIsAStepFunction": {
   "finding": 407,
-  "status": "measured directly on local M4 (per-round medians); RANKED TRANSFER FALSIFIED by controlled receipt 90c131dc (FINDING 449) \u2014 do not price ranked rounds with groups(M) steps",
+  "status": "measured directly on local M4 (per-round medians); RANKED TRANSFER FALSIFIED by controlled receipt 90c131dc (FINDING 449) \u2014 do not price ranked rounds with groups(M) steps FINDING 454 also kills the gen13/14 limit-6 mechanism explanation for the local step law: the replica intercepts M 2-9 on every host, so qmm_t switching cannot produce local steps either. Local step-law mechanism unknown.",
   "refutation": "the linear model T(M) = 16.1585 + 5.3350*M gives T(1) = 21.494 ms, which is 1.979 ms BELOW the 23.473 ms physical weight-stream floor. A decode round must read every backbone weight once. The linear model is impossible, not imprecise.",
   "plutarchDiscriminator": {
    "observed": 30.522,
@@ -2247,8 +2247,8 @@
   "preparing": null,
   "frozenNext": null
  },
- "lastAdvisorUpdate": "2026-08-24T10:35Z ledger entry 377: FINDING 450 Q decode set empty (three-model E175 registration), FINDING 451 fill-cost bracket + pivot ruling, ADVISOR ERROR 238",
- "ledgerEntry": 377,
+ "lastAdvisorUpdate": "2026-08-24T10:58Z ledger entry 378: E176 r0 terminal REFUTED + wrong-tree self-correction -> r1 requested; FINDING 452 receipt-channel offset -0.2346% (0.25% cross-receipt floor), FINDING 453 receipt C outlier 7.0 sigma, FINDING 454 two-barrier census (257/7 cells, all routable; gen13/14 limit-6 explanation dead)",
+ "ledgerEntry": 378,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2411,7 +2411,10 @@
   "448": "CAP-4 SINGLE-FACTOR RANKED COST. Receipt 90c131dc (organizer-pure 0863b06a + segmentedVerifyDepthCap 7->4, frozen 99959d49, surface e044a583) REJECTED at 3.54742900664627 = -4.33 % published vs receipt A 3.70784519415395. A is itself organizer-pure, so the contrast is SINGLE-FACTOR: exactly one literal. ~23x the candidate-leg 1 sigma 0.189 %. The student-stated extras-removal confound does not exist (corrected in the accept record). The same frozen tree measured -3.97 % candidate time locally: the depth axis inverts between local M4 and ranked M5. Registered central 3.9847 missed by -11 %.",
   "449": "STEP-LAW RANKED TRANSFER FALSIFIED. FINDING 407's step model priced cap-4 at worst-feasible 4.1637 published (roof 4.3058, already assuming h=2.5 ms); the controlled outcome 3.5474 is 15 % below worst-feasible. groups(M) weight-pass steps are directly measured on local M4 but do NOT price ranked M5 rounds; rough implied ranked ratio M~7/M<=5 = 1.3-1.4x, not 1.77x and not 1.0x. Every step-law-derived ranked verdict is unsupported, including the depth-cap-8 DEAD verdict (reopened, unpriced). The ranked depth law is UNKNOWN with exactly two controlled points; recovery is E177.",
   "450": "The Q-consuming decode set is EMPTY at every M on every host that matters. get_qmv_batch_limit (quantized.cpp:84-125) returns its 14/10/6 table only for arch_gen 13/14; g16s (gen 16) and every nax-capable host (gen >= 17, device.cpp:913-925) take 18/12/10, minimum 10. Decode width M = d+1 <= 9 < 10, so every transposed decode cell dispatches to qmv. No decode call site folds heads/chunks into M (all 257 wide QMV calls are x=[1,M,K], M<=9). qmm_t_splitk is dead code on this model (entry 258). Q edits touch only qmm_t/qmm_t_nax/qmm_t_splitk, therefore Q's ranked exposure is PREFILL-ONLY (the M~512 seed). B-C = -0.6691 % mean7 candidate-leg cannot be Q-decode. Q-prefill goes the wrong way (+2.17 % C->B prefill x 6.78 % share = B slower by ~+0.15 %). B-C therefore requires a ~-0.8 % non-code component in receipt C. Converges with Edward's C/A -1.08 % published anomaly: RECEIPT-C-OUTLIER hypothesis. FINDING 440 Q attribution is conditional on the E175 receipt.",
-  "451": "One standalone x-sums fill dispatch plus its host kernel record costs 4.0-5.3 us of candidate MTP wall time. Lower bound o-s (identical consumer): +0.3849 % leg, 699.1 us/round, 127 cells, 5.505 us/cell. Upper bound f-r (different consumer pipelines, grade C): +0.5190 %, 981.9 us/round, 257 cells, 3.820 us/cell. Bounds cross -> bracket, not a point."
+  "451": "One standalone x-sums fill dispatch plus its host kernel record costs 4.0-5.3 us of candidate MTP wall time. Lower bound o-s (identical consumer): +0.3849 % leg, 699.1 us/round, 127 cells, 5.505 us/cell. Upper bound f-r (different consumer pipelines, grade C): +0.5190 %, 981.9 us/round, 257 cells, 3.820 us/cell. Bounds cross -> bracket, not a point.",
+  "452": "Byte-identical receipt pair (ec24d591 vs 5a9f130a): coherent candidate-channel offset -0.2346% 8/8 same-sign on prefill+decode+leg, spread 0.18%; serial clean. Cross-receipt claims < ~0.25% are unsafe. harness=ranked. (E176 task 2, W&B vxdn8h60)",
+  "453": "Receipt C (fda590bb) is an outlier: C-A decode +0.9889% mean7 = 7.0 sigma on inert-only contrast; B-C's -0.6691% cannot be Q-decode (FINDING 450) and leaves -0.8687% located in C; FINDING 440 Q attribution conditional on E175 receipt. B-A splits clean: Q is prefill-only (+1.9359% prefill 0/8 neg, decode +0.0153% null), net leg +0.20% SLOWER. harness=ranked. (E176, W&B vxdn8h60)",
+  "454": "Corrected scored-tree census: 257 dispatches/round in 7 fused cells, all N>=4096, all replica-routable; FINDING 450 rests on two independent barriers (replica consumes M 2-9 pre-MLX; fallthrough hits limit 10 > 9). routable() has NO arch_gen dependence -> replica intercepts on every host; gen13/14 limit-6 explanation for local step law and FINDING 444 is DEAD. Fusion eliminates small-N cells entirely. E176 r0 censused the wrong tree (Sources/MLXFastModel, not scored); r1 amends. harness=source."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2591,7 +2594,7 @@
  },
  "qLocalRankedCrossCheck": {
   "finding": 444,
-  "statement": "Askeladd r1 vs r0-cap (identical cap-4 schedule, digit-identical histogram): organizer-pure is +0.67 % slower LOCAL than the campaign tree. Composite removes Q + instrumentation + inert deltas at once; with local instrumentation tax ~+0.21 % (E167 B3), local Q ~= -0.88 %. Ranked Q = -0.6691 % (B-C, FINDING 440). Same sign, transfer ratio ~0.76: first cross-host corroboration that Q is a real hardware-portable mechanism, not a receipt-channel artifact.",
+  "statement": "Askeladd r1 vs r0-cap (identical cap-4 schedule, digit-identical histogram): organizer-pure is +0.67 % slower LOCAL than the campaign tree. Composite removes Q + instrumentation + inert deltas at once; with local instrumentation tax ~+0.21 % (E167 B3), local Q ~= -0.88 %. Ranked Q = -0.6691 % (B-C, FINDING 440). Same sign, transfer ratio ~0.76: first cross-host corroboration that Q is a real hardware-portable mechanism, not a receipt-channel artifact. UPDATE (FINDING 454): the gen13/14 size-s limit-6 explanation offered in E176 r0 for this conflict and for the non-transferring local step law is DEAD -- routable() (Qwen35.swift:1767) has no arch_gen dependence, so the replica intercepts M 2-9 on EVERY host and no scored cell reaches qmm_t at any decode M on any generation. The conflict is fully unresolved with no candidate explanation on the table; settling measurement remains organizer-pure vs organizer-pure+Q local pair with separated prefill/decode.",
   "signFlipResolved": "ranked B-A = +0.20 % (campaign extras net-hurt ranked) vs local -0.67 % (net-help local) is fully explained by instrumentation taxing ranked ~4x harder (+0.88 % ranked vs +0.21 % local). No contradiction.",
   "wandb": [
    "u2g6yfjx",
@@ -2636,7 +2639,9 @@
   "statement": "The Q-consuming decode set is EMPTY at every M on every host that matters. get_qmv_batch_limit (quantized.cpp:84-125) returns its 14/10/6 table only for arch_gen 13/14; g16s (gen 16) and every nax-capable host (gen >= 17, device.cpp:913-925) take 18/12/10, minimum 10. Decode width M = d+1 <= 9 < 10, so every transposed decode cell dispatches to qmv. No decode call site folds heads/chunks into M (all 257 wide QMV calls are x=[1,M,K], M<=9). qmm_t_splitk is dead code on this model (entry 258). Q edits touch only qmm_t/qmm_t_nax/qmm_t_splitk, therefore Q's ranked exposure is PREFILL-ONLY (the M~512 seed).",
   "verifiedBy": "advisor first-hand source read 2026-08-24T10:30Z; completes ADVISOR-ERROR-225",
   "owner": "qwen-thorfinn E176 interim 1 (PR 175), probe research/e176_arch_probe.swift",
-  "consequence": "B-C = -0.6691 % mean7 candidate-leg cannot be Q-decode. Q-prefill goes the wrong way (+2.17 % C->B prefill x 6.78 % share = B slower by ~+0.15 %). B-C therefore requires a ~-0.8 % non-code component in receipt C. Converges with Edward's C/A -1.08 % published anomaly: RECEIPT-C-OUTLIER hypothesis. FINDING 440 Q attribution is conditional on the E175 receipt."
+  "consequence": "B-C = -0.6691 % mean7 candidate-leg cannot be Q-decode. Q-prefill goes the wrong way (+2.17 % C->B prefill x 6.78 % share = B slower by ~+0.15 %). B-C therefore requires a ~-0.8 % non-code component in receipt C. Converges with Edward's C/A -1.08 % published anomaly: RECEIPT-C-OUTLIER hypothesis. FINDING 440 Q attribution is conditional on the E175 receipt.",
+  "strengthenedBy": 454,
+  "twoBarriers": "FINDING 454 (corrected scored-tree census, E176 r0 self-correction): the scored tree is the vendored Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift (Qwen36MTPBlockSession drives it via import MLXLLM); it dispatches 257 quantized calls/round in 7 fused cells, ALL N >= 4096 and ALL replica-routable (mlp.gate_up 5120x34816 x64, mlp.down 17408x5120 x64, gdn.in_proj 5120x16480 x48, gdn.out_proj 6144x5120 x48, fa.qkv 5120x14336 x16, fa.o_proj 6144x5120 x16, lm_head 5120x248320 x1). Barrier 1: Qwen35CustomQMV consumes every routed cell at M 2-9 before MLX dispatch. Barrier 2: M=1 and any fallthrough reach MLX where min get_qmv_batch_limit = 10 > 9 on gen16/gen>=17. Fusion eliminates every small-N cell (kv-proj n=1024, gdn b/a n=48 never exist as standalone dispatches). E176 r0's 497-call/13-cell census was the WRONG TREE (Sources/MLXFastModel parallel implementation, not scored); its 'no replica exists' claim is false; r1 amends the durable record."
  },
  "e175ThreeModelRegistration": {
   "rankedRouteCentrals": {
@@ -2663,5 +2668,17 @@
   "wandb": "7ueick4f",
   "artifacts": "research/out/e174-screen-s1.json, e174-decompose-s1.json, commit 007bd06c",
   "pivotRuling": "dedup census first (count distinct activation identities among ~257 standalone fills); >=20 % dupes -> smallest dedup arm via existing Slot/take/publish + one ABBA gated pair; <20 % -> CPU-side record-creation probe gates item-2 record cache; BF16 gate parked. Sidecar/replica is organizer code, so the cost is paid on the shipped tree."
+ },
+ "receiptChannelNullOffset": {
+  "finding": 452,
+  "harness": "ranked",
+  "statement": "Byte-identical receipt pair ec24d591 (crown) vs 5a9f130a (A) shows the cross-receipt null is NOT sign-symmetric: a coherent whole-receipt candidate-channel offset of -0.2346% appears 8/8 same-sign on prefill, decode, and leg with 0.18% per-prompt spread. Serial channel clean (mean8 +0.0051%; one +1.13% essays excursion kills essays as a per-prompt falsification lever). RULE OF USE: any cross-receipt claim below ~0.25% is unsafe; the 0.189% mean7 pairwise 1-sigma understates the offset because it is coherent, not random.",
+  "source": "E176 task 2, W&B vxdn8h60"
+ },
+ "receiptCOutlier": {
+  "finding": 453,
+  "harness": "ranked",
+  "statement": "Receipt C (fda590bb, inert-instrumentation-only contrast vs A) is an outlier: C-A decode channel +0.9889% mean7, 7/8 positive = 7.0 sigma on the 0.1421% common-offset sd. B-C's -0.6691% 'Q gain' leaves -0.8687% unexplained, located in C. The +0.0070% additivity residual is an identity ((C-A)+(B-C)+(D-B)=D-A) and cannot detect this. Converges with Edward's independent C/A -1.08% published anomaly and FINDING 443 (C's commit 080d4cd3 unfetchable). B-A (both trees inspected first-hand) splits clean: decode +0.0153% mean8 sd 0.11 (null); prefill +1.9359% 0/8 negative = Edward's local +1.936% reproduced on ranked M5 to three digits. Q is prefill-only, net +0.20% leg SLOWER. FINDING 440's Q attribution is conditional on the E175 receipt (three-model registration adjudicates).",
+  "source": "E176 tasks 2-3, W&B vxdn8h60"
  }
 }
