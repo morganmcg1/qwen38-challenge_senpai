@@ -66769,3 +66769,267 @@ B1           35a8a9de  morganmcg1  3.694062213       rejected   commit 08f81100
 - PR 165 thorfinn, per-round fixed cost, `e165L4` promoted to deliverable.
 - PR 166 edward, ship the maintained base, holds the official slot, owns the receipt watcher.
 - PR 167 askeladd, the ranked depth optimum, next in the submission queue.
+
+## Entry 352 — 2026-08-24T03:35:00Z — Two refutations in one cycle, both of my own briefs; the board cannot measure depth; the row is the only channel worth better than 1x
+
+### Summary
+
+Alphonse and askeladd both returned terminal negatives, both refuting hypotheses
+I wrote, and both did it without spending a timed comparison arm on the wrong
+mechanism. PR 163 and PR 167 are closed unmerged with the evidence preserved.
+Edward submitted `180db842` and holds the official slot. Thorfinn's 512-token
+prefetch ABBA is running. Askeladd and alphonse are reassigned to PR 168 and
+PR 169.
+
+I also spent this cycle trying to measure the ranked depth axis from 612
+pinned-head board receipts. It cannot be done, and finding out why retired an
+argument I had already put into a student brief.
+
+---
+
+### FINDING 379 — the board's schedule support is two build generations, not a depth axis
+
+`harness=ranked`. 612 receipts on the pinned head `559b24eb`, all with
+`len(per_prompt)==8`, `decode_tokens==512`, `parity_all_ok`.
+
+The schedule support is dominated by two clusters:
+
+```
+cluster A  beagle 4.382  botany 6.148  essays 5.087  medicine 5.256  republic 4.989   n=293
+cluster B  beagle 4.533  botany 5.776  essays 5.425  medicine 4.768  republic 5.270   n=229
+other                                                                                 n= 90
+```
+
+Cluster B is deeper on beagle, essays and republic and shallower on botany and
+medicine. It is not a depth setting. Decode seconds per token, cluster B minus
+cluster A, with solver fixed effects:
+
+```
+prompt      nA    nB   B-A ms/tok      se        t   B deeper?
+beagle     290   222      +0.8272  0.0535   +15.45        yes
+botany     290   222      +0.8906  0.0541   +16.46         no
+drama      290   222      +0.9577  0.0893   +10.72       same
+essays     290   222      +0.7892  0.0492   +16.03        yes
+medicine   290   222      +1.1327  0.0571   +19.85         no
+plutarch   290   222      +0.1344  0.0493    +2.73       same
+republic   290   222      +0.8392  0.0495   +16.94        yes
+travel     290   222      +0.9046  0.0805   +11.24       same
+```
+
+**Cluster B is slower on all eight prompts, including the three where both
+clusters run identical schedules.** drama +0.958 at t = +10.7 and travel +0.905
+at t = +11.2 cannot be depth effects because the depth is the same. B is a
+slower build generation.
+
+Corroboration. Cluster B's board-wide maximum is `3.2546`; cluster A's is the
+crown at `3.7291`. Every one of the top 25 receipts is cluster A. Twenty-one
+solvers submitted in both clusters and **21 of 21 scored higher in A**, mean
+best-A minus best-B `+0.385`. Our best `5a9f130a`, the crown `ec24d591`, and the
+crown's parent `684821ed` are all cluster A, so no cluster correction applies to
+any of our comparisons.
+
+Plutarch is the diagnostic. It drafts in about 8 % of its rounds and shows only
++0.134 against +0.79 to +1.13 elsewhere, so the B penalty is a per-drafting-round
+build cost.
+
+### ADVISOR ERROR 220 — I priced a build artifact as a depth measurement
+
+The claim "948 receipts, 190 schedules, and not one of them is both deep and
+fast", which I put in askeladd's E166 brief as falsification evidence, is an
+artifact. The apparent within-prompt depth slopes are the A-to-B build gap
+re-signed by whichever cluster happens to draft deeper on each prompt.
+
+I then tried to rescue the design with a leave-one-out common-build control
+(`z_ip = dec_ip/median_p - 1`, `f_ip = mean over q != p of z_iq`). It produces a
+clean sign flip: deeper is faster on all five high-acceptance prompts and slower
+on drama and travel, with implied `h` of 5.57 ms/row against the between-prompt
+5.335. It is seductive and it is wrong. **Six of seven wrong-prompt negative
+controls fire, up to |t| = 15.5, with the same signs.** Regressing a prompt's
+decode time on a *different* prompt's schedule reproduces the result, so the
+design identifies schedule generation, not depth.
+
+**The ranked depth axis is unmeasurable from the board.** It is an empty cell,
+not a tested and rejected one. This is consistent with RULE 373: the exposure
+library is approximately rank-2 and selected exposures need |t| >= 5.5.
+
+### ADVISOR ERROR 219 — FINDING 378 was refuted at the source level
+
+Askeladd refuted E166 in about 25 minutes without building an arm. Full report
+`research/e166-result.md`, W&B `ob750vyt`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ob750vyt
+
+1. The shipped objective `f(d) = (1 + 0.18*d)/(1 + E(d))` under
+   `depthPriceArm = .ship` is **scale-free and dimensionless**.
+   `headStepCostRatio = 0.18` is a ratio, not milliseconds, so no LAW 354
+   weight-stream step can live in it under any calibration. `.ship` resolves to
+   `makeUniformDepthPrice()` at `Qwen36MTPBlockSession.swift:1015`.
+   `measuredRawDepthPrice[4] = 0.6329` is reachable only under `.pbfit`, which
+   is not selected. `sdpaWidthWallDepthCap = 5` is dead: exactly two treewide
+   references, the declaration at `:1053` and one comment at `:1105`.
+2. The ranked truth implies a per-row ratio of `0.24821` against the shipped
+   `0.18`, so the shipped policy is too **cheap** per row. Correcting it makes
+   the greedy walk **shallower**, the opposite of my briefed mechanism.
+3. At each prompt's measured `q` the shipped rule **already selects d = 7** on
+   all five high-acceptance prompts, which is the ranked optimum I derived.
+   Predicted gain +0.00 %, not +4.19 %. Only travel disagrees, 3 -> 2.
+4. Measured anyway: open-loop replay of a traced 512-token adaptive leg under
+   the briefed ranked price gives mean depth 5.821 and 8.6330 ms/token against
+   ship 8.4664, a **+1.97 % regression**.
+
+Controls: 513 trace steps rebuilt with worst absolute error 1.8e-6; replayed
+depth equals realised depth on 77/77 interior rounds, with round 78 reported
+separately as window truncation. `phi_acc = 0` survives and **ADVISOR ERROR 217
+is closed**: the E166 step 0 island prelude gave digit-identical ledgers between
+arms (27 rounds, EDL 3.814815, 102/1 accept/reject, 130/130 rows, 0 residual
+divergences), so FINDING 372 holds under mechanism (b) — the island transform
+changes runtime only and never the decision walk. Islands OFF costs +0.31 % to
++0.43 % per round, directional only, so islands are the faster arm.
+
+Askeladd withdrew his own traced-versus-untraced timing claim on a 20.0 C entry
+spread (79.20 against 59.21) and kept only the thermally immune EDL identity.
+He then found the harness had produced no A/B estimate for that pair at all
+(`blocks=0`, reducer exits 1), which is stronger than the withdrawal.
+
+### FINDING 380 — `effective_mean_draft_len` is mean proposed draft rows per round
+
+Settled, and it closes the open E167-B question assigned to Edward. Askeladd's
+traced leg reports `draft=6.3589743589743586` and mean realised offered depth
+`6.359`; they are the same number to the last digit.
+
+Verified against the board with the FINDING 374 round-count identity, using
+`acceptance = (512 - rounds) / (rounds * edl)`:
+
+```
+prompt      edl    rounds   proposed   accepted extra   acceptance
+local      6.359      78       496           434          0.875
+botany     6.148      81       498           431          0.866
+medicine   5.256      90       473           422          0.892
+essays     5.087      92       468           420          0.897
+republic   4.989      93       464           419          0.903
+beagle     4.382     110       482           402          0.834
+travel     2.648     213       564           299          0.530
+drama      2.298     252       579           260          0.449
+plutarch   0.156     488         76            24          0.316
+```
+
+The acceptance column recovers FINDING 374's `alpha` independently.
+
+### FINDING 381 — beagle drafts 31 % shallower than our local fixture at a 5 % lower acceptance rate
+
+From the table above: the local fixture accepts at 0.875 and is offered 6.359
+rows; ranked botany accepts at 0.866 and is offered 6.148, which tracks. But
+**ranked beagle accepts at 0.834 and is offered only 4.382**. The policy is not
+tracking acceptance there. The two candidate causes are the depth-0 and depth-1
+margin clamps and a depressed `positionAcceptEMA`.
+
+This matters because of FINDING 342: the marginal published weight is `0.47808`
+beagle, `0.52192` essays, and exactly zero on the other six. The two shallowest
+high-acceptance prompts on the board are beagle 4.382 and essays 5.087. The
+prompt drafting closest to its optimum, botany 6.148, is worth nothing at the
+margin. Whatever truncates depth is concentrated exactly where the score is
+decided.
+
+Priced with `R(M) = 16.1585 + 5.3350*M`, beagle at depth 7:
+
+```
+beagle now       M = 5.382   R = 44.98 ms   4.655 tok/round   9.66 ms/tok
+depth 7, acc 0.834           R = 58.84 ms   6.84  tok/round   8.60 ms/tok   -11.0 %
+depth 7, acc 0.80            R = 58.84 ms   6.60  tok/round   8.92 ms/tok    -7.7 %
+depth 7, acc 0.75            R = 58.84 ms   6.25  tok/round   9.41 ms/tok    -2.5 %
+depth 7, acc 0.70            R = 58.84 ms   5.90  tok/round   9.97 ms/tok    +3.2 %
+```
+
+Break-even is acceptance about 0.72. This is now PR 168.
+
+### E163 closed — the transfer law is confirmed and four of my supporting numbers are dead
+
+Alphonse declined to build the width-6 one-pass arm after F5 and priced the
+mechanism instead. W&B `plnv63p3`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/plnv63p3
+
+Six-leg pinned palindrome, 512 tokens, real 40 C gate,
+`gate_qualified_for_timing=true` on all six legs. Three cells fix
+
+```
+R_local = 57.384 + 7.002*rows + 28.605*(G-1)
+```
+
+exactly: identity residual +0.000000 ms, cross-estimator residuals <= 0.124 ms,
+pooled sd 0.2238 ms. Askeladd's independent intercept 57.83 ms agrees to 0.8 %
+and his R(5) and R(6) agree to 1.0 % and 0.8 % on a different host with a
+different instrument. My signed prediction was A = +13.9 ms; the measurement is
+2.06x that.
+
+Adopted corrections:
+
+- The ranked box is `m5-max-128gb-3`, Metal cache key `mlx-metallib-m5-max-v2`,
+  so it is an **M5 Max** and 590 GB/s is not self-evidently impossible there.
+  FINDING 375 no longer rests on that argument. It rests on the disproportion
+  test: the second weight stream is 22.35 % of alphonse's round, an equal ranked
+  share would be 10.93 ms, and the measured ranked effect is -0.20 ms.
+- The 57.1 %-of-peak headline is retracted. Against the measured 255.5 GB/s peak
+  the round runs at **80.3 %** and local headroom is **18.23 ms, not 43 %**.
+  This kills ADVISOR ERROR 216 completely rather than partially.
+- The 116.46 ms round figure is retracted as host state, not width.
+- The eval versus `verify_build_us` counter split is withdrawn;
+  `verify_build_us` is about 97 % GPU wait.
+- `14,417,640,448 B` does include the 248,320 x 5,120 vocabulary readout and the
+  group-64 scales and biases. Without the readout 13.702 GB; packed 4-bit only
+  12.811 GB; without both 12.175 GB. The ranked first stream is 294.7 GB/s on
+  the stated count and never below 248.8 GB/s.
+
+Exactness green: 126 cells, 10,867,296 elements per arm, `max_abs_delta = 0`,
+63 of 63 positive controls rejecting.
+
+Closed axis `width6_one_pass_ipg_table_entry`. Refuted on the ranked host by
+three independent board arms, not merely unmeasured. Reopen only on a ranked
+host generation change.
+
+### Official submission in flight
+
+Edward submitted `180db842-a6b3-4bca-b50b-66372c34f389`, commit
+`a69e3de131d626e72503e1a5510c489634603318`, `BASE_SHA`
+`770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf`, model flag `senpai`, status
+validating. Frontier verified at 02:50Z: top promoted `ec24d59` newjordan
+`3.7291100105909` commit `0863b06a`, agreeing with `frontier-state.json` on
+submission ID, solver, score and source reference. **The crown has not moved.**
+Receipt watcher `023eaee4`, read-only, output outside the checkout. W&B
+`cqfa2d6n`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/cqfa2d6n
+
+### Operational fact recorded in the runbook
+
+`senpai/submit-official.sh` requires a submission note of **at least 5 KiB** and
+rejects a shorter one locally without creating a submission. This is written
+nowhere in `program.md` or the runbook and cost Edward one round trip. The note
+must also cover the full narrative arc the error text names and be passed as a
+path readable from the checkout. Added to `senpai/experiment-runbook.md`,
+together with the rule that a note must never claim `swift test` is green: it
+carries 41 pre-existing failures, and the correct statement is the count, how
+many are new, and whether any exercises the changed surface.
+
+### Board state
+
+Crown unchanged: `ec24d591` newjordan `3.7291100105909`, source ref `0863b06a`,
+promoted. Our best `5a9f130a` `3.70784519415395`. Gap +0.5735 % published,
+draw-neutral replicable part +0.2071 %.
+
+### Live assignments after this cycle
+
+- PR 165 thorfinn, `e165-per-round-fixed-cost`. Cross-round head-chain prefetch
+  built, gated and witnessed; 512-token ABBA running as job `18875159`. Targets
+  the 790.3 microsecond per-round `gpu_idle_window` intercept, a
+  `per_round_fixed` term that transfers at 0.34x, so full local recovery is
+  about 267 microseconds per ranked round against our +0.2883 ms/round deficit
+  to the crown.
+- PR 166 edward, `e167-ship-the-maintained-base`. Submitted, holds the official
+  slot, owns the receipt watcher.
+- PR 168 askeladd, `e168-margin-clamp-calibration`. Calibrate the depth-0 and
+  depth-1 `pendingTop2` margin clamps at
+  `Qwen36MTPBlockSession.swift:1137-1151` rather than ablate them. My claim to
+  be falsified first: the clamps choose offered depth only and cannot affect
+  exactness.
+- PR 169 alphonse, `e169-marginal-verified-row-decomposition`. Decompose the
+  5.3350 ms ranked marginal verified row, 63.8 % of the ranked beagle round and
+  66.4 % of essays, and the only LAW 377 channel that transfers at better than
+  1x. Our `h = 5.3408 ms` is already the lowest on the board.

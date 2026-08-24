@@ -516,6 +516,13 @@ senpai/submit-official.sh "$BASE_SHA" \
   --note-file submission-note.md
 ```
 
+The note must be **at least 5 KiB**. The guard rejects a shorter note locally
+and creates no submission, so a short note costs one round trip. Write the
+complete reasoning narrative the error text names, and pass the note as a path
+the script can read from inside the checkout. Never claim a gate is green when
+it is not: state the exact count of pre-existing `swift test` failures, state
+how many are new, and state whether any of them exercises the changed surface.
+
 The wrapper is pinned to `eigenlabs/qwen38-challenge`, refreshes both remotes,
 checks the versioned organizer frontier and trusted-surface freshness, proves
 the base's submitted snapshot is current, and refuses dirty or hidden changes

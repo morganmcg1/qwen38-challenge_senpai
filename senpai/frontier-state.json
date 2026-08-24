@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-24T03:10:00Z",
+  "observedAt": "2026-08-24T03:35:00Z",
   "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
@@ -231,18 +231,13 @@
     "free_ranked_replicate": "WITHDRAWN by Edward E164 Q2, ledger 350.6. No receipt pair on the whole board shares a commit, so the \"free replicate\" I assumed does not exist. The cross-leg slope beta = 1.914 CI95 [-0.37, 4.14] spans zero.",
     "smallest_feasible_N": "WITHDRAWN by Edward E164 A2, ledger 350.6. drama (252 rounds, alpha 0.4491) and travel (213, 0.5301) are not at their smallest feasible N. What pins the ranked round counts is the acceptance-rate consistency check, not a minimal-N rule."
   },
-  "openQueue": {
-    "official_slot": "qwen-edward PR 166, maintained base with E162 arms A and B, receipt watcher owned",
-    "next_in_queue": "qwen-askeladd PR 167, FINDING 378 ranked depth optimum",
-    "in_flight": [
-      "qwen-thorfinn PR 165 per-round fixed cost, e165L4 promoted to deliverable",
-      "qwen-alphonse PR 163 width-6 one-pass, closed by FINDING 375, terminal result pending"
-    ],
-    "unowned": [
-      "dispersionLever (askeladd FINDING E, +0.500 percent at zero mean speedup)",
-      "decomposition of the 5.3350 ms ranked marginal verified row, never attempted"
-    ]
-  },
+  "openQueue": [
+    "PR 165 thorfinn e165 prefetch ABBA running, targets 790.3 us/round gpu_idle_window, transfers at 0.34x to about 267 us/ranked round against our +0.2883 ms/round deficit",
+    "PR 166 edward 180db842 validating, holds the official slot, watcher 023eaee4",
+    "PR 168 askeladd e168 margin-clamp calibration, break-even acceptance 0.72, beagle upside up to -11.0 %",
+    "PR 169 alphonse e169 marginal verified row decomposition, 63.8 % of the ranked beagle round",
+    "UNOWNED: FINDING E dispersion lever, +0.500 % published at zero mean speedup; mechanism must stay prompt-agnostic"
+  ],
   "rankedRoundBudgetIdentified": {
     "finding": "FINDING 330, ledger 341",
     "receipt": "5a9f130a",
@@ -401,6 +396,21 @@
       "verdict": "deprioritised, prices at about zero ranked",
       "closedAt": "2026-08-24T03:10:00Z",
       "evidence": "FINDING 373's 39.6 ms local deficit is LAW 377 channel 1. ADVISOR ERROR 216."
+    },
+    "width6_one_pass_ipg_table_entry": {
+      "closedAt": "2026-08-24T03:35:00Z",
+      "reason": "refuted on the ranked host by three independent board arms; c47b45be 3.649616 and 24fb4012 3.692476 shipped the exact table entry and lost",
+      "reopenIf": "the ranked host generation changes"
+    },
+    "depth_policy_price_recalibration": {
+      "closedAt": "2026-08-24T03:35:00Z",
+      "reason": "the shipped objective is dimensionless (headStepCostRatio 0.18 is a ratio) and already selects d=7 at every high-q prompt; correcting toward ranked ratio 0.24821 makes it shallower and costs +1.97 %",
+      "reopenIf": "new evidence about the acceptance estimator, which is a different object"
+    },
+    "board_identification_of_depth": {
+      "closedAt": "2026-08-24T03:35:00Z",
+      "reason": "FINDING 379; both the naive and the build-controlled designs fail their negative controls",
+      "reopenIf": "a solver ships a schedule-only change with an otherwise byte-identical scored surface and declares it"
     }
   },
   "transferLaw": {
@@ -456,6 +466,21 @@
           "evidence": "RULE 192, unaffected by FINDING 375"
         }
       ]
+    },
+    "rankedHostIdentity": {
+      "runner": "m5-max-128gb-3",
+      "metalCacheKey": "mlx-metallib-m5-max-v2",
+      "chip": "M5 Max",
+      "consequence": "590 GB/s is not self-evidently impossible there; FINDING 375 rests on the disproportion test instead",
+      "disproportionTest": "the second weight stream is 22.35 % of the local round; an equal ranked share would be 10.93 ms; the measured ranked effect is -0.20 ms"
+    },
+    "localRoundLaw": {
+      "harness": "local, g16s",
+      "law": "R = 57.384 + 7.002*rows + 28.605*(G-1)",
+      "identityResidualMs": 0.0,
+      "crossEstimatorResidualMaxMs": 0.124,
+      "pooledSdMs": 0.2238,
+      "independentIntercept": "askeladd 57.83 ms, agrees to 0.8 %"
     }
   },
   "rankedPrefill": {
@@ -793,6 +818,189 @@
       "id": 218,
       "error": "claimed h=7.0 ms reproduces the shipped depths on 8 of 8 prompts",
       "correction": "that mixed h=7.002 with an spt computed at h=5.335; no single h reproduces the schedule"
-    }
-  ]
+    },
+    "219: FINDING 378 assumed the shipped depth policy carries an M4-Pro millisecond calibration with a LAW 354 step. It is a dimensionless ratio rule. I wrote a mechanism into a brief without reading the arm selector. The briefed change was a +1.97 % regression.",
+    "220: I used 'no board schedule is both deep and fast' as falsification evidence in a student brief. It is the A-to-B build-cluster gap re-signed per prompt. The board cannot measure depth at all.",
+    "216 UPDATE: closed completely by alphonse. Against his measured 255.5 GB/s peak the round runs at 80.3 % and local headroom is 18.23 ms, not the 39.6 ms I priced, and that channel transfers at 0.007x anyway.",
+    "217 CLOSED: resolved by askeladd's E166 step 0. Digit-identical ledgers between island arms confirm FINDING 372 mechanism (b), so phi_acc = 0 survives."
+  ],
+  "boardBuildClusters": {
+    "finding": "FINDING 379",
+    "harness": "ranked",
+    "population": "612 receipts, pinned head 559b24eb, 8 prompts, 512 decode tokens, parity_all_ok",
+    "clusterA": {
+      "beagle": 4.382,
+      "botany": 6.148,
+      "essays": 5.087,
+      "medicine": 5.256,
+      "republic": 4.989,
+      "n": 293,
+      "maxScore": 3.7291100105909
+    },
+    "clusterB": {
+      "beagle": 4.533,
+      "botany": 5.776,
+      "essays": 5.425,
+      "medicine": 4.768,
+      "republic": 5.27,
+      "n": 229,
+      "maxScore": 3.25464
+    },
+    "otherN": 90,
+    "bMinusAmsPerTok": {
+      "beagle": 0.8272,
+      "botany": 0.8906,
+      "drama": 0.9577,
+      "essays": 0.7892,
+      "medicine": 1.1327,
+      "plutarch": 0.1344,
+      "republic": 0.8392,
+      "travel": 0.9046
+    },
+    "identicalScheduleProof": "drama +0.958 t=+10.72 and travel +0.905 t=+11.24 with identical schedules in both clusters",
+    "plutarchDiagnostic": "only +0.134; plutarch drafts in ~8 % of rounds, so the B penalty is per-drafting-round build cost",
+    "withinSolver": "21 of 21 solvers who submitted in both scored higher in A; mean best-A minus best-B +0.385",
+    "ourMembership": {
+      "5a9f130a": "A",
+      "ec24d591_crown": "A",
+      "684821ed_crown_parent": "A",
+      "35a8a9de_B1": "other"
+    },
+    "consequence": "no cluster correction applies to any of our comparisons; every top-25 receipt is cluster A"
+  },
+  "rankedDepthAxisUnmeasurable": {
+    "finding": "FINDING 379 / ADVISOR ERROR 220",
+    "claim": "the ranked depth axis cannot be identified from the board",
+    "naiveDesign": "within-prompt slope of decode s/tok on edl is the A-to-B build gap re-signed by whichever cluster drafts deeper on that prompt",
+    "looDesign": "leave-one-out common-build control flips the sign to deeper-is-faster on all five high-q prompts with implied h=5.57 vs between-prompt 5.335",
+    "looRefutation": "6 of 7 wrong-prompt negative controls fire, up to |t|=15.5, same signs; the design identifies schedule generation not depth",
+    "status": "empty cell, not tested and rejected; only a controlled ranked submission can measure it",
+    "consistentWith": "RULE 373 rank-2 exposure library, selected exposures need |t|>=5.5"
+  },
+  "edlDefinition": {
+    "finding": "FINDING 380",
+    "definition": "effective_mean_draft_len is the mean proposed draft rows per round",
+    "proof": "askeladd traced leg draft=6.3589743589743586 equals mean realised offered depth 6.359 to the last digit",
+    "boardCheck": "acceptance = (512 - rounds) / (rounds * edl) recovers FINDING 374 alpha on all 8 prompts",
+    "closes": "E167-B, previously assigned to edward"
+  },
+  "perPromptAcceptance": {
+    "harness": "ranked, our promoted schedule, pinned head 559b24eb",
+    "fields": "edl, rounds, proposedRows, acceptedExtra, acceptanceFraction",
+    "localFixture": [
+      6.359,
+      78,
+      496,
+      434,
+      0.875
+    ],
+    "botany": [
+      6.148,
+      81,
+      498,
+      431,
+      0.866
+    ],
+    "medicine": [
+      5.256,
+      90,
+      473,
+      422,
+      0.892
+    ],
+    "essays": [
+      5.087,
+      92,
+      468,
+      420,
+      0.897
+    ],
+    "republic": [
+      4.989,
+      93,
+      464,
+      419,
+      0.903
+    ],
+    "beagle": [
+      4.382,
+      110,
+      482,
+      402,
+      0.834
+    ],
+    "travel": [
+      2.648,
+      213,
+      564,
+      299,
+      0.53
+    ],
+    "drama": [
+      2.298,
+      252,
+      579,
+      260,
+      0.449
+    ],
+    "plutarch": [
+      0.156,
+      488,
+      76,
+      24,
+      0.316
+    ]
+  },
+  "beagleDepthAnomaly": {
+    "finding": "FINDING 381",
+    "observation": "beagle is offered 4.382 rows at acceptance 0.834 while the local fixture is offered 6.359 at 0.875; 31 % shallower for 5 % lower acceptance",
+    "candidates": [
+      "depth-0 and depth-1 pendingTop2 margin clamps at Qwen36MTPBlockSession.swift:1137-1151",
+      "depressed positionAcceptEMA"
+    ],
+    "whyItMatters": "FINDING 342 marginal published weight is 0.47808 beagle and 0.52192 essays, exactly zero elsewhere; the two shallowest high-acceptance prompts are beagle 4.382 and essays 5.087",
+    "pricedAtDepth7": {
+      "acc0.834": -11.0,
+      "acc0.80": -7.7,
+      "acc0.75": -2.5,
+      "acc0.70": 3.2
+    },
+    "breakEvenAcceptance": 0.72,
+    "ownedBy": "PR 168 askeladd e168-margin-clamp-calibration"
+  },
+  "marginalRowShare": {
+    "harness": "ranked",
+    "law": "R = 16.1585 + 5.3350*M",
+    "beagle": {
+      "M": 5.382,
+      "R": 44.98,
+      "rowCost": 28.71,
+      "rowShare": 0.638
+    },
+    "essays": {
+      "M": 6.087,
+      "R": 48.93,
+      "rowCost": 32.47,
+      "rowShare": 0.664
+    },
+    "transfer": "1.31x, the only LAW 377 channel worth more on the ranked host than locally",
+    "ourRowPrice": 5.3408,
+    "boardComparison": {
+      "frontier": 5.3739,
+      "fastestImpl": 5.388
+    },
+    "note": "our per-row cost is the lowest on the entire board",
+    "ownedBy": "PR 169 alphonse e169-marginal-verified-row-decomposition"
+  },
+  "submissionNoteMinimum": {
+    "bytes": 5120,
+    "behaviour": "senpai/submit-official.sh rejects a shorter note locally and creates no submission",
+    "documentedIn": "senpai/experiment-runbook.md",
+    "discoveredBy": "edward E167, cost one round trip",
+    "companionRules": [
+      "note must cover the full narrative arc named in the error text",
+      "note must be a path readable from the checkout",
+      "never claim swift test is green: 41 pre-existing failures; state count, how many are new, and whether any exercises the changed surface"
+    ]
+  }
 }
