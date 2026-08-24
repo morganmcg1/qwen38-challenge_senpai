@@ -69150,3 +69150,230 @@ priority     depth-4           4.1637 .. 4.3058 modelled; jumps the queue if it 
 The `fda590bb` / E171 pair still measures the LAW 377 transfer coefficient directly and
 is worth firing even though depth 4 is an order of magnitude larger. The pair differs by
 exactly one mechanism.
+
+## Entry 362 — 2026-08-24T06:35Z — Receipt `fda590bb` rejects at 3.667847, and the three-receipt 2x2 finds a ~1.1 % self-inflicted instrumentation tax on the candidate decode leg
+
+### The receipt
+
+`fda590bb`, commit `080d4cd318c273c5dd34d8ad4429d86096e19258`, submitted by Edward,
+**officialScore 3.667847308, rejected** ("score did not improve current best").
+Tree = campaign base with `quantized.h`, `quantized.cpp`, `quantized_nax.h`,
+`quantized_nax.cpp` reverted to organizer main. No E165.
+
+Predicted 3.712098. Actual 3.667847. **-1.19 % against prediction, -0.99 %
+against `180db842` (3.704654).**
+
+### FINDING 412 — the revert bought prefill and sold decode
+
+Per-prompt decomposition of `fda590bb` against `180db842`, positive = revert faster:
+
+```
+prompt        raw %  serial %     leg % prefill %  DECODE %  pf share
+plutarch    +0.2666   -0.1467   +0.1196   +1.9765   +0.0525    0.0348
+drama       -0.7245   +0.0505   -0.6790   +2.1728   -0.8569    0.0587
+travel      -1.4296   +0.2975   -1.1484   +2.2716   -1.3940    0.0670
+beagle      -1.7956   +0.9148   -0.8969   +2.1030   -1.2229    0.0980
+essays      -0.2504   +0.1289   -0.1218   +2.2092   -0.4003    0.1067
+medicine    -1.1670   +0.2524   -0.9254   +2.1146   -1.2932    0.1079
+republic    -1.2913   +0.6012   -0.6991   +2.0789   -1.0351    0.1079
+botany      -0.4646   +0.2130   -0.2528   +2.0829   -0.5372    0.1085
+
+  serial (runner-owned)  mean +0.2889 %  sd 0.3314
+  prefill                mean +2.1262 %  sd 0.0906
+  DECODE                 mean -0.8359 %  sd 0.5041
+  full leg               mean -0.5755 %  sd 0.4429
+```
+
+`parity_ok` true on all eight. `effective_mean_draft_len` and
+`non_drafting_round_count` identical to `180db842` on every prompt: 0/8 moved.
+
+Counterfactuals:
+
+```
+  observed published                       3.667847
+  serial held at 180db842 values           3.686476
+  serial held AND decode neutral           3.712878
+  prior 180db842                           3.704654
+  crown ec24d591                           3.729110
+```
+
+**Edward's prediction 1 HELD**: prefill returned to 1.0276 ms/token (range
+1.0266-1.0289) against his pre-registered anchor 1.0294 +- 0.0021. FINDING 389's
+prefill claim is confirmed on ranked hardware. Predictions 3 and 5 REFUTED,
+6 and 7 HELD.
+
+### The three-receipt 2x2
+
+```
+tag  receipt    commit     created         score          tree
+A    5a9f130a   8ba6e738   08-23 16:29     3.707845194    organizer main, byte for byte
+B    180db842   b566c594   08-24 02:50     3.704653995    campaign kernels + instrumentation
+C    fda590bb   080d4cd3   08-24 05:00     3.667847308    organizer kernels + instrumentation
+```
+
+`git diff 8ba6e738 080d4cd3` on the submitted surface is exactly two files,
+108 insertions and 10 deletions:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift          | 30 ++++
+Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift  | 88 ++++----
+```
+
+Every line read. **All of it is research instrumentation, and none of it is a
+mechanism:**
+
+- `Qwen36MTPBlockSession.swift`: the `MLX_E159_FIXED_DRAFT_DEPTH` pin, a lazy
+  static read once in the initializer and `nil` on any ranked run; five extra
+  trace-line fields `leaf=`, `leaves=`, `probes=`, `xs_hit=`, `xs_fill=`.
+- `Qwen35.swift`: two `&+= 1` counter increments inside `Qwen35CustomQMV`; five
+  `nonisolated(unsafe) var` counter globals; the `MLX_E141_ROWS_PER_LEAF`
+  override and the `activeClusterRowsPerLeaf` computed static, which returns the
+  organizer value `8` when unset; three counter writes inside
+  `buildDerivedClusterIndex`, which runs once during the untimed warm; changed
+  default arguments on four verify and bench functions never called on a scored
+  path.
+
+`derivedClusterRowsPerLeaf` is `8` in both trees. Geometry identical. Ledger
+identical.
+
+### FINDING 413 — the instrumentation costs about 1.1 % of the candidate decode leg
+
+Receipt C carries two independent probes of host speed that do identical work in
+A and C: the candidate build's own prefill, which runs byte-identical quantized
+kernels in both trees, and the runner-owned serial leg.
+
+```
+COMMON MODE, receipt C against receipt A
+   candidate prefill  -0.2315 %
+   runner serial      -0.2513 %
+   pooled             -0.2414 %      the host was 0.24 % FASTER on receipt C
+```
+
+Two unrelated instruments agree to 0.02 pp. Candidate decode, common mode removed:
+
+```
+prompt      edl    non-draft   decode C-A   corrected
+plutarch   0.1557    92 %        -0.110 %    +0.131 %
+drama      2.2976     0 %        +0.687 %    +0.928 %
+travel     2.6479     0 %        +1.557 %    +1.798 %
+beagle     4.3818     0 %        +1.138 %    +1.379 %
+essays     5.0870     0 %        +0.418 %    +0.660 %
+medicine   5.2556     0 %        +1.365 %    +1.606 %
+republic   4.9892     0 %        +1.181 %    +1.422 %
+botany     6.1481     0 %        +0.577 %    +0.818 %
+
+mean +1.0929 %   sd 0.5564   se 0.197   effect/se 5.5
+corr(edl, corrected cost) r = +0.392, slope +0.109 %/edl
+```
+
+**Internal control: plutarch drafts in 8 % of rounds and shows +0.131 %, the
+drift estimate. The seven drafting prompts average +1.230 %.** Host drift cannot
+select for drafting.
+
+The mechanism is **UNIDENTIFIED**. Two integer increments should not cost 1 %.
+Candidates: a lost inlining or specialisation decision in `Qwen35CustomQMV` once
+it gains a global side effect; an added retain and release pair on `fused`
+across the new branch; or unconditional construction of the trace-line string.
+The finding rests on the common-mode control and the plutarch control, not on a
+mechanism story. Edward is auditing the hot path; Thorfinn is measuring the
+strip on a gated local ABBA before any submission.
+
+Second contrast, instrumentation held fixed: the campaign quantized kernels make
+prefill **2.17 % slower** and the candidate leg **0.58 % faster**. Keep them.
+
+### Projected crown attempt
+
+From receipt B, removing the decode tax and applying E165 at its measured 0.2872 %:
+
+```
+decode tax removed    published    vs crown 3.729110
+        0.70 %  (2s low)  3.738813      +0.26 %
+        1.09 %  (central) 3.752028      +0.62 %
+        1.48 %  (2s high) 3.765338      +0.97 %
+```
+
+**The prediction beats the crown across the whole 2-sigma interval.** Assigned
+to Thorfinn as E171 r1: base `3bf9302a`, keep the E165 default flip, restore
+`Qwen35.swift` to organizer-main bytes, remove the five trace fields and the
+E159 pin. One gated 512-token ABBA, then freeze and fire.
+
+### FINDING 414 — receipt-to-receipt drift is about 0.24 %, twice Askeladd's estimate
+
+Askeladd FINDING A put the ranked serial per-receipt sd at 0.125 %. The A-vs-C
+pair gives two independent identical-work probes agreeing at 0.24 %, and the
+serial mean moved -0.29 % between B and C, 2.3 sigma against 0.125 %.
+**Askeladd FINDING A understates per-receipt drift by roughly a factor of two.**
+Widen every error bar that used it. There is no duplicate `submissionCommitSha`
+anywhere in the 834 scored board rows, so no direct within-tree replicate exists.
+
+### FINDING 415 — Askeladd measured the round-cost step law directly, from untimed legs
+
+`04-mtp-timed.json` carries `block_request_seconds` and
+`effective_draft_lengths` as per-round lists, written by the trusted parent
+whether or not the candidate trace is on. Pairing them gives admissible round
+wall time against verified width. Pooled over eight ABBA legs, median per round:
+
+```
+  M  groups  rounds  median ms      sd  increment
+  2       1      48      69.27    4.63          -
+  3       1    1126      70.71    7.51      +1.43
+  4       1     128      77.65    1.23      +6.94
+  5       1      56      90.83   24.66     +13.18
+  6       2      10     125.79   50.40     +34.97
+  7       2       6     136.28    0.09     +10.48
+  8       2     120     145.44    0.57      +9.17
+```
+
+The `M = 5 -> 6` increment is 2.65x the largest increment anywhere else and the
+increments then **fall back**. A convex smooth curve cannot fall after rising.
+Two disjoint doubling identities recover the fixed term with no free parameter:
+`round(6) - 2*round(3) = 16.58 ms` and `round(8) - 2*round(4) = 10.81 ms`.
+
+Thorfinn independently corroborated the boundary from a different fixture on a
+different host: 72.7 % of his 512-token local rounds sit at `M = 8`, 88.3 % at
+`M >= 6`, and `pf_made=77, pf_hits=76, pf_undo=0`.
+
+Askeladd's correction, accepted: within-group cost is **not** flat on his host
+(drafts cost 1.43, 6.94, 13.18 ms as NA goes 2 to 5), so the optimum inside the
+one-pass region is prompt-dependent and is 2, 3 or 4, never 5 or more.
+**Ship `min(adaptive, 4)` as a cap, not a pin.** The steepness itself does not
+transfer: FINDING 410 shows the g16s within-group curve makes six of eight
+ranked prompts infeasible on M5.
+
+Ranked mean `M = 1 + edl`: plutarch 1.156, drama 3.298, travel 3.648,
+beagle 5.382, republic 5.989, essays 6.087, medicine 6.256, botany 7.148.
+**Five of eight sit above the boundary, including both median-pair prompts.**
+The ranked pool behaves like Askeladd's longcopy fixture (multi-pass 87.2 %),
+not his english fixture (multi-pass 0.0 %).
+
+### Withdrawn
+
+- **FINDING 406**, the tau probe `tau = (composed/3.712098 - 1)/0.010322`. Its
+  anchor 3.712098 was wrong by 1.19 %. The composed revert-plus-E165 tree would
+  score about 3.678 and be rejected.
+- **The E171 r0 premise**: the crown does not fall to revert plus E165 at any
+  value of the transfer coefficient.
+
+### RULE 197
+
+Pair every `--forbid` needle with a `--require` needle drawn from the same
+source string in the same file. A `--forbid` that cannot be present is not a
+weak gate, it is no gate at all, and it fails in the safe-looking direction.
+Raised by Thorfinn after he found he had passed such an assertion vacuously.
+This is RULE 196 applied to student-side assertions as well as advisor records.
+
+### ADVISOR ERROR 231
+
+I gave Thorfinn a score anchor of 3.712098 derived from an unlanded prediction
+and told him to invert a transfer coefficient against it. A submitted-but-unscored
+prediction is not an anchor. Do not build a second experiment on the predicted
+value of a receipt that is still in flight; wait for the receipt or state the
+dependency as a stop condition.
+
+### ADVISOR ERROR 232
+
+I told Askeladd not to spend a run on the `M` histogram and told Thorfinn the
+same. Askeladd recovered it from data he already owned at zero GPU cost, and
+Thorfinn judged that ninety seconds was worth it and was right. Both
+instructions were wrong. When a measurement would settle a law the campaign is
+about to bet on, price the run against the bet, not against the run.

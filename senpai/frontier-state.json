@@ -90,7 +90,9 @@
       "error": "F10 demanded that a student push his submitted commit, and an earlier instruction told a student to prefer another student branch over his isolation scope",
       "impact": "the push is unsatisfiable because the typed submit tool owns it; the cross-branch instruction conflicted with a launch isolation contract that overrides repository instructions",
       "resolution": "both withdrawn; the provenance risk is closed by Thorfinn reproducing the identical two-file submitted surface deterministically from upstream/main 0863b06a"
-    }
+    },
+    "231: I gave Thorfinn a score anchor of 3.712098 derived from an unlanded prediction and told him to invert a transfer coefficient against it. A submitted-but-unscored prediction is not an anchor. Do not build a second experiment on the predicted value of a receipt still in flight; wait for it, or state the dependency as a stop condition.",
+    "232: I told both Askeladd and Thorfinn not to spend a run on the M histogram. Askeladd recovered it from data he already owned at zero cost; Thorfinn judged ninety seconds worth it and was right. When a measurement would settle a law the campaign is about to bet on, price the run against the bet, not against the run."
   ],
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
@@ -698,11 +700,15 @@
     "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance."
   },
   "latestOfficialReceipt": {
-    "id": "180db842",
-    "note": "Rejected at -0.0861 % below our own best 5a9f130a 3.70784519415395. Cause identified as the software-pipelined qmm prefill regression, FINDING 389.",
-    "officialScore": 3.70465399491642,
+    "submissionId": "fda590bb",
+    "commit": "080d4cd318c273c5dd34d8ad4429d86096e19258",
+    "officialScore": 3.667847308,
     "status": "rejected",
-    "validatedAt": "2026-08-24T03:54:42Z"
+    "rejectionReason": "score did not improve current best",
+    "createdAt": "2026-08-24T05:00:39Z",
+    "tree": "campaign base with quantized{,_nax}.{h,cpp} reverted to organizer main; no E165",
+    "predicted": 3.712098,
+    "predictionErrorPct": -1.19
   },
   "liveSubmittedSurface": {
     "afterRevert": "organizer main plus exactly two files, 30 and 88 changed lines",
@@ -853,15 +859,7 @@
   },
   "observedAt": "2026-08-24T05:50:00Z",
   "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
-  "officialSlot": {
-    "state": "OCCUPIED",
-    "submissionId": "fda590bb-e1c7-4b2b-b65b-1de67aa15e52",
-    "submittedAt": "2026-08-24T05:00:39.098Z",
-    "contents": "revert alone, no E165",
-    "predictedScore": 3.712098,
-    "owner": "qwen-edward",
-    "nextInQueue": "E171 composed candidate, qwen-thorfinn, frozen and held"
-  },
+  "officialSlot": "free",
   "onlyExactRoundCostOnBoard": {
     "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
     "optimised": {
@@ -897,12 +895,10 @@
     ]
   },
   "openQueue": [
-    "qwen-askeladd PR168 gated 512-token ABBA of fixed depth 4 vs shipped adaptive, plus the M histogram, the two-pass fraction, and the depth 3/4/5 falsification sweep",
-    "qwen-edward PR166 pin the ranked head step h from the receipt corpus using plutarch non-drafting fraction as the mixing weight; also score the seven pre-registered predictions when fda590bb lands",
-    "qwen-thorfinn PR171 one gated 512-token local-submit pair, then freeze and fire; powermetrics residency leg for tau afterwards",
-    "qwen-alphonse PR170 register accounting and occupancy threshold for NA=5; verdict source-fixed or hardware-fixed before building anything",
-    "decompose F, the 6.90 ms M-independent per-round term that is 20.2 % of a depth-4 round and only 1.1 ms accounted for",
-    "compose depth-4 with the NA=5 occupancy fix if and only if the E170 verdict is source-fixed"
+    "E171 r1 (Thorfinn): strip the instrumentation tax from the submitted surface, keep the E165 default flip. Projected 3.7388 (2s low) to 3.7520 (central) against crown 3.7291. One gated 512-token ABBA, then freeze and fire. HIGHEST PRIORITY, shortest path.",
+    "E168 (Askeladd): gated adapt/d4/d3/d5 ladder; ship min(adaptive,4) as a literal cap. Modelled 4.16-4.31 published under flat h; larger ceiling, longer path.",
+    "E167 (Edward): hot-path audit of the 473-line E165 delta on the submitted surface, classifying every construct as mechanism / inert / hot-path instrumentation. Gates the crown submission. Plus a search for an earlier instrumentation-only receipt pair to replicate FINDING 413.",
+    "E170 (Alphonse): register accounting and occupancy threshold; verdict source-fixed vs hardware-fixed. Then decompose F (6.90 ms/round, 20.2 % of a depth-4 round)."
   ],
   "organizer": {
     "branch": "main",
@@ -1587,7 +1583,8 @@
       "seedPrefill": 1.955
     },
     "perRoundFixedTau": "UNKNOWN; the fda590bb / E171 receipt pair measures it directly",
-    "rule": "transfer coefficients now travel with their derivation or they do not travel"
+    "rule": "transfer coefficients now travel with their derivation or they do not travel",
+    "tauProbeWithdrawn": "The FINDING 406 probe tau = (composed/3.712098 - 1)/0.010322 is WITHDRAWN. Its anchor 3.712098 was a prediction, not a receipt, and the receipt landed at 3.667847. No ranked measurement of the LAW 377 transfer coefficient exists."
   },
   "twinWaiverRuling": {
     "conditions": [
@@ -1688,7 +1685,9 @@
       "ledger": 361,
       "was": "the eight-row break-even ladder and the q* table derived from A_fix + B*(1+d)",
       "why": "B = 5.3350 is an interpolant slope, not a marginal row cost; the linear law predicts a depth-0 round 1.979 ms below the weight-stream floor and misses the measured 30.402 ms by 29 %"
-    }
+    },
+    "FINDING 406 tau probe": "Anchor 3.712098 was a prediction, not a receipt, and was wrong by 1.19 %. Actual 3.667847. Probe withdrawn.",
+    "E171 r0 premise": "revert + E165 reaches about 3.678 at any transfer coefficient; the crown at 3.729110 does not fall to it. Redirected to the instrumentation strip."
   },
   "withinReceiptEstimator": {
     "exposure": "Pge6(M) = 0 if M<=5, M-5 if 5<M<6, 1 if M>=6",
@@ -2010,7 +2009,12 @@
       "Qwen35.swift:1543 first_m = group_x*IPG",
       "Qwen35.swift:1770-1794 routable n >= 4096"
     ],
-    "bIsNotARowCost": "B = 5.3350 is a regression slope of an interpolant over M in 3..8; never price a saving by multiplying rows by B"
+    "bIsNotARowCost": "B = 5.3350 is a regression slope of an interpolant over M in 3..8; never price a saving by multiplying rows by B",
+    "directMeasurementAskeladd": "Round-cost table recovered from per-round block_request_seconds paired with effective_draft_lengths in 04-mtp-timed.json, eight untimed ABBA legs, g16s host. median ms by M: 2=69.27, 3=70.71, 4=77.65, 5=90.83, 6=125.79, 7=136.28, 8=145.44. M=5->6 increment 34.97 ms is 2.65x any other, then increments FALL BACK to 10.48 and 9.17. Doubling identities recover the fixed term as 16.58 and 10.81 ms.",
+    "withinGroupCostIsNotFlat": "g16s draft increments 2->3, 3->4, 4->5 are 1.43, 6.94, 13.18 ms, so the one-pass optimum is prompt-dependent: 2, 3 or 4, never >=5. Steepness does not transfer to M5 (FINDING 410).",
+    "shipSurfaceDecision": "Ship min(adaptive, 4) as a literal CAP on segmentedVerifyDepthCap and the costModelDepth entry point. Do NOT pin, and do NOT ship MLX_E159_FIXED_DRAFT_DEPTH.",
+    "rankedMeanWidth": "M = 1 + edl: plutarch 1.156, drama 3.298, travel 3.648, beagle 5.382, republic 5.989, essays 6.087, medicine 6.256, botany 7.148. Five of eight above the boundary, including both median-pair prompts (beagle, essays). The ranked pool behaves like Askeladd's longcopy fixture (multi-pass 87.2 %), not his english fixture (0.0 %).",
+    "thorfinnLocalHistogram": "512-token local fixture, 77 rounds: d histogram {2:1,3:2,4:6,5:5,6:7,7:56}; M>=6 88.31 %, M>=7 81.82 %, M=8 72.73 %. Independent host, independent fixture."
   },
   "depthFourLever": {
     "ledger": 361,
@@ -2205,5 +2209,38 @@
       ],
       "note": "jumps the queue ahead of E171 if the gated 512-token ABBA confirms at better than 3 %"
     }
+  },
+  "lastAdvisorUpdate": "2026-08-24T06:35Z",
+  "ledgerEntry": 362,
+  "threeReceiptFactorial": {
+    "A": {
+      "id": "5a9f130a",
+      "commit": "8ba6e73837f525553cc99a5b71ec1a5e479ca7b0",
+      "score": 3.707845194,
+      "tree": "organizer main byte for byte"
+    },
+    "B": {
+      "id": "180db842",
+      "commit": "b566c594da5a32a4d23f7ff955644950509a1eca",
+      "score": 3.704653995,
+      "tree": "campaign kernels + instrumentation, no E165"
+    },
+    "C": {
+      "id": "fda590bb",
+      "commit": "080d4cd318c273c5dd34d8ad4429d86096e19258",
+      "score": 3.667847308,
+      "tree": "organizer kernels + instrumentation, no E165"
+    },
+    "contrastAminusC": "instrumentation only; 108 insertions, 10 deletions, two files; ledger identical 0/8",
+    "contrastBminusC": "campaign quantized kernels only"
+  },
+  "findings": {
+    "412": "fda590bb revert bought prefill (+2.1262 %) and sold decode (-0.8359 %); full leg -0.5755 %; runner serial drifted +0.2889 %. Edward prediction 1 (prefill 1.0294 +- 0.0021) HELD at 1.0276. Ledger 0/8 moved, parity_ok all true.",
+    "413": "INSTRUMENTATION TAX. Campaign research instrumentation, inert by source inspection, costs +1.0929 % of the candidate decode leg (sd 0.5564, se 0.197, 5.5 sigma) after removing a 0.2414 % common mode measured by two independent identical-work probes (candidate prefill -0.2315 %, runner serial -0.2513 %). Internal control: plutarch, 92 % non-drafting, +0.131 %; seven drafting prompts +1.230 %. MECHANISM UNIDENTIFIED. n=1 receipt pair.",
+    "414": "Receipt-to-receipt drift is about 0.24 %, roughly twice Askeladd FINDING A's 0.125 % serial sd. No duplicate submissionCommitSha exists in 834 scored board rows, so no within-tree replicate is available. Widen every error bar that used 0.125 %.",
+    "415": "Askeladd measured the round-cost step law directly from per-round block_request_seconds paired with effective_draft_lengths in 04-mtp-timed.json (untimed legs, admissible). M=5->6 increment 34.97 ms is 2.65x any other and increments then FALL BACK to 10.48 and 9.17; a convex smooth curve cannot fall after rising. Doubling identities recover the fixed term as 16.58 and 10.81 ms with no free parameter. Within-group cost is NOT flat on g16s (1.43, 6.94, 13.18 ms for drafts 2..5), so the one-pass optimum is prompt-dependent and is 2, 3 or 4, never >=5. SHIP min(adaptive,4) AS A CAP, NOT A PIN. Steepness does not transfer: FINDING 410. Ranked mean M=1+edl: plutarch 1.156, drama 3.298, travel 3.648, beagle 5.382, republic 5.989, essays 6.087, medicine 6.256, botany 7.148 -- five of eight above the boundary, including both median-pair prompts."
+  },
+  "rules": {
+    "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions."
   }
 }
