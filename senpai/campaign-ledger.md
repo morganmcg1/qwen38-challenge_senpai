@@ -69866,3 +69866,143 @@ applied to its own harness.
   experiment against Askeladd's existing per-round trace, at constant routed-cell
   exposure and constant `groups(M)`.
 - The E165 `preflush*` lazy build, next round.
+
+## Entry 365 — 2026-08-24T07:35Z — FINDING 422: the crown is the maximum of 74 tickets. The top of this board has no code separation, and we are three times behind on cadence.
+
+Entry 364 retired the crown gap as an engineering deficit on the strength of one
+byte-identical pair. This entry closes the question from the other direction,
+using the whole public board, and finds a campaign-strategy problem that is
+larger than any single experiment currently running.
+
+### FINDING 422 — the crown, explained completely as an order statistic
+
+**Cross-solver pack.** 47 scored receipts at or above 3.700, from **13 different
+solvers**:
+
+```
+pack mean  3.708974      sd 0.006386 = 0.172 %       n = 47
+our best   3.707845      -0.18 sd     (dead average)
+crown      3.729110      +3.15 sd
+```
+
+Edward's independent within-board resample of serial legs gave a published-median
+sd of **0.179 %** from the serial draw alone. The empirical cross-solver
+dispersion is **0.172 %**. Two completely independent methods agree to within
+4 %.
+
+Because pack dispersion and pure-noise dispersion are equal, **the 13 solvers'
+code differences contribute essentially nothing to the published median.** The
+top of this board has no measurable code separation.
+
+**newjordan's own book settles it.** They hold **74 scored receipts** out of 120
+submitted. Their top eight:
+
+```
+3.7291  3.7196  3.7151  3.7143  3.7103  3.7100  3.7075  3.6925
+```
+
+Edward predicted from a serial-leg resample, without ever looking at their other
+receipts, that the crown's own code typically publishes **3.7104**. **Their fifth
+and sixth best are 3.7103 and 3.7100.** The resample reproduces their empirical
+modal top draw to four significant figures.
+
+For 74 draws the expected maximum is roughly +2.5 sd. On a 0.18 % scale that is
+about +0.45 %, landing at **3.7271** against the observed **3.7291**. Combined
+with FINDING 418, where their submitted commit `0863b06a` is organizer main and
+ours is organizer main byte for byte, **the crown is the maximum of 74 tickets
+and contains no code advantage over us at all.**
+
+**Truncation check, and it protects the probability we give students.** The
+0.172 % pack figure is truncated at 3.700 and dispersion grows as the threshold
+falls:
+
+```
+thresh    n  solvers      sd     sd %   crown sd
+ 3.700   47      13   0.006386  0.172     +3.15
+ 3.690   63      17   0.007891  0.213     +2.95
+ 3.680   74      18   0.010405  0.281     +2.53
+ 3.670   80      18   0.012246  0.331     +2.32
+ 3.660   94      19   0.017627  0.477     +1.93
+ 3.650  101      20   0.019777  0.536     +1.86
+```
+
+So 0.172 % is a floor, the byte-identical pair at 0.5735 % remains the honest
+upper anchor, and **the crown-attempt probability stays at Edward's 90 %.** It is
+not raised. Nobody writes 99 % anywhere.
+
+### FINDING 423 — the cadence gap
+
+Submission counts, all statuses:
+
+```
+newjordan       120 submitted,  74 scored,  best 3.729110   <- crown
+Lieisyourlie    111 submitted,  92 scored,  best 3.700474
+scarletbright   101 submitted,  64 scored,  best 3.722981
+jonathan308      65 submitted,  55 scored,  best 3.696347
+vibecodooor      52 submitted,  42 scored,  best 3.719792
+fkiene           43 submitted,  35 scored,  best 3.702217
+morganmcg1       39 submitted,  35 scored,  best 3.707845   <- us
+Amal-David       37 submitted,  33 scored,  best 3.716544
+```
+
+**We are three times behind the leader on tickets.** At the time of writing our
+slot had been free and empty for over two hours, with four competitor
+submissions validating.
+
+**The two books read in opposite directions, and this is the encouraging half.**
+Ours:
+
+```
+08-17  2.861266
+08-18  3.069382, 3.232508
+08-20  3.172297, 3.235889, 3.211257, 3.281580, 3.277469
+08-21  3.313784 ... 3.343513
+08-22  3.490650, 3.512706, 3.520852, 3.662186
+08-23  3.616555, 3.682788, 3.649070, 3.707845
+08-24  3.704654, 3.667847
+```
+
+**2.861 to 3.708 in six days**, a monotone research trajectory. newjordan's top
+eight span 3.6925 to 3.7291 and have been flat since 08-23. **They plateaued and
+are buying tickets; we climbed 30 % and arrived at the pack.**
+
+Thorfinn's S1 at +1.11 % would sit **+6.4 sd above the pack mean** at the
+conservative 3.7496. Nothing on this board has ever been there.
+
+We cannot answer the cadence gap by re-rolling, because `program.md` forbids
+duplicate submissions. We answer it by never leaving the slot empty and by
+keeping one distinct frozen candidate queued behind the one in flight. RULE 199
+already generates that pipeline naturally: the strip fires first, the depth cap
+fires second, and composition follows.
+
+### ADVISOR ERROR 236 — over-testing on the ship path while three times behind on cadence
+
+I approved Thorfinn's four-leg `s0 s1 s1 s0` schedule. `program.md`'s evidence
+ladder asks for **one** thermally gated 512-token `--local-submit` confirmation
+and explicitly places large timing matrices **after** the receipt.
+
+Separating his legs by what they buy:
+
+| legs | buys | required to ship |
+|---|---|---|
+| `s0` generate reference rows | the reference stream for the cross-arm exactness test | yes |
+| `s1` timed against those rows | 512-token confirmation, exact post-EOS continuation, row-ledger closure, `all_tokens_matched` | yes |
+| second `s1`, second `s0` | timing replication, host-transfer estimate of the tax | no |
+
+The replication cannot change the ship decision, because F3 had already removed
+the stop branch. **Schedule cut to `s0 s1`.** Every correctness gate survives,
+including the cross-arm bit-exactness test.
+
+The general lesson, and it is the one worth keeping: **when a stop branch has
+been removed, every measurement that could only have fed that branch must be
+removed with it.** Leaving it in place is not caution; it is unpriced delay on
+the ship path.
+
+### Standing
+
+- Crown unchanged: `ec24d591` newjordan **3.7291100106**, promoted
+  2026-08-23T09:44:40Z, `promotedSourceRef 0863b06a`.
+- Official slot **free**. Thorfinn firing on the shortened schedule.
+- Askeladd queued second with `min(adaptive, 4)`, protected above by FINDING 415
+  and below by FINDING 421.
+- Edward and Alphonse on characterisation, off the ship path, on separate Macs.

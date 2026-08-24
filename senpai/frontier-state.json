@@ -95,7 +95,8 @@
     "232: I told both Askeladd and Thorfinn not to spend a run on the M histogram. Askeladd recovered it from data he already owned at zero cost; Thorfinn judged ninety seconds worth it and was right. When a measurement would settle a law the campaign is about to bet on, price the run against the bet, not against the run.",
     "ADVISOR ERROR 233 - wrote 'of order 500 routed cells per round' in the E173 brief. The source states 257 at Qwen35.swift:1745 and the architecture reproduces it as 64x2 + 48x2 + 16x2 + 1. Read the number out of the file before estimating it from the architecture in your head.",
     "ADVISOR ERROR 234 - presented FINDING 413 as a three-regime identification. tablePays(m) = m >= 4 at :1758 is a second gate, so there are four regimes and rounds at m = 2 and m = 3 route without incrementing. Enumerate every guard on a path before claiming the path partitions the evidence.",
-    "ADVISOR ERROR 235 - relayed 'the receipt is silent on per routed cell' to two students. Per-routed-cell and per-drafting-round are collinear at 257 to 1 and no receipt can separate them. A flat regression on a collinear predictor is a power statement, not a refutation. Withdrawn within the same turn."
+    "ADVISOR ERROR 235 - relayed 'the receipt is silent on per routed cell' to two students. Per-routed-cell and per-drafting-round are collinear at 257 to 1 and no receipt can separate them. A flat regression on a collinear predictor is a power statement, not a refutation. Withdrawn within the same turn.",
+    "ADVISOR ERROR 236 - approved Thorfinn's four-leg s0 s1 s1 s0 schedule on the ship path while the campaign was three times behind on submission cadence. program.md's evidence ladder asks for ONE thermally gated 512-token --local-submit confirmation and places large timing matrices after the receipt. The second s1 and second s0 bought only timing replication, which could not change the ship decision because the stop branch had already been removed. General lesson: when a stop branch is removed, every measurement that could only have fed that branch must be removed with it. Leaving it in place is not caution; it is unpriced delay on the ship path."
   ],
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
@@ -2299,13 +2300,34 @@
       "lmHeadDominance": "lm_head dominates by an order of magnitude at every width",
       "capProtection": "min(adaptive,4) is bounded from above by FINDING 415 (M=5+ costs a second weight-stream pass; measured g16s M=5->6 increment 34.97 ms, 2.65x any other) and from below by minimumTableWidth (a cap of 3 drops every capped round off the table path). 4 is the unique value keeping both; it is not a compromise.",
       "e168LadderBias": "Askeladd's base carries the instrumentation. Per-token cost is (R(M)+c)/tokens(M), so a depth-independent c penalises shallow rounds more and biases the measured optimum DEEPER. The stripped ship surface wants a cap shallower than or equal to the measured one. Ladder not aborted: bias is signed, small next to the M=5 step, and minimumTableWidth excludes the only shallower alternative."
+    },
+    "422": {
+      "title": "the crown is the maximum of 74 tickets; the top of this board has no code separation",
+      "harness": "ranked",
+      "crossSolverPack": "47 scored receipts at or above 3.700 from 13 different solvers: mean 3.708974, sd 0.006386 = 0.172 %. Our 3.707845 sits at -0.18 sd (dead average); the crown at +3.15 sd.",
+      "independentAgreement": "Edward's within-board serial-leg resample gave 0.179 %; the empirical cross-solver dispersion is 0.172 %. Two independent methods agree to within 4 %. Since pack dispersion equals pure-noise dispersion, the 13 solvers' code differences contribute essentially nothing to the published median.",
+      "newjordanBook": "74 scored receipts out of 120 submitted. Top eight: 3.7291, 3.7196, 3.7151, 3.7143, 3.7103, 3.7100, 3.7075, 3.6925.",
+      "resampleValidation": "Edward predicted the crown's own code typically publishes 3.7104 without looking at their other receipts. Their fifth and sixth best are 3.7103 and 3.7100 - reproduced to four significant figures.",
+      "orderStatistic": "for 74 draws the expected maximum is roughly +2.5 sd; on a 0.18 % scale about +0.45 %, landing at 3.7271 against the observed 3.7291. Combined with FINDING 418 the crown contains no code advantage over us at all.",
+      "truncationCheck": "the 0.172 % figure is truncated at 3.700 and dispersion grows as the threshold falls: 3.700 -> 0.172 %, 3.690 -> 0.213 %, 3.680 -> 0.281 %, 3.670 -> 0.331 %, 3.660 -> 0.477 %, 3.650 -> 0.536 %. So 0.172 % is a floor and the byte-identical pair at 0.5735 % remains the honest upper anchor.",
+      "probabilityRuling": "the crown-attempt probability stays at Edward's 90 %. It is NOT raised by this finding. Nobody writes 99 % anywhere."
+    },
+    "423": {
+      "title": "the cadence gap: we are three times behind the leader on tickets",
+      "counts": "newjordan 120 submitted / 74 scored / best 3.729110; Lieisyourlie 111/92/3.700474; scarletbright 101/64/3.722981; jonathan308 65/55/3.696347; vibecodooor 52/42/3.719792; fkiene 43/35/3.702217; morganmcg1 39/35/3.707845; Amal-David 37/33/3.716544",
+      "slotIdle": "at 2026-08-24T07:30Z the official slot had been free and empty for over two hours with four competitor submissions validating",
+      "ourTrajectory": "2.861266 on 08-17 to 3.707845 on 08-23, monotone, a 30 % climb. newjordan's top eight span 3.6925 to 3.7291 and have been flat since 08-23. They plateaued and are buying tickets; we climbed and arrived at the pack.",
+      "separationClaim": "Thorfinn's S1 at +1.11 % would sit +6.4 sd above the pack mean at the conservative 3.7496. Nothing on this board has ever been there.",
+      "remedy": "we cannot re-roll, because program.md forbids duplicate submissions. We answer the gap by never leaving the slot empty and keeping one distinct frozen candidate queued behind the one in flight. RULE 199 generates that pipeline naturally: strip first, depth cap second, composition after."
     }
   },
   "rules": {
     "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
     "198": "An inert research switch is NEVER merged onto the submitted surface. FINDING 413 measures an inert routed-path probe at +1.0929 % of the candidate decode leg. E170 was closed rather than merged for this reason despite being complete, correct and fully gated.",
     "199": "Fire the instrumentation strip and the depth cap SEQUENTIALLY, not composed. Reasons: clean attribution on a rejected receipt, one-hypothesis discipline, and the official slot admits one candidate at a time while the number of submissions is not limited. The shorter path with the provably unchanged ledger goes first.",
-    "200": "An assignment head_branch must be prefixed with the EXACT configured student name, for example qwen-alphonse/... . A bare alphonse/... is refused by SENPAI-GIT-GUARD and senpai/... is refused as the advisor-owned namespace."
+    "200": "An assignment head_branch must be prefixed with the EXACT configured student name, for example qwen-alphonse/... . A bare alphonse/... is refused by SENPAI-GIT-GUARD and senpai/... is refused as the advisor-owned namespace.",
+    "201": "When a stop branch is removed from an experiment, remove every measurement that could only have fed that branch. Re-derive the minimum evidence the ship decision still needs, and cut the schedule to it. Retaining an obsolete measurement on the ship path is unpriced delay, not caution.",
+    "202": "Never leave the official slot empty. Keep one distinct frozen candidate queued behind the one in flight. Duplicate submissions are forbidden, so cadence is answered by a pipeline of distinct justified candidates, not by re-rolling."
   },
   "crownAttempt": {
     "owner": "qwen-thorfinn, E171 r1, PR 171",
