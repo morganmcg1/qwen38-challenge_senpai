@@ -67,6 +67,23 @@ print("per-leg calls  :", legs[0]["split_call_census_by_width"])
 print("per-leg rounds :", legs[0]["round_census_by_width"])
 
 print()
+print("== EARLY WINDOW (first 128 TIMED split-cell calls per leg, E198's window size) ==")
+warm = r["session_split_call_census_first_128_calls_per_leg"]
+wtot = sum(warm.values())
+for w in ("6", "7", "8", "9"):
+    steady = 100 * cen.get(w, 0) / tot
+    early = 100 * warm.get(w, 0) / wtot
+    print("  qL=%s  first128 %6d (%6.2f%%)   steady %6.2f%%   delta %+7.2f pp"
+          % (w, warm.get(w, 0), early, steady, steady - early))
+print("per-leg first128:", legs[1]["split_call_census_first_128_calls"])
+
+print()
+print("== VERDICT ==")
+print(r["verdict"])
+print("witnesses_valid=%s positive_control_sync_detected=%s"
+      % (r["witnesses_valid"], r["positive_control_sync_detected"]))
+
+print()
 print("== TEMPS ==")
 ent = [float(l["gpu_temp_entry"]) for l in legs]
 ext = [float(l["gpu_temp_exit"]) for l in legs]

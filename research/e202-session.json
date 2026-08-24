@@ -42,6 +42,11 @@
         "7": 48,
         "8": 960
       },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
+      },
       "round_census_by_width": {
         "6": 5,
         "7": 3,
@@ -88,6 +93,11 @@
         "6": 80,
         "7": 48,
         "8": 960
+      },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
       },
       "round_census_by_width": {
         "6": 5,
@@ -136,6 +146,11 @@
         "7": 48,
         "8": 960
       },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
+      },
       "round_census_by_width": {
         "6": 5,
         "7": 3,
@@ -182,6 +197,11 @@
         "6": 80,
         "7": 48,
         "8": 960
+      },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
       },
       "round_census_by_width": {
         "6": 5,
@@ -230,6 +250,11 @@
         "7": 48,
         "8": 960
       },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
+      },
       "round_census_by_width": {
         "6": 5,
         "7": 3,
@@ -276,6 +301,11 @@
         "6": 80,
         "7": 48,
         "8": 960
+      },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
       },
       "round_census_by_width": {
         "6": 5,
@@ -324,6 +354,11 @@
         "7": 48,
         "8": 960
       },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
+      },
       "round_census_by_width": {
         "6": 5,
         "7": 3,
@@ -370,6 +405,11 @@
         "6": 80,
         "7": 48,
         "8": 960
+      },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
       },
       "round_census_by_width": {
         "6": 5,
@@ -418,6 +458,11 @@
         "7": 48,
         "8": 960
       },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
+      },
       "round_census_by_width": {
         "6": 5,
         "7": 3,
@@ -464,6 +509,11 @@
         "6": 80,
         "7": 48,
         "8": 960
+      },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
       },
       "round_census_by_width": {
         "6": 5,
@@ -512,6 +562,11 @@
         "7": 48,
         "8": 960
       },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
+      },
       "round_census_by_width": {
         "6": 5,
         "7": 3,
@@ -558,6 +613,11 @@
         "6": 80,
         "7": 48,
         "8": 960
+      },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
       },
       "round_census_by_width": {
         "6": 5,
@@ -606,6 +666,11 @@
         "7": 48,
         "8": 960
       },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
+      },
       "round_census_by_width": {
         "6": 5,
         "7": 3,
@@ -652,6 +717,11 @@
         "6": 80,
         "7": 48,
         "8": 960
+      },
+      "split_call_census_first_128_calls": {
+        "6": 64,
+        "7": 48,
+        "8": 16
       },
       "round_census_by_width": {
         "6": 5,
@@ -840,6 +910,11 @@
     "7": 672,
     "8": 13440
   },
+  "session_split_call_census_first_128_calls_per_leg": {
+    "6": 896,
+    "7": 672,
+    "8": 224
+  },
   "leg_level_null_control": {
     "note": "every leg carries the same arm composition, so this spread is drift only (FINDING 518 re-measurement)",
     "leg_mean_round_ms": [
@@ -861,6 +936,6 @@
     "spread_ms": 5.283397435897456,
     "stdev_ms": 1.8139961665638702
   },
-  "verdict": "overlap-confirmed",
+  "verdict": "interior-latency-not-cheaply-recoverable; consistent with overlap; overlap vs marginal-sync cost not separable at this resolution",
   "positive_control_sync_detected": true
 }

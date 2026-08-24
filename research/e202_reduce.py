@@ -182,6 +182,30 @@ def census(recs: list[dict]) -> dict:
     return dict(sorted(hist.items()))
 
 
+def census_first_n_calls(recs: list[dict], limit: int = 128) -> dict:
+    """Served-width histogram over the first `limit` TIMED split-cell calls.
+
+    The warm-up pass (a uniform 32-per-width prefix, counted by the separate
+    round-1 census witness) is already outside `recs`, so this window is the
+    first 128 calls of steady decode. It shows that even a post-warm-up window
+    of E198's size is unrepresentative of the leg census, which is the second
+    half of the FINDING 522(b) evidence.
+    """
+    hist: dict[str, int] = {}
+    seen = 0
+    for rec in recs:
+        calls = to_int(rec, "e202_calls", 0)
+        width = to_int(rec, "e202_width", 0)
+        if calls <= 0 or width <= 0:
+            continue
+        if seen >= limit:
+            break
+        take = min(calls, limit - seen)
+        hist[str(width)] = hist.get(str(width), 0) + take
+        seen += take
+    return dict(sorted(hist.items()))
+
+
 def round_histogram(recs: list[dict]) -> dict:
     hist: dict[str, int] = {}
     for rec in recs:
@@ -280,7 +304,15 @@ def verdict(inner: dict) -> str:
     sync-cost estimate and so carries none of its variance. The assignment's
     subtracted form `net = inner - 4 * sync` is reported alongside; it assumes
     the per-barrier cost is additive, which the measurement itself can test.
+
+    Labels follow the advisor ruling on PR 199 (comment 5402432090). `inner`
+    bounds the exposed interior latency FROM ABOVE, so only the small-`inner`
+    branch is decisive; a large `inner` is equally consistent with pure marginal
+    sync cost of the four extra barriers and cannot be separated from overlap at
+    this instrument's resolution. E198 priced the interior dispatch latency the
+    FINDING 507 family would have to recover at 1.6 ms/round.
     """
+    e198_priced_ms_per_round = 1.6
     mean = inner.get("mean")
     two_sigma = inner.get("two_sigma")
     if mean is None:
@@ -288,11 +320,14 @@ def verdict(inner: dict) -> str:
     upper = mean + (two_sigma or 0.0)
     if upper < 0.2:
         return "non-transfer-confirmed"
-    if mean >= 0.5:
-        return "overlap-confirmed"
-    if mean >= 0.2:
-        return "negative-band-0.2-to-0.5"
-    return "point-estimate-below-floor-but-interval-open"
+    if mean >= e198_priced_ms_per_round:
+        return (
+            "interior-latency-not-cheaply-recoverable; consistent with overlap; "
+            "overlap vs marginal-sync cost not separable at this resolution"
+        )
+    if upper < e198_priced_ms_per_round:
+        return "non-transfer-confirmed (below the E198 priced 1.6 ms/round)"
+    return "ambiguous-band-below-1.6-with-interval-open"
 
 
 def main() -> int:
@@ -349,6 +384,7 @@ def main() -> int:
                 "traced_worker": selection,
                 "witness": witness,
                 "split_call_census_by_width": census(timed),
+                "split_call_census_first_128_calls": census_first_n_calls(timed, 128),
                 "round_census_by_width": round_histogram(timed),
                 "serving_triples": len(serving),
                 "leg_mean_round_ms": (
@@ -368,9 +404,12 @@ def main() -> int:
     }
 
     total_census: dict[str, int] = {}
+    warmup_census: dict[str, int] = {}
     for rep in leg_reports:
         for width, count in rep["split_call_census_by_width"].items():
             total_census[width] = total_census.get(width, 0) + count
+        for width, count in rep["split_call_census_first_128_calls"].items():
+            warmup_census[width] = warmup_census.get(width, 0) + count
 
     leg_means = [r["leg_mean_round_ms"] for r in leg_reports if r["leg_mean_round_ms"]]
     report = {
@@ -384,6 +423,9 @@ def main() -> int:
         "contrasts_null_control_non_serving_rounds": idle_contrast,
         "contrasts_null_control_serial_leg": serial_contrast,
         "session_split_call_census_by_width": dict(sorted(total_census.items())),
+        "session_split_call_census_first_128_calls_per_leg": dict(
+            sorted(warmup_census.items())
+        ),
         "leg_level_null_control": {
             "note": "every leg carries the same arm composition, so this spread "
             "is drift only (FINDING 518 re-measurement)",
