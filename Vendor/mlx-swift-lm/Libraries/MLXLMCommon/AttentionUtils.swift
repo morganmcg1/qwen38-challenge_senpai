@@ -156,22 +156,27 @@ public func attentionWithCacheUpdate(
     }
 }
 
-/// One-pass, row-amortized fused SDPA for the wide-decode split (E198).
+/// One-pass fused SDPA for the wide-decode split (E198).
 ///
-/// The vendored `sdpa_vector` kernel gives one threadgroup to every (query
-/// head, query row) pair, so each of the `gqa * qL` threadgroups that share a
-/// KV head streams the whole KV window itself. At the scored decode cell that
-/// load traffic is ~30x redundant and it is the binding resource: the dispatch
-/// sits at ~9% ALU and ~9% DRAM while asking for 727 GB/s (FINDING 507).
+/// The shipped qL 6...9 branch issues TWO `sdpa_vector` dispatches: one over
+/// the shortened window for rows 0...4 and one over the full window for the
+/// remaining rows. This kernel replaces both with a single dispatch. Row `r`
+/// attends keys `0 ... N - M + r`, which is the exact key range each global row
+/// already receives from the split, so every row reproduces the split bit for
+/// bit, including the top-2 evidence the split exists to protect
+/// (`attentionWithCacheUpdate`, the qL 6...9 branch).
 ///
-/// This kernel removes the row half of that redundancy. It keeps the vendored
-/// per-row arithmetic exactly — 32 simdgroups x 32 lanes, the same
-/// key-to-simdgroup assignment, the same online-softmax update order, the same
-/// cross-simdgroup max/sum reduction and transposed output combine — and only
-/// holds the M query rows of one head in registers, so a KV tile is read once
-/// per head instead of once per row. Every row therefore reproduces the
-/// two-call split bit for bit, including the top-2 evidence the split exists to
-/// protect (`attentionWithCacheUpdate`, the qL 6...9 branch).
+/// The kernel keeps the vendored per-row arithmetic exactly — 32 simdgroups x
+/// 32 lanes, the same key-to-simdgroup assignment, the same online-softmax
+/// update order, the same cross-simdgroup max/sum reduction and transposed
+/// output combine — and it keeps one threadgroup per (head, row).
+///
+/// An earlier form of this kernel instead held all M rows of one head in
+/// registers, to read each KV tile once per head rather than once per row.
+/// Measured on M4 Pro, that form costs 1.4x to 4.9x more than M separate
+/// one-row dispatches: collapsing the row into the threadgroup removes the
+/// dispatch grid's only source of parallelism at these widths, and the KV
+/// re-read it saves is not the binding resource at kL 517...1023.
 ///
 /// Bit-exactness needs the full 1024-thread threadgroup: a narrower group would
 /// change which keys a simdgroup accumulates and so change the summation order.
@@ -250,7 +255,7 @@ public enum FusedRowAmortizedSDPA {
         return kernel(
             [queries, keys, values, MLXArray(scale)],
             template: [("M", rows)],
-            grid: (bd, bn, heads),
+            grid: (bd, bn, heads * rows),
             threadGroup: (bd, bn, 1),
             outputShapes: [[1, heads, rows, headDim]],
             outputDTypes: [.bfloat16]
@@ -265,48 +270,43 @@ public enum FusedRowAmortizedSDPA {
         constexpr int D = 256;
         constexpr int QK = D / BD;
         constexpr int VP = D / BD;
-        // Rows transposed through threadgroup memory in one round. Six rows
-        // cost 24 KiB and hold the combine at the vendored kernel's 16
-        // barriers for M = 6; wider M adds rounds, never memory.
-        constexpr int TG_ROWS = M < 6 ? M : 6;
-
-        threadgroup float max_scores[M][BN];
-        threadgroup float sum_exp_scores[M][BN];
-        threadgroup float outputs[TG_ROWS * BN * BD];
+        threadgroup float outputs[BN * BD];
+        threadgroup float max_scores[BN];
+        threadgroup float sum_exp_scores[BN];
 
         const int simd_gid = int(simdgroup_index_in_threadgroup);
         const int simd_lid = int(thread_index_in_simdgroup);
-        const int q_head = int(threadgroup_position_in_grid.z);
+        // One threadgroup per (head, query row). Holding the M rows inside a
+        // single threadgroup instead removes the dispatch grid's only source
+        // of parallelism at these widths.
+        const int slot = int(threadgroup_position_in_grid.z);
+        const int q_head = slot / M;
+        const int q_row = slot % M;
 
         const int num_q_heads = int(queries_shape[1]);
         const int num_kv_heads = int(keys_shape[1]);
         const int kv_head = q_head / (num_q_heads / num_kv_heads);
         const int N = int(keys_shape[2]);
 
-        const int64_t q_seq_stride = queries_strides[2];
         const int64_t q_dim_stride = queries_strides[3];
         const int64_t k_seq_stride = keys_strides[2];
         const int64_t v_seq_stride = values_strides[2];
 
-        thread float q[M][QK];
-        thread float o[M][VP];
-        thread float row_max[M];
-        thread float row_sum[M];
+        thread float q[QK];
+        thread float o[VP];
 
         const int64_t q_base = int64_t(q_head) * queries_strides[1]
+            + int64_t(q_row) * queries_strides[2]
             + int64_t(simd_lid * QK) * q_dim_stride;
-        for (int r = 0; r < M; r++) {
-            const int64_t base = q_base + int64_t(r) * q_seq_stride;
-            for (int j = 0; j < QK; j++) {
-                q[r][j] = scale
-                    * static_cast<float>(queries[base + int64_t(j) * q_dim_stride]);
-            }
-            for (int j = 0; j < VP; j++) {
-                o[r][j] = 0;
-            }
-            row_max[r] = Limits<float>::finite_min;
-            row_sum[r] = 0;
+        for (int j = 0; j < QK; j++) {
+            q[j] = scale
+                * static_cast<float>(queries[q_base + int64_t(j) * q_dim_stride]);
         }
+        for (int j = 0; j < VP; j++) {
+            o[j] = 0;
+        }
+        float max_score = Limits<float>::finite_min;
+        float sum_exp_score = 0;
 
         const device bfloat16_t* k_ptr = keys
             + int64_t(kv_head) * keys_strides[1]
@@ -318,33 +318,31 @@ public enum FusedRowAmortizedSDPA {
         const int64_t inner_v_stride = int64_t(BN) * v_seq_stride;
 
         // Bottom-right causal alignment: row r attends keys 0 ... N - M + r.
-        // Row M - 1 accepts every key this loop visits, so the tile is always
-        // live and both loads stay unconditional.
+        // This one rule reproduces both calls of the shipped split, whose
+        // shortened head window and full tail window give each global row the
+        // same key range.
         for (int i = simd_gid; i < N; i += BN) {
-            float kt[QK];
-            for (int j = 0; j < QK; j++) {
-                kt[j] = static_cast<float>(k_ptr[j]);
-            }
-            float vt[VP];
-            for (int j = 0; j < VP; j++) {
-                vt[j] = static_cast<float>(v_ptr[j]);
-            }
-            for (int r = 0; r < M; r++) {
-                if (i <= N - M + r) {
-                    float score = 0;
-                    for (int j = 0; j < QK; j++) {
-                        score += q[r][j] * kt[j];
-                    }
-                    score = simd_sum(score);
+            if (i <= N - M + q_row) {
+                float k[QK];
+                for (int j = 0; j < QK; j++) {
+                    k[j] = static_cast<float>(k_ptr[j]);
+                }
 
-                    float new_max = max(row_max[r], score);
-                    float factor = fast::exp(row_max[r] - new_max);
-                    float exp_score = fast::exp(score - new_max);
-                    row_max[r] = new_max;
-                    row_sum[r] = row_sum[r] * factor + exp_score;
-                    for (int j = 0; j < VP; j++) {
-                        o[r][j] = o[r][j] * factor + exp_score * vt[j];
-                    }
+                float score = 0;
+                for (int j = 0; j < QK; j++) {
+                    score += q[j] * k[j];
+                }
+                score = simd_sum(score);
+
+                float new_max = max(max_score, score);
+                float factor = fast::exp(max_score - new_max);
+                float exp_score = fast::exp(score - new_max);
+                max_score = new_max;
+                sum_exp_score = sum_exp_score * factor + exp_score;
+
+                for (int j = 0; j < VP; j++) {
+                    o[j] = o[j] * factor
+                        + exp_score * static_cast<float>(v_ptr[j]);
                 }
             }
             k_ptr += inner_k_stride;
@@ -352,51 +350,27 @@ public enum FusedRowAmortizedSDPA {
         }
 
         if (simd_lid == 0) {
-            for (int r = 0; r < M; r++) {
-                max_scores[r][simd_gid] = row_max[r];
-                sum_exp_scores[r][simd_gid] = row_sum[r];
-            }
+            max_scores[simd_gid] = max_score;
+            sum_exp_scores[simd_gid] = sum_exp_score;
         }
         threadgroup_barrier(mem_flags::mem_threadgroup);
+        max_score = max_scores[simd_lid];
+        float new_max = simd_max(max_score);
+        float factor = fast::exp(max_score - new_max);
+        sum_exp_score = simd_sum(sum_exp_scores[simd_lid] * factor);
 
-        // row_max becomes this lane's rescale factor and row_sum the shared
-        // denominator, exactly as the vendored kernel reuses its own locals.
-        for (int r = 0; r < M; r++) {
-            float lane_max = max_scores[r][simd_lid];
-            float new_max = simd_max(lane_max);
-            row_max[r] = fast::exp(lane_max - new_max);
-            row_sum[r] = simd_sum(sum_exp_scores[r][simd_lid] * row_max[r]);
-        }
-
-        for (int r0 = 0; r0 < M; r0 += TG_ROWS) {
-            for (int j = 0; j < VP; j++) {
-                for (int s = 0; s < TG_ROWS; s++) {
-                    if (r0 + s < M) {
-                        outputs[s * BN * BD + simd_lid * BD + simd_gid]
-                            = o[r0 + s][j];
-                    }
-                }
-                threadgroup_barrier(mem_flags::mem_threadgroup);
-                for (int s = 0; s < TG_ROWS; s++) {
-                    if (r0 + s < M) {
-                        const int r = r0 + s;
-                        float acc = simd_sum(
-                            outputs[s * BN * BD + simd_gid * BD + simd_lid]
-                            * row_max[r]);
-                        o[r][j] = row_sum[r] == 0 ? acc : acc / row_sum[r];
-                    }
-                }
-                threadgroup_barrier(mem_flags::mem_threadgroup);
-            }
+        for (int j = 0; j < VP; j++) {
+            outputs[simd_lid * BD + simd_gid] = o[j];
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+            o[j] = simd_sum(outputs[simd_gid * BD + simd_lid] * factor);
+            o[j] = sum_exp_score == 0 ? o[j] : (o[j] / sum_exp_score);
+            threadgroup_barrier(mem_flags::mem_threadgroup);
         }
 
         if (simd_lid == 0) {
-            for (int r = 0; r < M; r++) {
-                device bfloat16_t* out_ptr = out
-                    + (int64_t(q_head) * M + r) * D + simd_gid * VP;
-                for (int j = 0; j < VP; j++) {
-                    out_ptr[j] = static_cast<bfloat16_t>(o[r][j]);
-                }
+            device bfloat16_t* out_ptr = out + int64_t(slot) * D + simd_gid * VP;
+            for (int j = 0; j < VP; j++) {
+                out_ptr[j] = static_cast<bfloat16_t>(o[j]);
             }
         }
         """
