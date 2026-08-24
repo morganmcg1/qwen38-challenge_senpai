@@ -695,22 +695,33 @@ let qwen35E187StateStoreMode: Qwen35E187StateStore = {
 
 private enum Qwen35E187Probe {
     nonisolated(unsafe) static var applied = false
+    nonisolated(unsafe) static var announced = false
+
+    /// Liveness line: prove on the worker's stderr that a non-default arm ran.
+    static func announce(_ mode: Qwen35E187StateStore) {
+        guard !announced else { return }
+        announced = true
+        FileHandle.standardError.write(
+            Data("qwen35-e187-state-store-arm-engaged=\(mode.rawValue)\n".utf8))
+    }
 }
 
 /// Apply the selected storage arm to a recurrent state on its way into the
 /// cache. Returns the argument unchanged in the default fp32 arm.
-@inline(__always)
 func qwen35E187StoreState(_ state: MLXArray) -> MLXArray {
     switch qwen35E187StateStoreMode {
     case .fp32:
         return state
     case .bf16:
+        Qwen35E187Probe.announce(.bf16)
         return state.asType(.bfloat16).asType(.float32)
     case .fp16:
+        Qwen35E187Probe.announce(.fp16)
         return state.asType(.float16).asType(.float32)
     case .ulp1, .ulpbf16:
         guard !Qwen35E187Probe.applied, state.ndim == 4 else { return state }
         Qwen35E187Probe.applied = true
+        Qwen35E187Probe.announce(qwen35E187StateStoreMode)
         let cell = state[0, 0, 0, 0].item(Float.self)
         let bumped: Float
         if qwen35E187StateStoreMode == .ulp1 {
