@@ -1,0 +1,32 @@
+utc_start=2026-08-24T07:54:54Z
+git_head=43a95f0a048af65f499682badfc1b3bb6271d956
+git_dirty=0
+tokens=512
+depth=8
+schedule=B0 B1 B2 B3 B3 B2 B1 B0 B0 B1 B2 B3 B3 B2 B1 B0
+host=Apple M4 Pro
+mem_bytes=51539607552
+swift_bin_sha256=cf5819008c4c1184edbc3fdc4895e0e497084a0d97bd7ae6c1df3dd1037f470d
+swift_bin_witness=xsums=0,addr=0,anchor=0
+head_dir=/Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-edward/home/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head
+arms=B0 B1 B2 B3 
+arm_balance=B0=4 B1=4 B2=4 B3=4 
+wandb_run_id=e167-arms-20260824T075454Z
+worker_B0_sha256=999b5b51429be08fcaee5bde4ae3d17fd701969f9f65279991ecda4a3ae6cf61
+worker_B0_witness=xsums=8,addr=4,anchor=372
+metallib_B0_sha256=5d6e3f9f1438dc5d6e99423b720d66676b08a3c92a204c1e3fd8b6b0ecaef91d
+worker_B1_sha256=f8a07f6d832a50f9b41e2e9877f582b7e96780ef140941f4d8b76821e78a5b7b
+worker_B1_witness=xsums=8,addr=4,anchor=372
+metallib_B1_sha256=5d6e3f9f1438dc5d6e99423b720d66676b08a3c92a204c1e3fd8b6b0ecaef91d
+worker_B2_sha256=ddfa2f3d0aee33ddaa15073cd740809b60f44b3387e1342ceda73b9649bae7a3
+worker_B2_witness=xsums=0,addr=0,anchor=362
+metallib_B2_sha256=5d6e3f9f1438dc5d6e99423b720d66676b08a3c92a204c1e3fd8b6b0ecaef91d
+worker_B3_sha256=df28b41ab921d49f3a1713a33e7f2d5febb7ca130060909705f5d65cc3f884fe
+worker_B3_witness=xsums=4,addr=0,anchor=372
+metallib_B3_sha256=5d6e3f9f1438dc5d6e99423b720d66676b08a3c92a204c1e3fd8b6b0ecaef91d
+reference_arm=B0
+reference_generate_exit=0
+golden_sha256=66858d9561663b62e58a97191428da0a3816cdb00f67a93f724c7b2d0cf2301e
+golden_rows=513
+golden_seed_tokens=512
+utc_end=2026-08-24T08:33:47Z
