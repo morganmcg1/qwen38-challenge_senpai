@@ -50,13 +50,27 @@ research/e168_build.sh || exit 1
 export E37_ROOT="${root}"
 export E37_TOKENS="${E168_TOKENS:-512}"
 export E37_GOLDEN_STEPS=512
-export E37_TRACE=1
+# E168_TRACE=0 drops the per-round trace, which is what makes a leg's wall
+# time usable. The counts then come only from the trusted parent's own
+# per-round record, so a trace-free pass measures time but cannot answer a
+# schedule question. Never read both from one pass.
+export E37_TRACE="${E168_TRACE:-1}"
+# e37-run.sh looks for macmon under ~/bin. Point it at the installed binary so
+# entry and exit GPU temperature are recorded for every arm, which the ungated
+# timing mode requires.
+export MLXFAST_MACMON_BIN="${MLXFAST_MACMON_BIN:-/opt/homebrew/bin/macmon}"
 
 status=0
 index=0
 for id in "$@"; do
   order=("${arm_list[@]}")
-  ((index % 2)) && order=($(printf '%s\n' "${arm_list[@]}" | tail -r))
+  # E168_ABBA=1 runs A B B A inside one prompt so a monotone thermal drift
+  # cancels to first order within the pair, instead of only across prompts.
+  if [[ "${E168_ABBA:-0}" == 1 ]]; then
+    order=("${arm_list[@]}" $(printf '%s\n' "${arm_list[@]}" | tail -r))
+  elif ((index % 2)); then
+    order=($(printf '%s\n' "${arm_list[@]}" | tail -r))
+  fi
   for arm in "${order[@]}"; do
     case "${arm}" in
       adapt) unset MLX_E159_FIXED_DRAFT_DEPTH ;;
@@ -64,14 +78,25 @@ for id in "$@"; do
     esac
     echo "=== e168_collect: arm=${arm} prompt=${id} ==="
     research/e37-run.sh --census "${id}" || { status=1; break 2; }
+    # An ABBA session runs an arm twice on one prompt, so the replicate has to
+    # keep its own directory or the second leg would erase the first.
     dest="${out_root}/${arm}/${id}"
+    replicate=1
+    while [[ -e "${dest}" ]]; do
+      replicate=$((replicate + 1))
+      dest="${out_root}/${arm}/${id}.r${replicate}"
+    done
     mkdir -p "$(dirname "${dest}")"
-    rm -rf "${dest}"
     mv "${root}/runs/${id}" "${dest}" || { status=1; break 2; }
     {
       echo "e168_arm=${arm}"
+      echo "e168_replicate=${replicate}"
       echo "fixed_draft_depth=${MLX_E159_FIXED_DRAFT_DEPTH:-unset}"
-      echo "rounds_traced=$(grep -c '^mtp-trace: round=' "${dest}/trace.txt")"
+      if [[ -s "${dest}/trace.txt" ]]; then
+        echo "rounds_traced=$(grep -c '^mtp-trace: round=' "${dest}/trace.txt")"
+      else
+        echo "rounds_traced=0"
+      fi
     } >> "${dest}/meta.txt"
   done
   index=$((index + 1))
