@@ -250,10 +250,11 @@ def main():
                              "kv_lengths": payload.get("kv_lengths"),
                          })
         raw = wandb.Table(columns=["family", "cell", "m", "block", "ascending",
-                                   "microseconds", "reps"])
+                                   "position", "microseconds", "reps"])
         for s in payload["samples"]:
             raw.add_data(s["family"], s["cell"], s["m"], s["block"],
-                         s["ascending"], s["microseconds"], s["reps"])
+                         s["ascending"], s.get("position", -1),
+                         s["microseconds"], s["reps"])
         fit_table = wandb.Table(columns=[
             "family", "cell", "a_us", "b_us_per_m", "c_us_per_m2", "c_ci95",
             "r2", "rmse_us"])

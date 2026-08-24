@@ -30,6 +30,7 @@ private struct E186Sample: Encodable {
     var m: Int
     var block: Int
     var ascending: Bool
+    var position: Int
     var microseconds: Double
     var reps: Int
 }
@@ -472,8 +473,16 @@ struct E186DecodeWidthProbeTests {
         }
         families.append(("mlp", "fused", 20, mlpCalls))
 
+        // Settle work, timed by nothing, used to re-establish GPU clocks after
+        // each temperature read.
+        let settleWeights = MLXRandom.normal([2048, 2048]).asType(.bfloat16)
+        let settleInput = MLXRandom.normal([64, 2048]).asType(.bfloat16)
+        eval(settleWeights, settleInput)
+        let settle = { [matmul(settleInput, settleWeights)] }
+
         // --- warmup ---------------------------------------------------------
         recordTemperature("session_entry")
+        for _ in 0 ..< 40 { eval(settle()) }
         let floorEntry = e186EvalFloor(reps: 200)
         for family in families {
             for m in e186Widths {
@@ -487,7 +496,15 @@ struct E186DecodeWidthProbeTests {
             let ascending = block % 2 == 0
             let order = ascending ? e186Widths : e186Widths.reversed().map { $0 }
             recordTemperature("block_\(block)_entry")
-            for family in families {
+            // The temperature read forks `macmon`, which leaves the GPU idle
+            // long enough to bias whichever arm runs next. Settle on work that
+            // no family times, and rotate the family order so no arm keeps the
+            // first position across blocks.
+            for _ in 0 ..< 40 { eval(settle()) }
+            let rotation = block % families.count
+            for (position, family) in (families[rotation...]
+                + families[..<rotation]).enumerated()
+            {
                 for m in order {
                     // Session s2 showed the first width timed in each family
                     // paying a family-switch penalty of ~0.6 ms, which lands on
@@ -499,12 +516,13 @@ struct E186DecodeWidthProbeTests {
                         E186Sample(
                             family: family.family, cell: family.cell, m: m,
                             block: block, ascending: ascending,
-                            microseconds: us, reps: family.reps))
+                            position: position, microseconds: us,
+                            reps: family.reps))
                 }
             }
         }
         recordTemperature("session_exit")
-
+        for _ in 0 ..< 40 { eval(settle()) }
         let floor = e186EvalFloor(reps: 200)
         let encoded = try JSONEncoder().encode(samples)
         let sampleObjects = try JSONSerialization.jsonObject(with: encoded)
