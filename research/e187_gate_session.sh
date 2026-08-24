@@ -14,7 +14,9 @@
 #   ulpbf16  positive control: +1 bf16 ulp at ONE state cell, once
 #   ulp1     positive control: +1 fp32 ulp at ONE state cell, once
 #   cell2x   positive control: ONE state cell doubled, once
-#   cellbig  positive control: ONE state cell set to 1e30, once
+#   cellbig  one-shot control: ONE state cell set to 1e30, once (inert)
+#   ulpall   positive control: +1 fp32 ulp on every element of every store
+#   cellall  positive control: 1e30 at ONE cell of every store
 #
 # A run keeps going after a failing arm, because the ulp arms are expected to
 # fail their R5 self-consistency replay (the probe fires once, so the rebuilt

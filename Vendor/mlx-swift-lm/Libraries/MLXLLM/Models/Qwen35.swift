@@ -676,12 +676,25 @@ private func qwen35GatedDeltaReplayState(
 //   fp32      pinned behaviour (default)
 //   bf16      round every stored state through bfloat16
 //   fp16      round every stored state through float16
-//   ulp1      positive control: +1 fp32 ulp at ONE cell of the first store
-//   ulpbf16   positive control: +1 bf16 ulp at ONE cell of the first store
+//   ulpall    positive control: +1 fp32 ulp on every element of every store
+//   cellall   positive control: 1e30 at ONE cell of every store
+//   ulp1      one-shot control: +1 fp32 ulp at ONE cell of the FIRST store
+//   ulpbf16   one-shot control: +1 bf16 ulp at ONE cell of the FIRST store
+//   cell2x    one-shot control: ONE cell of the FIRST store doubled
+//   cellbig   one-shot control: ONE cell of the FIRST store set to 1e30
+//
+// The four one-shot arms are measured to be INERT: even `cellbig` left all 512
+// generated rows bit-identical, while `bf16` through the same call changed 423
+// of them. The first store therefore lands in a slot that a later store
+// overwrites before the recurrence reads it, so a one-shot probe cannot arm
+// this ladder. Use `ulpall` and `cellall`, which perturb every store exactly
+// as the storage arms do.
 enum Qwen35E187StateStore: String {
     case fp32
     case bf16
     case fp16
+    case ulpall
+    case cellall
     case ulp1
     case ulpbf16
     case cell2x
@@ -720,6 +733,16 @@ func qwen35E187StoreState(_ state: MLXArray) -> MLXArray {
     case .fp16:
         Qwen35E187Probe.announce(.fp16)
         return state.asType(.float16).asType(.float32)
+    case .ulpall:
+        Qwen35E187Probe.announce(.ulpall)
+        // One fp32 ulp of relative perturbation: 2**-23 of each element.
+        return state * Float(1.0 + 1.1920929e-7)
+    case .cellall:
+        Qwen35E187Probe.announce(.cellall)
+        guard state.ndim == 4 else { return state }
+        let perturbed = state[.ellipsis]
+        perturbed[0, 0, 0, 0] = MLXArray(Float(1e30))
+        return perturbed
     case .ulp1, .ulpbf16, .cell2x, .cellbig:
         guard !Qwen35E187Probe.applied, state.ndim == 4 else { return state }
         Qwen35E187Probe.applied = true
