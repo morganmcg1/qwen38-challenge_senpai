@@ -431,10 +431,9 @@
   "whyOnDeviceIsImpossible": "The verify tensor shape must be host-known, so the width decision cannot stay on device, and there is no existing host transfer before the verify forward to ride on."
  },
  "depthCapEightOpenLever": {
-  "status": "REOPENED-UNPRICED",
-  "reason": "the DEAD verdict (M=9 third weight pass, break-even far above 1) was priced by the step law, whose ranked transfer is falsified (FINDING 449). Between depths 4 and 7 ranked prefers deeper (sign only). Beyond 7: unknown, and no local measurement can price it (RULE 378).",
-  "formerVerdict": "DEAD via groups(9)=3",
-  "pricingBlockedUntil": "E177 ranked depth-law recovery"
+  "status": "REPRICED-DEAD-BY-DATA",
+  "finding": 456,
+  "statement": "Cap-8 (width-9 rounds) priced 3.67148 by the convex law; marginal row cost at width 9 = 8.848 ms vs per-prompt break-evens 6.19-8.13 ms; costs on all five wide prompts; needs an 8.1% law error (tightest: beagle) to overturn. Replaces both the falsified step-law DEAD verdict and the interim REOPENED-UNPRICED state."
  },
  "depthControllerHasNoSignal": {
   "aucPosition0": {
@@ -1267,35 +1266,8 @@
   "status": "superseded in part: two controlled ranked depth points now exist \u2014 cap-7 (A) 3.70784519415395 and cap-4 (90c131dc) 3.54742900664627, single-factor. Board-only inference remains unidentifiable; law recovery from the paid receipts is E177 (qwen-askeladd)."
  },
  "rankedDepthOptimum": {
-  "boardFalsificationAttempt": "among the 30 fastest receipts per prompt the edl is the shipped default and nothing else. Within-solver on edl>=3 deeper measures slower on beagle/essays but the estimator is confounded and our own receipts disagree with fkiene's. Of 190 distinct schedules across 948 receipts, not one is both deep and fast.",
-  "finding": "FINDING 378",
-  "hypothesis": "the shipped depth policy under-drafts on the ranked M5 because its cost calibration carries a weight-stream step the ranked host does not pay",
-  "ledgerEntry": 351,
-  "modelValidation": "the local model reproduces askeladd's sealed pinned-width ms/token curve at all seven widths within 6.7 percent, mean absolute error about 2 percent",
-  "openSourceQuestion": "no affine price from 4.0 to 8.65 ms reproduces the shipped stopping depth; there is a term in costModelDepth that is not in the model. E166 step 1.",
-  "owner": "qwen-askeladd PR 167",
-  "predictedPublished": "+4.19 percent at h=5.335; +4.41 to +3.11 over h_true 5.0 to 7.0",
-  "rankedOptimalDepth": {
-   "beagle": 7,
-   "botany": 7,
-   "drama": 2,
-   "essays": 7,
-   "medicine": 7,
-   "plutarch": 1,
-   "republic": 7,
-   "travel": 2
-  },
-  "shippedEdl": {
-   "beagle": 4.38,
-   "botany": 6.15,
-   "drama": 2.3,
-   "essays": 5.09,
-   "medicine": 5.26,
-   "plutarch": 1.16,
-   "republic": 4.99,
-   "travel": 2.65
-  },
-  "unmeasurableLocally": "G_min(M)=ceil(M/5) forces two weight passes at widths 6,7,8 on every g16s host we own. No local experiment can ever measure this."
+  "finding": 456,
+  "statement": "Cap-7 confirmed as the ranked depth optimum by the convex law; per-prompt oracle cap equals paid cap-7 to all printed digits. Depth axis closed; RULE 378 stands."
  },
  "rankedNoiseFloor": {
   "bestCaseCvPercent": 0.086,
@@ -2247,8 +2219,8 @@
   "preparing": null,
   "frozenNext": null
  },
- "lastAdvisorUpdate": "2026-08-24T10:58Z ledger entry 378: E176 r0 terminal REFUTED + wrong-tree self-correction -> r1 requested; FINDING 452 receipt-channel offset -0.2346% (0.25% cross-receipt floor), FINDING 453 receipt C outlier 7.0 sigma, FINDING 454 two-barrier census (257/7 cells, all routable; gen13/14 limit-6 explanation dead)",
- "ledgerEntry": 378,
+ "lastAdvisorUpdate": "2026-08-24T11:05Z ledger entry 379: E177 merged (082a1d60) -- ranked depth axis CLOSED with data; FINDING 455 (rejected receipts expose per-prompt; mtp includes prefill; exact round counts), FINDING 456 (convex round-cost law; cap-7 optimum; cap-8 dead on data; no depth cell reaches crown); crown gap is receipt-channel; E178 next for Askeladd",
+ "ledgerEntry": 379,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2414,7 +2386,9 @@
   "451": "One standalone x-sums fill dispatch plus its host kernel record costs 4.0-5.3 us of candidate MTP wall time. Lower bound o-s (identical consumer): +0.3849 % leg, 699.1 us/round, 127 cells, 5.505 us/cell. Upper bound f-r (different consumer pipelines, grade C): +0.5190 %, 981.9 us/round, 257 cells, 3.820 us/cell. Bounds cross -> bracket, not a point.",
   "452": "Byte-identical receipt pair (ec24d591 vs 5a9f130a): coherent candidate-channel offset -0.2346% 8/8 same-sign on prefill+decode+leg, spread 0.18%; serial clean. Cross-receipt claims < ~0.25% are unsafe. harness=ranked. (E176 task 2, W&B vxdn8h60)",
   "453": "Receipt C (fda590bb) is an outlier: C-A decode +0.9889% mean7 = 7.0 sigma on inert-only contrast; B-C's -0.6691% cannot be Q-decode (FINDING 450) and leaves -0.8687% located in C; FINDING 440 Q attribution conditional on E175 receipt. B-A splits clean: Q is prefill-only (+1.9359% prefill 0/8 neg, decode +0.0153% null), net leg +0.20% SLOWER. harness=ranked. (E176, W&B vxdn8h60)",
-  "454": "Corrected scored-tree census: 257 dispatches/round in 7 fused cells, all N>=4096, all replica-routable; FINDING 450 rests on two independent barriers (replica consumes M 2-9 pre-MLX; fallthrough hits limit 10 > 9). routable() has NO arch_gen dependence -> replica intercepts on every host; gen13/14 limit-6 explanation for local step law and FINDING 444 is DEAD. Fusion eliminates small-N cells entirely. E176 r0 censused the wrong tree (Sources/MLXFastModel, not scored); r1 amends. harness=source."
+  "454": "Corrected scored-tree census: 257 dispatches/round in 7 fused cells, all N>=4096, all replica-routable; FINDING 450 rests on two independent barriers (replica consumes M 2-9 pre-MLX; fallthrough hits limit 10 > 9). routable() has NO arch_gen dependence -> replica intercepts on every host; gen13/14 limit-6 explanation for local step law and FINDING 444 is DEAD. Fusion eliminates small-N cells entirely. E176 r0 censused the wrong tree (Sources/MLXFastModel, not scored); r1 amends. harness=source.",
+  "455": "Rejected receipts expose FULL per-prompt officialMetrics; mtp_seconds_per_token_mean INCLUDES prefill (round cost = 512*(mtp-prefill)); round counts exactly recoverable via E159 lattice. Every paid receipt = 8 measurements. harness=ranked. (E177, W&B gjn7stes)",
+  "456": "Ranked round cost is CONVEX: R(M)=30.640-0.939M+0.576M^2 ms (OOS: A-only fit predicts paid cap-4 to -0.381%). Cells: cap5 3.65289 / cap6 3.70170 / cap7 3.70785 / cap8 3.67148 / oracle=cap7. No cell reaches crown 3.72911 (short 0.5735%). Cap-8 DEAD on data (marginal row 8.848 ms vs break-evens 6.19-8.13). Depth axis CLOSED. harness=ranked. (E177, merged 082a1d60)"
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2616,22 +2590,8 @@
   "compositionCritical": "Cap-4 truncates the schedule to M <= 5 ({2:1,4:4,5:106} local). If Q's decode consumers need M >= 6, Q's -0.67% does NOT survive under cap-4 and the cap4+Q composition is mispriced. E176 answers this before the next composition fires."
  },
  "rankedDepthTwoPointLaw": {
-  "harness": "ranked",
-  "points": {
-   "cap7": {
-    "receipt": "5a9f130a (A)",
-    "published": 3.70784519415395
-   },
-   "cap4": {
-    "receipt": "90c131dc",
-    "published": 3.54742900664627
-   }
-  },
-  "singleFactor": "one literal segmentedVerifyDepthCap 7->4; both trees organizer-pure at 0863b06a",
-  "sign": "deeper wins between depths 4 and 7 on ranked M5",
-  "magnitude": "-4.33 % published for 7->4, ~+4.5 % candidate-leg, ~23 sigma",
-  "localInversion": "same frozen tree was -3.97 % candidate time locally (a win) \u2014 the depth axis inverts between hosts",
-  "recovery": "E177 (qwen-askeladd): recover the ranked round-cost law from per-prompt structure of the two receipts"
+  "status": "SUPERSEDED by rankedRoundCostConvexLaw (FINDING 456)",
+  "note": "kept for provenance: the two controlled points cap7=3.70784519, cap4=3.54742901 are the fit inputs"
  },
  "qDecodeConsumerSetEmpty": {
   "finding": 450,
@@ -2680,5 +2640,32 @@
   "harness": "ranked",
   "statement": "Receipt C (fda590bb, inert-instrumentation-only contrast vs A) is an outlier: C-A decode channel +0.9889% mean7, 7/8 positive = 7.0 sigma on the 0.1421% common-offset sd. B-C's -0.6691% 'Q gain' leaves -0.8687% unexplained, located in C. The +0.0070% additivity residual is an identity ((C-A)+(B-C)+(D-B)=D-A) and cannot detect this. Converges with Edward's independent C/A -1.08% published anomaly and FINDING 443 (C's commit 080d4cd3 unfetchable). B-A (both trees inspected first-hand) splits clean: decode +0.0153% mean8 sd 0.11 (null); prefill +1.9359% 0/8 negative = Edward's local +1.936% reproduced on ranked M5 to three digits. Q is prefill-only, net +0.20% leg SLOWER. FINDING 440's Q attribution is conditional on the E175 receipt (three-model registration adjudicates).",
   "source": "E176 tasks 2-3, W&B vxdn8h60"
+ },
+ "rejectedReceiptsExposePerPrompt": {
+  "finding": 455,
+  "harness": "ranked",
+  "statement": "officialMetrics.per_prompt is FULLY exposed for rejected receipts (mtp/serial s/tok means, raw ratio, edl, non_drafting_round_count, prefill s/tok, head provenance, parity). Every paid receipt is an eight-point measurement. Field corrections: mtp_seconds_per_token_mean INCLUDES prefill (round cost = 512*(mtp-prefill); carry prefill back before forming raw ratios); round counts exactly recoverable via the E159 lattice (reproduces E159 counts and FINDING 374 alphas on all 8 prompts of A).",
+  "source": "E177 step 1, W&B gjn7stes"
+ },
+ "rankedRoundCostConvexLaw": {
+  "finding": 456,
+  "harness": "ranked",
+  "law_ms": "R(M) = 30.640 - 0.939*M + 0.576*M^2",
+  "fit": "wRMSE 0.2435 ms; AIC -176.6 vs -140.9 next best; held-out R(1)=30.277 vs 30.2519 floor",
+  "oos": "fitted on A alone predicts paid cap-4 published score to -0.381%; rivals miss 5-16%",
+  "pricedCells": {
+   "cap5": 3.65289,
+   "cap6": 3.7017,
+   "cap7_paid": 3.70785,
+   "cap8": 3.67148,
+   "oraclePerPromptCap": 3.70784519
+  },
+  "conclusion": "DEPTH AXIS CLOSED WITH DATA: no cell reaches crown 3.7291100106 (best short 0.5735%). Cap-7 is the ranked optimum; per-prompt oracle equals it (median window set by beagle+essays, both at their own optimum). Marginal row cost climbs 0.79 -> 8.85 ms from width 2 to 9. Caps 6/7/8 within 2 sigma: ordering is ranking, but crown-unreachable is robust. Cheapest model-separating ranked measurement would be one cap-5/6 receipt (not slot-worthy: no crown-clearing potential).",
+  "openMechanismQuestion": "FINDING 454 replica grid predicts kernel-level R(8)~=R(7) (both 2x4 grids) but the law prices +7.7 ms between them; non-replica round cost (verification, GDN replay, attention cache, head) must carry the smooth M-dependence. Split unmeasured.",
+  "source": "E177, W&B gjn7stes, merged 082a1d60"
+ },
+ "crownGapIsReceiptChannel": {
+  "statement": "Crown ec24d591 sits on a tree byte-identical to receipt A (5a9f130a): the +0.5735% crown gap is receipt-channel (luck), not mechanism. FINDING 452 offset scale ~0.23% coherent per receipt. Depth axis closed (FINDING 456). Open levers by priced size: xsums dedup/fill bracket (FINDING 451, 0.38-0.52% leg upper bound), receipt-channel statistics + A-replay option (E178), prefill (~10% of leg, no current lever).",
+  "ledger": 379
  }
 }

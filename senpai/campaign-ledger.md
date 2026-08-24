@@ -71098,3 +71098,84 @@ never by directory grep.
   cost(M) structure lives in the replica kernel + qmv, not in qmm_t switching.
 - Alphonse: E174 dedup census (PR 173, wip). FINDING 454 confirms his ~257 standalone
   xsums fills/round = exactly the 257 scored dispatches.
+
+---
+
+## Entry 379 — 2026-08-24 ~11:05Z — E177 MERGED: ranked depth axis CLOSED with data; FINDINGs 455–456
+
+### E177 (PR 176, Askeladd) r0 terminal: convex ranked round-cost law, OOS-validated; no depth cell reaches the crown
+
+Typed result `succeeded` at head `cfb0d93b`, merged as `082a1d60`. W&B `gjn7stes`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/gjn7stes),
+verified finished. Desk-only: 0 GPU seconds, research/-only diff,
+`verify-ranked-score-boundary.sh` PASS. Corrections recorded in the acceptance: the
+result's "receipt C" = `90c131dc` (ladder receipt E, cap-4), NOT ladder receipt C
+`fda590bb` (the FINDING 453 outlier, which fed nothing here); the interim's "botany
+faster at cap 4" (−0.32 % cross-receipt) is sign-indeterminate under the FINDING 452
+floor after plutarch anchoring (residual ≈ −0.20 %); caps 6/7/8 ordering is a ranking
+claim (within 2σ), but "no cell reaches the crown" is robust — even point estimates
+fall short.
+
+### FINDING 455 — rejected receipts expose the FULL eight-row per-prompt table; two field corrections (harness=ranked)
+
+`officialMetrics.per_prompt` is present for rejected receipts (all fields:
+mtp/serial seconds-per-token means, raw ratio, edl, non-drafting round count, prefill
+seconds-per-token, head provenance, parity). Every receipt the campaign ever paid for
+is an eight-point measurement, not one median. Field corrections: (1)
+`mtp_seconds_per_token_mean` INCLUDES prefill — round cost must be built from
+`512 × (mtp − prefill)`, and modelled decode must carry prefill back before forming a
+raw ratio (a 13 % score-prediction inflation bug was caught this way); (2) round
+counts are exactly recoverable via the re-derived E159 lattice (edl is exact rational
+proposed/rounds; batch-1 floor 30.2519 ms + monotone curve resolve N), reproducing
+E159 counts and FINDING 374 alphas on all eight prompts of A.
+
+### FINDING 456 — the ranked M5 round cost is CONVEX in width; depth axis closed (harness=ranked)
+
+From 16 (width, round-cost) observations (receipts A cap-7 and `90c131dc` cap-4,
+single-factor by FINDING 448):
+
+**R(M) = 30.640 − 0.939·M + 0.576·M² ms** (wRMSE 0.2435 ms; AIC −176.6 vs −140.9 next
+best; held-out anchor R(1) = 30.277 vs known 30.2519 ms floor). Decisive OOS test:
+fitted on receipt A ALONE it predicts the paid cap-4 published score to −0.381 %,
+while every rival (affine, free-step, affine+wall6+rows) misses by 5–16 %.
+
+Priced cells: cap-5 3.65289, cap-6 3.70170, **cap-7 (paid) 3.70785**, cap-8 3.67148,
+per-prompt oracle cap = 3.70784519 (= paid cap-7: the median window is set by beagle
+and essays, both already at their own optimum). **No cell reaches the crown line
+3.7291100106; best falls short by 0.5735 %.** Cap-8 is re-confirmed DEAD on the
+recovered law (marginal row cost at width 9 = 8.848 ms vs per-prompt break-evens
+6.19–8.13 ms; overturning needs an 8.1 % law error), replacing the falsified step-law
+verdict with a data-based one. Model-free minimum result: wide-prompt round-cost
+ratio 1.2579; fixed-width R(7)/R(5) = 1.296 (advisor's 1.3–1.4 prior corrected to
+1.26–1.30). Marginal row cost climbs 0.79 → 8.85 ms from width 2 to 9.
+
+Frontier keys updated: `depthCapEightOpenLever` → REPRICED-DEAD-BY-DATA;
+`rankedDepthTwoPointLaw` → superseded by `rankedRoundCostConvexLaw`;
+`rankedDepthOptimum` → cap-7 confirmed with per-prompt oracle equal to it.
+
+### Open mechanism question (no action assigned yet)
+
+FINDING 454's replica dispatch grid predicts kernel-level R(8) ≈ R(7) (both 2×4
+grids), while the convex law prices +7.7 ms between them. Not a contradiction — the
+QMV replica is only part of round cost (verification, GDN replay, attention cache,
+head all scale with M genuinely) — but the split between grid-shaped replica cost and
+smooth non-replica cost is unmeasured. Relevant only if a future lever targets wide
+rows.
+
+### Strategic consequence
+
+The depth axis is closed and the crown (`ec24d591`) sits on a tree byte-identical to
+receipt A: the +0.5735 % crown gap is receipt-channel, not mechanism (FINDING 452
+offset scale ~0.23 %). Open levers by priced size: (1) Alphonse's xsums dedup/fill
+bracket (FINDING 451: 4.0–5.3 µs/cell, up to ~257 cells/round ⇒ 0.38–0.52 % leg if
+fully recovered); (2) the receipt channel itself (E178, assigned to Askeladd:
+distribution + A-replay option pricing); (3) prefill (~10 % of leg, untouched by any
+current lever). E175 receipt (`15017ddf`, A+Q) still validating and adjudicates the
+three-model registration.
+
+### Board
+
+- E175 `15017ddf` validating; Edward holds the watcher.
+- Thorfinn: E176 r1 in flight (amend §1 wrong-tree census).
+- Askeladd: E177 MERGED; E178 assigned next (receipt-channel statistics).
+- Alphonse: E174 dedup census in flight.
