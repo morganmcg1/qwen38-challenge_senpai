@@ -68946,3 +68946,207 @@ calibration assumes.
 
 **Better than 99 % of the backbone bytes are subject to `groups(M)`.** FINDING 407 stands on read
 source and measured bytes, with no fitted quantity in the mechanism itself.
+
+## Entry 361 — 2026-08-24T06:05Z — FINDING 407 confirmed against a measured ranked round, the depth-4 lever priced at 4.16–4.31 published, and the g16s width-efficiency curve refuted as a transfer
+
+### 1. The measured confirmation of the step law
+
+Ledger 360 argued the ranked round is a step function in `M` from source and from a
+floor argument. It now has a direct measurement behind it.
+
+```text
+ranked candidate depth-0 round, MEASURED          30.402 ms
+step law    23.473 + 6.899                      = 30.372 ms    -0.10 %
+linear law  16.1585 + 5.3350                    = 21.494 ms   -29.3  %
+```
+
+The measurement is bounded model-free. Plutarch's mean round is 30.781 ms and 449 of
+its ~488 rounds do not draft (Edward's per-prompt reporter, `180db842`). A drafting
+round cannot cost less than a depth-0 round, so `depth-0 round <= 30.781 ms` follows
+from arithmetic on the receipt with no model in between. The linear interpolant
+`T(M) = 16.1585 + 5.3350*M` misses that by 29 % and predicts a depth-0 round 1.979 ms
+below the `B_w = 14.41235 GB` weight-stream floor of 23.473 ms.
+
+`B = 5.3350` is a regression slope of an interpolant fitted over `M` in 3..8. It is
+not a marginal row cost. Every price obtained by multiplying rows by `B` is void,
+including the eight-row break-even ladder and Askeladd's corrected `0->1 = 0.24821`.
+
+**WITHDRAWN with this entry:** the `p_7 > 0.93369` pre-registration for the
+`segmentedVerifyDepthCap` 7 -> 8 lever. `M = 9` is a third weight pass; that lever is
+dead, not marginal.
+
+### 2. FINDING 408 — the depth-4 lever, priced against the receipts
+
+Inputs: Edward's per-prompt table for `180db842` (`edl`, `alpha`, `raw`, `nodraft`,
+`serial`, `mtp`, `prefill`, reproducing `officialScore 3.70465399491642` exactly),
+FINDING 387's measured ranked ms/round, FINDING 382's median structure, FINDING 399's
+head step `h = 0.96 ms/draft`, and the group table at `Qwen35.swift:1709-1728`.
+
+A fixed draft depth of 4 pins `M = 5` in every drafting round, and `groups(5) = 1`, so
+every drafting round performs exactly one read of the weight matrix.
+
+```text
+                    published    vs crown 3.7291100
+roof passes           4.3058          +15.5 %
+worst feasible        4.1637          +11.7 %
+```
+
+The depth-4 round cost is **6.9 ms/round of `F` plus 3.84 ms of head plus one pass**,
+and it is invariant to how the measured 30.402 ms depth-0 round splits between the
+pass and `F`. That identity is why the projection is robust:
+
+```text
+round(depth 4) = C(5) + 4h + F   and   C(1) + F = 30.402
+               = 30.402 + 4h     when C(5) = C(1)
+```
+
+Sensitivity over the head step and over acceptance degradation at shallower offers:
+
+```text
+                 pub_roof   pub_worst
+h=0.50 a4=100%     4.520       4.052
+h=0.96 a4=100%     4.306       4.164
+h=0.96 a4= 90%     4.009       3.876
+h=1.50 a4= 90%     3.796       3.796
+h=2.50 a4=100%     3.716       3.716    <- the only failing cell
+```
+
+Break-even restated: depth 4 falls back to the crown only if per-position acceptance
+**drops** to 81–85 % of today's value when we offer 4 drafts instead of the current
+4.38 to 6.15. Acceptance improves at shallower positions, so that is the wrong
+direction. The one soft parameter is `h`, never measured on the ranked path; Edward
+now owns pinning it from the receipt corpus.
+
+Independent local confirmation already in hand: Askeladd's E159 fixed-depth sweep gives
+ms/token 35.205, 24.723, 20.510, **19.530**, 23.831, 22.271, 20.899 at depths 1..7
+against shipped adaptive 21.037. The minimum is at depth 4 and the worst interior point
+is at depth 5, which is `M = 6`, the first group crossing. No linear cost law produces
+that shape.
+
+### 3. FINDING 409 — the three cheap prompts cannot be harmed
+
+`published = 0.5*beagle + 0.5*min(essays, medicine, republic, botany)` (FINDING 382).
+Plutarch, drama and travel are ranks 1, 2 and 3 at raw 1.26, 2.12 and 2.42 against a
+median pair at 3.56 and 3.85. Under any depth policy they cannot rise into the median
+pair, and if they fall they stay where they already are.
+
+**Plutarch regressing is free.** It is the prompt that most needs adaptivity — it
+declines to draft in 449 of 488 rounds — and it contributes nothing to the score. Its
+worst case under fixed depth 4 is that all four drafts are always rejected: 34.2 ms for
+one token against about 30.4 ms today, raw falls from 1.26 to about 1.16, published
+unchanged. This removes the principal objection to deleting depth adaptivity.
+
+Corollary: if the optimal depth is a constant, a signal that predicts the optimal depth
+is worth nothing. FINDING 393 is disposed of and FINDING 386's two-state behaviour is
+reframed as pure waste rather than as structure to exploit.
+
+### 4. FINDING 410 — the g16s width-efficiency curve does not transfer, and the ranked receipts prove it
+
+FINDING 404 measured g16s pass efficiencies of 96.0, 98.1, 86.1 and **73.6 %** of roof
+at NA = 2, 3, 4, 5. Transferring that curve to M5 and testing it against the receipts:
+
+Under the full g16s curve, **six of eight prompts require a mean pass cost below the
+lower convex envelope of the cost curve evaluated at their own measured mean width**.
+No depth distribution can produce that. It is infeasible, not merely improbable. Botany
+remains infeasible even with the head step set to zero.
+
+Blending roof and the g16s curve and finding the largest inefficiency the receipts
+permit:
+
+```text
+head step h        max NA=5 deficit permitted on M5
+0.50 ms/draft            15.4 %
+0.96 ms/draft             5.3 %
+1.50 ms/draft             0.0 %
+                g16s     26.4 %
+```
+
+So M5's pass curve is substantially flatter than g16s's. Consequences:
+
+- Alphonse's E170 upper bound of `T(5) -21.4 %` is a g16s number and **is not a ranked
+  prize**. Its honest ranked value, conditional on depth 4 shipping, is about 3 %
+  published at `h = 0.96` and about 11 % at `h = 0.50`.
+- E170's deliverable is redirected from "recover the deficit" to "**decide whether the
+  deficit is source-fixed or hardware-fixed**" by register accounting and the occupancy
+  threshold, at the cost of no timed legs. RULE 195 governs. If it is source-fixed the
+  transfer argument above is wrong and the depth-4 pricing must be re-derived.
+- This is the second time a local width result has failed to transfer while a
+  source-fixed structure transferred exactly. RULE 195 is holding up.
+
+### 5. `F` is the last unattacked term
+
+In a depth-4 world the round decomposes as pass 23.47 ms (68.6 %), head 3.84 ms
+(11.2 %), `F` 6.90 ms (20.2 %). FINDING 363's host inventory accounts for about 1.1 ms
+of `F`. The remainder is real non-routed GPU work: k_proj and v_proj at width 1024 fall
+below the `n >= 4096` routing gate at `Qwen35.swift:1770-1794`, plus norms, the GDN
+recurrent state, KV cache traffic and the small matmuls. `F` does not depend on `M`, so
+it survives every depth and width decision. It is queued as Alphonse's next axis.
+
+### 6. Adopted from Edward — prefill explains the whole `180db842` leg regression
+
+Weighting each prompt's prefill delta by that prompt's prefill share and comparing with
+the observed leg delta leaves a **mean residual of -0.0128 pp, sd 0.1052 pp**; zero sits
+at 0.12 sigma. There is no candidate-leg regression left on `180db842` once prefill is
+accounted for. The two Swift diffs are leg-neutral at that receipt's resolution and the
+entire loss against `5a9f130a` is the pipelined `qmm_nax`. This is stronger than
+FINDING 389 as recorded and replaces it.
+
+Also adopted: prefill is a **build constant, not a prompt property** — 1.0493 to 1.0506
+ms/token across eight prompts, a spread of 0.13 %. That is why FINDING 388 resolves at
+ten sigma, and it makes prefill the cheapest ranked A/B probe the campaign owns.
+
+### 7. ADVISOR ERROR 229 — a campaign invariant that was red on every base we ever had
+
+`senpai/campaign-invariants.txt` carried two rows requiring
+`sums\[m\] \+= xm\[0\] \+ xm\[1\] \+ xm\[2\] \+ xm\[3\];` in `quantized.h` and its
+generated twin. That needle **never matched any tree the organizer published**. The
+four-term BF16 tree is written over the loaded vector `xv`, not over the device pointer
+`xm`. The rows were red on `upstream/main` itself, on `c07e8cda`, and on every campaign
+base before it.
+
+Worse, the failure text said "our carried change is gone. Restore it", which invited
+exactly the wrong action. Thorfinn hit it while composing E171, correctly refused to
+edit an advisor-owned record, and escalated. He attributed it to the revert; it predated
+the revert entirely.
+
+Repaired at this entry and made stronger. The single row becomes a pair covering both
+arms of the cell:
+
+- `sums\[m\] \+= xv\[0\] \+ xv\[1\] \+ xv\[2\] \+ xv\[3\];` — the DIRECT_NIBBLES tree,
+  original intent, spelled correctly.
+- `sums\[m\] \+= load_vector<T, float, 4, 4>\(xm, xc\);` — the other arm, which reaches
+  bit-exactness by **calling** the helper the serial leg calls. Guarding the call makes
+  the mirroring structural rather than textual.
+
+`RESULT: PASS (19 invariant(s) hold)`.
+
+**RULE 196: a guard that has never been green is not a guard. Any invariant added to
+the campaign table must be shown failing on a deliberately broken tree AND passing on
+the current base, in the same session it is added.**
+
+### 8. Withdrawn instruction — student isolation outranks an advisor convenience
+
+I told Thorfinn to prefer Edward's revert commit. His launch isolation contract scopes
+him to the advisor branch plus his own assigned branches and states that it overrides
+conflicting repository instructions. He refused, said so plainly, and reproduced the
+four blobs deterministically from `upstream/main` = `0863b06a` instead. That route has
+better provenance than the one I asked for, because it names an organizer commit rather
+than another agent's tree. The instruction is withdrawn.
+
+Related: F10 demanded that Edward push his submitted commit. Students cannot `git push`;
+the typed `submit_experiment_result` tool owns that. The demand was unsatisfiable and is
+withdrawn. The provenance risk it was meant to cover is closed by Thorfinn's independent
+reproduction of the identical two-file submitted surface.
+
+### 9. Board and queue
+
+```text
+crown        3.7291100105909   newjordan  ec24d591   promotedSourceRef 0863b06a
+in flight    fda590bb          revert alone, validating, predicted 3.712098
+frozen next  E171              revert + E165, tau probe, 3.712098*(1+0.010322*tau)
+priority     depth-4           4.1637 .. 4.3058 modelled; jumps the queue if it confirms
+```
+
+The `fda590bb` / E171 pair still measures the LAW 377 transfer coefficient directly and
+is worth firing even though depth 4 is an order of magnitude larger. The pair differs by
+exactly one mechanism.
