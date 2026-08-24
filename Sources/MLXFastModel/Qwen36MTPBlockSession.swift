@@ -817,6 +817,13 @@ public final class Qwen36MTPBlockSession {
         traceSink.write(Data(line.utf8))
     }
 
+    /// Absolute uptime at which the PREVIOUS round finished emitting its trace.
+    /// E165 measures a GPU-idle window that spans the round boundary, and the
+    /// trace emission itself sits inside that window, so the window has to be
+    /// corrected by the instrument's own cost. Reporting the anchor in the NEXT
+    /// round's line is the only ordering that can carry it.
+    nonisolated(unsafe) private static var traceEmitDone: UInt64 = 0
+
     /// CPU nanoseconds this thread has consumed. `CLOCK_THREAD_CPUTIME_ID`
     /// advances only while the thread runs, so pairing it with the wall clock
     /// separates a descheduled host from a slow one.
@@ -1269,6 +1276,8 @@ public final class Qwen36MTPBlockSession {
         var tEvalDone: UInt64 = 0
         var tReadDone: UInt64 = 0
         var tCommitDone: UInt64 = 0
+        var tRowTrace0: UInt64 = 0
+        var tRowTraceDone: UInt64 = 0
 
         // Round-top invariant, kept as a THROW rather than a comment: every
         // emitted token is in the trimmable caches and the pending primary is
@@ -1648,6 +1657,7 @@ public final class Qwen36MTPBlockSession {
             acceptedCount == drafts.count ? fullAcceptStreak + 1 : 0
         recordAcceptOutcome(acceptedCount: acceptedCount, drafts: drafts)
         if Self.traceRounds {
+            tRowTrace0 = DispatchTime.now().uptimeNanoseconds
             // Row i's distribution follows (primary + drafts[0..<i]); only
             // rows on the accepted trajectory align with the serial leg.
             let rowBase = expected + 1
@@ -1661,6 +1671,7 @@ public final class Qwen36MTPBlockSession {
 
         acceptedDraftTotal += acceptedCount
         rejectedDraftTotal += drafts.count - acceptedCount
+        if Self.traceRounds { tRowTraceDone = DispatchTime.now().uptimeNanoseconds }
         if Self.traceRounds {
             // Five-way split of the round. `eval_wall` is the only segment the
             // GPU owns; everything after it is host time that the device could
@@ -1731,7 +1742,14 @@ public final class Qwen36MTPBlockSession {
                     + "t_snapshot_done=\(tSnapshotDone) "
                     + "t_verify_built=\(tVerifyBuilt) t_eval_done=\(tEvalDone) "
                     + "t_read_done=\(tReadDone) t_commit_done=\(tCommitDone) "
+                    // E165: the row dump and the trace emission are instrument
+                    // cost inside the cross-round GPU-idle window, so both are
+                    // bracketed and subtracted rather than assumed small.
+                    + "t_row_trace0=\(tRowTrace0) "
+                    + "t_row_trace_done=\(tRowTraceDone) "
+                    + "t_prev_trace_done=\(Self.traceEmitDone) "
                     + "t_tail_done=\(tTailDone)\n")
+            Self.traceEmitDone = DispatchTime.now().uptimeNanoseconds
         }
         // No trailing eval: every host-read value was materialised by the
         // round bundle above. A successful wide-prefix replay intentionally
