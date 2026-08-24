@@ -42,7 +42,7 @@ if [[ -n "$(git status --porcelain -- "${qwen35}" "${session}")" ]]; then
   echo "e167_build_arm: ${qwen35} or ${session} is already modified" >&2
   exit 1
 fi
-restore() { git checkout -- "${qwen35}" "${session}" 2>/dev/null || true; }
+restore() { git checkout HEAD -- "${qwen35}" "${session}" 2>/dev/null || true; }
 trap restore EXIT
 
 increments_of() { grep -c 'qwen35XSums.* &+= 1' "${qwen35}" || true; }
