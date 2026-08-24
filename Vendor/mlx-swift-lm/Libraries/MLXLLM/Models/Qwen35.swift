@@ -660,6 +660,74 @@ private func qwen35GatedDeltaReplayState(
     return outputs[0]
 }
 
+// MARK: - E187 recurrent-state storage instrument (offline gate only)
+
+// The 48 GDN recurrent states are the largest named memory line in the decode
+// round: 48 x [1, 48, 128, 128] fp32 = 302 MB read+write per round. Storing
+// them in bf16 would halve that traffic, but the state feeds the target logits,
+// so the rounding error accumulates over a whole generation. This instrument
+// reproduces the STORAGE numerics of such an implementation (compute stays
+// fp32; only the value written to the cache is rounded) so the numerical gate
+// can run before any kernel is written.
+//
+// `MLX_E187_STATE_STORE` selects the arm. The variable is unset in every
+// ordinary and timed run, and the fp32 arm is the pinned behaviour.
+//
+//   fp32      pinned behaviour (default)
+//   bf16      round every stored state through bfloat16
+//   fp16      round every stored state through float16
+//   ulp1      positive control: +1 fp32 ulp at ONE cell of the first store
+//   ulpbf16   positive control: +1 bf16 ulp at ONE cell of the first store
+enum Qwen35E187StateStore: String {
+    case fp32
+    case bf16
+    case fp16
+    case ulp1
+    case ulpbf16
+}
+
+let qwen35E187StateStoreMode: Qwen35E187StateStore = {
+    let raw = ProcessInfo.processInfo.environment["MLX_E187_STATE_STORE"]
+    guard let raw, let mode = Qwen35E187StateStore(rawValue: raw.lowercased())
+    else { return .fp32 }
+    return mode
+}()
+
+private enum Qwen35E187Probe {
+    nonisolated(unsafe) static var applied = false
+}
+
+/// Apply the selected storage arm to a recurrent state on its way into the
+/// cache. Returns the argument unchanged in the default fp32 arm.
+@inline(__always)
+func qwen35E187StoreState(_ state: MLXArray) -> MLXArray {
+    switch qwen35E187StateStoreMode {
+    case .fp32:
+        return state
+    case .bf16:
+        return state.asType(.bfloat16).asType(.float32)
+    case .fp16:
+        return state.asType(.float16).asType(.float32)
+    case .ulp1, .ulpbf16:
+        guard !Qwen35E187Probe.applied, state.ndim == 4 else { return state }
+        Qwen35E187Probe.applied = true
+        let cell = state[0, 0, 0, 0].item(Float.self)
+        let bumped: Float
+        if qwen35E187StateStoreMode == .ulp1 {
+            bumped = cell.nextUp
+        } else {
+            // One bf16 ulp at this magnitude: bf16 keeps 8 significand bits.
+            let step = cell == 0
+                ? Float.leastNormalMagnitude
+                : Float(sign: .plus, exponent: cell.exponent - 7, significand: 1)
+            bumped = cell + step
+        }
+        let perturbed = state[.ellipsis]
+        perturbed[0, 0, 0, 0] = MLXArray(bumped)
+        return perturbed
+    }
+}
+
 // MARK: - GatedDeltaNet
 
 final class Qwen35GatedDeltaNet: Module {
@@ -1117,7 +1185,7 @@ final class Qwen35GatedDeltaNet: Module {
             0...,
             committedRows ..< (committedRows + tape.convStateRows),
             0...]
-        cache[1] = boundarySsm
+        cache[1] = qwen35E187StoreState(boundarySsm)
         cache.prefixReplayTape = nil
         cache.rollbackState = nil
         cache.rollbackCheckpoints = []
@@ -1250,7 +1318,7 @@ final class Qwen35GatedDeltaNet: Module {
             for t in 0 ..< (S - 1) {
                 checkpoints.append((
                     convInput[0..., (t + 1) ..< (t + 1 + nKeep)],
-                    outputs[2][0..., t]
+                    qwen35E187StoreState(outputs[2][0..., t])
                 ))
             }
             cache?.rollbackState = checkpoints.first
@@ -1275,7 +1343,7 @@ final class Qwen35GatedDeltaNet: Module {
             )
             // Snapshot (conv_state, ssm_state) after confirmed prefix for rollback.
             // omlx: cache.rollback_state = (conv_c, ssm_c)
-            cache?.rollbackState = (convC, ssmC)
+            cache?.rollbackState = (convC, qwen35E187StoreState(ssmC))
 
             let (outD, convF, ssmF) = processChunk(
                 qkv: qkv[0..., nConfirmed..., 0...],
@@ -1303,7 +1371,7 @@ final class Qwen35GatedDeltaNet: Module {
 
         if let cache {
             cache[0] = finalConvState
-            cache[1] = finalSsmState
+            cache[1] = qwen35E187StoreState(finalSsmState)
             // A forward that did not request replay must erase any prior tape;
             // otherwise a later partial miss could restore a stale frame.
             cache.prefixReplayTape = pendingPrefixTape
