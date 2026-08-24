@@ -85,11 +85,57 @@ def contrast(values_off: list[float], values_on: list[float]) -> tuple[float, fl
     return effect, two_se
 
 
+def publish_leg(leg: dict, base_sha: str, tokens: int) -> tuple[str, str]:
+    """One W&B run per timed leg, so every leg has its own id and URL."""
+    run = wandb.init(
+        entity=ENTITY,
+        project=PROJECT,
+        name=f"e193-leg-{leg['position']}-{leg['arm']}",
+        job_type="e193-stage1-leg",
+        tags=["e193", "e165-retest", "harness=local", "ungated",
+              f"arm={leg['arm']}"],
+        config={
+            "harness": "local",
+            "experiment": "e193-e165-round-start-prefetch-retest",
+            "arm": leg["arm"],
+            "palindrome_position": leg["position"],
+            "tag": leg["tag"],
+            "base_sha": base_sha,
+            "session_commit": leg["commit"],
+            "worker_sha256": leg["worker_sha256"].strip(),
+            "decode_tokens": tokens,
+            "local_mode": "--local-iterate",
+            "arm_env": "MLX_E165_HEAD_PREFETCH",
+        },
+    )
+    run.summary.update({
+        "mtp_seconds_per_token": leg["mtp"],
+        "serial_seconds_per_token": leg["serial"],
+        "effective_mean_draft_len": leg["edl"],
+        "accepted_draft_rate": leg["acc"],
+        "drafting_rounds": leg["rounds"],
+        "drafts_proposed": leg["proposed"],
+        "drafts_accepted": leg["accepted"],
+        "gpu_temp_entry_c": leg["entry_c"],
+        "gpu_temp_exit_c": leg["exit_c"],
+        "cool_gate_passed_real_gate": leg["real_gate"],
+        "gate_qualified_for_timing": leg["qualified"],
+        "all_tokens_matched": leg["matched"],
+        "residual_divergence_count": leg["divergences"],
+        "post_run_worker_sha256": leg["post_run_worker_sha256"].strip(),
+    })
+    run_id, url = run.id, run.url
+    run.finish()
+    return run_id, url
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--label", default="e193")
     parser.add_argument("--base-sha", required=True)
+    parser.add_argument("--per-leg", action="store_true",
+                        help="also publish one run per timed leg")
     args = parser.parse_args()
 
     legs = load_legs(args.label)
@@ -117,6 +163,13 @@ def main() -> int:
         if clears_zero
         else "STOP: the 2 sigma interval contains zero"
     )
+
+    leg_runs: list[tuple[str, str, str]] = []
+    if args.per_leg:
+        for leg in legs:
+            run_id, url = publish_leg(leg, args.base_sha, tokens)
+            leg_runs.append((leg["tag"], run_id, url))
+            print(f"leg {leg['tag']:24s} {run_id}  {url}")
 
     run = wandb.init(
         entity=ENTITY,
@@ -168,6 +221,12 @@ def main() -> int:
             leg["post_run_worker_sha256"].strip(),
         )
     run.log({"abba/legs": leg_table})
+
+    if leg_runs:
+        index = wandb.Table(columns=["tag", "run_id", "url"])
+        for tag, run_id, url in leg_runs:
+            index.add_data(tag, run_id, url)
+        run.log({"abba/leg_runs": index})
 
     prior_table = wandb.Table(
         columns=["assumed_real_gain_pct", "p_beat_crown"])
