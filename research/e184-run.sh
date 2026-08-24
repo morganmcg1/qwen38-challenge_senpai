@@ -40,7 +40,7 @@ run_profile() {
   local tag="$1" mode="$2" tokens="$3" gate="$4"
   local capture="${PWD}/research/capture-e184-${tag}"
   local score="research/score-e184-${tag}.json"
-  local profile_out="${PWD}/research/e184-phases-${tag}.jsonl"
+  local arm_log="${PWD}/research/e184-log-${tag}.txt"
 
   export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
   export MLXFAST_SWIFT_BIN="research/capture-cli.sh"
@@ -50,21 +50,23 @@ run_profile() {
   export MLXFAST_LOCAL_COOL_GATE="${gate}"
   if [[ "${mode}" == "off" ]]; then
     unset DARKBLOOM_E184_PREFILL_PROFILE
-    unset DARKBLOOM_E184_PREFILL_PROFILE_OUT
   else
     export DARKBLOOM_E184_PREFILL_PROFILE="${mode}"
-    export DARKBLOOM_E184_PREFILL_PROFILE_OUT="${profile_out}"
   fi
 
-  rm -rf "${capture}" "${score}" "${profile_out}"
+  rm -rf "${capture}" "${score}" "${arm_log}"
   echo "e184: HEAD $(git rev-parse HEAD)"
   echo "e184: worker sha256 $(shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
   echo "e184: cli sha256 $(shasum -a 256 .build/release/mlxfast-swift | awk '{print $1}')"
   echo "e184: tag=${tag} mode=${mode} tokens=${tokens} cool_gate=${gate}"
   echo "e184: gpu_temp_entry=$(gpu_temp) $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-  ./benchmark-qwen-mtp.sh --local-iterate
-  local status=$?
+  # The worker cannot write files -- its Seatbelt profile is `(deny
+  # file-write*)` with only /dev/null allowed -- so the phase table arrives on
+  # the worker's stderr and the trusted parent re-emits every line with a
+  # `mlxfast-worker: ` prefix. Keep the whole arm log and parse it afterwards.
+  ./benchmark-qwen-mtp.sh --local-iterate 2>&1 | tee "${arm_log}"
+  local status="${PIPESTATUS[0]}"
 
   echo "e184: gpu_temp_exit=$(gpu_temp) $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "e184: wrapper_exit=${status} tag=${tag}"

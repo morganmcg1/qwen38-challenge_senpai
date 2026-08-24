@@ -53,21 +53,46 @@ def walk(node):
             yield from walk(value)
 
 
+PREFIX = "mlxfast-worker: "
+
+
 def phase_lines(arm):
-    path = os.path.join(ROOT, "research", f"e184-phases-{arm}.jsonl")
+    """Profiler lines rescued from the arm log.
+
+    The worker cannot write files, so each line arrives on its stderr and the
+    trusted parent re-emits it prefixed with `mlxfast-worker: `.
+    """
+    path = os.path.join(ROOT, "research", f"e184-log-{arm}.txt")
     if not os.path.exists(path):
-        return []
-    lines = []
-    with open(path) as handle:
+        return [], []
+    lines, diags = [], []
+    with open(path, errors="replace") as handle:
         for raw in handle:
-            raw = raw.strip()
-            if not raw.startswith("{"):
+            index = raw.find(PREFIX)
+            if index < 0:
+                continue
+            payload = raw[index + len(PREFIX):].strip()
+            if not payload.startswith("{"):
                 continue
             try:
-                lines.append(json.loads(raw))
+                doc = json.loads(payload)
             except json.JSONDecodeError:
                 continue
-    return lines
+            if doc.get("e184_prefill_profile"):
+                lines.append(doc)
+            elif doc.get("e184_diag"):
+                diags.append(doc)
+    return lines, diags
+
+
+def extra_arms():
+    """Any other arm tags present in the research directory."""
+    tags = set()
+    for path in glob.glob(os.path.join(ROOT, "research", "e184-log-*.txt")):
+        tags.add(os.path.basename(path)[len("e184-log-"):-len(".txt")])
+    for path in glob.glob(os.path.join(ROOT, "research", "capture-e184-*")):
+        tags.add(os.path.basename(path)[len("capture-e184-"):])
+    return sorted(tags)
 
 
 def summarise_phases(lines):
@@ -100,14 +125,18 @@ def main():
         with open(probe_path) as handle:
             report["probe"] = json.load(handle)
 
-    for arm in ARMS:
-        lines = phase_lines(arm)
+    for arm in ARMS + [a for a in extra_arms() if a not in ARMS]:
+        lines, diags = phase_lines(arm)
         rows, totals = summarise_phases(lines) if lines else ([], [])
+        trusted = trusted_fields(arm)
+        if not lines and not diags and not trusted:
+            continue
         report["arms"][arm] = {
             "forwards_recorded": len(lines),
             "bracketed_total_seconds": totals,
             "phases": rows,
-            "trusted": trusted_fields(arm),
+            "diagnostics": diags,
+            "trusted": trusted,
         }
 
     json.dump(report, sys.stdout, indent=1)

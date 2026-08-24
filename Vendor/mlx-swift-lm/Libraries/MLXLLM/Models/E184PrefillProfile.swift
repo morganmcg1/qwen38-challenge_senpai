@@ -57,9 +57,6 @@ public enum E184Prefill {
         ProcessInfo.processInfo.environment["DARKBLOOM_E184_PREFILL_MIN_S"] ?? "")
         ?? 512
 
-    static let outputPath = ProcessInfo.processInfo.environment[
-        "DARKBLOOM_E184_PREFILL_PROFILE_OUT"]
-
     /// True only inside a seed-width forward while profiling is enabled.
     nonisolated(unsafe) public private(set) static var active = false
     /// True only when every sub-phase boundary is wanted.
@@ -72,9 +69,11 @@ public enum E184Prefill {
     nonisolated(unsafe) private static var forwardIndex = 0
     nonisolated(unsafe) private static var forwardStart: UInt64 = 0
     nonisolated(unsafe) private static var sequenceLength = 0
+    nonisolated(unsafe) private static var diagnosticsRemaining = 4
 
     @inline(__always)
     public static func beginForward(sequenceLength length: Int) {
+        diagnose(length)
         guard granularity != .off, length >= minSequenceLength else {
             active = false
             fine = false
@@ -140,18 +139,26 @@ public enum E184Prefill {
         fine = false
     }
 
+    /// Stderr is the ONLY channel available. The worker's Seatbelt profile is
+    /// `(deny file-write*)` with a single `(allow file-write* (literal
+    /// "/dev/null"))` exception (benchmark.sh:1288-1296), so a research
+    /// instrument inside the worker cannot open an output file at all. The
+    /// trusted parent drains worker stderr line by line and re-emits each line
+    /// with the prefix `mlxfast-worker: ` (`WorkerStderrDrain.emitLine`), which
+    /// is what the session script parses.
     private static func write(_ line: String) {
-        if let outputPath, let handle = FileHandle(forWritingAtPath: outputPath)
-            ?? {
-                FileManager.default.createFile(atPath: outputPath, contents: nil)
-                return FileHandle(forWritingAtPath: outputPath)
-            }()
-        {
-            handle.seekToEndOfFile()
-            handle.write(Data(line.utf8))
-            try? handle.close()
-            return
-        }
         FileHandle.standardError.write(Data(line.utf8))
+    }
+
+    /// One-shot activation proof, emitted whether or not profiling is on, so a
+    /// silent instrument can be told apart from an unreached code path.
+    @inline(__always)
+    private static func diagnose(_ length: Int) {
+        guard diagnosticsRemaining > 0 else { return }
+        diagnosticsRemaining -= 1
+        write(
+            "{\"e184_diag\":1,\"granularity\":\"\(granularity.rawValue)\","
+                + "\"sequence_length\":\(length),"
+                + "\"min_sequence_length\":\(minSequenceLength)}\n")
     }
 }
