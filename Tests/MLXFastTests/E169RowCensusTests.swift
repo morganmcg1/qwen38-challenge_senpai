@@ -599,10 +599,19 @@ struct E169BottomUpShapeCurveTests {
         ]
         if let temp = e169GPUTemperature() { payload["gpu_temp_entry_c"] = temp }
 
+        // The first shape measured in a cold process carries JIT compilation of
+        // every width case plus the GPU's ramp from idle clocks. Spend that on a
+        // discarded pass over the first shape so it lands on nobody's slope.
+        _ = e169SweepRoutedShape(
+            e169ScoredShapes[0], widths: widths, reps: 2, inner: inner)
+        Memory.clearCache()
+
         var shapeRecords: [[String: Any]] = []
         for shape in e169ScoredShapes {
-            shapeRecords.append(
-                e169SweepRoutedShape(shape, widths: widths, reps: reps, inner: inner))
+            var record = e169SweepRoutedShape(
+                shape, widths: widths, reps: reps, inner: inner)
+            if let temp = e169GPUTemperature() { record["gpu_temp_exit_c"] = temp }
+            shapeRecords.append(record)
             Memory.clearCache()
         }
         payload["shapes"] = shapeRecords
