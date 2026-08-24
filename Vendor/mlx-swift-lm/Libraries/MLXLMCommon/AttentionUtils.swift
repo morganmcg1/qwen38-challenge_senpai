@@ -193,13 +193,14 @@ public enum FusedRowAmortizedSDPA {
     public static let twoPassKeyLength = 1024
 
     /// Query-row counts the fused kernel serves. `MLXFAST_QWEN_FUSED_SDPA_ROWS`
-    /// overrides it for measurement arms; an empty value disables the kernel
-    /// and restores the two-call split.
+    /// selects them for a measurement arm; with the variable unset the kernel
+    /// is off and the shipped two-call split runs unchanged. RULE 198 requires
+    /// this switch to become a compile-time constant before any submission.
     public static let enabledRows: Set<Int> = {
         guard let raw = ProcessInfo.processInfo
             .environment["MLXFAST_QWEN_FUSED_SDPA_ROWS"]
         else {
-            return [6]
+            return []
         }
         return Set(raw.split(separator: ",").compactMap { Int($0) })
     }()
