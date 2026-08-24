@@ -411,7 +411,424 @@ def analyze_deconfound(payload):
             "axis_ratio": max(n_range, k_range) / min(n_range, k_range),
         }
     out["verdict_by_width"] = verdicts
+    out["byte_law_by_width"] = _deconfound_byte_law(out["arms"])
+    out["matched_byte_pairs"] = _matched_byte_pairs(out["arms"])
     return out
+
+
+# Affine 4-bit, group 64: k/2 packed bytes plus one bf16 scale and one bf16
+# bias per group of 64, per output row.
+WEIGHT_BYTES_PER_NK = 0.5 + 2.0 / 64.0 + 2.0 / 64.0
+
+
+def weight_bytes(k, n):
+    return n * k * WEIGHT_BYTES_PER_NK
+
+
+def _deconfound_cells(arms):
+    cells = {}
+    for group in arms.values():
+        for name, cell in group.items():
+            cells[name] = cell
+    return cells
+
+
+def _deconfound_byte_law(arms):
+    """Fit `t = t0 + mb / bandwidth` across the whole n-by-k grid.
+
+    If one affine law in weight bytes fits every cell at both extremes of the
+    grid, then time is a function of bytes alone and is symmetric in `n` and
+    `k`. That refutes both readings of the seven-point scored table: neither
+    output width nor reduction depth has an effect of its own, and the
+    per-shape TFLOP/s column is `flops / (t0 + mb / bw)`, which falls with
+    `mb` for a fixed `t0` even when the kernel is perfectly efficient.
+    """
+    cells = _deconfound_cells(arms)
+    widths = set()
+    for cell in cells.values():
+        widths.update(cell["widths"])
+
+    result = {}
+    for width in sorted(widths, key=int):
+        points = []
+        for name, cell in cells.items():
+            slot = cell["widths"].get(width)
+            if slot is None or not slot["routed_to_custom_qmv"]:
+                continue
+            mb = weight_bytes(cell["k"], cell["n"]) / 1e6
+            points.append((name, cell["k"], cell["n"], mb,
+                           slot["seconds_per_call"] * 1e6))
+        if len(points) < 3:
+            continue
+        n_pts = float(len(points))
+        sx = sum(p[3] for p in points)
+        sy = sum(p[4] for p in points)
+        sxx = sum(p[3] * p[3] for p in points)
+        sxy = sum(p[3] * p[4] for p in points)
+        det = n_pts * sxx - sx * sx
+        slope = (n_pts * sxy - sx * sy) / det
+        intercept = (sy * sxx - sx * sxy) / det
+        residuals = []
+        for name, k, n, mb, us in points:
+            pred = intercept + slope * mb
+            residuals.append({
+                "cell": name, "k": k, "n": n, "mb": mb,
+                "measured_us": us, "predicted_us": pred,
+                "residual_frac": (us - pred) / us,
+            })
+        result[width] = {
+            "fixed_us": intercept,
+            "us_per_mb": slope,
+            "effective_gb_per_s": 1e3 / slope,
+            "max_abs_residual_frac": max(abs(r["residual_frac"])
+                                         for r in residuals),
+            "cells": sorted(residuals, key=lambda r: r["mb"]),
+        }
+    return result
+
+
+def _matched_byte_pairs(arms):
+    """Cells with equal weight bytes but transposed `n` and `k`.
+
+    These are the direct test. `k8192_n5120` and `k5120_n8192` stream the same
+    bytes and run the same arithmetic, but the first launches 640 threadgroups
+    and the second 1024 (`Qwen35.swift:1834`, grid Y is `n/8`). A launch
+    geometry effect must show up here; a bytes-only law must not.
+    """
+    cells = _deconfound_cells(arms)
+    by_bytes = {}
+    for name, cell in cells.items():
+        by_bytes.setdefault(weight_bytes(cell["k"], cell["n"]), []).append(
+            (name, cell))
+
+    pairs = []
+    for total, members in sorted(by_bytes.items()):
+        if len(members) != 2:
+            continue
+        (name_a, cell_a), (name_b, cell_b) = sorted(
+            members, key=lambda item: item[1]["n"])
+        widths = sorted(
+            set(cell_a["widths"]) & set(cell_b["widths"]), key=int)
+        rows = []
+        for width in widths:
+            slot_a = cell_a["widths"][width]
+            slot_b = cell_b["widths"][width]
+            if not (slot_a["routed_to_custom_qmv"]
+                    and slot_b["routed_to_custom_qmv"]):
+                continue
+            rows.append({
+                "m": int(width),
+                "narrow_us": slot_a["seconds_per_call"] * 1e6,
+                "wide_us": slot_b["seconds_per_call"] * 1e6,
+                "wide_over_narrow": (slot_b["seconds_per_call"]
+                                     / slot_a["seconds_per_call"]),
+            })
+        if not rows:
+            continue
+        pairs.append({
+            "mb": total / 1e6,
+            "narrow_output": {"name": name_a, "k": cell_a["k"],
+                              "n": cell_a["n"],
+                              "threadgroups_y": cell_a["threadgroups_y"]},
+            "wide_output": {"name": name_b, "k": cell_b["k"],
+                            "n": cell_b["n"],
+                            "threadgroups_y": cell_b["threadgroups_y"]},
+            "threadgroup_ratio": (cell_b["threadgroups_y"]
+                                  / cell_a["threadgroups_y"]),
+            "widths": rows,
+            "max_abs_deviation_frac": max(
+                abs(r["wide_over_narrow"] - 1.0) for r in rows),
+        })
+    return pairs
+
+
+# Weight bytes the target forward streams, from the transformed safetensors
+# headers (`research/e169_flop_budget.py`): mlp + gdn + attn + lm_head. The
+# embedding table is a gather, not a stream, and is excluded.
+TARGET_FORWARD_WEIGHT_MB = 14412.35
+
+# FLOPs one row of arithmetic performs per MB of affine-4 group-64 weight,
+# counting one multiply and one add per weight element.
+FLOP_PER_ROW_PER_MB = 2.0 / WEIGHT_BYTES_PER_NK * 1e6
+
+
+def stream_vs_arithmetic(byte_law):
+    """Split the byte-law slope into a weight-pass term and a per-row term.
+
+    `slope(M) = alpha * activeInputGroups(M) + beta * M`, in microseconds per
+    megabyte of weight. `alpha` is paid once per input-row group and is the
+    weight stream. `beta` is paid once per row and is arithmetic on weights
+    already resident. This is the measurement that answers whether the round
+    is bandwidth-bound or compute-bound, because the two terms are separated
+    inside one kernel on one host rather than compared across hosts.
+    """
+    rows = []
+    for width, law in byte_law.items():
+        rows.append((float(qmv_groups(int(width))), float(width),
+                     law["us_per_mb"]))
+    if len(rows) < 3:
+        return None
+
+    a11 = sum(r[0] * r[0] for r in rows)
+    a12 = sum(r[0] * r[1] for r in rows)
+    a22 = sum(r[1] * r[1] for r in rows)
+    b1 = sum(r[0] * r[2] for r in rows)
+    b2 = sum(r[1] * r[2] for r in rows)
+    det = a11 * a22 - a12 * a12
+    alpha = (b1 * a22 - a12 * b2) / det
+    beta = (a11 * b2 - a12 * b1) / det
+
+    fitted = []
+    for groups, width, slope in sorted(rows, key=lambda r: r[1]):
+        pred = alpha * groups + beta * width
+        fitted.append({
+            "m": int(width), "active_input_groups": int(groups),
+            "measured_us_per_mb": slope, "predicted_us_per_mb": pred,
+            "residual_frac": (slope - pred) / slope,
+        })
+
+    forward = {}
+    for width in range(1, 10):
+        groups = qmv_groups(width)
+        stream_ms = alpha * groups * TARGET_FORWARD_WEIGHT_MB / 1e3
+        arith_ms = beta * width * TARGET_FORWARD_WEIGHT_MB / 1e3
+        forward[str(width)] = {
+            "active_input_groups": groups,
+            "weight_stream_ms": stream_ms,
+            "arithmetic_ms": arith_ms,
+            "sum_ms": stream_ms + arith_ms,
+        }
+
+    return {
+        "model": "slope(M) = alpha*activeInputGroups(M) + beta*M, us per MB",
+        "alpha_us_per_mb_per_weight_pass": alpha,
+        "beta_us_per_mb_per_row": beta,
+        "weight_stream_gb_per_s": 1e3 / alpha,
+        "arithmetic_tflop_per_s": FLOP_PER_ROW_PER_MB / (beta * 1e-6) / 1e12,
+        "max_abs_residual_frac": max(abs(f["residual_frac"]) for f in fitted),
+        "fit": fitted,
+        "target_forward_weight_mb": TARGET_FORWARD_WEIGHT_MB,
+        "target_forward_projection": forward,
+        "marginal_row_arithmetic_ms": beta * TARGET_FORWARD_WEIGHT_MB / 1e3,
+        "marginal_row_weight_stream_ms": 0.0,
+    }
+
+
+# Roofs. Local pair is edward's measured peak from
+# `research/e63-artifacts/e63-cost-curve.json`. Ranked pair is the published
+# M5 Max 40-core bandwidth and a third-party measured bf16 GEMM rate; both are
+# recorded at `senpai/campaign-ledger.md:16924-16935`.
+LOCAL_PEAK_GB_S = 226.035
+LOCAL_PEAK_TFLOPS = 7.506
+RANKED_PEAK_GB_S = 614.0
+RANKED_PEAK_TFLOPS = 53.0
+
+GFLOP_PER_ROW = 51.696893952
+# Prefill computes logits for the last row only, so it runs `lm_head` once
+# instead of once per row.
+GFLOP_PER_PREFILL_ROW = GFLOP_PER_ROW - 2.5427968
+
+
+def group_partition(m):
+    """Vector widths the shipped table instantiates for one verify of width M.
+
+    `inputsPerGroup` fixes the group size; the last group takes the remainder,
+    and `Qwen35.swift:1553` widens a one-row tail to two.
+    """
+    ipg = INPUTS_PER_GROUP.get(m)
+    if ipg is None:
+        return None
+    widths = []
+    first = 0
+    while first < m:
+        remaining = m - first
+        widths.append(ipg if remaining >= ipg else max(remaining, 2))
+        first += ipg
+    return widths
+
+
+def pass_cost_model(curve_by_width):
+    """Fit the target forward as a fixed cost plus one cost per weight pass.
+
+    `T(M) = F + sum over groups of pass(NA_group)`. The shipped table reuses
+    the same `NA` at several `M`, so `NA = 3` appears at M = 3, 6 and 9 with
+    one, two and three passes. That over-determines the model and lets the
+    per-pass cost be separated from the per-forward cost without assuming
+    anything about what the row is made of.
+    """
+    rows = []
+    for width, seconds in sorted(curve_by_width.items(), key=lambda kv: kv[0]):
+        partition = group_partition(width)
+        if partition is None:
+            continue
+        rows.append((width, partition, seconds * 1e3))
+    if len(rows) < 5:
+        return None
+
+    nas = sorted({na for _, partition, _ in rows for na in partition})
+    columns = ["fixed"] + [f"pass_na{na}" for na in nas]
+    design = []
+    target = []
+    for _, partition, ms in rows:
+        design.append([1.0] + [float(partition.count(na)) for na in nas])
+        target.append(ms)
+
+    size = len(columns)
+    ata = [[sum(r[i] * r[j] for r in design) for j in range(size)]
+           for i in range(size)]
+    atb = [sum(r[i] * y for r, y in zip(design, target)) for i in range(size)]
+    solution = _solve(ata, atb)
+    if solution is None:
+        return None
+
+    coeffs = dict(zip(columns, solution))
+    fitted = []
+    for (width, partition, ms), row in zip(rows, design):
+        pred = sum(c * v for c, v in zip(solution, row))
+        fitted.append({
+            "m": width, "partition": partition, "measured_ms": ms,
+            "predicted_ms": pred, "residual_frac": (ms - pred) / ms,
+        })
+
+    passes = {}
+    for na in nas:
+        pass_ms = coeffs[f"pass_na{na}"]
+        passes[str(na)] = {
+            "pass_ms": pass_ms,
+            "gb_per_s": TARGET_FORWARD_WEIGHT_MB / pass_ms,
+            "frac_of_local_measured_roof": (
+                TARGET_FORWARD_WEIGHT_MB / pass_ms / LOCAL_PEAK_GB_S),
+            "frac_of_local_spec_roof":
+                TARGET_FORWARD_WEIGHT_MB / pass_ms / 273.0,
+            "ms_per_row_in_pass": pass_ms / na,
+        }
+
+    return {
+        "model": "T(M) = fixed + sum over groups of pass(NA)",
+        "fixed_ms": coeffs["fixed"],
+        "passes": passes,
+        "max_abs_residual_frac": max(abs(f["residual_frac"]) for f in fitted),
+        "fit": fitted,
+        "marginal_row_inside_a_pass_ms": {
+            f"{a}->{b}": passes[str(b)]["pass_ms"] - passes[str(a)]["pass_ms"]
+            for a, b in zip(nas, nas[1:])
+        },
+    }
+
+
+def ranked_roofline():
+    """Place the ranked prefill and decode rounds against both ranked roofs.
+
+    Every input is a ranked measurement or checkpoint arithmetic. No local
+    number enters, so Rule 83 does not apply to the conclusion.
+    """
+    weight_gb = TARGET_FORWARD_WEIGHT_MB / 1e3
+    rows = {}
+
+    prefill_s = 0.5271
+    rows["prefill_512_rows"] = {
+        "seconds": prefill_s,
+        "rows": 512,
+        "weight_stream_gb_per_s": weight_gb / prefill_s,
+        "frac_of_bandwidth_roof": weight_gb / prefill_s / RANKED_PEAK_GB_S,
+        "tflop_per_s": 512 * GFLOP_PER_PREFILL_ROW / prefill_s / 1e3,
+        "frac_of_compute_roof": (512 * GFLOP_PER_PREFILL_ROW / prefill_s / 1e3
+                                 / RANKED_PEAK_TFLOPS),
+    }
+
+    for name, seconds, width in (("beagle_round", 0.044983, 5.3818),
+                                 ("essays_round", 0.048930, 6.0870)):
+        rows[name] = {
+            "seconds": seconds,
+            "rows": width,
+            "weight_stream_gb_per_s": weight_gb / seconds,
+            "frac_of_bandwidth_roof": weight_gb / seconds / RANKED_PEAK_GB_S,
+            "tflop_per_s": width * GFLOP_PER_ROW / seconds / 1e3,
+            "frac_of_compute_roof": (width * GFLOP_PER_ROW / seconds / 1e3
+                                     / RANKED_PEAK_TFLOPS),
+        }
+
+    # If the weight stream were confined to the M-independent term of the
+    # ranked law, that term alone would have to carry the whole stream.
+    fixed_s = 16.1585e-3
+    return {
+        "harness": "ranked",
+        "weight_gb_per_forward": weight_gb,
+        "bandwidth_roof_gb_per_s": RANKED_PEAK_GB_S,
+        "compute_roof_tflop_per_s": RANKED_PEAK_TFLOPS,
+        "rounds": rows,
+        "stream_floor_seconds_at_roof": weight_gb / RANKED_PEAK_GB_S,
+        "fixed_term_seconds": fixed_s,
+        "implied_gb_per_s_if_stream_inside_fixed_term":
+            weight_gb / fixed_s,
+        "stream_fits_inside_fixed_term":
+            weight_gb / fixed_s <= RANKED_PEAK_GB_S,
+    }
+
+
+def arithmetic_efficiency_by_width(scored_rows, byte_law):
+    """Effective arithmetic rate of the routed kernel against the local roof.
+
+    `fixed_cost_removed_tflops` already divides out the per-call fixed cost,
+    so what remains is the rate at which the kernel turns resident weights
+    into results. `NA` is the vector width the kernel is instantiated at, from
+    `inputsPerGroup`, and it sets how many FLOP each dequantized nibble
+    serves.
+    """
+    out = {}
+    for width in sorted(byte_law, key=int):
+        rates = [row["widths"][width]["fixed_cost_removed_tflops"]
+                 for row in scored_rows if width in row["widths"]]
+        if not rates:
+            continue
+        mean_rate = statistics.fmean(rates)
+        na = INPUTS_PER_GROUP.get(int(width))
+        out[width] = {
+            "inputs_per_group": na,
+            "mean_tflop_per_s": mean_rate,
+            "spread_frac": (max(rates) - min(rates)) / mean_rate,
+            "frac_of_local_compute_roof": mean_rate / LOCAL_PEAK_TFLOPS,
+        }
+    return out
+
+
+def scored_shapes_against_byte_law(payload, byte_law):
+    """Out-of-sample test of the byte law on the seven scored shapes.
+
+    The law is fitted only on the synthetic de-confounding grid, so every
+    scored shape here is a held-out point. `head.lm_head` at 715 MB is far
+    outside the fitted range and is the strongest test of all.
+    """
+    rows = []
+    for record in payload.get("shapes", []):
+        mb = weight_bytes(record["k"], record["n"]) / 1e6
+        cells = {}
+        for row in record["rows"]:
+            cells.setdefault(row["m"], []).append(row)
+        widths = {}
+        for m, group in sorted(cells.items()):
+            law = byte_law.get(str(m))
+            if law is None or not all(r["routed_to_custom_qmv"]
+                                      for r in group):
+                continue
+            us = statistics.fmean(r["seconds_per_call"] for r in group) * 1e6
+            pred = law["fixed_us"] + law["us_per_mb"] * mb
+            flops = group[0]["flops_per_call"]
+            widths[str(m)] = {
+                "measured_us": us,
+                "predicted_us": pred,
+                "residual_frac": (us - pred) / us,
+                "raw_tflops": flops / (us * 1e-6) / 1e12,
+                "fixed_cost_removed_tflops": (
+                    flops / (max(us - law["fixed_us"], 1e-9) * 1e-6) / 1e12
+                ),
+            }
+        if widths:
+            rows.append({
+                "name": record["name"], "k": record["k"], "n": record["n"],
+                "mb": mb, "widths": widths,
+            })
+    return rows
 
 
 def analyze_bottom_up(payload):
@@ -515,11 +932,14 @@ def main():
     if args.census_log:
         blocks = load_census_blocks(args.census_log)
         arms = analyze_census(blocks)
+        baseline = arms.get("baseline", {}).get("seconds_by_width", {})
         report["in_situ"] = {
             "blocks_parsed": len(blocks),
             "arms": arms,
             "per_width_deltas": census_per_width_deltas(blocks),
             "attribution": census_shares(arms),
+            "pass_cost_model": pass_cost_model(
+                {int(w): s for w, s in baseline.items()}),
         }
 
     if args.bottom_up:
@@ -527,7 +947,15 @@ def main():
         report["bottom_up"] = analyze_bottom_up(payload)
         deconfound = analyze_deconfound(payload)
         if deconfound:
+            byte_law = deconfound["byte_law_by_width"]
+            scored = scored_shapes_against_byte_law(payload, byte_law)
             report["deconfound"] = deconfound
+            report["scored_shapes_vs_byte_law"] = scored
+            report["stream_vs_arithmetic"] = stream_vs_arithmetic(byte_law)
+            report["arithmetic_efficiency"] = arithmetic_efficiency_by_width(
+                scored, byte_law)
+
+    report["ranked_roofline"] = ranked_roofline()
 
     static_path = Path(args.static_budget)
     if static_path.exists():
