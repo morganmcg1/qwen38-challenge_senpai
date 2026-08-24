@@ -45,17 +45,21 @@ def read_meta(directory: pathlib.Path) -> dict[str, str]:
 def load_leg(directory: pathlib.Path) -> dict | None:
     score = directory / "score.json"
     timed = directory / "reports" / "04-mtp-timed.json"
-    if not score.exists() or not timed.exists():
+    if not score.exists():
         return None
     metrics = json.loads(score.read_text())["metrics"]
-    report = json.loads(timed.read_text())
     meta = read_meta(directory)
-    widths = [1 + w for w in report["effective_draft_lengths"]]
+    # A leg without the per-round report still carries the trusted parent's
+    # end-to-end metrics, which are the ladder's primary quantity. Only the
+    # width histogram and the row-ledger arithmetic need the round record.
+    report = json.loads(timed.read_text()) if timed.exists() else None
+    widths = [1 + w for w in report["effective_draft_lengths"]] if report else []
     counts: dict[int, int] = {}
     for width in widths:
         counts[width] = counts.get(width, 0) + 1
     multi = sum(n for m, n in counts.items() if GROUPS.get(m, 1) >= 2)
     return {
+        "round_record": report is not None,
         "leg": int(meta.get("e170_leg", 0)),
         "arm": meta.get("e170_arm", directory.parent.name),
         "path": str(directory),
@@ -64,9 +68,12 @@ def load_leg(directory: pathlib.Path) -> dict | None:
         "mtp_decode_speedup": metrics["mtp_decode_speedup"],
         "decode_tokens": metrics["decode_tokens"],
         "accepted_draft_rate": metrics["accepted_draft_rate"],
-        "accepted_draft_total": report["accepted_draft_total"],
-        "declared_rows_total": report["declared_rows_total"],
-        "emitted_token_total": report["emitted_token_total"],
+        "effective_mean_draft_len": metrics["effective_mean_draft_len"],
+        "accepted_draft_total": report["accepted_draft_total"] if report else None,
+        "declared_rows_total": report["declared_rows_total"] if report else None,
+        "emitted_token_total": (
+            report["emitted_token_total"] if report else metrics["decode_tokens"]
+        ),
         "rounds": len(widths),
         "mean_m": statistics.fmean(widths) if widths else 0.0,
         "histogram": dict(sorted(counts.items())),
@@ -98,15 +105,16 @@ def gate_failures(leg: dict) -> list[str]:
         problems.append(
             f"emitted {leg['emitted_token_total']} != {leg['decode_tokens']}"
         )
-    # Row-ledger closure: every declared row is one primary plus the drafts
-    # actually proposed, so the ledger must close against the round record.
-    expected_rows = leg["rounds"] + sum(
-        (m - 1) * n for m, n in leg["histogram"].items()
-    )
-    if expected_rows != leg["declared_rows_total"]:
-        problems.append(
-            f"row ledger {leg['declared_rows_total']} != {expected_rows}"
+    if leg["round_record"]:
+        # Row-ledger closure: every declared row is one primary plus the drafts
+        # actually proposed, so the ledger must close against the round record.
+        expected_rows = leg["rounds"] + sum(
+            (m - 1) * n for m, n in leg["histogram"].items()
         )
+        if expected_rows != leg["declared_rows_total"]:
+            problems.append(
+                f"row ledger {leg['declared_rows_total']} != {expected_rows}"
+            )
     if leg["worker_digest_stable"] != "true":
         problems.append(f"worker_digest_stable={leg['worker_digest_stable']}")
     if leg["gate_qualified_for_timing"] != "true":
@@ -131,18 +139,23 @@ def summarise(legs: list[dict]) -> dict:
             if len(values) > 1 and median
             else 0.0
         ),
-        "mean_m": statistics.fmean([leg["mean_m"] for leg in legs]),
+        "mean_m": statistics.fmean(
+            [
+                leg["mean_m"]
+                if leg["round_record"]
+                else 1.0 + leg["effective_mean_draft_len"]
+                for leg in legs
+            ]
+        ),
         "multi_pass_fraction": statistics.fmean(
-            [leg["multi_pass_fraction"] for leg in legs]
+            [leg["multi_pass_fraction"] for leg in legs if leg["round_record"]] or [0.0]
         ),
         "accepted_draft_rate": statistics.fmean(
             [leg["accepted_draft_rate"] for leg in legs]
         ),
-        "accepted_draft_total": statistics.fmean(
-            [leg["accepted_draft_total"] for leg in legs]
-        ),
+        "round_records": sum(1 for leg in legs if leg["round_record"]),
         "declared_rows_total": statistics.fmean(
-            [leg["declared_rows_total"] for leg in legs]
+            [leg["declared_rows_total"] for leg in legs if leg["round_record"]] or [0.0]
         ),
         "rounds": statistics.fmean([leg["rounds"] for leg in legs]),
     }
@@ -181,10 +194,17 @@ def main() -> int:
         exit_temp = leg["gpu_temp_exit"]
         entry_s = f"{float(entry):.1f}" if entry != "unavailable" else "n/a"
         exit_s = f"{float(exit_temp):.1f}" if exit_temp != "unavailable" else "n/a"
+        if leg["round_record"]:
+            mean_m = leg["mean_m"]
+            multi_s = f"{leg['multi_pass_fraction']:.3f}"
+            rounds_s = str(leg["rounds"])
+        else:
+            mean_m = 1.0 + leg["effective_mean_draft_len"]
+            multi_s = "n/a"
+            rounds_s = "n/a"
         print(
             f"{leg['leg']:>4}{leg['arm']:<8}{entry_s:>8}{exit_s:>8}"
-            f"{leg['mean_m']:>8.3f}{leg['multi_pass_fraction']:>7.3f}"
-            f"{leg['rounds']:>8}"
+            f"{mean_m:>8.3f}{multi_s:>7}{rounds_s:>8}"
             f"{leg['mtp_seconds_per_token'] * 1000:>10.3f}"
             f"{('OK' if not problems else 'FAIL'):>9}"
         )

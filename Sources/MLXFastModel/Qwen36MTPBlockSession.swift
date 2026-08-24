@@ -1072,12 +1072,41 @@ public final class Qwen36MTPBlockSession {
     /// pass (~25 ms) and loses on net; the chunk lives at the sdpa only.
     private static let sdpaWidthWallDepthCap = 5
 
-    /// Depth cap for streak-qualified deep rounds. 8 is the trusted
-    /// per-round maximum; rows_per_round = depth + 1 stays ledger-legal.
-    /// Gated on a full-accept streak so the deep rounds only fire where the
-    /// head has been perfect, mirroring the streak ladder that qualified
-    /// cap 4; any reject resets the streak.
-    private static let segmentedVerifyDepthCap = 7
+    /// Depth cap for the adaptive schedule. 8 is the trusted per-round
+    /// maximum; rows_per_round = depth + 1 stays ledger-legal at any value
+    /// here. This is a CAP over `costModelDepth`, not a pinned depth: the
+    /// walk still chooses 0..4 freely, so a round the schedule wants shallow
+    /// stays shallow.
+    ///
+    /// E168/FINDING 415 — 4, not 7. The per-round cost is a STEP FUNCTION in
+    /// the verified width `M = depth + 1`, because the backbone weight stream
+    /// is re-read once per `activeInputGroups`. Measured per-round medians on
+    /// g16s, from the trusted parent's own `block_request_seconds` paired with
+    /// `effective_draft_lengths` on untraced legs:
+    ///
+    ///     M          2      3      4      5      6      7      8
+    ///     ms     69.27  70.71  77.65  90.83 125.79 136.28 145.44
+    ///     step       -  +1.43  +6.94 +13.18 +34.97 +10.48  +9.17
+    ///
+    /// The `M = 5 -> 6` increment is 2.65x the largest increment anywhere
+    /// else and the increments FALL BACK after it, which no convex smooth
+    /// cost curve can do. `M = 6` is where the second weight pass is bought.
+    ///
+    /// The cap is protected on BOTH sides, so 4 is the unique safe value:
+    ///   * from ABOVE by the step law — `depth >= 5` buys a second full
+    ///     weight-stream pass that the extra accepted tokens cannot repay;
+    ///   * from BELOW by `Qwen35.minimumTableWidth = 4` (FINDING 421) — at
+    ///     `M < 4` every routed cell falls off the wide-QMV table path, which
+    ///     is the largest single kernel gain the campaign owns.
+    ///
+    /// Gated 512-token `--local-submit` ladder, real 40 C gate, palindrome
+    /// order, one arm per leg: depth 3 (M 4) -3.18 %, depth 4 (M 5) -4.73 %,
+    /// depth 5 (M 6) +9.34 % against the uncapped adaptive schedule.
+    ///
+    /// Width 5 and below is also the most-proven exactness envelope on this
+    /// stack: it never reaches the `qL * gqa > 32` sdpa chunk that widths
+    /// 6..9 need, so this cap strictly shrinks the executed width set.
+    private static let segmentedVerifyDepthCap = 4
     /// 2, not 3 — the FOURTH restore of this literal, and it has still never
     /// lost on its merits.
     ///

@@ -79,7 +79,12 @@ for arm in "${session[@]}"; do
   out="${out_root}/${arm}/leg${leg}"
   rm -rf "${out}"; mkdir -p "${out}/reports"
   export MLXFAST_SCORE_PATH="${out}/score.json"
+  # MLXFAST_CAPTURE_DIR alone does nothing: the per-round report only survives
+  # the harness's scratch-directory cleanup when MLXFAST_SWIFT_BIN points at
+  # the passthrough shim that copies each CLI report after the measured phase.
   export MLXFAST_CAPTURE_DIR="${out}/reports"
+  export MLXFAST_CAPTURE_REAL_BIN="${PWD}/.build/release/mlxfast-swift"
+  export MLXFAST_SWIFT_BIN="${PWD}/research/capture-cli.sh"
 
   before="$(digest)"
   [[ "${before}" == "${baseline_digest}" ]] || {
