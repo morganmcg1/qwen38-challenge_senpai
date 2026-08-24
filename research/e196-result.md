@@ -1,6 +1,6 @@
 # E196 — Price the second SDPA call of the qL 6..9 exactness split
 
-SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"route1_recoverable_ms_per_round","available":true,"value":1.214},"test_metric":{"name":"all_tokens_matched","available":false,"value":null}}
+SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_submission_id":null,"primary_metric":{"name":"route1_recoverable_ms_per_round","available":true,"value":1.212},"test_metric":{"name":"all_tokens_matched","available":false,"value":null}}
 
 - Student / branch: qwen-edward / `qwen-edward/e196-second-sdpa-pass-pricing`
 - Hypothesis and target cost: the second SDPA call that `AttentionUtils.swift:103-141`
@@ -49,8 +49,9 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
   The shipped cap-7 tree therefore reaches m = 8 rows.
 - Written promotion rule and verdict: see "Decision".
 - Pre-official evidence budget / timed legs used: **zero timed decode legs.**
-  One Stage 0 dispatch census plus one Stage 1 timing session (six
-  ABBA-counterbalanced blocks, 2856 samples, 74 s wall clock).
+  One Stage 0 dispatch census plus one Stage 1 timing session of record (six
+  ABBA-counterbalanced blocks, 4092 samples, 98 s wall clock), and two earlier
+  sessions of the same probe that are reported only as replicates.
 - Frozen candidate SHA: none. Nothing to submit.
 - Submission owner / receipt-watcher job ID: none.
 
@@ -89,7 +90,10 @@ each call creates, with its grid and threadgroup dimensions
    `(24 query heads, R rows, 1)`, threadgroups of 1024 threads: **one
    threadgroup per (query head, query row)**. For `kL >= 1024` MLX switches to
    `sdpa_vector_2pass_1_..._128` (grid `(4 kv heads, 1, 128)`, group dims
-   `(32, gqa, qL)`) plus `sdpa_vector_2pass_2_bfloat16_t_256`. Call B at m = 6
+   `(32, gqa, qL)`) plus `sdpa_vector_2pass_2_bfloat16_t_256`. The census
+   covers kv 512, 768, 1024, and 2048. The timing session adds kv 896 and
+   1008, which the `kL < 1024` rule places in the one-pass family with kv 512
+   and 768. Call B at m = 6
    has R = 1 and therefore selects the `_nc` (non-causal) variant. Each
    shipped-slice call adds exactly one `g2_copy` query copy; the `today` form
    adds two more `gg2_copy` concatenation copies.
@@ -137,31 +141,39 @@ T(R, N) = a(N) + R * b(N)        a(N) = a0 + a1*N     b(N) = b0 + b1*N
 `b1*N` is the row's own traversal of the KV window, and it is the only term a
 row-amortized kernel can remove.
 
-Ladder fit, `serial` mode (max absolute residual in brackets):
+Ladder fit, `serial` mode (max absolute residual in the last column). A scored
+512-token leg runs the cache offset from 512 to 1024, so four of the six
+windows sit inside the one-pass family and cover the whole leg. Nothing in the
+one-pass price is extrapolated beyond the measured range.
 
-| kv (kL) | a, per-call fixed µs | b, per-row µs | residual |
-| --- | ---: | ---: | ---: |
-| 512 (517) | 30.8 | 11.31 | 0.48 |
-| 768 (773) | 35.5 | 15.11 | 0.42 |
-| 1024 (1029) | 39.1 | 22.09 | 2.96 |
-| 2048 (2053) | 38.7 | 35.40 | 6.05 |
+| kv (kL) | family | a, per-call fixed µs | b, per-row µs | residual |
+| --- | --- | ---: | ---: | ---: |
+| 512 (517) | 1-pass | 30.8 | 11.33 | 1.01 |
+| 768 (773) | 1-pass | 35.5 | 15.17 | 0.94 |
+| 896 (901) | 1-pass | 33.2 | 17.62 | 2.21 |
+| 1008 (1013) | 1-pass | 37.0 | 18.76 | 2.39 |
+| 1024 (1029) | 2-pass | 37.1 | 22.61 | 4.81 |
+| 2048 (2053) | 2-pass | 38.4 | 35.36 | 5.69 |
 
-One-pass KV scaling: `a0 = 21.2 µs`, `a1 = 0.0185 µs/key`, `b0 = 3.62 µs`,
-`b1 = 0.01486 µs/key`. At the scored window kL = 517, `b1*kL = 7.7 µs` of the
-11.3 µs per-row cost, so **68 % of the per-row cost is KV traversal** and the
-per-call fixed cost `a` is nearly KV-independent.
+One-pass KV scaling over four windows: `a0 = 25.8 µs`, `a1 = 0.0104 µs/key`,
+`b0 = 3.40 µs`, `b1 = 0.01538 µs/key`. At the scored window kL = 517,
+`b1*kL = 7.95 µs` of the 11.33 µs per-row cost, so **70 % of the per-row cost
+is KV traversal** and the per-call fixed cost `a` is nearly KV-independent.
 
-Per-layer prices at the highest-weight cell (kv 512, m 8, `serial`):
+Per-layer prices at the highest-weight cell (kv 512, m 8, `serial`), and at the
+end-of-leg window (kv 1008, m 8) for comparison:
 
-| quantity | µs / layer |
-| --- | ---: |
-| call A (5 rows over 512 keys) | 92.1 |
-| call B (3 rows over 520 keys) | 62.1 |
-| A + B, timed separately | 154.2 |
-| A + B, timed as one pair | 145.7 |
-| overlap between the two calls | 8.5 |
-| m = 5 control | 87.3 |
-| Route-1 fused floor | 67.5 |
+| quantity | kv 512, µs/layer | kv 1008, µs/layer |
+| --- | ---: | ---: |
+| call A (5 rows over the older keys) | 91.6 | 136.6 |
+| call B (3 rows over the whole window) | 62.2 | 100.9 |
+| A + B, timed separately | 153.8 | 237.5 |
+| A + B, timed as one pair | 147.7 | 219.4 |
+| overlap between the two calls | 6.1 | 18.1 |
+| m = 5 control | 87.4 | 130.8 |
+| Route-1 fused floor | 66.0 | 79.8 |
+| recover by fusion alone | 26.3 | 32.4 |
+| recover by fusion + row amortization | 81.7 | 139.6 |
 
 Current-tree weighted aggregates (16 full-attention layers, depth histogram
 `{3:1, 4:29, 5:2, 6:3, 7:46}` from `research/analysis-runP-512-confirm.json`,
@@ -170,21 +182,23 @@ rounds** and m = 8 alone is 56.8 %):
 
 | quantity | serial ms/round (MUE) | indep ms/round (MUE) |
 | --- | ---: | ---: |
-| gross price of the second call | 0.950 (1.68) | 0.813 (1.43) |
-| overlap with call A | 0.203 (0.36) | 0.165 (0.29) |
-| step against the m = 5 control | 1.008 (1.78) | 0.890 (1.57) |
-| recover by fusion alone | **0.325 (0.57)** | **0.132 (0.23)** |
-| recover by fusion + row amortization (Route-1) | **1.214 (2.14)** | **1.231 (2.17)** |
+| gross price of the second call | 0.899 (1.59) | 0.779 (1.37) |
+| overlap with call A | 0.176 (0.31) | 0.120 (0.21) |
+| step against the m = 5 control | 0.956 (1.69) | 0.823 (1.45) |
+| recover by fusion alone | **0.291 (0.51)** | **0.111 (0.20)** |
+| recover by fusion + row amortization (Route-1) | **1.212 (2.14)** | **1.161 (2.05)** |
 
-An earlier identical session, run before the temperature-probe fix, produced
-serial 1.158 and indep 1.220 ms/round for the Route-1 figure and serial 0.325
--> 0.304 for the fusion-only figure. Its artifact was overwritten by the
-retained session, so the retained session is the evidence of record, and the
-earlier session counts only as a consistency check.
+Two earlier sessions of the same probe replicate the headline. Both measured
+only two one-pass windows, and the first recorded no temperature because the
+probe looked for `macmon` under the passwd home instead of the role home. Their
+Route-1 figures were 1.158 / 1.220 and 1.214 / 1.231 ms/round (serial /
+indep), and their fusion-only figures were 0.304 / 0.119 and 0.325 / 0.132.
+Their artifacts were overwritten by the session of record, so they count as
+consistency checks only. The decision does not depend on which session is used.
 
 **FINDING 497 bridge.** The `today` arm reproduces FINDING 497's instrument.
-Its m = 8 step over the m = 5 control at kv 512 is 123.4 µs/layer = 1.97
-ms/round, against the chain-slope step of 1.008 ms/round. About **half of the
+Its m = 8 step over the m = 5 control at kv 512 is 123.3 µs/layer = 1.97
+ms/round, against the chain-slope step of 0.956 ms/round. About **half of the
 published step is the blocking per-call `eval()` barrier**, which in-path
 decode does not pay. The eval-free number is the one to price against.
 
@@ -200,61 +214,62 @@ and the total load traffic together. Per-call µs, `serial` mode:
 
 | kL | rows | 6 heads | 12 heads | 24 heads | 48 heads | elasticity at 24 heads |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 517 | 1 | 27.3 | 25.2 | 38.0 | 49.4 | 0.37 |
-| 517 | 5 | 37.3 | 49.6 | 91.0 | 155.4 | 0.75 |
-| 1029 | 1 | 34.1 | 37.2 | 56.6 | 87.1 | 0.55 |
-| 1029 | 5 | 57.9 | 95.4 | 157.7 | 287.3 | 0.82 |
+| 517 | 1 | 27.0 | 26.9 | 37.3 | 48.4 | 0.35 |
+| 517 | 5 | 37.3 | 48.9 | 81.3 | 157.1 | 0.86 |
+| 1029 | 1 | 34.0 | 36.9 | 57.6 | 87.1 | 0.55 |
+| 1029 | 5 | 62.0 | 91.1 | 158.2 | 288.1 | 0.82 |
 
 **I must correct my own pre-declared reading of this arm.** I planned to read
 "time scales with head count" as "throughput bound, therefore close". That
 reading is wrong, because the arm scales the threadgroup count and the load
 traffic together and so cannot separate them. The elasticity proves only that
 a per-work resource binds. A roofline names which one, at the scored cell
-(kL = 517, 5 rows, 24 heads, 87.3 µs):
+(kL = 517, 5 rows, 24 heads, 87.5 µs from the ladder fit):
 
 | quantity | value | fraction of the M4 Pro limit |
 | --- | ---: | ---: |
-| unique KV bytes read | 2.12 MB | 24.3 GB/s = 8.9 % of 273 GB/s |
-| KV bytes actually requested | 63.5 MB (redundancy factor GQA·rows = 30) | 728 GB/s |
-| arithmetic rate | 728 GFLOP/s | 9.0 % of the 8.06 TFLOP/s FMA peak |
+| unique KV bytes read | 2.12 MB | 24.2 GB/s = 8.9 % of 273 GB/s |
+| KV bytes actually requested | 63.5 MB (redundancy factor GQA·rows = 30) | 727 GB/s |
+| arithmetic rate | 727 GFLOP/s | 9.0 % of the 8.06 TFLOP/s FMA peak |
 
 The dispatch sits at 9 % of DRAM bandwidth and 9 % of the ALU peak while
-issuing 728 GB/s of load traffic that is redundant by a factor of 30. Neither
+issuing 727 GB/s of load traffic that is redundant by a factor of 30. Neither
 DRAM nor ALU binds. **The binding resource is redundant load throughput
 through the cache hierarchy, and that is exactly the resource a row-amortized
 kernel removes.** The R = 1 rows of the table add the second fact: at 24
-threadgroups the elasticity falls to 0.37-0.57, so the machine is not full at
+threadgroups the elasticity falls to 0.35-0.57, so the machine is not full at
 the parallelism a fused kernel would run at, and part of the extra per-thread
 arithmetic is free.
 
 The Route-1 floor is not an extrapolation. The identity
 `F(m, kL) = a + m*b0 + b1*kL = T(1, kL) + (m-1)*b0` makes it **the measured
 single-row call at the same window, plus the small non-KV per-row term**. At
-kv 512, m = 8: `T(1, 520) = 42.1 µs` and `F = 42.1 + 7*3.62 = 67.5 µs`.
+kv 512, m = 8: `T(1, 520) = 42.1 µs` and `F = 42.1 + 7*3.40 = 66.0 µs`.
 
 ## Decision
 
 **CONTINUE — build the Route-1 kernel, but only in its row-amortized form.**
 
-The pre-declared rule reads 1.214 ms/round (serial) and 1.231 ms/round
-(indep), both above the 1.0 CONTINUE threshold, in both dependency modes.
+The pre-declared rule reads 1.212 ms/round (serial) and 1.161 ms/round
+(indep), both above the 1.0 CONTINUE threshold, in both dependency modes and
+in all three sessions.
 
 The qualification is the most useful part of this result. The price splits
 into two different mechanisms:
 
-- **Removing the second dispatch alone is worth 0.33 ms/round (serial) or 0.13
+- **Removing the second dispatch alone is worth 0.29 ms/round (serial) or 0.11
   (indep), below the 0.5 CLOSE threshold.** A fused kernel that merely
   concatenates the two calls into one dispatch, and keeps today's per-row
   cost, fails its own decision rule. Do not build that kernel.
-- **Removing the redundant per-row KV traversal is worth the remaining 0.89
-  ms/round (serial) or 1.10 (indep).** Route-1 pays only if each threadgroup
+- **Removing the redundant per-row KV traversal is worth the remaining 0.92
+  ms/round (serial) or 1.05 (indep).** Route-1 pays only if each threadgroup
   loads a KV tile once and applies it to all m rows from registers.
 
 A row-amortized kernel also pays outside the split. The m <= 5 rounds issue one
-call whose rows still re-traverse the KV window, worth a further **0.213
-ms/round (serial) / 0.264 (indep)** across the 30/81 non-split rounds. That is
+call whose rows still re-traverse the KV window, worth a further **0.220
+ms/round (serial) / 0.251 (indep)** across the 30/81 non-split rounds. That is
 a separate prize for a separate experiment, and it is deliberately excluded
-from the 1.214 headline.
+from the 1.212 headline.
 
 ### Named uncertainty and the smallest check that settles it
 
@@ -265,8 +280,8 @@ the R = 1 elasticity already shows the machine is not full at 24 threadgroups.
 
 Smallest check, and it is cheap: write the fused kernel for **m = 6 only**
 (96 registers) and time one `occupancy`-style dispatch against today's pair at
-kv 512. If the m = 6 fused call lands near its 60.2 µs floor, the register
-model holds and m = 7 and 8 follow. If it lands near today's 123.0 µs pair,
+kv 512. If the m = 6 fused call lands near its 59.2 µs floor, the register
+model holds and m = 7 and 8 follow. If it lands near today's 120.0 µs pair,
 spilling has eaten the prize and Route-1 closes without a full implementation.
 Compile the kernel with `-Rpass-analysis=kernel-resource-usage` first: the
 register count per thread is a free static answer before any timing.
@@ -279,29 +294,33 @@ register count per thread is a free static answer before any timing.
 - **Ungated timing mode.** `MLXFAST_LOCAL_COOL_GATE` is not involved because no
   decode leg runs, but the same standing conditions are met and reported:
   arms are ABBA-counterbalanced inside one session; GPU temperature is
-  recorded at session entry (39.3 °C), after warmup (40.4 °C), at each block
-  entry (40.0, 43.1, 45.8, 45.9, 47.2, 48.6 °C), and at session exit
-  (48.3 °C); and the report preserves `cool_gate_passed_real_gate=false` and
-  `gate_qualified_for_timing=false` verbatim. The 8.6 °C monotone entry-
+  recorded at session entry (39.2 °C), after warmup (41.0 °C), at each block
+  entry (39.9, 44.6, 45.9, 47.8, 48.0, 49.2 °C), and at session exit
+  (49.7 °C); and the report preserves `cool_gate_passed_real_gate=false` and
+  `gate_qualified_for_timing=false` verbatim. The 9.3 °C monotone entry-
   temperature drift across blocks cancels to first order under the ABBA order,
   and the per-cell robust minimum takes the coolest, least contended block.
 - **RULE 388** does not bind. It forbids leg-level ABBA for effects below 0.5
   ms/round. This probe measures dispatches directly, and the deciding effect is
-  62-92 µs per call against a 0.4-2.1 % block spread.
+  62-101 µs per call.
 - **RULE 386** per-leg trace paths: not applicable, no legs.
 - The probe needle `E196-SECOND-SDPA-PASS-PRICING-LIVE-PATH-2026-08-24` is
   stamped into every report file.
 - Interpolation: cell prices are interpolated in the KV window only inside one
-  kernel family, never across the `kL = 1024` boundary. Every interpolated
-  round is counted in `weighted[*].interpolated`.
+  kernel family, never across the `kL = 1024` boundary. 49 of the 51 split
+  rounds fall between measured windows; only 2 rounds, at the very end of the
+  leg, are extrapolated. Both counts are recorded in
+  `weighted[*].interpolated_cells` and `weighted[*].extrapolated_cells`.
 - No fidelity claim is made or needed: no token was generated.
 
 ## W&B
 
-- Run of record: <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/k2f7njb3>
-  (id `k2f7njb3`), `harness=local`, job type `probe`.
-- An earlier logging pass of the same session data, before the per-call price
-  aggregates were added, is run `c5wmxffo`.
+- Run of record: <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0xkga2ov>
+  (id `0xkga2ov`), `harness=local`, job type `probe`. It carries the ladder
+  fits, the per-cell price table, the occupancy table, the roofline, the
+  FINDING 497 bridge, and the weighted decision.
+- Earlier logging passes of the replicate sessions: `or7xrw2g`, `k2f7njb3`,
+  `c5wmxffo`.
 
 ## Reproduction
 
@@ -314,21 +333,21 @@ python3 research/e196_analyse.py --wandb
 
 Host: AWS EC2 mac, M4 Pro `applegpu_g16s`, 48 GiB unified memory,
 macOS 26.5.2 (25F84), Apple Swift 6.3.3, frozen dependency graph.
-Session wall clock 74 s, 2856 samples. No model is loaded, so peak RAM stays
+Session wall clock 98 s, 4092 samples. No model is loaded, so peak RAM stays
 at test-process level and no model-holding lock is taken.
 
 ## Conclusion
 
-- **What happened.** The second SDPA call costs 0.950 ms/round of GPU time on
-  the current tree, and only 0.203 ms/round of that overlaps with the first
+- **What happened.** The second SDPA call costs 0.899 ms/round of GPU time on
+  the current tree, and only 0.176 ms/round of that overlaps with the first
   call. An eval-free instrument shows about half of FINDING 497's published
   m >= 6 step is a measurement barrier, not decode work.
 - **Evidence for the mechanism.** The kernel gives every (row, head) its own
   threadgroup and its own full KV traversal, the achieved rates sit at 9 % of
   both the DRAM and the ALU limit while issuing 30x redundant load traffic, and
-  the per-work elasticity is 0.75-0.82. Redundant load throughput binds, and
+  the per-work elasticity is 0.82-0.86. Redundant load throughput binds, and
   row amortization removes it.
-- **Evidence against.** Fusion by itself is worth only 0.33 ms/round, so the
+- **Evidence against.** Fusion by itself is worth only 0.29 ms/round, so the
   cheap version of Route-1 is already refuted. Register pressure at m = 8 is
   the one unquantified risk.
 - **Prompt or M5 transfer risk.** Low for kernel identity: the M5 selects the
@@ -347,9 +366,9 @@ at test-process level and no model-holding lock is taken.
 
 1. **Route-1 fused kernel, register-blocked over rows** — the direct successor,
    priced here at 1.21 ms/round on split rounds.
-2. **Row-amortized kernel for the m <= 5 rounds** — a separate 0.21-0.26
+2. **Row-amortized kernel for the m <= 5 rounds** — a separate 0.22-0.25
    ms/round prize that needs no split at all, and a safer first target because
-   m = 5 needs only 80 extra registers per thread.
+   m = 5 needs only 80 registers per thread.
 3. **Raise the depth cap once the width wall is gone.** The qL·gqa <= 32 limit
    is why `sdpaWidthWallDepthCap` is 5. A row-blocked kernel removes the
    hardware reason for that constant, which may reopen deeper drafting.

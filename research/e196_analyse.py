@@ -301,7 +301,10 @@ def round_weights():
 
 def interpolate(priced_by_m, m, kv, field, boundary=1024):
     """Interpolate a per-cell value in the KV window WITHOUT crossing the
-    1-pass / 2-pass kernel boundary. Returns (value, was_interpolated)."""
+    1-pass / 2-pass kernel boundary.
+
+    Returns (value, was_interpolated, was_extrapolated). A value outside the
+    measured window range is an extrapolation and must be reported as one."""
     candidates = sorted(
         (row for row in priced_by_m if row["m"] == m and row[field] is not None),
         key=lambda row: row["kv"],
@@ -312,25 +315,25 @@ def interpolate(priced_by_m, m, kv, field, boundary=1024):
         if (row["kL"] >= boundary) == (kv + m >= boundary)
     ]
     if not same_family:
-        return None, True
+        return None, True, True
     if len(same_family) == 1:
-        return same_family[0][field], True
+        return same_family[0][field], True, True
     lower = [row for row in same_family if row["kv"] <= kv]
     upper = [row for row in same_family if row["kv"] >= kv]
     if lower and upper and lower[-1]["kv"] != upper[0]["kv"]:
         low, high = lower[-1], upper[0]
         span = high["kv"] - low["kv"]
         weight = (kv - low["kv"]) / span
-        return low[field] + weight * (high[field] - low[field]), True
+        return low[field] + weight * (high[field] - low[field]), True, False
     if lower and upper and lower[-1]["kv"] == kv:
-        return lower[-1][field], False
+        return lower[-1][field], False, False
     # Extrapolate from the two nearest same-family cells.
     low, high = same_family[0], same_family[-1]
     span = high["kv"] - low["kv"]
     if span == 0:
-        return low[field], True
+        return low[field], True, True
     weight = (kv - low["kv"]) / span
-    return low[field] + weight * (high[field] - low[field]), True
+    return low[field] + weight * (high[field] - low[field]), True, True
 
 
 def generic_row_amortization(scaling, boundary=1024):
@@ -367,17 +370,21 @@ def weighted_aggregate(priced, field):
     rounds, total, tokens_per_round = round_weights()
     per_round_us = 0.0
     interpolated = 0
+    extrapolated = 0
     covered = 0
     detail = defaultdict(lambda: {"rounds": 0, "us": 0.0})
     for entry in rounds:
         m = entry["m"]
         if m < 6:
             continue  # the split does not fire below width 6
-        value, was_interpolated = interpolate(priced, m, entry["kv"], field)
+        value, was_interpolated, was_extrapolated = interpolate(
+            priced, m, entry["kv"], field
+        )
         if value is None:
             continue
         covered += 1
         interpolated += 1 if was_interpolated else 0
+        extrapolated += 1 if was_extrapolated else 0
         contribution = value * FULL_ATTENTION_LAYERS * entry["weight"]
         per_round_us += contribution
         detail[m]["rounds"] += 1
@@ -392,6 +399,7 @@ def weighted_aggregate(priced, field):
         "split_round_share": covered / total,
         "tokens_per_round": tokens_per_round,
         "interpolated_cells": interpolated,
+        "extrapolated_cells": extrapolated,
         "per_m": {str(m): dict(value) for m, value in sorted(detail.items())},
     }
 
