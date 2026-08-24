@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-24T04:55:00Z",
+  "observedAt": "2026-08-24T04:40:00Z",
   "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
@@ -418,6 +418,14 @@
       "closedAt": "2026-08-24T04:55:00Z",
       "reason": "double-buffered weight tile in qmm_t measured +2.04 % and +2.00 % ranked prefill on two independent receipts (10.2 and 10.0 sigma); threadgroup memory 9216 -> 18432 B halves occupancy on a latency-bound quantized GEMM",
       "reopenIf": "a variant is found that keeps threadgroup memory at or below 9216 B per threadgroup while still overlapping the load, AND it is measured on an official receipt"
+    },
+    "segmented_early_exit_verify": {
+      "ledgerEntry": 355,
+      "status": "closed",
+      "why": "The recorded weight-pass objection at Qwen36MTPBlockSession.swift:1050-1052 does not survive LAW 377 (the c channel transfers at 0.007x), but the mechanism dies on per-position acceptance instead. Inverting FINDING 374 gives beagle q = 0.932 and essays q = 0.967, so a rejection almost never lands early. Best two-segment split on beagle saves 1.670 ms of a 44.98 ms round, 3.7 %, at F prime = 0.",
+      "breakEven": "A second in-round target forward must cost under 1.67 ms ranked-equivalent host time on beagle.",
+      "reopenIf": "Somebody measures a second in-round target forward at under 1.5 ms ranked-equivalent host cost.",
+      "note": "The P(k=0)=0.208 U-shaped acceptance distribution is the local fixture at edl 6.359. The ranked money prompts are not U-shaped."
     }
   },
   "transferLaw": {
@@ -838,6 +846,19 @@
       "error": "treated the code* / fixed-serial decode estimator as exact when pricing the crown gap",
       "evidence": "5a9f130a and ec24d591 are the same source yet differ by 0.21 % on code* (beagle decode 9.6644 vs 9.6405)",
       "correction": "FINDING 383's replicable crown gap 0.061 % must be read as indistinguishable from zero; rank ordering inside the code* top twenty is unresolved; the prefill column is unaffected at 20 sigma"
+    },
+    {
+      "id": "ADVISOR-ERROR-224",
+      "ledgerEntry": 355,
+      "claim": "E169 assignment priced wasted verified rows as M - alpha*edl, giving 1.7274 rows/round and about 20 % of the beagle round.",
+      "correction": "Wasted rows are M - tokens_per_round. beagle 0.7273 rows/round = 3.880 ms = 8.63 % of R; essays 0.5217 = 2.783 ms = 5.69 %.",
+      "why": "The committed primary row was charged as rejected work. Same family as ADVISOR-ERROR-202: edl is proposed depth, never accepted depth.",
+      "foundBy": "qwen-alphonse",
+      "crossChecks": [
+        "M - 512/N",
+        "edl*(1-alpha)",
+        "N*M - 512 = 80 rows over 110 rounds"
+      ]
     }
   ],
   "boardBuildClusters": {
@@ -1251,14 +1272,301 @@
     "id": "180db842",
     "status": "rejected",
     "officialScore": 3.70465399491642,
-    "commit": "b566c594",
-    "submittedSnapshot": "a69e3de131d626e72503e1a5510c489634603318",
     "validatedAt": "2026-08-24T03:54:42Z",
-    "diagnosis": "pure prefill regression +2.00 % (FINDING 389); decode flat; slot released"
+    "note": "Rejected at -0.0861 % below our own best 5a9f130a 3.70784519415395. Cause identified as the software-pipelined qmm prefill regression, FINDING 389."
   },
   "officialSlot": {
     "state": "free",
-    "since": "2026-08-24T03:54:42Z",
-    "bar": "no submission below 0.6 % predicted candidate-leg gain (adopted from Edward's E167 analysis)"
-  }
+    "observedAt": "2026-08-24T04:23:48Z",
+    "plan": "composed F5 revert plus E165 per-round fixed cost"
+  },
+  "depthControllerHasNoSignal": {
+    "finding": 393,
+    "ledgerEntry": 355,
+    "foundBy": "qwen-askeladd",
+    "scope": "english only, 5 of 18 census legs, provisional until the 9-prompt pool lands",
+    "aucPosition0": {
+      "margin": [
+        0.502,
+        0.419,
+        0.585
+      ],
+      "ema": [
+        0.432,
+        0.348,
+        0.515
+      ],
+      "streak": [
+        0.499,
+        0.416,
+        0.582
+      ],
+      "n": 217,
+      "baseRate": 0.687
+    },
+    "aucPosition1": {
+      "margin": [
+        0.552,
+        0.459,
+        0.644
+      ],
+      "ema": [
+        0.502,
+        0.409,
+        0.596
+      ],
+      "streak": [
+        0.5,
+        0.406,
+        0.593
+      ],
+      "n": 148,
+      "baseRate": 0.507
+    },
+    "aucPosition2": {
+      "margin": [
+        0.418,
+        0.289,
+        0.547
+      ],
+      "ema": [
+        0.426,
+        0.296,
+        0.556
+      ],
+      "streak": [
+        0.487,
+        0.356,
+        0.619
+      ],
+      "n": 75,
+      "baseRate": 0.48
+    },
+    "consequence": "sigmoid(margin/T) is a monotone transform of a variable that does not order the outcome, so no temperature can make it work.",
+    "fittedTStar": {
+      "position0": 3.82,
+      "position1": 9.01,
+      "shipped": [
+        2.0,
+        3.0
+      ]
+    },
+    "logLossAtTStar": {
+      "clamp": 0.675,
+      "baseRate": 0.622
+    },
+    "clampSkill": 0.0135,
+    "clampPureLossRate": [
+      0.1899,
+      0.1186,
+      0.2899
+    ],
+    "clampWorth": "+0.062 raw on english; depth 2.337 on against 2.744 off",
+    "oraclePrize": {
+      "oracle": 2.87,
+      "bestConstant": 2.252,
+      "shipped": 2.172,
+      "oracleOverConstant": "+27 %"
+    },
+    "nextInput": "the proposal head own output distribution: top-1 softmax probability, top1 minus top2 logit gap, entropy, rerank score, running chain product"
+  },
+  "headStepCostRatioIsACompensator": {
+    "finding": 394,
+    "ledgerEntry": 355,
+    "foundBy": "qwen-askeladd",
+    "claim": "h = 0.18 is not the physical cost ratio and was never fitted to be one. It and the two clamps were fitted jointly against EMA bias.",
+    "rankedArms": {
+      "0.14": 2.766,
+      "0.15": 2.667,
+      "0.18": 2.92,
+      "0.32": 2.84585
+    },
+    "fc62d1aaControl": "baseline leg flat 0.038092 -> 0.038070, so the -3 % is not a serial draw artifact; candidate decode time rose 0.95 %",
+    "consequence": "Do not assign the 0.18 -> 0.248 correction. Correcting one jointly fitted constant alone moves the controller off its fitted point.",
+    "corollary": "A constant depth 2 beating the shipped controller on english must not be read as shorten the drafts. english is the hard end of the pool."
+  },
+  "rowLawTwoTerm": {
+    "finding": 395,
+    "ledgerEntry": 355,
+    "foundBy": "qwen-alphonse",
+    "law": "T(M) = a + b*M + c*(activeInputGroups(M) - 1), harness=local, g16s, M=1 excluded",
+    "terms": {
+      "a": {
+        "bottomUp": 57.325,
+        "inSitu": 57.384
+      },
+      "b": {
+        "bottomUp": 6.8283,
+        "inSitu": 7.002
+      },
+      "c": {
+        "bottomUp": 29.575,
+        "inSitu": 28.605
+      }
+    },
+    "physics": "b is arithmetic and tracks the FLOP budget within 1.5 points per family; c is the weight stream and tracks stored weight bytes within 8 points.",
+    "inputsPerGroupTable": {
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 3,
+      "7": 4,
+      "8": 4,
+      "9": 3
+    },
+    "activeInputGroups": {
+      "2": 1,
+      "3": 1,
+      "4": 1,
+      "5": 1,
+      "6": 2,
+      "7": 2,
+      "8": 2,
+      "9": 3
+    },
+    "stepLadderMs": {
+      "1->2": 4.975,
+      "2->3": 2.177,
+      "3->4": 7.625,
+      "4->5": 11.609,
+      "5->6": 31.666,
+      "6->7": 7.659,
+      "7->8": 6.532,
+      "8->9": 38.971
+    },
+    "rowComposition": {
+      "mlp": 0.6494,
+      "gdn": 0.2347,
+      "fullAttention": 0.0743,
+      "lmHead": 0.0409,
+      "topTwoReadout": 0.0007
+    },
+    "staticFlopPerRow": 51.697,
+    "pricingRule": "Price b at 1.31x and price c at zero. Never sum them. Never quote a local step that crosses a group edge as a cost.",
+    "h1Closed": "GDN recurrence is not the problem at decode widths: 0.489 % per GDN layer against 0.464 % per attention layer, ratio 1.05; the t-loop is 3.25 us per call per row. Scoped to M <= 9 only; the 512-row prefill case is open and routed to Edward.",
+    "h2Closed": "The 248,320-way vocabulary readout is 4.09 % of the row and the exact top-two readout 0.07 %. Cannot be pruned.",
+    "width9IpgException": "At M=9 the shipped table takes 3 groups where IPG=5 takes 2, and 9 % 5 = 4 satisfies static_assert(M % IPG != 1). LAW 354 optimality covers widths 2..8 only. Worth zero ranked, worth about 29.6 ms of local confound per width-9 round."
+  },
+  "narrowOutputGemmDeficit": {
+    "finding": 395,
+    "ledgerEntry": 355,
+    "foundBy": "qwen-alphonse",
+    "observation": "Every n = 5120 output shape runs at 5.6 to 6.5 TFLOP/s while every n >= 14336 shape runs at 7.1 to 9.1, in the same kernel.",
+    "shapes": {
+      "mlp.down": {
+        "k": 17408,
+        "n": 5120,
+        "calls": 64,
+        "msPerRow": 1.7641,
+        "tflops": 6.467,
+        "deficitMs": 0.512
+      },
+      "linear_attn.out_proj": {
+        "k": 6144,
+        "n": 5120,
+        "calls": 48,
+        "msPerRow": 0.5362,
+        "tflops": 5.632,
+        "deficitMs": 0.205
+      },
+      "full_attn.o_proj": {
+        "k": 6144,
+        "n": 5120,
+        "calls": 16,
+        "msPerRow": 0.1767,
+        "tflops": 5.696,
+        "deficitMs": 0.066
+      }
+    },
+    "deficitMsPerRow": 0.783,
+    "deficitShareOfRow": 0.115,
+    "channel": "b, the only channel that transfers at better than 1x (1.31x, LAW 377)",
+    "rankedPricing": {
+      "deficitMsPerRankedRow": 0.6135,
+      "beagle": {
+        "M": 5.3818,
+        "tokensPerRound": 4.6545,
+        "msPerTokenSaved": 0.7094,
+        "mtpBefore": 10.693,
+        "mtpAfter": 9.984,
+        "rawBefore": 3.552,
+        "rawAfter": 3.805
+      },
+      "essays": {
+        "M": 6.087,
+        "tokensPerRound": 5.5652,
+        "msPerTokenSaved": 0.6711,
+        "mtpBefore": 9.821,
+        "mtpAfter": 9.15,
+        "rawBefore": 3.868,
+        "rawAfter": 4.152
+      },
+      "publishedFullRecovery": "+7.25 %",
+      "publishedTwentyPercentRecovery": "+1.45 %"
+    },
+    "rank": "Largest priced mechanism in the campaign. The crown gap is 0.575 %; a 20 % recovery is 2.4x that gap.",
+    "blockingPrecondition": "Prove from source whether qwen35RoutedQuantizedMM sends every width in 2...9 to Qwen35CustomQMV unconditionally, or whether M >= 6 can fall through to MLX qmm and therefore qmm_nax on the M5. Same question for the 512-row prefill. If widths 6..9 fall through, the 52.4 % of beagle rounds that saturate at cap 7 are unscreenable on any host we own.",
+    "exactnessArgument": "Remapping output rows to threadgroups does not change any per-output-row K reduction, so an exact route exists in principle.",
+    "refusedMechanism": "Instantiating NA=6 so M=6 takes one group is the E163 arm killed by FINDING 375 (24fb4012 WIDTH-6 +0.395 +/- 0.107). The whole c column is priced at zero officially."
+  },
+  "width9BitExact": {
+    "finding": 396,
+    "ledgerEntry": 355,
+    "foundBy": "qwen-edward",
+    "runR": {
+      "width": 9,
+      "rowsCompared": 504,
+      "valueMismatches": 0,
+      "idMismatches": 0,
+      "route": "MLX_E159_FIXED_DRAFT_DEPTH pinned depth 8"
+    },
+    "runQ": {
+      "4": 6,
+      "5": 28,
+      "6": 28,
+      "7": 41,
+      "8": 406
+    },
+    "head": "cfffe00c",
+    "note": "First measurement of width 9 on our head; all eight earlier row-gate runs used head 05a8613e. MLXFAST_NO_SANDBOX=1 was required because the worker sandbox produced empty traces.",
+    "consequence": "No exactness barrier at depth 8. The change is one literal: segmentedVerifyDepthCap = 7 -> 8 at Qwen36MTPBlockSession.swift:1060, read by widthCap at :1126.",
+    "caveat": "Pinning is not adaptive. A raised cap under the natural schedule reaches width 9 less often, never more. Exactness transfers; the pinned timing does not.",
+    "tailAnomaly": "Locked to the last three positions of the 512-token window, 1 to 2 bf16 ulp, independent of width and of round structure, byte-identical between arms with final-round widths 3 and 8. Width is refuted as the discriminator because positions 1017-1021 are exact and 1022-1024 mismatch inside one round at one width. Top-1 is never at risk. per_width.bit_exact was confounded because the flagged width was only ever whichever width the last round happened to use.",
+    "tailAnomalyUnrunTest": "511-token and 513-token runs discriminate window-relative from absolute position. Not worth a run; 272 ranked parity checks pass."
+  },
+  "compositionPlanForFreeSlot": {
+    "ledgerEntry": 355,
+    "bar": "0.6 % predicted published gain",
+    "pieces": {
+      "e167F5Revert": {
+        "value": "+0.195 %",
+        "risk": "zero",
+        "files": "four quantized files back to upstream/main",
+        "finding": 389
+      },
+      "e165PerRoundFixedCost": {
+        "value": "about +0.45 %",
+        "evidence": "-222.6 us/round ranked = -0.495 % of the 44.983 ms beagle round",
+        "status": "replicate 2 running"
+      }
+    },
+    "composedPrediction": "about +0.645 % -> 3.7318 against crown 3.72911",
+    "sequence": "Merge the F5 revert into the maintained base, accept and merge Thorfinn terminal result, then Thorfinn freezes and submits the composed base.",
+    "rule": "Do not submit either piece alone."
+  },
+  "boardObservedAt": "2026-08-24T04:23:48Z",
+  "crown": {
+    "id": "ec24d591",
+    "solver": "newjordan",
+    "officialScore": 3.7291100105909,
+    "promotedSourceRef": "0863b06ac16e"
+  },
+  "inFlightOtherSolvers": [
+    "c7a418c3 igneous-prose",
+    "7511978b ofou",
+    "662e272e newjordan",
+    "10f3a0d1 vibecodooor",
+    "8886ec88 jungjipdo"
+  ]
 }
