@@ -8,7 +8,7 @@ session: the real 40 C cool gate ran before all three legs and the per-round
 phase trace was never enabled, so the wall times are admissible as
 ``harness=local`` figures.
 
-The cap-7 rows logged for context are NOT a matched control. They come from the
+The cap-7 rows logged for context are NOT a matched control and are counts only. They come from the
 retained E181 session on this same host, which ran a different tree and a
 PINNED-shape head directory (``6fe9db14``), while this run ran the DECLARED
 head (``dadbfb80``). FINDING 511 measured about 8.5 %/token between head
@@ -31,7 +31,9 @@ ENTITY = "wandb-applied-ai-team"
 PROJECT = "qwen38-mlx-challenge-senpai"
 GROUP = "e199-cap8-paid-receipt"
 
-CAMPAIGN_BASE_SHA = "5dec966ef33736e6dfc143256bca441454e2ea17"
+COOL_GATE_PASS_TEMPS_C = [39.3, 39.2, 39.5]
+OFFICIAL_SUBMISSION_ID = "aff4ad64-7850-49fb-bf8b-e9107c387f71"
+OFFICIAL_BENCHMARK_ID = "5d1ee4d7-80bd-4555-b182-6505f26ef495"
 RECEIPT_A = "5a9f130a"
 RECEIPT_A_SCORE = 3.70784519415395
 CROWN = "ec24d591"
@@ -55,11 +57,6 @@ CAP7_CONTEXT = {
     "effective_mean_draft_len": 6.376623376623376,
     "accepted_draft_rate": 0.8859470468431772,
     "head_provenance_prefix": "6fe9db14",
-    "mtp_seconds_per_token_legs": [
-        0.03165631042793393, 0.031419593608006835, 0.03140815440565348,
-        0.03162436140701175, 0.03159670322202146, 0.031431496143341064,
-        0.03146121697500348, 0.031635339837521315,
-    ],
 }
 
 
@@ -107,15 +104,14 @@ def main() -> int:
     rejected = report["rejected_draft_total"]
     rows = report["declared_rows_total"]
 
-    cap7_mean = (sum(CAP7_CONTEXT["mtp_seconds_per_token_legs"])
-                 / len(CAP7_CONTEXT["mtp_seconds_per_token_legs"]))
-
     config = {
         "experiment": "e199",
         "hypothesis": "segmentedVerifyDepthCap 7 -> 8 beats receipt A and the crown",
         "candidate_change": "Qwen36MTPBlockSession.segmentedVerifyDepthCap 7 -> 8",
         "candidate_commit": meta["base_sha"],
-        "campaign_base_sha": CAMPAIGN_BASE_SHA,
+        "campaign_base_sha": meta["campaign_base_sha"],
+        "official_submission_id": OFFICIAL_SUBMISSION_ID,
+        "official_benchmark_id": OFFICIAL_BENCHMARK_ID,
         "upstream_sha": meta["upstream_sha"],
         "submitted_surface_files": 1,
         "submitted_surface_lines_changed": 1,
@@ -139,7 +135,10 @@ def main() -> int:
         "cool_gate_passed_real_gate": True,
         "gate_qualified_for_timing": True,
         "trace_perturbs_timing": False,
+        # meta gpu_temp_entry is our own sample taken BEFORE the harness
+        # cool-down; the authoritative gate values are the three harness lines.
         "gpu_temp_entry_pre_gate_c": float(meta["gpu_temp_entry"]),
+        "cool_gate_pass_temps_c": COOL_GATE_PASS_TEMPS_C,
         "gpu_temp_exit_c": float(meta["gpu_temp_exit"]),
         "e197_predicted_ranked_median": E197_PREDICTED_MEDIAN,
         "e197_band_low": E197_BAND_LOW,
@@ -203,7 +202,6 @@ def main() -> int:
             report["max_block_request_seconds_after_first"],
         "local/target_cache_offset_final": report["target_cache_offset_final"],
         # --- unmatched cap-7 context, labelled as such ---
-        "context_unmatched/cap7_mtp_seconds_per_token_mean": cap7_mean,
         "context_unmatched/cap7_rounds": CAP7_CONTEXT["rounds"],
         "context_unmatched/cap7_accepted": CAP7_CONTEXT["accepted"],
         "context_unmatched/cap7_rejected": CAP7_CONTEXT["rejected"],
@@ -219,7 +217,9 @@ def main() -> int:
         "context_unmatched/why_not_matched":
             "different tree and different head class (6fe9db14 pinned-shape vs "
             "dadbfb80 declared); FINDING 511 head-class effect ~8.5%/token "
-            "exceeds the cap effect",
+            "exceeds the cap effect. Counts only: no local wall-time depth "
+            "contrast is logged, because a one-fixture local depth contrast "
+            "is inadmissible in both directions.",
         "verdict": "gate_passed",
     }
     run.summary.update(summary)
