@@ -1138,7 +1138,13 @@ public final class Qwen36MTPBlockSession {
         // round's trace line is emitted, the EMAs, the streak and `pendingTop2`
         // have all been advanced by this round's own outcome, so reading them
         // there would describe the next round's inputs, not this one's.
-        if Self.traceRounds { snapshotScheduleSignal(widthCap: widthCap) }
+        // `!predictingNextDraftCount`: the round-end look-ahead calls this same
+        // policy to size the prefetched chain. It must not overwrite the trace
+        // this round already recorded, which describes the round that is
+        // drafting.
+        if Self.traceRounds, !predictingNextDraftCount {
+            snapshotScheduleSignal(widthCap: widthCap)
+        }
         guard cap > 0 else { return 0 }
         let price = Self.depthPrice
         var reach = 1.0
@@ -1201,10 +1207,32 @@ public final class Qwen36MTPBlockSession {
     /// The step built for the NEXT round, already submitted to the device.
     private var pendingHeadStep: HeadFlushStep?
 
+    /// The deeper head-chain steps built for the NEXT round, already submitted.
+    ///
+    /// `draftIds[i]` is the proposal of chain step `i + 2` and `draftHiddens[i]`
+    /// is the head hidden row that step produced, so a round that wants fewer
+    /// steps than were prefetched still has the exact hidden row it must chain
+    /// from, and a round that wants more continues from the last entry.
+    private struct PendingHeadChain {
+        let draftIds: [MLXArray]
+        let draftHiddens: [MLXArray]
+    }
+    private var pendingHeadChain: PendingHeadChain?
+
+    /// Set while the schedule is being asked what the NEXT round would propose.
+    /// The shipped policy writes the phase trace's schedule fields as a side
+    /// effect, and those fields describe the round that is being drafted, not a
+    /// look-ahead, so the look-ahead must not write them.
+    private var predictingNextDraftCount = false
+
     /// Prefetch census, reported through the phase trace.
     private var prefetchMadeCount = 0
     private var prefetchHitCount = 0
     private var prefetchUndoCount = 0
+    private var prefetchChainPredicted = 0
+    private var prefetchChainMadeSteps = 0
+    private var prefetchChainUsedSteps = 0
+    private var prefetchChainOvershootSteps = 0
 
     /// Flush every committed row the head has not seen, ending on
     /// `(hidden, primary)`, and propose one draft from the final row.
@@ -1292,7 +1320,9 @@ public final class Qwen36MTPBlockSession {
     /// protocol, and rebuilt this same graph at the top of the next round. The
     /// step depends only on committed state, so issuing it here is the same
     /// arithmetic on the same inputs, started earlier.
-    private func prefetchHeadStep(hidden: MLXArray, primary: Int) {
+    private func prefetchHeadStep(
+        hidden: MLXArray, primary: Int, offeredDepth: Int
+    ) {
         // Only ever called from a drafting round's tail, so the head cache and
         // its seed priming already exist. Undo can therefore restore the head
         // by trimming alone; it never has to recreate a primed cache.
@@ -1303,6 +1333,115 @@ public final class Qwen36MTPBlockSession {
         asyncEval(step.draftId)
         pendingHeadStep = step
         prefetchMadeCount += 1
+        prefetchChain(after: step, offeredDepth: offeredDepth)
+    }
+
+    /// Build and submit the DEEPER head-chain steps now, behind the first one.
+    ///
+    /// Step 1 alone does not keep the device busy to the end of the seam. The
+    /// measured window (E204 stage 0, M4 Pro, 512 tokens) is: step 1 starts on
+    /// the device about 1.1 ms after the round's blocking eval returns, runs
+    /// about 1.7 ms, and covers the rest of the bookkeeping, the protocol
+    /// turnaround and the start of the next round — and then the device waits
+    /// again, a median 484 us, while the host builds steps 2..d. Those steps
+    /// depend only on step 1's own output and the head cache, never on the
+    /// target cache, so the accept/rollback bookkeeping does not order them:
+    /// they can be built and submitted here and be executing by the time the
+    /// next round asks for them.
+    ///
+    /// The count is a PREDICTION, not a commitment. The next round re-asks the
+    /// schedule and uses its answer: a shorter round ignores the surplus ids
+    /// (their head rows are speculative and the round's own upkeep trims them,
+    /// exactly as it trims speculative deeper rows today), and a longer round
+    /// continues the chain from the last prefetched hidden. The emitted tokens
+    /// are therefore independent of the prediction.
+    ///
+    /// NO SYNCHRONIZATION IS ADDED. `asyncEval` submits and returns; the commit
+    /// phase stays host-serial and never waits for the device.
+    ///
+    /// The shipped setting is unconditional. `DARKBLOOM_E204_CHAIN_ARM` exists
+    /// so ONE process can measure both arms against each other; it is a
+    /// research control, and a ranked run never sets it.
+    internal enum ChainPrefetchArm {
+        case on
+        case off
+        /// Switch arms every `window` rounds in ABBA order, inside one
+        /// process. Both arms then share the seed, the prompt, the warm
+        /// caches and the thermal ramp, so monotone drift cancels to first
+        /// order instead of loading onto whichever arm ran second.
+        case alternating(window: Int)
+    }
+
+    /// Parsed once. Reading the environment per round would put a dictionary
+    /// lookup in the timed tail.
+    internal static let chainPrefetchArm: ChainPrefetchArm = {
+        guard let raw = ProcessInfo.processInfo
+            .environment["DARKBLOOM_E204_CHAIN_ARM"], !raw.isEmpty
+        else { return .on }
+        if raw == "off" { return .off }
+        if raw.hasPrefix("alt"), let window = Int(raw.dropFirst(3)),
+           window > 0
+        {
+            return .alternating(window: window)
+        }
+        return .on
+    }()
+
+    internal static func chainPrefetchEnabled(round: Int) -> Bool {
+        switch chainPrefetchArm {
+        case .on: return true
+        case .off: return false
+        case .alternating(let window):
+            // A B B A over four windows: the on-arm rounds sit at both ends
+            // of the block and the off-arm rounds sit in the middle, so a
+            // linear drift across the block contributes equally to each.
+            let block = (round / window) % 4
+            return block == 0 || block == 3
+        }
+    }
+
+    private func prefetchChain(after step: HeadFlushStep, offeredDepth: Int) {
+        prefetchChainPredicted = 0
+        guard Self.chainPrefetchEnabled(round: roundCount) else { return }
+        let predicted = predictedNextDraftCount(offeredDepth: offeredDepth)
+        prefetchChainPredicted = predicted
+        guard predicted > 1 else { return }
+        var draftIds: [MLXArray] = []
+        var draftHiddens: [MLXArray] = []
+        draftIds.reserveCapacity(predicted - 1)
+        draftHiddens.reserveCapacity(predicted - 1)
+        var hidden = step.draftHidden
+        var draftId = step.draftId
+        for _ in 1 ..< predicted {
+            let headHidden = model.mtpHeadHiddenForward(
+                hidden: hidden, nextTokenIds: draftId, cache: step.cache)
+            hidden = Self.lastHiddenRow(headHidden)
+            draftId = model.draftTokenID(hidden)
+            draftIds.append(draftId)
+            draftHiddens.append(hidden)
+        }
+        asyncEval(draftIds[draftIds.count - 1])
+        pendingHeadChain = PendingHeadChain(
+            draftIds: draftIds, draftHiddens: draftHiddens)
+        prefetchChainMadeSteps += draftIds.count
+    }
+
+    /// What the schedule would propose next round, without disturbing it.
+    ///
+    /// The look-ahead reads the same state the next round will read: this
+    /// round's outcome is already folded into the per-position EMAs and the
+    /// streak, and `pendingTop2` already holds the next round's primary. It
+    /// cannot change what the next round proposes, because that round asks the
+    /// policy again and uses its answer.
+    private func predictedNextDraftCount(offeredDepth: Int) -> Int {
+        predictingNextDraftCount = true
+        defer { predictingNextDraftCount = false }
+        let predicted = draftPolicy(offeredDepth, roundCount + 1)
+        return Swift.max(
+            0,
+            Swift.min(
+                predicted,
+                Swift.min(offeredDepth, Qwen36MTPLimits.maxDepth)))
     }
 
     /// Undo a prefetch this round then invalidated, or that the next round
@@ -1317,6 +1456,10 @@ public final class Qwen36MTPBlockSession {
     private func undoHeadPrefetch() {
         guard let step = pendingHeadStep else { return }
         pendingHeadStep = nil
+        // The chain rows sit above the flush rows, so trimming to the pre-flush
+        // offset below discards them with the flush. Only the host-side handle
+        // has to be dropped here.
+        pendingHeadChain = nil
         prefetchUndoCount += 1
         headHistoryBacklogHidden = step.preflushBacklogHidden
         headHistoryBacklogTokens = step.preflushBacklogTokens
@@ -1639,7 +1782,29 @@ public final class Qwen36MTPBlockSession {
         var draftIdArrays: [MLXArray] = [step.draftId]
         var draftHidden = step.draftHidden
         var draftId = step.draftId
-        for _ in 1 ..< draftCount {
+        // DEEPER STEPS MAY ALSO BE RUNNING. The previous round predicted this
+        // round's width and submitted that many steps. `take` is what this
+        // round actually wants: the surplus stays in the head cache as
+        // speculative rows and this round's own upkeep trims it, and a
+        // shortfall is chained below from the last prefetched hidden.
+        var chainStart = 1
+        var chainTake = 0
+        var chainOver = 0
+        if usedPrefetch, let chain = pendingHeadChain {
+            pendingHeadChain = nil
+            let take = Swift.min(chain.draftIds.count, draftCount - 1)
+            if take > 0 {
+                draftIdArrays.append(contentsOf: chain.draftIds[0 ..< take])
+                draftHidden = chain.draftHiddens[take - 1]
+                draftId = chain.draftIds[take - 1]
+                chainStart = take + 1
+                chainTake = take
+                prefetchChainUsedSteps += take
+            }
+            chainOver = chain.draftIds.count - take
+            prefetchChainOvershootSteps += chainOver
+        }
+        for _ in chainStart ..< draftCount {
             let headHidden = model.mtpHeadHiddenForward(
                 hidden: draftHidden, nextTokenIds: draftId, cache: headCache)
             draftHidden = Self.lastHiddenRow(headHidden)
@@ -1766,7 +1931,17 @@ public final class Qwen36MTPBlockSession {
             headCache: headCache, validHistoryOffset: validHistoryOffset,
             acceptedCount: acceptedCount, drafts: drafts,
             verifyHidden: verifyHidden, verifyNormed: verifyNormed)
-        prefetchHeadStep(hidden: pendingHidden!, primary: pendingPrimary!)
+        // Fold this round's outcome into the schedule's state BEFORE the
+        // prefetch, so the look-ahead that sizes the prefetched chain reads
+        // exactly what the next round will read. Both updates are pure host
+        // arithmetic over the accept walk; neither touches the target cache, so
+        // running them here changes no value either one produces.
+        fullAcceptStreak =
+            acceptedCount == drafts.count ? fullAcceptStreak + 1 : 0
+        recordAcceptOutcome(acceptedCount: acceptedCount, drafts: drafts)
+        prefetchHeadStep(
+            hidden: pendingHidden!, primary: pendingPrimary!,
+            offeredDepth: depth)
 
         if acceptedCount == drafts.count {
             // FULL ACCEPTANCE: the verify state IS the committed state. No
@@ -1822,9 +1997,6 @@ public final class Qwen36MTPBlockSession {
 
         if Self.traceRounds { tCommitDone = DispatchTime.now().uptimeNanoseconds }
 
-        fullAcceptStreak =
-            acceptedCount == drafts.count ? fullAcceptStreak + 1 : 0
-        recordAcceptOutcome(acceptedCount: acceptedCount, drafts: drafts)
         if Self.traceRounds {
             tRowTrace0 = DispatchTime.now().uptimeNanoseconds
             // Row i's distribution follows (primary + drafts[0..<i]); only
@@ -1938,6 +2110,20 @@ public final class Qwen36MTPBlockSession {
                 + "pf_made=\(prefetchMadeCount) "
                 + "pf_hits=\(prefetchHitCount) "
                 + "pf_undo=\(prefetchUndoCount) "
+                // E204 deeper-chain prefetch. `pf_chain` is the ARM WITNESS
+                // read from the run itself: it is the gate this round's tail
+                // resolved, so a leg cannot be attributed to an arm it did not
+                // execute. `pf_chain_take` is how many steps this round
+                // consumed and `pf_chain_over` how many it discarded, so a
+                // mispredicted width is visible per round rather than only in
+                // the totals.
+                + "pf_chain=\(Self.chainPrefetchEnabled(round: roundCount) ? 1 : 0) "
+                + "pf_chain_pred=\(prefetchChainPredicted) "
+                + "pf_chain_take=\(chainTake) "
+                + "pf_chain_over=\(chainOver) "
+                + "pf_chain_made=\(prefetchChainMadeSteps) "
+                + "pf_chain_used=\(prefetchChainUsedSteps) "
+                + "pf_chain_overs=\(prefetchChainOvershootSteps) "
                 + scheduleTrace + "\n"
             Self.traceWrite(line)
             Qwen35XSumsDedupCensus.rollRound()

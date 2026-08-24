@@ -185,6 +185,13 @@ def seam_report(merged: list[tuple[int, int]],
     seam_span, seam_idle, seam_idle_prod = [], [], []
     coherent_max, coherent_start = [], []
     slices: list[dict] = []
+    # RECOVERABILITY SPLIT. The window's GPU-idle time is the only pool early
+    # submission can physically remove from the round. The host chain-build
+    # time (`next_d_chain`) is host work that RELOCATES into the bookkeeping
+    # window rather than disappearing, so it is reported beside the pool and
+    # never added to it. The two are views of the same window, not a
+    # partition: the host builds the chain while the device is idle or busy.
+    seam_gpu_busy: list[float] = []
 
     for r, nxt in pairs:
         phases = window_phases(r, nxt, extended)
@@ -197,6 +204,7 @@ def seam_report(merged: list[tuple[int, int]],
         idle = span - busy
         seam_span.append(span / 1000.0)
         seam_idle.append(idle / 1000.0)
+        seam_gpu_busy.append(busy / 1000.0)
         # Production-equivalent window: the two instrument phases (row_dump,
         # trace_tail) exist only because the leg is traced, so their idle is
         # removed from the production figure rather than assumed small.
@@ -235,6 +243,14 @@ def seam_report(merged: list[tuple[int, int]],
         "seam_span_us": summarise(seam_span),
         "seam_idle_us": summarise(seam_idle),
         "seam_idle_us_production": summarise(seam_idle_prod),
+        "seam_gpu_busy_us": summarise(seam_gpu_busy),
+        "host_chain_build_us_median": (
+            st.median(per_phase_span["next_d_chain"])
+            if extended and per_phase_span.get("next_d_chain") else 0.0),
+        "host_chain_build_pct_of_round": (
+            100.0 * st.median(per_phase_span["next_d_chain"]) / round_us_median
+            if extended and per_phase_span.get("next_d_chain")
+            and round_us_median else 0.0),
         "seam_idle_pct_of_round": (
             100.0 * st.median(seam_idle_prod) / round_us_median
             if seam_idle_prod and round_us_median else 0.0),
@@ -260,6 +276,10 @@ def main() -> int:
     ap.add_argument("tag")
     ap.add_argument("--skip-rounds", type=int, default=8)
     ap.add_argument("--json", dest="json_path")
+    ap.add_argument("--timeline", type=int, default=0,
+                    help="print the GPU busy/idle timeline of the first N "
+                         "full-acceptance windows, offsets in us from "
+                         "t_eval_done")
     args = ap.parse_args()
 
     out = Path("research/out") / args.tag
@@ -374,6 +394,28 @@ def main() -> int:
                  block["largest_coherent_slice_us"]["max"]))
         print("slice start phase histogram: %s"
               % block["largest_coherent_slice_start_phase"])
+        print("recoverable pool (GPU idle) %.1f us vs GPU busy %.1f us; "
+              "host chain-build %.1f us (%.3f%% of round) RELOCATES, "
+              "not recovered"
+              % (block["seam_idle_us_production"]["median"],
+                 block["seam_gpu_busy_us"]["median"],
+                 block["host_chain_build_us_median"],
+                 block["host_chain_build_pct_of_round"]))
+        print()
+
+    for r, nxt in pairs_full[: args.timeline]:
+        t0 = r["t_eval_done"]
+        print("-- round %s d=%s acc=%s: offsets in us from t_eval_done --"
+              % (r.get("round"), r.get("d"), r.get("acc")))
+        for name, a, b in window_phases(r, nxt, True):
+            print("   phase %-16s %9.1f .. %9.1f"
+                  % (name, (a - t0) / 1000.0, (b - t0) / 1000.0))
+        for a, b in merged:
+            if b <= t0 or a >= nxt["t_chain_built"]:
+                continue
+            print("   GPU   %-16s %9.1f .. %9.1f  (%.1f us)"
+                  % ("busy", (a - t0) / 1000.0, (b - t0) / 1000.0,
+                     (b - a) / 1000.0))
         print()
 
     if args.json_path:
