@@ -462,6 +462,21 @@ def leg_bookkeeping(rounds: list[dict]) -> dict:
         return sum(record["acc"] for record in subset) / rows if rows else float("nan")
 
     capped = [record for record in rounds if record["cap"] is not None]
+    histogram: dict[int, int] = defaultdict(int)
+    bins: dict[int, dict] = defaultdict(
+        lambda: {"rounds": 0, "proposed": 0, "accepted": 0}
+    )
+    for record in rounds:
+        histogram[record["d"]] += 1
+        bucket = bins[record["d"]]
+        bucket["rounds"] += 1
+        bucket["proposed"] += record["d"]
+        bucket["accepted"] += record["acc"]
+    for bucket in bins.values():
+        bucket["accept_fraction"] = (
+            bucket["accepted"] / bucket["proposed"] if bucket["proposed"] else 0.0
+        )
+        bucket["tokens_per_round"] = 1.0 + bucket["accepted"] / bucket["rounds"]
     return {
         "rounds": count,
         "proposed": proposed,
@@ -472,8 +487,17 @@ def leg_bookkeeping(rounds: list[dict]) -> dict:
         "tokens_per_round": 1.0 + (accepted / count if count else 0.0),
         "accept_fraction_first_half": fraction(rounds[:half]),
         "accept_fraction_second_half": fraction(rounds[half:]),
+        # The chosen-depth histogram and the at-cap fraction answer the same
+        # question from two sides: how much of the depth axis is already spent.
+        "depth_histogram": dict(sorted(histogram.items())),
+        "depth_bins": {depth: bins[depth] for depth in sorted(bins)},
         "cap_stop_fraction": (
             sum(1 for record in capped if record["d"] >= record["cap"]) / len(capped)
+            if capped
+            else None
+        ),
+        "at_cap_fraction": (
+            sum(1 for record in capped if record["d"] == record["cap"]) / len(capped)
             if capped
             else None
         ),
@@ -797,6 +821,22 @@ def main() -> int:
                 f"halves {row['pinned']['accept_fraction_first_half']:.3f}"
                 f"/{row['pinned']['accept_fraction_second_half']:.3f}"
             )
+        print()
+        print("=== chosen-depth histogram and the easy/hard split, adaptive arm ===")
+        for row in report["arms"]["prompts"]:
+            counts = row["adapt"]
+            at_cap = counts["at_cap_fraction"]
+            print(
+                f"  {row['label']:<20} at_cap="
+                f"{('n/a' if at_cap is None else f'{at_cap:.3f}')}  "
+                f"depth histogram {counts['depth_histogram']}"
+            )
+            split = "  ".join(
+                f"d={depth}: n={bucket['rounds']} "
+                f"acc/prop={bucket['accept_fraction']:.3f}"
+                for depth, bucket in counts["depth_bins"].items()
+            )
+            print(f"  {'':<20} {split}")
         print()
 
     if "adapt" in report:

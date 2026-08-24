@@ -2,9 +2,9 @@
 # Research-only (qwen38-r1-e168-margin-clamp-calibration): collect the
 # per-round schedule signal across varied prose under one draft-depth arm.
 #
-#   research/e168_collect.sh ARM ID [ID ...]
+#   research/e168_collect.sh ARMS ID [ID ...]
 #
-#   ARM   adapt   the shipped adaptive schedule. Measures how often the margin
+#   ARMS  adapt   the shipped adaptive schedule. Measures how often the margin
 #                 clamp binds and how much offered depth it removes in
 #                 production. Its acceptance observations are CENSORED by the
 #                 clamp under test, so no calibration curve may be fitted here.
@@ -24,18 +24,28 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-arm="${1:?usage: research/e168_collect.sh ARM ID [ID ...]}"
+# ARMS is a comma list. Both arms of a prompt run back to back and the order
+# alternates from prompt to prompt, so an unfinished matrix still holds
+# complete prompt pairs and no arm sits systematically earlier in the session.
+arms="${1:?usage: research/e168_collect.sh ARMS ID [ID ...]}"
 shift
 (($#)) || { echo "e168_collect: need at least one prompt id" >&2; exit 2; }
 
 root="${E168_ROOT:-${PWD}/.mlxfast-private/e168}"
 out_root="${E168_OUT:-${PWD}/research/out/e168}"
 
-case "${arm}" in
-  adapt) unset MLX_E159_FIXED_DRAFT_DEPTH ;;
-  p[0-8]) export MLX_E159_FIXED_DRAFT_DEPTH="${arm#p}" ;;
-  *) echo "e168_collect: arm must be adapt or pN for N in 0..8" >&2; exit 2 ;;
-esac
+IFS=',' read -r -a arm_list <<<"${arms}"
+for arm in "${arm_list[@]}"; do
+  case "${arm}" in
+    adapt|p[0-8]) ;;
+    *) echo "e168_collect: arm must be adapt or pN for N in 0..8" >&2; exit 2 ;;
+  esac
+done
+
+# A stale `.build-worker` twin writes round lines without the schedule
+# snapshot, and benchmark-qwen-mtp.sh never rebuilds it. Fail before the GPU
+# time, not after it.
+research/e168_build.sh || exit 1
 
 export E37_ROOT="${root}"
 export E37_TOKENS="${E168_TOKENS:-512}"
@@ -43,17 +53,27 @@ export E37_GOLDEN_STEPS=512
 export E37_TRACE=1
 
 status=0
+index=0
 for id in "$@"; do
-  echo "=== e168_collect: arm=${arm} prompt=${id} ==="
-  research/e37-run.sh --census "${id}" || { status=1; break; }
-  dest="${out_root}/${arm}/${id}"
-  mkdir -p "$(dirname "${dest}")"
-  rm -rf "${dest}"
-  mv "${root}/runs/${id}" "${dest}" || { status=1; break; }
-  {
-    echo "e168_arm=${arm}"
-    echo "fixed_draft_depth=${MLX_E159_FIXED_DRAFT_DEPTH:-unset}"
-    echo "rounds_traced=$(grep -c '^mtp-trace: round=' "${dest}/trace.txt")"
-  } >> "${dest}/meta.txt"
+  order=("${arm_list[@]}")
+  ((index % 2)) && order=($(printf '%s\n' "${arm_list[@]}" | tail -r))
+  for arm in "${order[@]}"; do
+    case "${arm}" in
+      adapt) unset MLX_E159_FIXED_DRAFT_DEPTH ;;
+      *) export MLX_E159_FIXED_DRAFT_DEPTH="${arm#p}" ;;
+    esac
+    echo "=== e168_collect: arm=${arm} prompt=${id} ==="
+    research/e37-run.sh --census "${id}" || { status=1; break 2; }
+    dest="${out_root}/${arm}/${id}"
+    mkdir -p "$(dirname "${dest}")"
+    rm -rf "${dest}"
+    mv "${root}/runs/${id}" "${dest}" || { status=1; break 2; }
+    {
+      echo "e168_arm=${arm}"
+      echo "fixed_draft_depth=${MLX_E159_FIXED_DRAFT_DEPTH:-unset}"
+      echo "rounds_traced=$(grep -c '^mtp-trace: round=' "${dest}/trace.txt")"
+    } >> "${dest}/meta.txt"
+  done
+  index=$((index + 1))
 done
 exit "${status}"
