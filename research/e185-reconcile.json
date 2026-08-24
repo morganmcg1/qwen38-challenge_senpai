@@ -1,0 +1,94 @@
+{
+  "tag": "e185s3",
+  "harness": "local",
+  "official_or_ranked_score": false,
+  "gate_qualified_for_timing": "false",
+  "leg_role": "instrument-reconciliation",
+  "base_sha": "e02ef0ea78711cfc67d03bab181ffd39854095e5",
+  "worker_sha256": "9246a0b5cd457ffd29aaca6d3cfefbc4d881361e3393ea83751d9b2f8768193b",
+  "host": "ip-10-231-2-22.ec2.internal",
+  "chip": "Apple M4 Pro",
+  "tokens": "512",
+  "rounds_total": 78,
+  "rounds_skipped": 8,
+  "rounds_analysed": 70,
+  "decode_block_seconds": 9.743159083,
+  "axis_residual_span_s": 1.0001227855682373,
+  "clock_offset_drift_ns": 1697476,
+  "anchor_rounds_seen": 78,
+  "ledger_intervals": 5709,
+  "paired_samples": 343,
+  "paired_coverage_pct": 99.58746667628438,
+  "hardware_idle_us_per_round": 1093.3949142857143,
+  "hardware_idle_pct": 0.7888067368494007,
+  "ledger_idle_us_per_round_paired": 3471.8392,
+  "ledger_idle_us_per_round_block": 3494.526842857143,
+  "ledger_over_hardware_ratio": 3.1752838381071675,
+  "per_sample_regression": {
+    "n": 343,
+    "slope": 0.6099154971682125,
+    "intercept_us": -209.00686070823977,
+    "r": 0.8905668784721729,
+    "slope_through_origin": 0.5732222994844852
+  },
+  "gap_size_buckets": [
+    {
+      "bucket": "0-1us",
+      "gaps": 2850,
+      "gaps_per_round": 40.714285714285715,
+      "total_us_per_round": 34.73394285714286,
+      "share_of_ledger_idle_pct": 0.9939526699627298
+    },
+    {
+      "bucket": "1-5us",
+      "gaps": 487,
+      "gaps_per_round": 6.957142857142857,
+      "total_us_per_round": 9.1358,
+      "share_of_ledger_idle_pct": 0.26143167332291894
+    },
+    {
+      "bucket": "5-20us",
+      "gaps": 38,
+      "gaps_per_round": 0.5428571428571428,
+      "total_us_per_round": 7.873814285714286,
+      "share_of_ledger_idle_pct": 0.22531846626986032
+    },
+    {
+      "bucket": "20-100us",
+      "gaps": 9,
+      "gaps_per_round": 0.12857142857142856,
+      "total_us_per_round": 8.396428571428572,
+      "share_of_ledger_idle_pct": 0.24027368937202406
+    },
+    {
+      "bucket": "100-300us",
+      "gaps": 35,
+      "gaps_per_round": 0.5,
+      "total_us_per_round": 96.92204285714286,
+      "share_of_ledger_idle_pct": 2.7735383705880734
+    },
+    {
+      "bucket": "300-1000us",
+      "gaps": 26,
+      "gaps_per_round": 0.37142857142857144,
+      "total_us_per_round": 181.9237857142857,
+      "share_of_ledger_idle_pct": 5.205963321934133
+    },
+    {
+      "bucket": ">=1000us",
+      "gaps": 70,
+      "gaps_per_round": 1.0,
+      "total_us_per_round": 3155.541028571429,
+      "share_of_ledger_idle_pct": 90.29952180855025
+    }
+  ],
+  "hardware_total_reached_at_gap_us": 3624.25,
+  "background_duty_pct_pre": 8.531226328777874,
+  "background_duty_pct_post": 8.506848389221467,
+  "mtp_seconds_per_token": 0.0288236562628299,
+  "serial_seconds_per_token": 0.07430969551205635,
+  "effective_mean_draft_len": 6.358974358974359,
+  "accepted_draft_rate": 0.8770161290322581,
+  "all_tokens_matched": true,
+  "decode_tokens": 512
+}

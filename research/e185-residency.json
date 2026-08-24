@@ -1,0 +1,159 @@
+{
+  "tag": "e185s1",
+  "harness": "local",
+  "official_or_ranked_score": false,
+  "gate_qualified_for_timing": "false",
+  "leg_role": "gpu-residency-observation",
+  "base_sha": "a14d9dff55288f6176bdf2ff19fe6ac6684ca382",
+  "worker_sha256": "09d1064c735bb2911214730ceb6b2bea3dc64c3a81afe72ec7b892d596d3814f",
+  "host": "ip-10-231-2-22.ec2.internal",
+  "chip": "Apple M4 Pro",
+  "tokens": "512",
+  "sampler_interval_ms": "20",
+  "sample_period_ms_median": 27.583708,
+  "clock_offset_drift_ns": 1102090,
+  "axis_residual_span_s": 1.0006847381591797,
+  "rounds_total": 78,
+  "rounds_skipped": 8,
+  "rounds_analysed": 70,
+  "decode_block_seconds": 9.714584666,
+  "round_us_median": 145962.5205,
+  "round_us_mean": 138230.08277142857,
+  "samples_in_window": 344,
+  "sampled_seconds_in_window": 9.683187217,
+  "window_coverage_pct": 99.67680091244777,
+  "gpu_idle_pct": 0.5246458202399538,
+  "gpu_busy_pct": 99.47535417976005,
+  "gpu_idle_us_per_round": 725.7491,
+  "trace_emit_us_per_round": 241.33158571428572,
+  "gpu_idle_us_per_round_minus_trace_emit": 484.41751428571433,
+  "alignment_sensitivity": [
+    {
+      "shift_ms": -500.0,
+      "idle_pct": 5.180142193877158,
+      "idle_us_per_round": 7181.518071428572
+    },
+    {
+      "shift_ms": -27.583708,
+      "idle_pct": 0.6347053407465648,
+      "idle_us_per_round": 877.9252857142857
+    },
+    {
+      "shift_ms": 0.0,
+      "idle_pct": 0.5246458202399538,
+      "idle_us_per_round": 725.7491
+    },
+    {
+      "shift_ms": 27.583708,
+      "idle_pct": 0.5290281675295929,
+      "idle_us_per_round": 731.6425428571429
+    },
+    {
+      "shift_ms": 500.0,
+      "idle_pct": 0.5352049288595037,
+      "idle_us_per_round": 740.7776714285715
+    }
+  ],
+  "gpu_idle_pct_alignment_band": [
+    0.5246458202399538,
+    5.180142193877158
+  ],
+  "phase_profile": [
+    {
+      "bin": 0,
+      "position_lo": 0.0,
+      "position_hi": 0.1,
+      "elapsed_ms": 1014.691444,
+      "idle_ms": 23.395113,
+      "idle_pct": 2.3056381462895237,
+      "samples": 36
+    },
+    {
+      "bin": 1,
+      "position_lo": 0.1,
+      "position_hi": 0.2,
+      "elapsed_ms": 980.470866,
+      "idle_ms": 8.156583,
+      "idle_pct": 0.8319046779305322,
+      "samples": 34
+    },
+    {
+      "bin": 2,
+      "position_lo": 0.2,
+      "position_hi": 0.3,
+      "elapsed_ms": 993.624531,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 35
+    },
+    {
+      "bin": 3,
+      "position_lo": 0.3,
+      "position_hi": 0.4,
+      "elapsed_ms": 900.343906,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 32
+    },
+    {
+      "bin": 4,
+      "position_lo": 0.4,
+      "position_hi": 0.5,
+      "elapsed_ms": 1092.34432,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 39
+    },
+    {
+      "bin": 5,
+      "position_lo": 0.5,
+      "position_hi": 0.6,
+      "elapsed_ms": 927.257406,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 33
+    },
+    {
+      "bin": 6,
+      "position_lo": 0.6,
+      "position_hi": 0.7,
+      "elapsed_ms": 920.096822,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 33
+    },
+    {
+      "bin": 7,
+      "position_lo": 0.7,
+      "position_hi": 0.8,
+      "elapsed_ms": 1089.404903,
+      "idle_ms": 0.0,
+      "idle_pct": 0.0,
+      "samples": 39
+    },
+    {
+      "bin": 8,
+      "position_lo": 0.8,
+      "position_hi": 0.9,
+      "elapsed_ms": 870.788405,
+      "idle_ms": 1.634957,
+      "idle_pct": 0.18775594514260902,
+      "samples": 31
+    },
+    {
+      "bin": 9,
+      "position_lo": 0.9,
+      "position_hi": 1.0,
+      "elapsed_ms": 894.190156,
+      "idle_ms": 17.610992,
+      "idle_pct": 1.969490704167403,
+      "samples": 32
+    }
+  ],
+  "mtp_seconds_per_token": 0.028794890735298395,
+  "serial_seconds_per_token": 0.07376945298165083,
+  "effective_mean_draft_len": 6.358974358974359,
+  "accepted_draft_rate": 0.8770161290322581,
+  "all_tokens_matched": true,
+  "decode_tokens": 512
+}
