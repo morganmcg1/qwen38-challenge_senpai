@@ -67260,3 +67260,222 @@ is expected at width 9; that must still be confirmed from the dispatch.
 
 Three of the four live experiments target a channel capable of the 0.5 % to 1.0 %
 needed for the crown. That is the right portfolio.
+
+## Entry 354 — 2026-08-24T04:55:00Z — Prefill is a 10-sigma ranked instrument, it defines the top of the code board, and the mechanism that ruins ours is sitting in our own base
+
+Board snapshot `/tmp/board_t12.json`, 1299 rows, 828 usable
+(`len(per_prompt)==8`, `decode_tokens==512`, all `parity_ok`, prefill present).
+Crown unchanged: `ec24d591` newjordan **3.7291100105909**, promotedSourceRef
+`0863b06ac16e`.
+
+### A. Terminal receipt `180db842` — rejected at 3.70465399491642
+
+Edward's E167 (maintained base, two changes above `5a9f130a`) validated 02:50Z
+to 03:54:42Z and was **rejected**, 0.0861 % below our own best `5a9f130a`
+(3.70784519415395). Official slot released.
+
+Edward's own reading was "noise is the single most likely explanation,
+signal-to-noise 0.87, the experiment was unresolvable before it started". That
+reading is wrong, and the receipt itself contains the instrument that refutes
+it.
+
+### FINDING 388 — `prefill_seconds_per_token` is a candidate-side field with 0.200 % noise, and it resolves what `officialScore` cannot
+
+`officialScore` carries the pinned-serial lottery: single-receipt sd 0.271 %.
+`prefill_seconds_per_token` contains no serial term at all. Over our 32 normal
+receipts:
+
+```
+prefill mean 1.0294 ms/tok   sd 0.0021 ms   =  0.200 %
+```
+
+Two of our 34 receipts sit far outside that:
+
+| receipt | prefill | z | delta |
+|---|---|---|---|
+| `7226dc9a` 08-23T06:47 | 1.0503 | **+10.2 sigma** | +2.04 % |
+| `180db842` 08-24T02:50 | 1.0499 | **+10.0 sigma** | +2.00 % |
+
+All eight prompts move together in both; the minimum of each is above the
+maximum of every normal receipt we have ever produced.
+
+**Runner-state control (excluded).** For each receipt, every other solver's
+receipt within +/- 90 minutes:
+
+| receipt | its prefill | same-window median, other solvers | delta |
+|---|---|---|---|
+| `180db842` | 1.0499 | 1.0291 | **+2.03 %** |
+| `7226dc9a` | 1.0503 | 1.0291 | **+2.07 %** |
+| `1db9d63e` | 1.0277 | 1.0286 | −0.09 % |
+| `0cf1637e` | 1.0282 | 1.0291 | −0.08 % |
+| `5a9f130a` | 1.0300 | 1.0282 | +0.18 % |
+| `35a8a9de` | 1.0284 | 1.0289 | −0.05 % |
+
+The M5 was normal at those minutes. Our code was slow.
+
+**Rule.** Price a candidate's prefill from `prefill_seconds_per_token`, never
+from `officialScore`. A 1 % prefill effect is a 5-sigma ranked measurement; the
+same effect is 0.1 % of published score and invisible.
+
+### FINDING 389 — the mechanism is software-pipelined `qmm_t`, it is in the maintained base, and we have refuted it twice
+
+`origin/senpai/qwen38-mtp-r1` versus `upstream/main`, editable paths:
+
+```
+Sources/MLXFastModel/Qwen36MTPBlockSession.swift              +30
+Vendor/.../MLXLLM/Models/Qwen35.swift                         +88
+Vendor/.../metal/kernels/quantized.h                         +138
+Vendor/.../mlx-generated/quantized.cpp                       +138
+Vendor/.../metal/kernels/quantized_nax.h                      +80
+Vendor/.../mlx-generated/quantized_nax.cpp                    +80
+```
+
+The four quantized files add exactly one mechanism: a **software-pipelined,
+double-buffered weight tile in `qmm_t`**, with a new
+`QuantizedBlockLoader::shift_dst`. `upstream/main` has none of it.
+
+The kernel comment argues the double buffer "fits with headroom" at
+`2 * 64 * 72 * 2 = 18,432 B`. Fitting is not the question. Threadgroup memory
+is the occupancy limiter on Apple GPUs; 9,216 B to 18,432 B per threadgroup can
+halve resident threadgroups per core, and for a weight-load-latency-bound
+quantized GEMM that removes more latency hiding than double buffering adds.
+
+Prefill timeline, exact:
+
+```
+08-23 06:47  7226dc9a  1.0503   pipelining IN   (quantized.h only)
+08-23 09:23  0cf1637e  1.0282   OUT
+08-23 12:22  749da2cf  1.0286   OUT
+08-23 14:38  75a21a47  1.0273   OUT
+08-23 16:29  5a9f130a  1.0300   OUT  (organizer main byte for byte)
+08-23 18:20  1509bf95  1.0287   OUT
+08-23 23:31  35a8a9de  1.0284   OUT
+08-24 02:50  180db842  1.0499   BACK IN  (now also ported to quantized_nax.h)
+```
+
+`0cf1637e`'s note recorded that we "refused to restore the one our own receipt
+refuted". That refusal was right. The mechanism was re-introduced anyway, this
+time also ported to the `_nax` family, and cost the same 2 % again.
+
+**Code-only leg comparison, `180db842` vs `5a9f130a`:** prefill +1.71 % to
++2.09 %, mean candidate leg **+0.234 % slower**, decode flat. E167 is a pure
+prefill regression. Reverting the four files is worth **+0.195 % published**
+against `180db842`, at zero risk. Assigned to Edward as F5, revert only, no
+submission.
+
+### FINDING 390 — `_nax` kernels cannot run on any host we own
+
+`Vendor/.../backend/metal/device.cpp:913`:
+
+```c
+bool is_nax_available() {
+  if (__builtin_available(macOS 26.2, ...)) can_use_nax = true;
+  gen = d.get_architecture_gen();
+  can_use_nax &= gen >= (arch == 'p' ? 18 : 17);
+}
+```
+
+The M4 Pro is generation 16. On our fleet `qmm_t_nax` never executes; on the
+ranked M5 it does. Dispatch gate at `backend/metal/quantized.cpp:697`:
+`is_nax_available() && transpose && (K % 64 == 0) && dtype != float32`. With
+K = 5120 and bf16 activations the ranked prefill and every wide-verification
+projection take the `_nax` path.
+
+**Consequence.** Any edit confined to `quantized_nax.h`, `fp_quantized_nax.h`,
+`steel_*_nax.h` or their generated twins is **structurally unscreenable
+locally**. Its only instrument is an official receipt. Never bundle such an
+edit with a measured one — that is precisely how E167 inverted.
+
+**Related surface fact.** `backend/metal/quantized.cpp` is **not** on the
+89-path submitted surface. The tile geometry chosen there for `qmm_nax`
+(`bm=bn=bk=64, wm=wn=2`, one hardcoded shape for every M, N, K) therefore
+cannot be tuned by a candidate. Only the kernel body and the Swift-level op
+shapes are editable.
+
+`get_qmv_batch_limit(K=5120, N>4096)` returns 6, so `qmm` (hence `qmm_nax` on
+M5) serves both the 512-row seed prefill **and** every target projection at
+verification width M >= 6. This is the same M >= 6 boundary as FINDING 358.
+
+### FINDING 391 — prefill defines the top of the code board; the crown is only rank 7 by code
+
+Ranking all 828 usable receipts by candidate speed alone, substituting the
+pooled-mean serial draw per prompt so the serial lottery is removed
+(`code* = 0.5*beagle + 0.5*min(fast four)`, FINDING 382 structure):
+
+| rank | receipt | solver | code* | prefill | official |
+|---|---|---|---|---|---|
+| 1 | `8b84c190` | vibecodooor | 3.72883 | 0.9859 | 3.71979 |
+| 2 | `ac89ef87` | scarletbright | 3.72408 | 0.9856 | 3.72298 |
+| 3 | `43925f29` | Amal-David | 3.72136 | 0.9859 | 3.71654 |
+| 4 | `9f63972a` | ofou | 3.71767 | 1.0276 | 3.70222 |
+| 7 | `ec24d591` | newjordan (crown) | 3.71668 | 1.0277 | **3.72911** |
+| 28 | `5a9f130a` | us | 3.70897 | 1.0300 | 3.70785 |
+
+The top three have **worse** decode than the crown. Prefill alone lifts them
+above it. Synthetic board-best (best prefill 0.9756 plus best per-prompt
+decode) = **3.76343**, +1.47 % over us and +1.26 % over the crown.
+
+Seven receipts from four solvers sit at 0.9756 to 0.9859, in two discrete
+tiers, internally consistent across all eight prompts, all on the **pinned**
+head `559b24eb` — so this is not a head effect. Their same-window controls are
+−4.15 % to −5.63 %. **None of the seven was promoted**, so none of their
+sources is importable; the lowest prefill among all 59 promoted receipts is the
+crown's 1.0277.
+
+**Fixed-serial value to us:**
+
+| scenario | published* | vs anchor | vs crown code |
+|---|---|---|---|
+| anchor `5a9f130a` code | 3.707845 | — | −0.2073 % |
+| crown `ec24d591` code | 3.715548 | +0.2077 % | — |
+| anchor + prefill 0.9859 | 3.724359 | **+0.4454 %** | **+0.2371 %** |
+| anchor + prefill 0.9756 | 3.728132 | **+0.5471 %** | **+0.3387 %** |
+
+```
+decode improvement needed to match crown code, at our prefill  : 0.2306 %
+decode improvement needed to match crown code, at prefill 0.9756: -0.3746 %
+```
+
+Prefill converts the decode problem from 0.23 % to solved. Prefill share of the
+leg is 9.65 % on beagle and 10.49 % to 10.68 % on the four fast prompts — the
+prompts that decide our median (FINDING 382).
+
+### FINDING 392 — our best receipt is the organizer's own code, and nobody on the board has changed the drafting schedule
+
+`5a9f130a` declared every editable path to be organizer `main` at `0863b06a`,
+byte for byte, and it remains our highest official score. That is also the
+crown's `promotedSourceRef`. **No Senpai mechanism has yet produced a ranked
+receipt above the unmodified organizer surface.**
+
+Separately, `effective_mean_draft_len` is identical to four decimal places
+across `5a9f130a`, `180db842`, `ec24d591`, `8b84c190` and `ac89ef87`
+(beagle 4.3818, essays 5.0870, medicine 5.2556, republic 4.9892, botany 6.1481,
+drama 2.2976, travel 2.6479 / 2.648, plutarch 0.1557). The largest edl clusters
+are n=268 (best 3.25464), n=204 (best 3.68622) and n=98 (best 3.72911, the
+modern one). **The entire top of the board runs the organizer's unmodified
+drafting schedule**; the board is separated by runtime speed, not by
+speculation policy. This corroborates FINDING 379 and strengthens the case that
+`segmentedVerifyDepthCap` 7 to 8 is an empty cell.
+
+### ADVISOR ERROR 223 — the code* estimator carries about 0.2 % of decode noise
+
+`5a9f130a` and `ec24d591` are the same source and differ by 0.21 % on code*
+(beagle decode 9.6644 vs 9.6405). So the rank ordering inside the code* top
+twenty is **not resolved**, and FINDING 383's "replicable crown gap 0.061 %"
+should be read as "indistinguishable from zero", not as a measured value. The
+prefill column is unaffected: 4.2 % against a 0.200 % sd is 20 sigma. Every
+conclusion above that rests on prefill stands; every conclusion that rests on
+decode ordering between receipts does not.
+
+### Actions taken
+
+- Edward, PR #166 F4: full E167 diagnosis; drop the accept-ledger comparison
+  (`parity_ok` is true on all eight prompts of all 34 of our receipts, 272
+  ranked parity checks); the tail-of-window top-2 anomaly is a local
+  reference-versus-timed width artifact, not a ranked risk; adopt his
+  "no submission below 0.6 % predicted" bar.
+- Edward, PR #166 F5: revert the four quantized files to `upstream/main`,
+  confirm `shift_dst` is gone, run `research/twin_audit.py`, one 512-token
+  exactness pass, **record local `seed_prefill_seconds` either side of the
+  revert** as a transfer calibration, and do not submit.
+- Official slot free. No candidate currently clears the 0.6 % bar.

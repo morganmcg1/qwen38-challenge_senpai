@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-08-24T04:05:00Z",
+  "observedAt": "2026-08-24T04:55:00Z",
   "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
   "benchmark": {
     "id": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
@@ -413,7 +413,12 @@
       "reopenIf": "a solver ships a schedule-only change with an otherwise byte-identical scored surface and declares it"
     },
     "accept_ema_alpha": "estimator-noise Jensen gap measured in controller simulation at 0.12 rows (depth 6.880 at alpha 0.15 vs 7.000 at alpha 0.01), about +0.13 % of decode, and lowering it would slow adaptation on the non-stationary text that matters",
-    "external_offered_depth_cap": "mtp_max_draft_depth = 8 on 956 of 956 receipts and QwenRuntimeMTPDriver.swift:141-150 has no prompt input"
+    "external_offered_depth_cap": "mtp_max_draft_depth = 8 on 956 of 956 receipts and QwenRuntimeMTPDriver.swift:141-150 has no prompt input",
+    "software_pipelined_qmm": {
+      "closedAt": "2026-08-24T04:55:00Z",
+      "reason": "double-buffered weight tile in qmm_t measured +2.04 % and +2.00 % ranked prefill on two independent receipts (10.2 and 10.0 sigma); threadgroup memory 9216 -> 18432 B halves occupancy on a latency-bound quantized GEMM",
+      "reopenIf": "a variant is found that keeps threadgroup memory at or below 9216 B per threadgroup while still overlapping the load, AND it is measured on an official receipt"
+    }
   },
   "transferLaw": {
     "rule": "RULE 192",
@@ -826,7 +831,14 @@
     "216 UPDATE: closed completely by alphonse. Against his measured 255.5 GB/s peak the round runs at 80.3 % and local headroom is 18.23 ms, not the 39.6 ms I priced, and that channel transfers at 0.007x anyway.",
     "217 CLOSED: resolved by askeladd's E166 step 0. Digit-identical ledgers between island arms confirm FINDING 372 mechanism (b), so phi_acc = 0 survives.",
     "ADVISOR ERROR 221 (2026-08-24T04:05Z): FINDING 381 candidate 3, an external per-prompt offeredDepth cap, is refuted twice over - mtp_max_draft_depth = 8 on 956 of 956 board receipts, and askeladd refuted it at source in QwenRuntimeMTPDriver.swift:141-150 before spending GPU time. I had called it the largest and cheapest of three explanations.",
-    "ADVISOR ERROR 222 (2026-08-24T04:05Z): the E168 F2 section 6 value table (+1.4 % to +4.4 % published from moving all five drafting prompts to a model optimum) assumed one stationary acceptance rate per prompt. Simulating the actual controller shows no stationary rate reproduces any of the five ranked prompts, and a two-state mixture fits immediately. The table is an oracle ceiling, not available headroom. Retracted in F3 within 40 minutes. beagleDepthAnomaly withdrawn with it."
+    "ADVISOR ERROR 222 (2026-08-24T04:05Z): the E168 F2 section 6 value table (+1.4 % to +4.4 % published from moving all five drafting prompts to a model optimum) assumed one stationary acceptance rate per prompt. Simulating the actual controller shows no stationary rate reproduces any of the five ranked prompts, and a two-state mixture fits immediately. The table is an oracle ceiling, not available headroom. Retracted in F3 within 40 minutes. beagleDepthAnomaly withdrawn with it.",
+    {
+      "id": 223,
+      "at": "2026-08-24T04:55:00Z",
+      "error": "treated the code* / fixed-serial decode estimator as exact when pricing the crown gap",
+      "evidence": "5a9f130a and ec24d591 are the same source yet differ by 0.21 % on code* (beagle decode 9.6644 vs 9.6405)",
+      "correction": "FINDING 383's replicable crown gap 0.061 % must be read as indistinguishable from zero; rank ordering inside the code* top twenty is unresolved; the prefill column is unaffected at 20 sigma"
+    }
   ],
   "boardBuildClusters": {
     "finding": "FINDING 379",
@@ -1067,5 +1079,186 @@
     "assignedTo": "qwen-edward, E167 F3",
     "exactnessRisk": "comment :1031 warns drifted K/V rows from one wide forward contaminate every later round and stay invisible to an argmax-only check; 512-token gate required",
     "dispatchCheck": "G_min(M)=ceil(M/5) puts M=8 and M=9 both in G=2, no new weight-stream pass expected; confirm from dispatch"
+  },
+  "prefillInstrument": {
+    "finding": 388,
+    "claim": "prefill_seconds_per_token is a candidate-side ranked field with 0.200 % noise; use it, not officialScore, to price any candidate-runtime change",
+    "ourNormalReceipts": {
+      "n": 32,
+      "meanMsPerTok": 1.0294,
+      "sdMsPerTok": 0.0021,
+      "sdPct": 0.2
+    },
+    "officialScoreSdPct": 0.271,
+    "resolvingPower": "a 1 % prefill change is a 5-sigma ranked measurement and only 0.1 % of published score",
+    "runnerStateControlExcluded": {
+      "method": "compare each receipt with every other solver's receipt within +/-90 min",
+      "180db842": "+2.03 %",
+      "7226dc9a": "+2.07 %",
+      "normalControls": {
+        "1db9d63e": -0.09,
+        "0cf1637e": -0.08,
+        "5a9f130a": 0.18,
+        "35a8a9de": -0.05
+      }
+    },
+    "prefillShareOfLeg": {
+      "beagle": 9.65,
+      "essays": 10.49,
+      "medicine": 10.6,
+      "republic": 10.61,
+      "botany": 10.68,
+      "drama": 5.75,
+      "travel": 6.6,
+      "plutarch": 3.42
+    }
+  },
+  "pipelinedQmmRegression": {
+    "finding": 389,
+    "status": "REFUTED TWICE, PRESENT IN MAINTAINED BASE, REVERT ASSIGNED",
+    "mechanism": "software-pipelined double-buffered weight tile in qmm_t, adds QuantizedBlockLoader::shift_dst",
+    "filesInBaseNotInUpstream": [
+      "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h",
+      "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h",
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp",
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp"
+    ],
+    "threadgroupMemory": "9216 B -> 18432 B per threadgroup; occupancy limiter on Apple GPUs",
+    "rankedEvidence": {
+      "7226dc9a": {
+        "prefill": 1.0503,
+        "deltaPct": 2.04,
+        "sigma": 10.2,
+        "family": "quantized.h"
+      },
+      "180db842": {
+        "prefill": 1.0499,
+        "deltaPct": 2.0,
+        "sigma": 10.0,
+        "family": "both"
+      }
+    },
+    "codeOnlyLegCost": "+0.234 % mean candidate leg over the five scoring prompts, decode flat",
+    "revertValue": "+0.195 % published versus 180db842, zero risk",
+    "assignedTo": "qwen-edward PR #166 F5"
+  },
+  "naxUnmeasurableLocally": {
+    "finding": 390,
+    "gate": "device.cpp:913 is_nax_available() requires macOS >= 26.2 AND gpu arch gen >= 17 (>=18 for arch 'p')",
+    "ourFleet": "M4 Pro is generation 16 -> qmm_t_nax never executes locally",
+    "dispatchGate": "backend/metal/quantized.cpp:697 is_nax_available() && transpose && (K%64==0) && dtype!=float32",
+    "consequence": "any edit confined to *_nax.h or its generated twin is structurally unscreenable locally; only an official receipt can measure it; never bundle such an edit with a measured one",
+    "dispatchNotSubmitted": "backend/metal/quantized.cpp is NOT among the 89 editablePaths, so qmm_nax tile geometry (bm=bn=bk=64, wm=wn=2, one shape for all M,N,K) cannot be tuned by a candidate",
+    "qmmReach": "get_qmv_batch_limit(K=5120,N>4096)=6, so qmm_nax serves both the 512-row seed prefill and every target projection at verification width M>=6 (same boundary as FINDING 358)"
+  },
+  "prefillDefinesCodeBoard": {
+    "finding": 391,
+    "method": "code* = 0.5*beagle_raw + 0.5*min(fast four) with the pooled-mean serial draw substituted per prompt, over 828 usable receipts",
+    "top": [
+      {
+        "rank": 1,
+        "id": "8b84c190",
+        "solver": "vibecodooor",
+        "code": 3.72883,
+        "prefill": 0.9859,
+        "official": 3.71979
+      },
+      {
+        "rank": 2,
+        "id": "ac89ef87",
+        "solver": "scarletbright",
+        "code": 3.72408,
+        "prefill": 0.9856,
+        "official": 3.72298
+      },
+      {
+        "rank": 3,
+        "id": "43925f29",
+        "solver": "Amal-David",
+        "code": 3.72136,
+        "prefill": 0.9859,
+        "official": 3.71654
+      },
+      {
+        "rank": 7,
+        "id": "ec24d591",
+        "solver": "newjordan",
+        "code": 3.71668,
+        "prefill": 1.0277,
+        "official": 3.72911
+      },
+      {
+        "rank": 28,
+        "id": "5a9f130a",
+        "solver": "morganmcg1",
+        "code": 3.70897,
+        "prefill": 1.03,
+        "official": 3.70785
+      }
+    ],
+    "note": "the top three have WORSE decode than the crown; prefill alone lifts them above it",
+    "lowPrefillGroup": {
+      "n": 7,
+      "solvers": [
+        "vibecodooor",
+        "scarletbright",
+        "Amal-David",
+        "BitWonka"
+      ],
+      "tiers": [
+        0.9756,
+        0.9859
+      ],
+      "allOnPinnedHead": "559b24eb",
+      "noneWasPromoted": true
+    },
+    "lowestPromotedPrefill": 1.0277,
+    "syntheticBoardBest": {
+      "code": 3.76343,
+      "vsUs": 1.4684,
+      "vsCrown": 1.258
+    },
+    "fixedSerialValueToUs": {
+      "prefill_0.9859": {
+        "published": 3.724359,
+        "vsAnchorPct": 0.4454,
+        "vsCrownCodePct": 0.2371
+      },
+      "prefill_0.9756": {
+        "published": 3.728132,
+        "vsAnchorPct": 0.5471,
+        "vsCrownCodePct": 0.3387
+      }
+    },
+    "decodeNeededToMatchCrownCode": {
+      "atOurPrefillPct": 0.2306,
+      "atPrefill0p9756Pct": -0.3746
+    }
+  },
+  "organizerBaselineIsOurBest": {
+    "finding": 392,
+    "claim": "5a9f130a declared every editable path to be organizer main at 0863b06a byte for byte and remains our highest official score 3.70784519; that is also the crown promotedSourceRef",
+    "implication": "no Senpai mechanism has yet produced a ranked receipt above the unmodified organizer surface; each mechanism in the base must earn its place individually",
+    "scheduleUntouched": "effective_mean_draft_len is identical to 4 dp across 5a9f130a, 180db842, ec24d591, 8b84c190, ac89ef87; the entire top of the board runs the organizer's unmodified drafting schedule",
+    "edlClusters": {
+      "n268_best": 3.25464,
+      "n204_best": 3.68622,
+      "n98_best": 3.72911
+    },
+    "corroborates": 379
+  },
+  "latestOfficialReceipt": {
+    "id": "180db842",
+    "status": "rejected",
+    "officialScore": 3.70465399491642,
+    "commit": "b566c594",
+    "submittedSnapshot": "a69e3de131d626e72503e1a5510c489634603318",
+    "validatedAt": "2026-08-24T03:54:42Z",
+    "diagnosis": "pure prefill regression +2.00 % (FINDING 389); decode flat; slot released"
+  },
+  "officialSlot": {
+    "state": "free",
+    "since": "2026-08-24T03:54:42Z",
+    "bar": "no submission below 0.6 % predicted candidate-leg gain (adopted from Edward's E167 analysis)"
   }
 }
