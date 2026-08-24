@@ -158,6 +158,29 @@ def compare(base: dict, arm: dict, name: str) -> dict:
         if erosion_ulp[i] >= (base_ulp[i] if base_ulp[i] is not None else 0)
     )
 
+    # Cliff distance. A row flips when the erosion it draws exceeds its own
+    # margin. Pairing every measured margin with every measured erosion treats
+    # the two as independent, which is the honest way to ask how close this
+    # fixture came to a flip that a different prompt would have taken.
+    margins_sample = [m for m in base_ulp if m is not None]
+    flip_pairs = 0
+    if margins_sample and erosion_ulp:
+        ordered_erosion = sorted(erosion_ulp)
+        for margin in margins_sample:
+            low, high = 0, len(ordered_erosion)
+            while low < high:
+                mid = (low + high) // 2
+                if ordered_erosion[mid] > margin:
+                    high = mid
+                else:
+                    low = mid + 1
+            flip_pairs += len(ordered_erosion) - low
+    flip_probability = (
+        flip_pairs / (len(margins_sample) * len(erosion_ulp))
+        if margins_sample and erosion_ulp
+        else None
+    )
+
     # Drift versus position: mean absolute erosion over 64-row buckets.
     drift = []
     for start in range(0, window, 64):
@@ -209,6 +232,10 @@ def compare(base: dict, arm: dict, name: str) -> dict:
         ),
         "p99_top1_logit_delta_ulp": percentile(top1_delta_ulp, 0.99),
         "rows_where_erosion_reaches_baseline_margin": rows_erosion_exceeds_margin,
+        "independent_pairing_flip_probability_per_row": flip_probability,
+        "expected_flips_per_4096_row_ranked_run": (
+            None if flip_probability is None else flip_probability * 4096
+        ),
         "arm_margin_histogram": residual_buckets,
         "erosion_histogram": histogram,
         "drift_by_position": drift,
@@ -304,6 +331,8 @@ def main() -> None:
                 "mean_top1_logit_delta_ulp",
                 "p99_top1_logit_delta_ulp",
                 "rows_where_erosion_reaches_baseline_margin",
+                "independent_pairing_flip_probability_per_row",
+                "expected_flips_per_4096_row_ranked_run",
                 "verdict",
             ):
                 summary[f"{name}/{key}"] = result[key]
