@@ -89,11 +89,15 @@ def attach_offers(rounds: list[dict], total_tokens: int,
         emitted += min(1 + record["accepted"], total_tokens - emitted)
 
 
-def local_cost_table(rounds: list[dict], min_samples: int = 5) -> dict:
-    """Measured R(m) in ms from this leg, ranked-law filled where unseen."""
+def local_cost_table(rounds: list[dict], min_samples: int = 3) -> dict:
+    """Measured R(m) in ms pooled over legs, ranked-law filled where unseen.
+
+    Round 1 of every leg is dropped: it pays the cold verify build, which is a
+    warmup cost of the leg and not a cost of the width.
+    """
     by_width: dict[int, list[float]] = {}
     for record in rounds:
-        if record["round_us"] is None:
+        if record["round_us"] is None or record["round"] == 1:
             continue
         by_width.setdefault(1 + record["depth"], []).append(
             record["round_us"] / 1000.0)
@@ -125,6 +129,37 @@ def local_cost_table(rounds: list[dict], min_samples: int = 5) -> dict:
     }
 
 
+def _sched_fields(sched: str) -> list[float]:
+    """Every printed number of a `d:p/reach/threshold;` walk, in order."""
+    out = []
+    for step in sched.split(";"):
+        if not step:
+            continue
+        _, _, values = step.partition(":")
+        out.extend(float(v) for v in values.split("/"))
+    return out
+
+
+def witness_positive_control(rounds: list[dict], price: dict) -> int:
+    """Prove the witness comparison can fail.
+
+    Replay the same rounds under a DIFFERENT price and report how far the
+    printed fields move. A witness that cannot fail proves nothing.
+    """
+    worst = 0
+    for record in rounds:
+        _, sched, _ = R128.cost_model_depth(
+            record["ema"], record["margin"],
+            offered_depth=record["offer"], width_cap=record["cap"],
+            marginal=price["marginal"], cumulative=price["cumulative"])
+        shipped_fields = _sched_fields(record["sched"])
+        other_fields = _sched_fields(sched)
+        pairs = zip(shipped_fields, other_fields)
+        worst = max(worst, max((abs(round((a - b) * 1e6)) for a, b in pairs),
+                               default=0))
+    return worst
+
+
 def closed_form_witness(rounds: list[dict]) -> dict:
     """RULE 391(b) arm witness: the printed thresholds ARE the uniform price.
 
@@ -134,9 +169,18 @@ def closed_form_witness(rounds: list[dict]) -> dict:
     of `reach` over the accepted steps of the same walk. A byte-identical
     rebuild of the whole walk string therefore proves the shipped binary is
     running that price and nothing else.
+
+    The trace prints each field as `%.6f`, so a value that lands on a rounding
+    boundary can differ in its last printed digit while the underlying double
+    is the same. `field_max_ulp` is that distance in units of the last printed
+    place. It must stay at or below 1 for the witness to hold; a real price
+    change moves these fields by thousands of units.
     """
     checked = 0
     steps = 0
+    exact = 0
+    depth_hits = 0
+    max_ulp = 0
     mismatches = []
     for record in rounds:
         depth, sched, _ = R128.cost_model_depth(
@@ -144,17 +188,31 @@ def closed_form_witness(rounds: list[dict]) -> dict:
             offered_depth=record["offer"], width_cap=record["cap"])
         checked += 1
         steps += record["sched"].count(";")
-        if sched != record["sched"] or depth != record["depth"]:
-            if len(mismatches) < 8:
-                mismatches.append({
-                    "round": record["round"],
-                    "shipped_sched": record["sched"], "replayed_sched": sched,
-                    "shipped_depth": record["depth"], "replayed_depth": depth})
+        exact += sched == record["sched"]
+        depth_hits += depth == record["depth"]
+        shipped_fields = _sched_fields(record["sched"])
+        replay_fields = _sched_fields(sched)
+        if len(shipped_fields) != len(replay_fields):
+            mismatches.append({
+                "round": record["round"], "kind": "shape",
+                "shipped_sched": record["sched"], "replayed_sched": sched})
+            continue
+        ulp = max((abs(round((a - b) * 1e6))
+                   for a, b in zip(shipped_fields, replay_fields)), default=0)
+        max_ulp = max(max_ulp, ulp)
+        if ulp > 1 or depth != record["depth"]:
+            mismatches.append({
+                "round": record["round"], "kind": "value", "ulp": ulp,
+                "shipped_sched": record["sched"], "replayed_sched": sched,
+                "shipped_depth": record["depth"], "replayed_depth": depth})
     return {
         "rounds_checked": checked,
         "steps_checked": steps,
+        "sched_byte_identical": exact / checked if checked else 0.0,
+        "depth_agreement": depth_hits / checked if checked else 0.0,
+        "field_max_ulp": max_ulp,
         "sched_agreement": (checked - len(mismatches)) / checked if checked else 0.0,
-        "mismatches": mismatches,
+        "mismatches": mismatches[:8],
     }
 
 
@@ -217,6 +275,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("ship_dir", type=pathlib.Path)
     parser.add_argument("--live", type=pathlib.Path)
+    parser.add_argument("--cost-leg", type=pathlib.Path, action="append",
+                        default=[],
+                        help="extra leg pooled into the measured local R(m); "
+                             "the shallow arm covers the widths the shipped "
+                             "arm never visits")
     parser.add_argument("--tokens", type=int, default=256)
     parser.add_argument("--json", type=pathlib.Path)
     args = parser.parse_args()
@@ -229,7 +292,11 @@ def main() -> int:
     meta = R128.read_meta(args.ship_dir)
 
     witness = closed_form_witness(rounds)
-    local = local_cost_table(rounds)
+    cost_rounds = list(rounds)
+    for extra in args.cost_leg:
+        cost_rounds.extend(read_rounds_with_cost(extra))
+    local = local_cost_table(cost_rounds)
+    local["pooled_legs"] = [str(args.ship_dir)] + [str(p) for p in args.cost_leg]
 
     print("E200 step 2 -- exact per-round replay")
     print("leg          %s" % args.ship_dir)
@@ -239,9 +306,18 @@ def main() -> int:
     print("rounds       %d" % len(rounds))
     print()
     print("RULE 391(b) arm witness -- shipped sched= string vs uniform price")
-    print("  rounds checked   %d" % witness["rounds_checked"])
-    print("  walk steps       %d" % witness["steps_checked"])
-    print("  sched agreement  %.6f" % witness["sched_agreement"])
+    print("  rounds checked        %d" % witness["rounds_checked"])
+    print("  walk steps            %d" % witness["steps_checked"])
+    print("  depth agreement       %.6f" % witness["depth_agreement"])
+    print("  sched byte identical  %.6f" % witness["sched_byte_identical"])
+    print("  sched agreement <=1ulp %.6f" % witness["sched_agreement"])
+    control = witness_positive_control(
+        rounds, DESK.table_price(RANKED_R_MS, level=SHIP_LEVEL))
+    witness["positive_control_max_ulp"] = control
+    print("  max field distance    %d units in the last printed place"
+          % witness["field_max_ulp"])
+    print("  positive control      %d units under the rstep price "
+          "(the comparison can fail)" % control)
     for bad in witness["mismatches"]:
         print("  MISMATCH round %d: %s != %s"
               % (bad["round"], bad["replayed_sched"], bad["shipped_sched"]))
