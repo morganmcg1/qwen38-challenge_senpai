@@ -68443,3 +68443,255 @@ Thorfinn's contrast is therefore additive with the revert and needs no replay. P
   decision rule for another student's lever; optimism-transfer firing rate and 0.95-cap cost
   added.
 - **alphonse, PR #169.** Unchanged. FINDING 400 (a)/(b)/(c) arithmetic remains priority 1.
+
+## Entry 359 — 2026-08-24T05:35:00Z — the marginal row is a weight stream, the per-round fixed cost is real, and the next two receipts measure the transfer coefficient we have been guessing at
+
+Two terminal results landed together and both are merged. Between them they close one long-running
+measurement question, withdraw a rule the campaign has been pricing against for several rounds, and
+turn the next pair of official submissions into a direct instrument.
+
+Base moved twice this cycle:
+
+```
+1a90f503  ledger 358
+99a81d6a  merge E169  (Alphonse, PR 169)   candidate surface unchanged
+b51f893a  merge E165  (Thorfinn, PR 165)   Qwen36MTPBlockSession.swift +319 -124
+```
+
+---
+
+### FINDING 404 — the marginal verified row is a weight stream, and it is a step function, not a rate
+
+Alphonse, E169, PR 169, commit `ab733b4e`, W&B `ak9rx812`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ak9rx812
+
+The local pass-cost model on g16s is
+
+```
+T(M) = fixed + sum over groups of pass(NA)
+fixed     = 11.792 ms
+pass(2)   = 55.008 ms   96.0 % of the 273 GB/s roof
+pass(3)   = 53.841 ms   98.1 %
+pass(4)   = 61.336 ms   86.1 %
+pass(5)   = 71.758 ms   73.6 %
+max residual 2.09 % over all eight routed widths
+```
+
+Compute sits at 23-47 % of the 7.506 TFLOP/s roof at every width. The rate tracks `NA`, the number
+of active inputs in the group, and not `M`. **Compute never binds. The stream always nearly binds.**
+
+The row is therefore a step function and the 7.002 ms/row figure is an average over it:
+
+```
+NA 2 -> 3   -1.167 ms   free
+NA 3 -> 4   +7.494 ms
+NA 4 -> 5  +10.422 ms
+group crossing  +53.8 to +71.8 ms
+```
+
+Attribution with a null control: a null wrapper costs +0.06 to +0.48 ms, the mlp arm removes 3.7 to
+70.2 ms, and mlp is 64.08 % of the marginal row. Bottom-up gives 63.6 % and a static FLOP count
+gives 66.20 %. The 30.8 % residual is **un-intercepted rather than unattributed** — the fast path
+calls free routing functions, not `callAsFunction`, so only the mlp arm has an interception point.
+
+Three independent estimators of `b` close at 7.002, 7.1883 and 6.739 ms/row, a 3.8 % spread. The
+census intercept of 50.50 against E163's 57.384 puts **6.88 ms/round of head cost in `a`, not `b`**.
+
+Sub-hypotheses closed: H1 GDN, 23.47 % over 48 layers against full attention at 7.43 % over 16, with
+recurrence at 2.29 %. H2 readout, lm_head 4.09 % and top-2 at +0.07 %. H3 confirms ADVISOR ERROR 224
+— wasted rows are 8.63 %, not the 20 % I claimed.
+
+#### LAW 377 loses its disjointness, distribution-free
+
+This is the part that changes pricing everywhere.
+
+```
+B_w  = 14.41235 GB per forward
+roof = 614 GB/s on M5
+one weight pass = 23.47 ms
+
+ranked round model  T(M) = 16.1585 + 5.3350 * M   ms
+```
+
+One weight pass is **larger than the entire M-independent term**. Fitting a pass inside `a` needs
+891.9 GB/s, 145 % of roof. So at least 7.31 ms of weight stream sits inside the `5.3350 * M` term,
+which is at least 1.359 ms/row and at least 25.5 % of the ranked marginal row on beagle.
+
+**LAW 377 channels 1 and 2 are not disjoint. "Price c at zero, price b at 1.31x" is WITHDRAWN.**
+
+Every transfer coefficient derived from that decomposition is now unsupported. Unsupported is not
+refuted — the numbers may still be right — but nothing currently justifies them.
+
+#### Two retractions from the same experiment
+
+1. **FINDING 395's narrow-output deficit has no measured basis.** Matched-weight-byte cells with `n`
+   and `k` transposed differ by 3.2 % or less. A byte law fitted on the synthetic grid predicts all
+   seven scored shapes out of sample within -0.97 % / +0.75 %, including lm_head at 715 MB, which is
+   14x outside the fitted range, at +0.10 %.
+2. **Split-K is not bit-exact.** `acc[r]` is lane-private with a sequential ascending-block chain and
+   a single `simd_sum` after the loop, so any split reassociates floating-point addition. Drop the
+   prior.
+
+#### The named mechanism, now assigned as E170
+
+`Qwen35.swift:1442  constexpr int rows_per_simd = 4`, inside `qwen_e120_qmv_wide` at `:1427`, with
+`VF acc[rows_per_simd]` at `:1449` and `VF partial[rows_per_simd]` at `:1483`. Register state is
+about 60 vector floats per thread at NA=5. Halving at high NA is bit-exact by construction because
+the per-row `k` chain and the `simd_sum` width are both unchanged.
+
+Local upper bounds: T(4) -9.2 %, T(5) -21.4 %, T(7) -6.4 %, T(8) -11.2 %. NA=5 is beagle's modal
+width. Shipped `inputsPerGroup` is optimal at every reachable width, confirming LAW 354.
+
+Gates on `ab733b4e`: ranked-score-boundary PASS, source budget 2,619,256 of 3,000,000, growth 0 of
+262,144, and 0 of 89 editablePaths touched.
+
+---
+
+### FINDING 405 — cross-round head-chain prefetch is real at 4.8 sigma and recovers 58 % of the idle window
+
+Thorfinn, E165, PR 165, commit `471c0b17`, W&B `w6of7408` and `h98ly6un`
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/w6of7408
+https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/h98ly6un
+
+Pooled over sixteen thermally gated 512-token legs, two ABBA palindrome replicates, natural schedule:
+
+```
+rep1    n=4/4  off 0.028612  on 0.028513   -0.3486 %  (2s 0.1644)   -654.8 us/round
+rep2    n=4/4  off 0.028578  on 0.028513   -0.2256 %  (2s 0.1736)   -423.2 us/round
+POOLED  n=8/8  off 0.028595  on 0.028513   -0.2872 %  (2s 0.1196)   -539.0 us/round
+effect / sigma = 4.80
+```
+
+Gates, all sixteen legs: one accept-ledger tuple `(rounds=78, proposed=496, accepted=435)`; `edl` and
+`accepted_draft_rate` each single-valued; 513/513 hexfloat rows exact in both replicates with a firing
+one-ulp positive control; `all_tokens_matched` true and `residual_divergence_count` 0 everywhere; real
+40 C gate passed on every leg; one worker digest `ed085186` asserted before and after every leg; one
+session commit `5a7e765d`.
+
+Serial-leg negative control is null at -0.0209 % with a 2 sigma of 0.1095 % containing zero, so the
+effect is confined to the candidate MTP leg. Thermal balance runs against the mechanism: the off arm
+entered 0.59 C hotter.
+
+Recovery is 58 % of the 925 us of measured hardware idle at the natural `edl = 6.359`. `commit` at
+433.1 us is untouched and is now the largest single remaining term.
+
+#### Two corrections to campaign record, both accepted
+
+1. **Per-leg timing noise on Thorfinn's host is 0.120 %**, about 3x the 0.039 % floor several
+   assignments have been quoting. The 0.039 % figure is retired campaign-wide. Any contrast targeting
+   less than about 0.3 % on that host needs two replicates.
+2. **The earlier 4.33 % GPU-idle figure was a six-second sampling artefact.** Full legs put it at
+   0.87 % and 0.66 %. The intra-queue bubble it implied does not exist.
+
+#### Advisor decision: MERGED over the student's own bar
+
+Thorfinn predeclared -0.35 % and reported -0.2872 %, 82 % of it, and correctly recorded that his
+promotion rule did not fire. He led with the pooled figure rather than rep 1's more favourable
+-0.3486 %, refused to reclassify by switching to the ranked pricing channel after measuring, and
+revised my composed arithmetic downward unprompted.
+
+I merged it anyway. A predeclared minimum useful effect is a stop rule against noise and against
+sunk GPU cost. Neither condition binds here: 4.80 sigma, a null serial control, a thermal bias
+against the mechanism, a digit-identical accept ledger and exact rows. The campaign rule is to merge
+a real improvement even when small unless the complexity is disproportionate, and 319/-124 lines in
+one editable file for the largest per-round mechanism this campaign has produced is not
+disproportionate.
+
+Recorded so future bars are calibrated: **a student's predeclared bar governs the student's decision
+to continue spending, not the advisor's decision to compose.**
+
+---
+
+### FINDING 406 — the next two receipts measure the LAW 377 transfer coefficient directly
+
+`fda590bb-e1c7-4b2b-b65b-1de67aa15e52` was submitted by Edward at 2026-08-24T05:00:39Z and is
+validating. It is the revert **alone**. Thorfinn's E171 candidate is the revert **plus E165 and
+nothing else**. The pair is a matched ranked A/B of one mechanism on the official runner.
+
+With `tau` the true ranked transfer coefficient of the `per_round_fixed` channel, using FINDING 382
+published weights and FINDING 387 decode shares:
+
+```
+beagle   539.0*tau / 44983 us = 1.1982 %*tau of round, x 0.9035 = 1.0826 %*tau of leg
+essays   539.0*tau / 48932 us = 1.1015 %*tau of round, x 0.8951 = 0.9860 %*tau of leg
+published gain = 0.4781*1.0826 + 0.5219*0.9860 = 1.0322 % * tau
+
+composed score = 3.712098 * (1 + 0.010322 * tau)
+
+  tau = 0.34   ->  3.725128     Thorfinn's figure, reproduced exactly
+  tau = 0.444  ->  3.729110     dead level with the crown
+  tau = 0.50   ->  3.731259
+  tau = 1.00   ->  3.750408
+```
+
+**PRE-REGISTERED before either receipt: the composed candidate takes the crown if and only if
+`tau > 0.444`.**
+
+Inversion once both land:
+
+```
+tau_measured = (composed published score / 3.712098 - 1) / 0.010322
+sigma_tau    = 0.271 % * sqrt(2) / 1.0322 % = 0.371
+```
+
+That separates `tau = 0.34` from `tau = 1.0` at about 1.8 sigma. Not decisive alone, but it is the
+first direct ranked measurement of a LAW 377 transfer coefficient the campaign has ever had, and it
+costs nothing because both candidates were going to be fired regardless.
+
+#### The two readings, stated so the receipt can adjudicate them
+
+**(a) Host-serial, `tau` near 1.** The 539.0 us came out of measured hardware GPU idle. Host CPU work
+and protocol round-trips do not accelerate because the GPU does. On M5 the GPU finishes each round
+sooner, so a fixed host cost is a larger share of the round and less likely to be hidden. This
+reading is if anything conservative on M5.
+
+**(b) Overlapped, `tau` near 0.** `a = 16.1585` ms is almost exactly the 16.16 ms of the 23.47 ms
+weight pass not already carried by the slope, leaving no room for exposed host cost in the ranked
+M-independent term. On that reading MLX already hides the host chain on M5.
+
+The local half is settled cheaply by one powermetrics residency leg with the mechanism ON, comparing
+`gpu_idle_window` against the 925 us measured OFF at the same `edl`. Assigned as E171 item 2, after
+the submission is away.
+
+Under reading (a), `commit` at 433.1 us is worth `433.1/539.0 * 1.0322 = 0.829 %` published on its
+own. That is the largest single unclaimed per-round item on the board.
+
+---
+
+### Composition plan, revised on the student's own pooled number
+
+```
+last receipt       3.70465399   180db842
+revert alone       x 1.002010 = 3.712098   fda590bb, validating
++ E165 at tau=0.34 x 1.003510 = 3.725128
++ E165 at tau=1.00 x 1.010322 = 3.750408
+crown                           3.729110   ec24d591 newjordan
+```
+
+At `tau = 0.34` the shortfall is 0.1069 %, which is 0.39 sigma at an `officialScore` sd of 0.271 %,
+so about a 35 % crown probability. The probability is a strictly increasing function of a number we
+cannot measure any other way, and 0.34 is the low end of its plausible range, not the centre.
+
+---
+
+### Advisor error 227
+
+I told Thorfinn to price his mechanism on the LAW 377 `per_round_fixed` channel at 0.34, and he did,
+faithfully. FINDING 404 landed the same hour and withdrew the decomposition that produced 0.34. The
+error is not the coefficient — it is that I handed out a transfer coefficient as a constant without
+recording the derivation that would let a student notice when it stopped being supported. Transfer
+coefficients now travel with their derivation or they do not travel.
+
+---
+
+### State after this entry
+
+```
+base                b51f893a   organizer main + Qwen35.swift(88) + Qwen36MTPBlockSession(30 + E165)
+official slot       occupied by fda590bb since 05:00:39Z
+next candidate      E171, revert composed onto b51f893a, frozen and held for the slot
+edward   PR 166     receipt watcher on fda590bb, push the submitted commit
+thorfinn PR 171     compose, freeze, fire, then the residency verdict
+askeladd PR 168     per-position p_d census against the FINDING 403 ladder
+alphonse PR 170     rows_per_simd occupancy, local upper bound -21.4 % at NA=5
+```

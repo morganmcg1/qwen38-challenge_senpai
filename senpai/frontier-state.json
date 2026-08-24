@@ -141,6 +141,12 @@
       "ledgerEntry": 358,
       "rule": "never hand a student a per-receipt file attribution without quoting the ledger line that established it",
       "source": "campaign-ledger.md:55278 and :56583 had already settled the attribution"
+    },
+    {
+      "id": 227,
+      "at": "2026-08-24T05:35:00Z",
+      "error": "I handed Thorfinn the LAW 377 per_round_fixed transfer coefficient 0.34 as a constant. FINDING 404 landed the same hour and withdrew the channel decomposition that produced it. The fault is not the number: it is that a transfer coefficient travelled without its derivation, so the student could not notice when it stopped being supported.",
+      "rule": "transfer coefficients travel with their derivation or they do not travel"
     }
   ],
   "b1Prize": {
@@ -363,7 +369,11 @@
       "reason": "refuted on the ranked host by three independent board arms; c47b45be 3.649616 and 24fb4012 3.692476 shipped the exact table entry and lost",
       "reopenIf": "the ranked host generation changes"
     },
-    "width_table": "CLOSED by proof, ledger 350.8, LAW 354. G_min(M) = ceil(M/5). The shipped activeInputGroups table at Qwen35.swift:1715-1729 is exactly LAW-354-optimal at every width 2-8, and among G_min configurations it also takes the lowest NA. At width 6, G = 1 needs IPG >= 6 hence NA >= 6, which crosses the register occupancy cliff between NA = 5 and NA = 6, and M = 6 / IPG = 5 is illegal under static_assert(M % IPG != 1) at Qwen35.swift:1542. Reopen only if the cliff itself moves or a kernel change removes the register pressure."
+    "width_table": "CLOSED by proof, ledger 350.8, LAW 354. G_min(M) = ceil(M/5). The shipped activeInputGroups table at Qwen35.swift:1715-1729 is exactly LAW-354-optimal at every width 2-8, and among G_min configurations it also takes the lowest NA. At width 6, G = 1 needs IPG >= 6 hence NA >= 6, which crosses the register occupancy cliff between NA = 5 and NA = 6, and M = 6 / IPG = 5 is illegal under static_assert(M % IPG != 1) at Qwen35.swift:1542. Reopen only if the cliff itself moves or a kernel change removes the register pressure.",
+    "narrowOutputGemmDeficit": "RETRACTED, not closed: FINDING 395 had no measured basis (FINDING 404)",
+    "splitKAsABitExactLever": "CLOSED: split-K reassociates FP addition, never bit-exact (FINDING 404)",
+    "gdnRecurrenceAsADecodeTarget": "CLOSED: recurrence is 2.29 % of the marginal row (FINDING 404 H1)",
+    "lmHeadReadoutAsADecodeTarget": "CLOSED: lm_head 4.09 %, top-2 +0.07 % (FINDING 404 H2)"
   },
   "compositionPlanForFreeSlot": {
     "bar": "0.6 % predicted published gain",
@@ -410,24 +420,26 @@
     "solver": "newjordan"
   },
   "crownAttemptArithmetic": {
-    "composition": {
-      "afterMechanism": 3.727925,
-      "afterRevert": 3.712098,
-      "crown": 3.72911,
-      "from": 3.70465399,
-      "pBeatCrown": 0.45,
-      "shortfallPct": 0.032
+    "lastReceipt": {
+      "id": "180db842",
+      "score": 3.70465399491642
     },
-    "harness": "ranked",
-    "ledgerEntry": 358,
-    "thorfinnRanked": {
-      "beaglePctLeg": -0.4472,
-      "channel": 0.34,
-      "essaysPctLeg": -0.4072,
-      "localPerRoundUs": -654.8,
-      "publishedPct": 0.4263,
-      "rankedPerRoundUs": -222.6
-    }
+    "revertAlone": {
+      "multiplier": 1.00201,
+      "score": 3.712098,
+      "id": "fda590bb",
+      "status": "validating"
+    },
+    "composed": "3.712098 * (1 + 0.010322 * tau)",
+    "crown": {
+      "id": "ec24d591",
+      "solver": "newjordan",
+      "score": 3.7291100105909,
+      "promotedSourceRef": "0863b06ac16e26e48fc06e97444095b00feb66d4"
+    },
+    "crownThreshold": "tau > 0.444",
+    "probabilityAtTau034": 0.35,
+    "officialScoreSdPct": 0.271
   },
   "crownGapDecomposition": {
     "campaignTarget": "1.0 % of candidate MTP time takes the crown with near certainty",
@@ -818,11 +830,19 @@
     "finding": 397,
     "ledgerEntry": 356,
     "priced": "non_drafting_round_count = 0 on every weighted prompt, so a width-1 target verify never happens there.",
-    "sourceComment": "Qwen35.swift:1700-1704 \u2014 \"M=1 stays on MLX (serial and the candidate share it, so speeding it does not move the ratio).\""
+    "sourceComment": "Qwen35.swift:1700-1704 — \"M=1 stays on MLX (serial and the candidate share it, so speeding it does not move the ratio).\""
   },
   "maintainedBaseChanges": {
-    "censusCounters": "kept: qwen35XSumsSidecarHits, qwen35XSumsStandaloneFills, qwen35DerivedCluster* (E160 needs them)",
-    "derivedClusterRowsPerLeaf": "reverted 16 -> 8 on FINDING 323"
+    "baseSha": "b51f893ad2414c7ea819aa10b0981957c8bb2e1c",
+    "submittedSurfaceVsUpstreamMain": [
+      "Sources/MLXFastModel/Qwen36MTPBlockSession.swift  30 pre-existing lines + E165 (+319/-124)",
+      "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift  88",
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized.cpp  138  REVERT TARGET",
+      "Vendor/mlx-swift/Source/Cmlx/mlx-generated/quantized_nax.cpp  80  REVERT TARGET",
+      "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h  138  REVERT TARGET",
+      "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h  80  REVERT TARGET"
+    ],
+    "afterRevertTheSurfaceIs": "organizer main plus exactly two files, 30+E165 and 88 lines"
   },
   "marginalRowShare": {
     "beagle": {
@@ -861,70 +881,9 @@
     "source": "Edward E164, ledger 350.6"
   },
   "narrowOutputGemmDeficit": {
-    "axisStatus": "reopened on ranked-only grounds, see rankedRowThroughputGap",
-    "blockingPrecondition": "Prove from source whether qwen35RoutedQuantizedMM sends every width in 2...9 to Qwen35CustomQMV unconditionally, or whether M >= 6 can fall through to MLX qmm and therefore qmm_nax on the M5. Same question for the 512-row prefill. If widths 6..9 fall through, the 52.4 % of beagle rounds that saturate at cap 7 are unscreenable on any host we own.",
-    "channel": "b, the only channel that transfers at better than 1x (1.31x, LAW 377)",
-    "deficitMsPerRow": 0.783,
-    "deficitShareOfRow": 0.115,
-    "exactnessArgument": "Remapping output rows to threadgroups does not change any per-output-row K reduction, so an exact route exists in principle.",
-    "finding": 395,
-    "foundBy": "qwen-alphonse",
-    "ledgerEntry": 355,
-    "observation": "Every n = 5120 output shape runs at 5.6 to 6.5 TFLOP/s while every n >= 14336 shape runs at 7.1 to 9.1, in the same kernel.",
-    "rank": "Largest priced mechanism in the campaign. The crown gap is 0.575 %; a 20 % recovery is 2.4x that gap.",
-    "rankedPricing": {
-      "beagle": {
-        "M": 5.3818,
-        "msPerTokenSaved": 0.7094,
-        "mtpAfter": 9.984,
-        "mtpBefore": 10.693,
-        "rawAfter": 3.805,
-        "rawBefore": 3.552,
-        "tokensPerRound": 4.6545
-      },
-      "deficitMsPerRankedRow": 0.6135,
-      "essays": {
-        "M": 6.087,
-        "msPerTokenSaved": 0.6711,
-        "mtpAfter": 9.15,
-        "mtpBefore": 9.821,
-        "rawAfter": 4.152,
-        "rawBefore": 3.868,
-        "tokensPerRound": 5.5652
-      },
-      "publishedFullRecovery": "+7.25 %",
-      "publishedTwentyPercentRecovery": "+1.45 %"
-    },
-    "refusedMechanism": "Instantiating NA=6 so M=6 takes one group is the E163 arm killed by FINDING 375 (24fb4012 WIDTH-6 +0.395 +/- 0.107). The whole c column is priced at zero officially.",
-    "shapes": {
-      "full_attn.o_proj": {
-        "calls": 16,
-        "deficitMs": 0.066,
-        "k": 6144,
-        "msPerRow": 0.1767,
-        "n": 5120,
-        "tflops": 5.696
-      },
-      "linear_attn.out_proj": {
-        "calls": 48,
-        "deficitMs": 0.205,
-        "k": 6144,
-        "msPerRow": 0.5362,
-        "n": 5120,
-        "tflops": 5.632
-      },
-      "mlp.down": {
-        "calls": 64,
-        "deficitMs": 0.512,
-        "k": 17408,
-        "msPerRow": 1.7641,
-        "n": 5120,
-        "tflops": 6.467
-      }
-    },
-    "status": "WITHDRAWN as a novel finding",
-    "withdrawalReason": "campaign-ledger.md:50661 already records the same structure: at M=6 the one-pass plan launches one column of 640 threadgroups on the N=5120 shapes, and 640 is at the occupancy floor of a 20-core part. Rule 83 then applies: a g16s occupancy closure is not M5 evidence because the M5 has second-generation Dynamic Caching and a redesigned occupancy unit. The +7.25 % published figure was built on the g16s throughput table and is withdrawn with it.",
-    "withdrawnBy": "qwen-alphonse, self-correction"
+    "status": "RETRACTED by FINDING 404",
+    "wasFinding": 395,
+    "reason": "matched-weight-byte cells with n and k transposed differ <= 3.2 %; a byte law fitted on the synthetic grid predicts all 7 scored shapes out of sample within -0.97 %/+0.75 %, including lm_head at 715 MB, 14x outside the fitted range, at +0.10 %"
   },
   "naxUnmeasurableLocally": {
     "consequence": "any edit confined to *_nax.h or its generated twin is structurally unscreenable locally; only an official receipt can measure it; never bundle such an edit with a measured one",
@@ -959,12 +918,16 @@
     ],
     "supersedes": "E167 F4 item 5"
   },
-  "observedAt": "2026-08-24T05:05:00Z",
-  "observedAtNote": "Board re-read at 2026-08-24T01:50Z, 1286 rows. Crown unchanged. Ledger 351 replaces the campaign local-to-ranked pricing model.",
+  "observedAt": "2026-08-24T05:35:00Z",
+  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
   "officialSlot": {
-    "observedAt": "2026-08-24T04:23:48Z",
-    "plan": "composed F5 revert plus E165 per-round fixed cost",
-    "state": "free"
+    "state": "OCCUPIED",
+    "submissionId": "fda590bb-e1c7-4b2b-b65b-1de67aa15e52",
+    "submittedAt": "2026-08-24T05:00:39.098Z",
+    "contents": "revert alone, no E165",
+    "predictedScore": 3.712098,
+    "owner": "qwen-edward",
+    "nextInQueue": "E171 composed candidate, qwen-thorfinn, frozen and held"
   },
   "onlyExactRoundCostOnBoard": {
     "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
@@ -1259,13 +1222,13 @@
     "ledgerEntry": 356,
     "ruledIn": [
       "the gated-delta sequential walk at T = 512: GatedDelta.swift:60, 512-step serial chain, 48 times per forward, 302.0 MB float32 state read plus write, grid (32, Dv, B*Hv), no T dimension, static FLOP share 0.44 % so FLOP analysis hides it",
-      "warmup and shape misses inside the timed leg \u2014 the shape of a discrete two-tier effect, which is what the board shows",
+      "warmup and shape misses inside the timed leg — the shape of a discrete two-tier effect, which is what the board shows",
       "call-count reduction that changes no reduction order"
     ],
     "ruledOut": [
-      "tuning qmm_nax tile geometry \u2014 backend/metal/quantized.cpp is not in editablePaths and :481-485 is hardcoded",
+      "tuning qmm_nax tile geometry — backend/metal/quantized.cpp is not in editablePaths and :481-485 is hardcoded",
       "routing prefill into Qwen35CustomQMV by widening widths",
-      "any decode-row mechanism \u2014 Alphonse owns it"
+      "any decode-row mechanism — Alphonse owns it"
     ]
   },
   "prefillPool": {
@@ -1346,9 +1309,9 @@
     "foundBy": "advisor source read",
     "ledgerEntry": 356,
     "narrowOutputShapesRouted": "mlp.down k=17408, linear_attn.out_proj k=6144, full_attn.o_proj k=6144, all n=5120, all k%512==0, all >= 4096. All routed to us.",
-    "prefillRouteConfirmed": "Qwen36MTPBlockSession.swift:649-652 \u2014 one call of width 512, nConfirmed 0, no chunking.",
+    "prefillRouteConfirmed": "Qwen36MTPBlockSession.swift:649-652 — one call of width 512, nConfirmed 0, no chunking.",
     "refused": "Widening widths to reach m = 512. Qwen35CustomQMV is a wide-QMV design for M <= 9 and would lose to a tensor-core path at M = 512, and we cannot measure _nax on any host we own.",
-    "routableGuards": "Qwen35.swift:1770-1794 \u2014 bits 4, groupSize 64, affine, bf16/uint32, w.dim(1)==k/8, k%512==0, n%8==0, n>=4096, m in widths, x.dim(-2)==m, row contiguity. NO device gate, no is_nax_available, no GPU generation test.",
+    "routableGuards": "Qwen35.swift:1770-1794 — bits 4, groupSize 64, affine, bf16/uint32, w.dim(1)==k/8, k%512==0, n%8==0, n>=4096, m in widths, x.dim(-2)==m, row contiguity. NO device gate, no is_nax_available, no GPU generation test.",
     "seedPrefill": "M = 512 is outside widths, falls through to MLX quantizedMM and therefore qmm_nax on the M5. Receipt-only.",
     "source": "Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift",
     "widths": "2 ... 9 at Qwen35.swift:1704"
@@ -1417,7 +1380,10 @@
       "4d1123ce 0.325 %"
     ],
     "source": "zero-draft receipts, identical work on all 8 prompts",
-    "typicalCvPercent": "0.12 to 0.19"
+    "typicalCvPercent": "0.12 to 0.19",
+    "thorfinnHostPerLegPct": 0.12,
+    "retired_0039_floor": "the 0.039 % per-leg floor quoted in several assignments is RETIRED; Thorfinn measured 0.120 % on his host across 16 gated legs, about 3x",
+    "gpuIdle433Artefact": "the earlier 4.33 % GPU-idle figure was a six-second sampling artefact; full legs give 0.87 % and 0.66 %; the intra-queue bubble it implied does not exist"
   },
   "rankedPrefill": {
     "kPrefill": 0.372,
@@ -1731,74 +1697,19 @@
     "documentedIn": "senpai/experiment-runbook.md"
   },
   "transferLaw": {
-    "consequence": "Compute-bound arms transfer to the ranked host with k below 1. Bandwidth-bound arms transfer with k above 1. Never quote a single campaign-wide k.",
-    "kByArmResource": {
-      "bandwidthBound": 1.355,
-      "bandwidthBoundAgreementPct": 0.6,
-      "bandwidthBoundIndependentCheck": 1.363,
-      "computeBound": 0.388,
-      "computeBoundAgreementPct": 4.0,
-      "computeBoundIndependentCheck": 0.372
+    "name": "LAW 377",
+    "status": "PARTIALLY WITHDRAWN by FINDING 404 on 2026-08-24",
+    "withdrawn": "channels 1 and 2 are NOT disjoint; \"price c at zero, price b at 1.31x\" is withdrawn",
+    "proof": "B_w = 14.41235 GB/forward; at the 614 GB/s M5 roof one weight pass is 23.47 ms, larger than the whole M-independent term a = 16.1585 ms. Fitting a pass inside a needs 891.9 GB/s = 145 % of roof. So >= 7.31 ms of weight stream sits in the 5.3350*M term, >= 1.359 ms/row, >= 25.5 % of the ranked marginal row on beagle.",
+    "rankedRoundModel": "T(M) = 16.1585 + 5.3350 * M  ms",
+    "consequence": "every transfer coefficient derived from that decomposition is unsupported, not refuted",
+    "measuredTransfersStillStanding": {
+      "decodeRoundM5vsM4Pro": 2.947,
+      "specBandwidth": 2.175,
+      "seedPrefill": 1.955
     },
-    "law377": {
-      "channels": [
-        {
-          "channel": "extra whole weight-stream pass",
-          "evidence": "FINDING 375; alphonse six gated 512-token legs; RULE 372 on 24fb4012 vs three parents",
-          "local_m4pro": "+28.605 +/- 0.448 ms/round",
-          "rankedValueOfOneLocalMs": 0.0,
-          "ranked_m5": "about -0.19 ms/round"
-        },
-        {
-          "channel": "marginal verified row",
-          "evidence": "destepped E159 fit 1.621x, chord 1.510x, alphonse isolated B 1.312x; RULE 192 predicts 1.355x",
-          "local_m4pro": "7.00 to 8.65 ms/row",
-          "rankedValueOfOneLocalMs": "0.62 to 0.76 ms",
-          "ranked_m5": "5.3350 +/- 0.1164 ms/row",
-          "transfer": "1.312x to 1.621x"
-        },
-        {
-          "channel": "per-round fixed part, composite",
-          "local_m4pro": "47.756 ms/round",
-          "note": "agrees with RULE 192 decode-round factor 2.947x to 0.3 percent; composite of host and GPU, so pure host work should transfer nearer 1x",
-          "rankedValueOfOneLocalMs": 0.34,
-          "ranked_m5": "16.1585 ms/round",
-          "transfer": "2.955x"
-        },
-        {
-          "channel": "seed prefill",
-          "evidence": "RULE 192, unaffected by FINDING 375",
-          "rankedValueOfOneLocalMs": 0.13,
-          "transfer": "7.593x"
-        }
-      ],
-      "ledgerEntry": 351,
-      "statement": "LAW 377 - a local measurement has no ranked value until its channel is named."
-    },
-    "ledgerEntry": 342,
-    "localRoundLaw": {
-      "crossEstimatorResidualMaxMs": 0.124,
-      "harness": "local, g16s",
-      "identityResidualMs": 0.0,
-      "independentIntercept": "askeladd 57.83 ms, agrees to 0.8 %",
-      "law": "R = 57.384 + 7.002*rows + 28.605*(G-1)",
-      "pooledSdMs": 0.2238
-    },
-    "prefillGapCause": "Almost certainly NAX. The ranked M5 is GPU architecture generation 17 and the advisor M4 Pro is generation 16, so the ranked host can run _nax kernels that this host cannot.",
-    "rankedHostIdentity": {
-      "chip": "M5 Max",
-      "consequence": "590 GB/s is not self-evidently impossible there; FINDING 375 rests on the disproportion test instead",
-      "disproportionTest": "the second weight stream is 22.35 % of the local round; an equal ranked share would be 10.93 ms; the measured ranked effect is -0.20 ms",
-      "metalCacheKey": "mlx-metallib-m5-max-v2",
-      "runner": "m5-max-128gb-3"
-    },
-    "rankedToLocalSpeedups": {
-      "bandwidthSpec": 2.175,
-      "decodeRound": 2.947,
-      "prefill": 7.593
-    },
-    "rule": "RULE 192",
-    "statement": "k = (R_local / R_ranked) divided by the ranked-to-local speedup of the resource the arm saves."
+    "perRoundFixedTau": "UNKNOWN; the fda590bb / E171 receipt pair measures it directly",
+    "rule": "transfer coefficients now travel with their derivation or they do not travel"
   },
   "twinWaiverRuling": {
     "conditions": [
@@ -1916,5 +1827,123 @@
       }
     ],
     "rule": "RULE 372"
+  },
+  "marginalRowIsAWeightStream": {
+    "finding": 404,
+    "student": "qwen-alphonse",
+    "pr": 169,
+    "commit": "ab733b4e",
+    "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/ak9rx812",
+    "localPassCostModel": "T(M) = 11.792 ms fixed + sum over groups of pass(NA); max residual 2.09 % over 8 routed widths",
+    "passMs": {
+      "NA2": 55.008,
+      "NA3": 53.841,
+      "NA4": 61.336,
+      "NA5": 71.758
+    },
+    "roofFractionOf273GBs": {
+      "NA2": 0.96,
+      "NA3": 0.981,
+      "NA4": 0.861,
+      "NA5": 0.736
+    },
+    "computeRoofFraction": "23-47 % of 7.506 TFLOP/s at every width",
+    "conclusion": "rate tracks NA not M; compute never binds; the stream always nearly binds",
+    "rowIsAStepFunction": {
+      "NA2to3": -1.167,
+      "NA3to4": 7.494,
+      "NA4to5": 10.422,
+      "groupCrossingMs": "53.8 to 71.8"
+    },
+    "mlpShareOfMarginalRow": 0.6408,
+    "mlpShareCorroboration": "bottom-up 63.6 %, static FLOP 66.20 %",
+    "residualIsUninterceptedNotUnattributed": "the fast path calls free routing functions, not callAsFunction; only the mlp arm has an interception point",
+    "bEstimatorsMsPerRow": [
+      7.002,
+      7.1883,
+      6.739
+    ],
+    "headCostInAnotB": "6.88 ms/round; census intercept 50.50 vs E163 57.384",
+    "closedSubHypotheses": {
+      "H1_GDN": "23.47 % over 48 layers vs full-attn 7.43 % over 16; recurrence 2.29 %",
+      "H2_readout": "lm_head 4.09 %, top-2 +0.07 %",
+      "H3_wastedRows": "8.63 %, confirms ADVISOR ERROR 224 that 20 % was wrong"
+    }
+  },
+  "crossRoundHeadChainPrefetch": {
+    "finding": 405,
+    "student": "qwen-thorfinn",
+    "pr": 165,
+    "commit": "471c0b175957e8b11f2618819ad7ce4287b883a4",
+    "wandb": [
+      "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/w6of7408",
+      "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/h98ly6un"
+    ],
+    "pooledEffectPct": -0.2872,
+    "twoSigmaPct": 0.1196,
+    "effectOverSigma": 4.8,
+    "usPerRound": -539.0,
+    "replicates": {
+      "rep1": {
+        "pct": -0.3486,
+        "twoSigma": 0.1644,
+        "usPerRound": -654.8
+      },
+      "rep2": {
+        "pct": -0.2256,
+        "twoSigma": 0.1736,
+        "usPerRound": -423.2
+      }
+    },
+    "legs": 16,
+    "gates": "one accept-ledger tuple (78, 496, 435); edl and accepted_draft_rate single-valued; 513/513 hexfloat rows exact in both replicates with a firing one-ulp positive control; all_tokens_matched true; residual_divergence_count 0; real 40 C gate on every leg; worker digest ed085186 before and after every leg; session commit 5a7e765d",
+    "serialNegativeControlPct": -0.0209,
+    "serialNegativeControlTwoSigmaPct": 0.1095,
+    "thermalBias": "off arm entered 0.59 C hotter, against the mechanism",
+    "idleRecoveredFraction": 0.58,
+    "idleWindowUsAtNaturalEdl": 925,
+    "nextTarget": "commit at 433.1 us, untouched, largest remaining term",
+    "advisorDecision": "MERGED over the student predeclared bar of -0.35 %",
+    "rule": "a student's predeclared bar governs the student's decision to keep spending, not the advisor's decision to compose"
+  },
+  "transferCoefficientInstrument": {
+    "finding": 406,
+    "design": "fda590bb is the revert ALONE; the E171 candidate is the revert PLUS E165 and nothing else. The pair is a matched ranked A/B of one mechanism on the official runner.",
+    "publishedGainFormula": "published gain = 1.0322 % * tau",
+    "derivation": "beagle 539.0*tau/44983 = 1.1982 %*tau of round x 0.9035 decode share = 1.0826 %*tau of leg; essays 539.0*tau/48932 = 1.1015 %*tau x 0.8951 = 0.9860 %*tau; published = 0.4781*1.0826 + 0.5219*0.9860",
+    "composedScore": "3.712098 * (1 + 0.010322 * tau)",
+    "table": {
+      "tau_0.34": 3.725128,
+      "tau_0.444": 3.72911,
+      "tau_0.50": 3.731259,
+      "tau_1.00": 3.750408
+    },
+    "preRegistered": "the composed candidate takes the crown if and only if tau > 0.444",
+    "inversion": "tau_measured = (composed published score / 3.712098 - 1) / 0.010322",
+    "sigmaTau": 0.371,
+    "separation": "separates tau = 0.34 from tau = 1.0 at about 1.8 sigma",
+    "readingA": "host-serial, tau near 1: the 539 us came out of measured hardware GPU idle; host CPU and protocol time do not accelerate with the GPU; on M5 the round is shorter so a fixed host cost is a LARGER share and less likely hidden",
+    "readingB": "overlapped, tau near 0: a = 16.1585 ms is almost exactly the 16.16 ms of the 23.47 ms weight pass not carried by the slope, leaving no room for exposed host cost",
+    "localAdjudicator": "one powermetrics residency leg with the mechanism ON vs the 925 us measured OFF at the same edl; E171 item 2",
+    "commitTermValueUnderReadingA": "433.1/539.0 * 1.0322 = 0.829 % published"
+  },
+  "splitKBitExactPrior": {
+    "status": "DROPPED",
+    "reason": "acc[r] is lane-private with a sequential ascending-block chain and one simd_sum after the loop, so any split reassociates FP addition; split-K is NOT bit-exact",
+    "source": "FINDING 404, Alphonse E169"
+  },
+  "rowsPerSimdMechanism": {
+    "assignedAs": "E170, qwen-alphonse, PR 170",
+    "anchor": "Qwen35.swift:1442 constexpr int rows_per_simd = 4, inside qwen_e120_qmv_wide at :1427",
+    "state": "VF acc[rows_per_simd] :1449, VF partial[rows_per_simd] :1483; ~60 vector floats/thread at NA=5",
+    "bitExactByConstruction": "per-row k chain unchanged, simd_sum width unchanged",
+    "localUpperBounds": {
+      "T4": -0.092,
+      "T5": -0.214,
+      "T7": -0.064,
+      "T8": -0.112
+    },
+    "note": "NA=5 is beagle modal width; shipped inputsPerGroup optimal at every reachable width, LAW 354 confirmed",
+    "gridHazard": "out_row = tid.y*8 + simd_gid*rows_per_simd has a hard-coded 8; needs a static_assert tying tile/simdgroup/rows_per_simd"
   }
 }
