@@ -130,26 +130,50 @@ def publish_leg(leg: dict, base_sha: str, tokens: int) -> tuple[str, str]:
     return run_id, url
 
 
+# Tree digests of the two head caches a --local-submit run can reach, resolved
+# against the rule in Sources/MLXFastTrustedHarness/QwenMTPHeadDeclaration.swift.
+HEAD_DIGESTS = {
+    "declared":
+        "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+    "pinned":
+        "3a7fed842fd881b5a697273345e21ff7b8aa664f1eb177c9c58d8ba1137745b9",
+}
+
+
 def publish_confirmation(
     score_path: pathlib.Path, base_sha: str, candidate_sha: str,
-    worker_sha256: str, entry_temps_c: list[float],
+    worker_sha256: str, entry_temps_c: list[float], head_class: str,
 ) -> tuple[str, str]:
-    """The single 512-token gated --local-submit confirmation.
+    """One 512-token gated --local-submit confirmation.
 
     Unlike the Stage 1 screen legs this run IS gate-qualified: both timed legs
     passed the real 40C cool gate. It carries no arm contrast, because there is
     only one arm once the switch is deleted.
+
+    `head_class` records WHICH proposal head the run measured. benchmark-qwen-mtp.sh
+    takes the head directory from MLXFAST_QWEN_MTP_HEAD_DIR and does not read the
+    tracked manifest, so a clean-environment launch reaches the pinned cache while
+    the research leg runner reaches the declared one. Only a `declared` run
+    confirms a candidate that ships a head declaration.
     """
     payload = json.loads(score_path.read_text())
     metrics = payload["metrics"]
 
+    expected = HEAD_DIGESTS[head_class]
+    actual = metrics["head_provenance_sha256"]
+    if actual != expected:
+        raise SystemExit(
+            f"head_provenance_sha256 {actual} does not match --head-class "
+            f"{head_class} ({expected}); refusing to publish a mislabelled run"
+        )
+
     run = wandb.init(
         entity=ENTITY,
         project=PROJECT,
-        name="e193-stage2-confirmation-512",
+        name=f"e193-stage2-confirmation-512-{head_class}-head",
         job_type="e193-stage2-confirmation",
         tags=["e193", "e165-retest", "harness=local", "gate-qualified",
-              "local-submit", "tokens=512"],
+              "local-submit", "tokens=512", f"head={head_class}"],
         config={
             "harness": "local",
             "experiment": "e193-e165-round-start-prefetch-retest",
@@ -165,6 +189,8 @@ def publish_confirmation(
             "gpu_temp_entry_c_serial": entry_temps_c[0],
             "gpu_temp_entry_c_mtp": entry_temps_c[1],
             "arm": "on-unconditional",
+            "head_class": head_class,
+            "confirms_submitted_configuration": head_class == "declared",
         },
     )
     run.summary.update({
@@ -198,6 +224,8 @@ def main() -> int:
                         help="also publish one run per timed leg")
     parser.add_argument("--confirmation-json", type=pathlib.Path,
                         help="publish ONLY the 512-token gated confirmation")
+    parser.add_argument("--head-class", choices=sorted(HEAD_DIGESTS),
+                        help="which proposal head the confirmation measured")
     parser.add_argument("--candidate-sha")
     parser.add_argument("--worker-sha256")
     parser.add_argument("--entry-temps-c", nargs=2, type=float,
@@ -205,9 +233,11 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.confirmation_json:
+        if not args.head_class:
+            parser.error("--confirmation-json requires --head-class")
         run_id, url = publish_confirmation(
             args.confirmation_json, args.base_sha, args.candidate_sha,
-            args.worker_sha256, args.entry_temps_c)
+            args.worker_sha256, args.entry_temps_c, args.head_class)
         print(f"confirmation {run_id}  {url}")
         return 0
 
