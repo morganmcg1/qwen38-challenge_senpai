@@ -25,6 +25,8 @@ import re
 import statistics
 
 OUT = pathlib.Path(__file__).resolve().parent / "out"
+PROJECT = "qwen38-mlx-challenge-senpai"
+ENTITY = "wandb-applied-ai-team"
 
 ARMS = ("s", "o", "r", "f")
 PALINDROME = ("s", "o", "r", "f", "f", "r", "o", "s")
@@ -124,6 +126,62 @@ def leg(tag: str) -> dict[str, object] | None:
         "tokens": m.get("tokens"),
         "census": census(out / "trace.txt"),
     }
+
+
+def wandb_run(label: str):
+    """Resume the session's single W&B run, creating it on the first call.
+
+    RULE 374: a session longer than one hour publishes each leg as that leg
+    finishes, so a session that dies at leg six still leaves five legs of
+    evidence. Every leg is a separate process, so the run id is held on disk
+    and every call resumes the same run.
+    """
+    import wandb
+
+    path = OUT / f"e174-screen-{label}-wandb.txt"
+    run_id = path.read_text().strip() if path.exists() else wandb.util.generate_id()
+    run = wandb.init(
+        entity=ENTITY,
+        project=PROJECT,
+        id=run_id,
+        resume="allow",
+        name=f"e174-screen-{label}",
+        job_type="screen",
+        tags=["e174", "harness:local", "xsums", "fill-coefficient", "gated"],
+        config={
+            "experiment": "e174-xsums-epilogue-extension",
+            "harness": "local",
+            "official_or_ranked_score": False,
+            "design": "palindrome s o r f f r o s, four arms, two contrasts",
+            "arms": {
+                "s": "shipped sumtable: 127 epilogues, 130 standalone fills",
+                "o": "MLX_E174_XSUMS_SIDECAR=off: 0 epilogues, 257 fills",
+                "r": "MLX_E120_QMV_ARM=replica: 0 fills, no consume",
+                "f": "MLX_E120_QMV_ARM=fill_noconsume: 257 fills, no consume",
+            },
+            "contrasts": {k: v["mechanism"] for k, v in CONTRASTS.items()},
+        },
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(run_id + "\n")
+    return run
+
+
+def publish_leg(label: str, tag: str) -> int:
+    entry = leg(tag)
+    if entry is None:
+        print(f"e174_screen: no score.json for {tag}; nothing to publish")
+        return 0
+    run = wandb_run(label)
+    census_stats = entry.pop("census", {})
+    payload = {f"leg/{k}": v for k, v in entry.items() if not isinstance(v, dict)}
+    payload.update({f"census/{k}": v for k, v in census_stats.items()
+                    if not isinstance(v, list)})
+    payload["leg/arm_index"] = ARMS.index(entry["arm"]) if entry["arm"] in ARMS else -1
+    run.log(payload)
+    run.finish()
+    print(f"e174_screen: published {tag} to run {run.id}")
+    return 0
 
 
 def witness(label: str) -> int:
@@ -362,14 +420,32 @@ def report(label: str) -> int:
     path = OUT / f"e174-screen-{label}.json"
     path.write_text(json.dumps(out, indent=2) + "\n")
     print(f"\nwrote {path}")
+
+    run = wandb_run(label)
+    run.summary["screen"] = out
+    for name, r in out["contrasts"].items():
+        if "mtp" not in r:
+            continue
+        run.summary[f"{name}/effect_pct"] = r["mtp"]["effect_pct_no_drift"]
+        run.summary[f"{name}/se_pp"] = r["mtp"]["se_pp_no_drift"]
+        run.summary[f"{name}/us_per_cell"] = r["us_per_cell"]
+        run.summary[f"{name}/us_per_cell_2se_upper"] = r["us_per_cell_2se_upper"]
+        run.summary[f"{name}/serial_null_pct"] = r["serial_null"][
+            "effect_pct_no_drift"
+        ]
+    run.finish()
+    print(f"published the screen summary to run {run.id}")
     return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("command", choices=["witness", "report"])
+    ap.add_argument("command", choices=["witness", "report", "leg"])
     ap.add_argument("--label", default="s1")
+    ap.add_argument("--tag")
     args = ap.parse_args()
+    if args.command == "leg":
+        return publish_leg(args.label, args.tag)
     return witness(args.label) if args.command == "witness" else report(args.label)
 
 

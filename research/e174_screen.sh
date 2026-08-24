@@ -56,6 +56,14 @@ apply_arm() {
 
 clear_arm() { unset MLX_E174_XSUMS_SIDECAR MLX_E120_QMV_ARM; }
 
+# RULE 137 forbids a leg's failure from being silent, and RULE 374 requires a
+# session over an hour to publish each leg as it finishes. A publish failure
+# must not abort the session: the leg's evidence is already on disk.
+publish_leg() {
+  python3 research/e174_screen.py leg --label "${label}" --tag "$1" \
+    || echo "e174_screen: W&B publish failed for $1; evidence is on disk" >&2
+}
+
 # PHASE 0: warmup, ungated, shipped arm, full length (Rule 137).
 warm_tag="e174${label}warm"
 echo "=== warmup ${warm_tag}: arm=s tokens=${tokens} ungated ==="
@@ -67,6 +75,7 @@ if ((warm_status != 0)); then
   echo "e174_screen: the warmup leg exited ${warm_status}" >&2
   exit 5
 fi
+publish_leg "${warm_tag}"
 
 # PHASE 1: prove every arm reaches the worker, from the run's own census
 # counters. `s` and `o` are already witnessed by research/e174_census.sh; this
@@ -84,6 +93,7 @@ for arm in s o r f; do
     echo "e174_screen: witness ${tag} exited ${status}" >&2
     exit 5
   fi
+  publish_leg "${tag}"
 done
 
 if ! python3 research/e174_screen.py witness --label "${label}"; then
@@ -113,6 +123,7 @@ for arm in s o r f f r o s; do
     echo "e174_screen: ${tag} exited ${status}" >&2
     failures=$((failures + 1))
   fi
+  publish_leg "${tag}"
 done
 
 echo "e174_screen: ${failures} failed legs"
