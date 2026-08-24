@@ -22,6 +22,84 @@
     "score_anchor": "serial = 1.0",
     "scoring_normalized": false
   },
+  "proposed_campaign_rule": {
+    "critical_values_for_the_naive_between_prompt_z": {
+      "nominal_1_96_true_false_positive_rate": 0.2995975935695052,
+      "nominal_3_00_true_false_positive_rate": 0.13519154345889348,
+      "note": "if a naive between-prompt z must be quoted, calibrate it against the measured true null instead of the normal table",
+      "true_1_pct_critical_value": 6.529515366934264,
+      "true_2_5_pct_critical_value": 5.236041684193954,
+      "true_5_pct_critical_value": 4.299534310819019
+    },
+    "denominator_ladder": [
+      {
+        "rung": 1,
+        "use": "the sample sd of those single-receipt-pair estimates, with Student-t on n-1 dof",
+        "when": "two or more independent ranked receipts exist for the SAME arm against the SAME base",
+        "why": "this is the only denominator that prices the whole receipt-level error"
+      },
+      {
+        "floor_se_single_receipt_pair_mean_of_8_pct": {
+          "candidate": 0.7758663659749659,
+          "raw": 0.7063979916889082,
+          "serial": 0.17566227790440198
+        },
+        "rung": 2,
+        "use": "the channel floor below, as a LOWER bound on the standard error",
+        "when": "only one ranked receipt exists for the arm",
+        "why": "the serial floor is exact: the pinned serial build is byte-identical on every receipt, so 199798 board pairs are a true null. The candidate and raw floors come from the single same-arm replicate pair on the board (dof 1), so they are the weakest supported values, not point estimates"
+      },
+      {
+        "rung": 3,
+        "use": "the between-prompt sd of one receipt pair divided by sqrt(8)",
+        "when": "never",
+        "why": "it prices the prompt-to-prompt spread of one draw, not the error of the effect. The eight prompts are positively correlated on every off-diagonal"
+      }
+    ],
+    "falsification_stays_valid": "a wide error bar still refutes a far larger prediction. An observed candidate-leg effect of 1.06 % with a 0.78 % standard error refutes a predicted 28.4 % at more than 30 sigma. State 'the effect is below X'; do not state 'the effect is exactly X'",
+    "id": "PROPOSED RULE E164",
+    "minimum_detectable_effect_pct": {
+      "candidate_one_receipt_pair": 1.5206980773109333,
+      "note": "a single ranked receipt pair cannot resolve a candidate-leg effect smaller than about this size. Report anything smaller as a bound, not a measurement",
+      "raw_one_receipt_pair": 1.38454006371026,
+      "serial_one_receipt_pair": 0.34429806469262786
+    },
+    "reporting_requirement": [
+      "name the channel: serial, candidate or raw",
+      "name the number of independent ranked receipts behind the arm",
+      "name which rung of the ladder produced the denominator",
+      "quote a one-receipt candidate-leg effect as a bound, never as a point estimate"
+    ],
+    "scope": "any claim of the form 'arm X moves the ranked serial leg, candidate leg or raw by D %' that is obtained by differencing officialMetrics.per_prompt cells of two Yukon receipts. harness=ranked only.",
+    "sign_test_is_also_anticonservative": {
+      "all_8_same_sign_measured_rate": 0.06848416901070081,
+      "all_8_same_sign_nominal_p": 0.0078125,
+      "at_least_7_of_8_measured_rate": 0.23027758035615972,
+      "at_least_7_of_8_nominal_p": 0.0703125,
+      "cause": "the eight prompts share a run-level shift"
+    },
+    "title": "Significance of a board-deconvolved ranked A/B",
+    "why_the_prompts_are_correlated": {
+      "design_effect": 2.2511179397443914,
+      "fraction_positive_off_diagonals": 1.0,
+      "icc": 0.1787311342491988,
+      "icc_ci95": [
+        0.15506734343726278,
+        0.20249814726415064
+      ],
+      "mean_off_diagonal_corr": 0.1782557474467323,
+      "se_inflation_factor": 1.5003726003044682
+    },
+    "worked_example_finding_259": {
+      "claim": "+1.0583 % on the candidate leg, se 0.2542, z 4.16",
+      "correct_p_two_sided": 0.5234332298643882,
+      "correct_rung": 1,
+      "correct_se_pct": 0.7758663659749659,
+      "correct_t": 0.9289649692282897,
+      "rung_used_by_the_claim": 3,
+      "verdict": "not resolved. The two replicates of this arm differ by 1.0972 pp"
+    }
+  },
   "provenance": {
     "board_path": "/tmp/yukon-board/full.json",
     "created_first": "2026-08-14T23:49:37.150Z",
@@ -343,8 +421,10 @@
       "verdict": "the board cannot resolve the cross-leg coupling slope: the candidate leg's mechanism variance is 30x the serial leg's total variance"
     },
     "deliverable_se_single_receipt_pair_pct": {
+      "candidate_leg_mean_of_8_same_arm_replicate": 0.7758663659749659,
       "candidate_leg_mean_of_8_upper_bound": 5.8075357973548964,
       "note": "the candidate and raw figures are upper bounds only: no two board receipts share source, so every candidate-leg set carries real mechanism differences",
+      "raw_mean_of_8_same_arm_replicate": 0.7063979916889082,
       "raw_mean_of_8_upper_bound": 5.801481661689177,
       "serial_leg_mean_of_8_exact": 0.17566227790440198
     },
@@ -446,9 +526,15 @@
         "false_positive_rate_at_z_1_96": 0.2995975935695052,
         "false_positive_rate_at_z_3": 0.13519154345889348,
         "false_positive_rate_at_z_4_16": 0.055070621327540814,
+        "max_abs_mean8_pct": 0.8068957404001459,
         "mean_within_pair_sd_pct": 0.2824380479610413,
         "n_pairs": 199798,
-        "sd_of_mean8_pct": 0.1760588041844215
+        "p_abs_mean8_above_1_0583": 0.0,
+        "sd_of_mean8_pct": 0.1760588041844215,
+        "sign_test_fpr_at_p_0_0078_nominal": 0.06848416901070081,
+        "sign_test_fpr_at_p_0_07_nominal": 0.23027758035615972,
+        "sign_test_nominal_p_0_0078": 0.0078125,
+        "sign_test_nominal_p_0_07": 0.0703125
       },
       "note": "the pinned serial build is byte-identical on every receipt, so this is a true null",
       "sd_of_run_mean_of_8_pct": 0.12421198790487846,

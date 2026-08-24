@@ -419,6 +419,7 @@ def q2_raw_versus_candidate(board, q1, seed=164):
     d = 100.0 * (S[idx[:, 1]] / S[idx[:, 0]] - 1.0)
     m = d.mean(axis=1)
     z = m / (d.std(axis=1, ddof=1) / math.sqrt(8))
+    n_pos = (d > 0).sum(axis=1)
     res["serial_true_null"]["empirical_pair_draws"] = {
         "n_pairs": int(len(m)),
         "sd_of_mean8_pct": float(m.std(ddof=1)),
@@ -431,6 +432,15 @@ def q2_raw_versus_candidate(board, q1, seed=164):
         "false_positive_rate_at_z_1_96": float((np.abs(z) > 1.96).mean()),
         "false_positive_rate_at_z_3": float((np.abs(z) > 3).mean()),
         "false_positive_rate_at_z_4_16": float((np.abs(z) > 4.16).mean()),
+        # The sign test is the usual fallback when the mean looks fragile. It is
+        # also anticonservative here, because the eight prompts share a run-level
+        # shift, so "all eight moved the same way" is far commoner than 2/2^8.
+        "sign_test_fpr_at_p_0_0078_nominal": float(((n_pos == 0) | (n_pos == 8)).mean()),
+        "sign_test_fpr_at_p_0_07_nominal": float((n_pos <= 1).mean() + (n_pos >= 7).mean()),
+        "sign_test_nominal_p_0_0078": 2.0 / 256.0,
+        "sign_test_nominal_p_0_07": 18.0 / 256.0,
+        "max_abs_mean8_pct": float(np.abs(m).max()),
+        "p_abs_mean8_above_1_0583": float((np.abs(m) > 1.0583).mean()),
     }
 
     # --- cross-leg coupling: does a fast run make BOTH legs fast? ---
@@ -821,11 +831,131 @@ def recover_rounds(edl, decode_tokens=512):
 # ------------------------------------------------------------------- reporting
 
 
+def campaign_rule(q1, q2, q4):
+    """The required deliverable: a rule usable without re-deriving anything here.
+
+    Everything a future reader needs is a channel name, a count of independent
+    ranked receipts behind the arm, and the observed effect size.
+    """
+    tn = q2["serial_true_null"]
+    e = tn["empirical_pair_draws"]
+    ra = q4["replicate_analysis"]
+    se_serial = tn["se_single_receipt_pair_pct"]
+    se_cand = ra["sd_of_one_estimate_pct"]
+    se_raw = ra["raw_sd_of_one_estimate_pct"]
+    return {
+        "id": "PROPOSED RULE E164",
+        "title": "Significance of a board-deconvolved ranked A/B",
+        "scope": (
+            "any claim of the form 'arm X moves the ranked serial leg, candidate leg or raw "
+            "by D %' that is obtained by differencing officialMetrics.per_prompt cells of two "
+            "Yukon receipts. harness=ranked only."
+        ),
+        "denominator_ladder": [
+            {
+                "rung": 1,
+                "when": (
+                    "two or more independent ranked receipts exist for the SAME arm against "
+                    "the SAME base"
+                ),
+                "use": (
+                    "the sample sd of those single-receipt-pair estimates, with Student-t on "
+                    "n-1 dof"
+                ),
+                "why": "this is the only denominator that prices the whole receipt-level error",
+            },
+            {
+                "rung": 2,
+                "when": "only one ranked receipt exists for the arm",
+                "use": "the channel floor below, as a LOWER bound on the standard error",
+                "floor_se_single_receipt_pair_mean_of_8_pct": {
+                    "serial": se_serial,
+                    "candidate": se_cand,
+                    "raw": se_raw,
+                },
+                "why": (
+                    "the serial floor is exact: the pinned serial build is byte-identical on "
+                    "every receipt, so 199798 board pairs are a true null. The candidate and "
+                    "raw floors come from the single same-arm replicate pair on the board "
+                    "(dof 1), so they are the weakest supported values, not point estimates"
+                ),
+            },
+            {
+                "rung": 3,
+                "when": "never",
+                "use": "the between-prompt sd of one receipt pair divided by sqrt(8)",
+                "why": (
+                    "it prices the prompt-to-prompt spread of one draw, not the error of the "
+                    "effect. The eight prompts are positively correlated on every off-diagonal"
+                ),
+            },
+        ],
+        "critical_values_for_the_naive_between_prompt_z": {
+            "note": (
+                "if a naive between-prompt z must be quoted, calibrate it against the measured "
+                "true null instead of the normal table"
+            ),
+            "nominal_1_96_true_false_positive_rate": e["false_positive_rate_at_z_1_96"],
+            "nominal_3_00_true_false_positive_rate": e["false_positive_rate_at_z_3"],
+            "true_5_pct_critical_value": e["abs_z_naive_p95"],
+            "true_2_5_pct_critical_value": e["abs_z_naive_p97_5"],
+            "true_1_pct_critical_value": e["abs_z_naive_p99"],
+        },
+        "sign_test_is_also_anticonservative": {
+            "all_8_same_sign_nominal_p": e["sign_test_nominal_p_0_0078"],
+            "all_8_same_sign_measured_rate": e["sign_test_fpr_at_p_0_0078_nominal"],
+            "at_least_7_of_8_nominal_p": e["sign_test_nominal_p_0_07"],
+            "at_least_7_of_8_measured_rate": e["sign_test_fpr_at_p_0_07_nominal"],
+            "cause": "the eight prompts share a run-level shift",
+        },
+        "why_the_prompts_are_correlated": {
+            "icc": q1["icc"]["icc"],
+            "icc_ci95": q1["icc"]["icc_ci95"],
+            "mean_off_diagonal_corr": q1["cross_prompt_correlation"]["mean_off_diagonal"],
+            "fraction_positive_off_diagonals": q1["cross_prompt_correlation"][
+                "fraction_positive"
+            ],
+            "design_effect": q1["icc"]["design_effect"],
+            "se_inflation_factor": q1["icc"]["se_inflation_factor"],
+        },
+        "minimum_detectable_effect_pct": {
+            "serial_one_receipt_pair": 1.96 * se_serial,
+            "candidate_one_receipt_pair": 1.96 * se_cand,
+            "raw_one_receipt_pair": 1.96 * se_raw,
+            "note": (
+                "a single ranked receipt pair cannot resolve a candidate-leg effect smaller "
+                "than about this size. Report anything smaller as a bound, not a measurement"
+            ),
+        },
+        "falsification_stays_valid": (
+            "a wide error bar still refutes a far larger prediction. An observed candidate-leg "
+            "effect of 1.06 % with a 0.78 % standard error refutes a predicted 28.4 % at more "
+            "than 30 sigma. State 'the effect is below X'; do not state 'the effect is exactly X'"
+        ),
+        "reporting_requirement": [
+            "name the channel: serial, candidate or raw",
+            "name the number of independent ranked receipts behind the arm",
+            "name which rung of the ladder produced the denominator",
+            "quote a one-receipt candidate-leg effect as a bound, never as a point estimate",
+        ],
+        "worked_example_finding_259": {
+            "claim": "+1.0583 % on the candidate leg, se 0.2542, z 4.16",
+            "rung_used_by_the_claim": 3,
+            "correct_rung": 1,
+            "correct_se_pct": se_cand,
+            "correct_t": ra["t_statistic"],
+            "correct_p_two_sided": ra["p_two_sided"],
+            "verdict": "not resolved. The two replicates of this arm differ by "
+            f"{ra['spread_pct']:.4f} pp",
+        },
+    }
+
+
 def fmt(x, nd=4):
     return "nan" if x is None or (isinstance(x, float) and math.isnan(x)) else f"{x:.{nd}f}"
 
 
-def report(prov, inv, q1, q2, q3, q4):
+def report(prov, inv, q1, q2, q3, q4, rule):
     L = []
     a = L.append
     a("=" * 78)
@@ -992,6 +1122,49 @@ def report(prov, inv, q1, q2, q3, q4):
         a(f"     {m['pair']}  channel={m['channel']:8s} mean {m['mean_pct']:+.4f} % "
           f"sd {m['sd_pct']:.4f} se {m['se_naive_pct']:.4f}")
     a(f"  -> {ps['verdict']}")
+
+    a("")
+    a("=" * 78)
+    a(f"{rule['id']}  {rule['title']}")
+    a("=" * 78)
+    a(f"  scope: {rule['scope']}")
+    a("")
+    a("  denominator ladder, use the first rung that applies:")
+    for r in rule["denominator_ladder"]:
+        a(f"    rung {r['rung']}  when {r['when']}")
+        a(f"             use  {r['use']}")
+        fl = r.get("floor_se_single_receipt_pair_mean_of_8_pct")
+        if fl:
+            a(f"             floor se, mean of 8, one receipt pair:  serial {fl['serial']:.4f} %   "
+              f"candidate {fl['candidate']:.4f} %   raw {fl['raw']:.4f} %")
+        a(f"             why  {r['why']}")
+    cv = rule["critical_values_for_the_naive_between_prompt_z"]
+    a("")
+    a("  if a naive between-prompt z is unavoidable, use the measured critical values:")
+    a(f"    nominal |z|>1.96 really fires {cv['nominal_1_96_true_false_positive_rate']*100:5.1f} % "
+      f"of the time under the true null")
+    a(f"    nominal |z|>3.00 really fires {cv['nominal_3_00_true_false_positive_rate']*100:5.1f} % "
+      f"of the time under the true null")
+    a(f"    true 5 % critical value {cv['true_5_pct_critical_value']:.2f}   "
+      f"2.5 % {cv['true_2_5_pct_critical_value']:.2f}   1 % {cv['true_1_pct_critical_value']:.2f}")
+    st = rule["sign_test_is_also_anticonservative"]
+    a(f"    sign test, all 8 same sign: nominal p {st['all_8_same_sign_nominal_p']:.4f}, "
+      f"measured rate {st['all_8_same_sign_measured_rate']:.4f}")
+    a(f"    sign test, 7 or 8 of 8:     nominal p {st['at_least_7_of_8_nominal_p']:.4f}, "
+      f"measured rate {st['at_least_7_of_8_measured_rate']:.4f}")
+    mde = rule["minimum_detectable_effect_pct"]
+    a("")
+    a(f"  minimum detectable effect from ONE receipt pair at 95 %:  serial "
+      f"{mde['serial_one_receipt_pair']:.3f} %   candidate {mde['candidate_one_receipt_pair']:.3f} %"
+      f"   raw {mde['raw_one_receipt_pair']:.3f} %")
+    a(f"  {rule['falsification_stays_valid']}")
+    a("  every board-derived ranked A/B must report:")
+    for line in rule["reporting_requirement"]:
+        a(f"    - {line}")
+    we = rule["worked_example_finding_259"]
+    a(f"  worked example: FINDING 259 claimed {we['claim']} on rung {we['rung_used_by_the_claim']}. "
+      f"On rung {we['correct_rung']} it is se {we['correct_se_pct']:.4f} %, t {we['correct_t']:+.3f}, "
+      f"p {we['correct_p_two_sided']:.3f}. {we['verdict']}")
     return "\n".join(L)
 
 
@@ -1011,6 +1184,13 @@ def main():
     q2 = q2_raw_versus_candidate(board, q1)
     q4 = q4_onepass6_replicates(board)
     q3 = q3_reprice(board, q2, q4)
+    rule = campaign_rule(q1, q2, q4)
+
+    # Q4 supersedes the mechanism-contaminated fingerprint bound carried by Q2.
+    floors = rule["denominator_ladder"][1]["floor_se_single_receipt_pair_mean_of_8_pct"]
+    deliv = q2["deliverable_se_single_receipt_pair_pct"]
+    deliv["candidate_leg_mean_of_8_same_arm_replicate"] = floors["candidate"]
+    deliv["raw_mean_of_8_same_arm_replicate"] = floors["raw"]
 
     os.makedirs(args.out, exist_ok=True)
     result = {
@@ -1022,11 +1202,12 @@ def main():
         "q2_raw_versus_candidate": q2,
         "q3_reprice_finding_259": q3,
         "q4_onepass6_replicates": q4,
+        "proposed_campaign_rule": rule,
     }
     with open(os.path.join(args.out, "e164-results.json"), "w") as fh:
         json.dump(result, fh, indent=2, sort_keys=True)
 
-    text = report(prov, inv, q1, q2, q3, q4)
+    text = report(prov, inv, q1, q2, q3, q4, rule)
     with open(os.path.join(args.out, "e164-report.txt"), "w") as fh:
         fh.write(text + "\n")
     print(text)
@@ -1035,12 +1216,126 @@ def main():
         log_wandb(board, result)
 
 
+def log_followups(wandb, run, out):
+    """Fold the E1/E2/E3 and red-team artifacts into the same W&B run."""
+
+    def read(name):
+        path = os.path.join(out, name)
+        if not os.path.exists(path):
+            return None
+        with open(path) as fh:
+            return json.load(fh)
+
+    e1 = read("e164-e1-median-lever.json")
+    if e1:
+        run.summary.update(
+            {
+                "e1/baseline_published": e1["baseline_published"],
+                "e1/published_per_ms": e1["marginal"]["analytic_published_per_ms_at_zero"],
+                "e1/any_reachable_crossing": e1["any_reachable_crossing"],
+                "e1/smallest_positive_crossing_ms": e1["smallest_positive_crossing_delta_ms"],
+                "e1/max_evaluable_delta_ms": e1["max_evaluable_delta_ms"],
+                "e1/full_prefill_removal_gain": e1["extended_sweep"][-1]["delta_published"],
+                "e1/ms_to_close_frontier_gap": e1["gap_accounting"]["uniform_ms_needed_to_close"],
+                "e1/prefill_share_of_gap_pct": e1["gap_accounting"][
+                    "prefill_share_of_published_gap_pct"
+                ],
+            }
+        )
+        t = wandb.Table(
+            columns=["delta_ms", "published", "delta_published", "delta_pct", "per_ms", "central"]
+        )
+        for s in e1["sweep"]:
+            t.add_data(
+                s["delta_ms"],
+                s["published"],
+                s["delta_published"],
+                s["delta_published_pct"],
+                s["published_per_ms"],
+                ", ".join(s["central_prompts"]),
+            )
+        wandb.log({"e1/uniform_lever_sweep": t})
+
+        d = wandb.Table(columns=["prompt", "raw_per_ms"])
+        for k, v in e1["marginal"]["per_prompt_raw_per_ms"].items():
+            d.add_data(k, v)
+        wandb.log({"e1/per_prompt_marginal": d})
+
+    e23 = read("e164-e2e3.json")
+    if e23:
+        run.summary.update(
+            {
+                "e2/n_consistent_low_solvers": len(e23["e2_consistent_low_solvers"]),
+                "e2/n_always_below_pack_solvers": len(e23["e2_always_below_pack_solvers"]),
+                "e2/solver_median_residual_sd_ms": e23[
+                    "e2_solver_median_residual_spread"
+                ]["sd"],
+                "e2/anova_F": e23["e2_anova"]["F"],
+                "e3/top12_spread": e23["e3c"]["top12_spread"],
+                "e3/first_minus_second": e23["e3c"]["first_minus_second"],
+                "e3/run_level_neutral_sd_units": e23["e3c"][
+                    "run_level_neutral_sd_units_at_beta_point"
+                ],
+                "e3/selection_slope_best": e23["e3b_slope_best"]["slope"],
+                "e3/selection_slope_median": e23["e3b_slope_median"]["slope"],
+            }
+        )
+        for key, title in (
+            ("e3_neutral_all", "e3/neutral_all"),
+            ("e3_neutral_excluding_anomaly", "e3/neutral_excluding_anomaly"),
+            ("e3_neutral_prefill_corrected", "e3/neutral_prefill_corrected"),
+        ):
+            col = "neutral_prefill_corrected" if "corrected" in key else "neutral"
+            t = wandb.Table(columns=["rank", "solver", "receipt", "day", col, "official", "prefill_ms"])
+            for i, x in enumerate(e23[key], start=1):
+                t.add_data(i, x["solver"], str(x["id"])[:8], x["day"], x[col], x["official"], x["prefill_ms"])
+            wandb.log({title: t})
+
+        t = wandb.Table(columns=["rank", "solver", "top2_mean", "n"])
+        for i, x in enumerate(e23["e3_neutral_top2_mean"], start=1):
+            t.add_data(i, x["solver"], x["top2_mean"], x["n"])
+        wandb.log({"e3/neutral_top2_mean": t})
+
+        t = wandb.Table(columns=["solver", "n", "median", "min", "max", "median_day_residual"])
+        for x in e23["e2_solvers"]:
+            t.add_data(x["solver"], x["n"], x["median"], x["min"], x["max"], x["median_day_residual"])
+        wandb.log({"e2/per_solver_prefill": t})
+
+    rt = read("e164-redteam.json")
+    if rt:
+        a1 = rt["a1"]["paired_difference_regression"]
+        a4 = rt["a1"]["a4_is_the_affine_form_forced"]
+        pref = rt["a1"]["a1_prefill_attribution"]
+        run.summary.update(
+            {
+                "a1/delta_s_ms_per_round": a1["delta_s_ms_per_round"],
+                "a1/delta_s_se": a1["se_delta_s"],
+                "a1/delta_s_t": a1["t_delta_s"],
+                "a1/delta_s_ci95_lo": a1["delta_s_ci95"][0],
+                "a1/delta_s_ci95_hi": a1["delta_s_ci95"][1],
+                "a1/delta_h_ms_per_row": a1["delta_h_ms_per_row"],
+                "a1/delta_h_t": a1["t_delta_h"],
+                "a1/survives_at_2se": a1["survives_at_2se"],
+                "a1/sigma_ms": a1["sigma_ms"],
+                "a1/prefill_share_of_delta_s": pref[
+                    "share_of_delta_s_explained_by_the_prefill_probe"
+                ],
+                "a4/sse_two_param_affine": a4["sse_two_param_affine_in_rows"],
+                "a4/sse_constant_leg_gap": a4["sse_one_param_constant_leg_gap"],
+                "a4/D_rel_sd_pct": a4["D_rel_sd_pct"],
+                "a4/corr_D_vs_rows": a4["corr_D_vs_rows"],
+            }
+        )
+
+
 def log_wandb(board, result):
     import wandb
 
     q1 = result["q1_serial_dispersion"]
     q2 = result["q2_raw_versus_candidate"]
     q3 = result["q3_reprice_finding_259"]
+    q4 = result["q4_onepass6_replicates"]
+    rule = result["proposed_campaign_rule"]
     run = wandb.init(
         project="qwen38-mlx-challenge-senpai",
         entity="wandb-applied-ai-team",
@@ -1057,6 +1352,8 @@ def log_wandb(board, result):
     )
 
     ic = q1["icc"]
+    ra = q4["replicate_analysis"]
+    floors = rule["denominator_ladder"][1]["floor_se_single_receipt_pair_mean_of_8_pct"]
     wandb.summary.update(
         {
             "q1/serial_pooled_mean_s_per_token": q1["pooled"]["mean_s_per_token"],
@@ -1084,9 +1381,32 @@ def log_wandb(board, result):
             ],
             "q3/candidate_mean_pct": q3["legs"]["candidate"]["mean_pct"],
             "q3/candidate_z_naive": q3["legs"]["candidate"]["z_naive"],
-            "q3/candidate_z_run_level": q3["legs"]["candidate"]["z_run_level"],
             "q3/candidate_sign_test_p": q3["legs"]["candidate"]["sign_test_p"],
             "q3/published_delta_pct": q3["published"]["published_delta_pct"],
+            "q3/z_denominator_A_naive": q3["denominators"]["A_naive_between_prompt"]["z"],
+            "q3/z_denominator_B_icc": q3["denominators"]["B_naive_times_icc_inflation"]["z"],
+            "q3/z_denominator_C_serial_null": q3["denominators"]["C_serial_true_null"]["z"],
+            "q3/z_denominator_D_replicates": q3["denominators"]["D_same_arm_replicates"]["z"],
+            "q3/se_denominator_D_pct": q3["denominators"]["D_same_arm_replicates"]["se_pct"],
+            "q4/n_replicates": ra["n_replicates"],
+            "q4/spread_pct": ra["spread_pct"],
+            "q4/pooled_estimate_pct": ra["pooled_estimate_pct"],
+            "q4/sd_of_one_estimate_pct": ra["sd_of_one_estimate_pct"],
+            "q4/sd_ci95_lo": ra["sd_ci95"][0],
+            "q4/sd_ci95_hi": ra["sd_ci95"][1],
+            "q4/t_statistic": ra["t_statistic"],
+            "q4/p_two_sided": ra["p_two_sided"],
+            "q4/understatement_vs_finding_259": ra["understatement_vs_finding_259"],
+            "q4/understatement_vs_finding_279": ra["understatement_vs_finding_279"],
+            "rule/floor_se_serial_pct": floors["serial"],
+            "rule/floor_se_candidate_pct": floors["candidate"],
+            "rule/floor_se_raw_pct": floors["raw"],
+            "rule/naive_z_true_5pct_critical_value": rule[
+                "critical_values_for_the_naive_between_prompt_z"
+            ]["true_5_pct_critical_value"],
+            "rule/mde_candidate_one_receipt_pair_pct": rule["minimum_detectable_effect_pct"][
+                "candidate_one_receipt_pair"
+            ],
         }
     )
 
@@ -1113,11 +1433,53 @@ def log_wandb(board, result):
         pp.add_data(p["prompt"], p["cand_delta_pct"], p["serial_delta_pct"], p["raw_delta_pct"])
     wandb.log({"q3/finding_259_per_prompt": pp})
 
+    arms = wandb.Table(
+        columns=[
+            "arm",
+            "solver",
+            "score",
+            "cand_mean8_pct",
+            "serial_mean8_pct",
+            "raw_mean8_pct",
+            "published_delta_pct",
+            "tree_identical_to_base",
+        ]
+    )
+    for arm in q4["arm_detail"]:
+        arms.add_data(
+            arm["id8"],
+            arm["solver"],
+            arm["score"],
+            arm["candidate"]["mean_pct"],
+            arm["serial"]["mean_pct"],
+            arm["raw"]["mean_pct"],
+            arm["published_delta_pct"],
+            bool(
+                arm["edl_digit_identical_to_base"]
+                and arm["nondraft_identical_to_base"]
+                and arm["head_identical_to_base"]
+            ),
+        )
+    wandb.log({"q4/onepass6_replicate_arms": arms})
+
+    lad = wandb.Table(columns=["rung", "when", "use", "why"])
+    for r in rule["denominator_ladder"]:
+        lad.add_data(r["rung"], r["when"], r["use"], r["why"])
+    wandb.log({"rule/denominator_ladder": lad})
+
     dev = log_dev(board.serial)
     hist = wandb.Table(columns=["run_mean_dev_pct"])
     for v in dev.mean(axis=1):
         hist.add_data(float(v))
     wandb.log({"q1/serial_run_mean_deviation": hist})
+
+    out = os.path.join(os.path.dirname(__file__), "e164-artifacts")
+    log_followups(wandb, run, out)
+
+    art = wandb.Artifact("e164-ranked-ab-error-bar", type="analysis")
+    for fname in sorted(os.listdir(out)):
+        art.add_file(os.path.join(out, fname))
+    run.log_artifact(art)
 
     print(f"wandb run: {run.url}  id={run.id}")
     run.finish()

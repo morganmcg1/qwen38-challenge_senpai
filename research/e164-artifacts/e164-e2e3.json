@@ -1,0 +1,1564 @@
+{
+  "n_eligible": 946,
+  "day_medians": {
+    "2026-08-16": {
+      "n": 42,
+      "median": 544.3367660045624,
+      "min": 530.0340205430984,
+      "max": 546.9694882631302
+    },
+    "2026-08-17": {
+      "n": 120,
+      "median": 530.5067971348763,
+      "min": 529.6676158905029,
+      "max": 546.817883849144
+    },
+    "2026-08-18": {
+      "n": 119,
+      "median": 530.3479880094528,
+      "min": 500.30723214149475,
+      "max": 944.9496269226074
+    },
+    "2026-08-19": {
+      "n": 116,
+      "median": 526.879295706749,
+      "min": 524.1106301546097,
+      "max": 779.8798531293869
+    },
+    "2026-08-20": {
+      "n": 115,
+      "median": 526.8557369709015,
+      "min": 526.1280983686447,
+      "max": 530.0797373056412
+    },
+    "2026-08-21": {
+      "n": 119,
+      "median": 526.8379896879196,
+      "min": 525.6836414337158,
+      "max": 527.6466310024261
+    },
+    "2026-08-22": {
+      "n": 97,
+      "median": 526.8519967794418,
+      "min": 525.7762372493744,
+      "max": 535.8427613973618
+    },
+    "2026-08-23": {
+      "n": 87,
+      "median": 526.735782623291,
+      "min": 504.64336574077606,
+      "max": 537.7781391143799
+    }
+  },
+  "e2_solvers": [
+    {
+      "solver": "Kamciosz",
+      "n": 6,
+      "median": 530.0461128354073,
+      "min": 529.8734903335571,
+      "max": 543.4972643852234,
+      "span": 13.62377405166626,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.3850124776363373,
+      "resid_min": -0.8395016193389893,
+      "resid_max": -0.1586228609085083
+    },
+    {
+      "solver": "EternaPeptix",
+      "n": 5,
+      "median": 530.3947329521179,
+      "min": 526.5817642211914,
+      "max": 531.024381518364,
+      "span": 4.442617297172546,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.25622546672821045,
+      "resid_min": -13.942033052444458,
+      "resid_max": 0.6763935089111328
+    },
+    {
+      "solver": "mitiskuma",
+      "n": 3,
+      "median": 527.1036177873611,
+      "min": 526.8901437520981,
+      "max": 530.1097333431244,
+      "span": 3.219589591026306,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.23825466632843018,
+      "resid_min": -3.244370222091675,
+      "resid_max": 0.010848045349121094
+    },
+    {
+      "solver": "a-github-name",
+      "n": 5,
+      "median": 526.627391576767,
+      "min": 526.3831168413162,
+      "max": 527.3666232824326,
+      "span": 0.983506441116333,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.22460520267486572,
+      "resid_min": -0.3526657819747925,
+      "resid_max": 0.6308406591415405
+    },
+    {
+      "solver": "companygardener",
+      "n": 3,
+      "median": 530.1377326250076,
+      "min": 526.8488675355911,
+      "max": 530.6756347417831,
+      "span": 3.8267672061920166,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.21025538444519043,
+      "resid_min": -3.4991204738616943,
+      "resid_max": 0.16883760690689087
+    },
+    {
+      "solver": "claudiodekker",
+      "n": 6,
+      "median": 530.2524045109749,
+      "min": 529.7270119190216,
+      "max": 646.5607434511185,
+      "span": 116.83373153209686,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.1749880611896515,
+      "resid_min": -0.6381794810295105,
+      "resid_max": 116.21275544166565
+    },
+    {
+      "solver": "mega-dmitriy",
+      "n": 7,
+      "median": 530.3584933280945,
+      "min": 529.7917127609253,
+      "max": 545.2501326799393,
+      "span": 15.458419919013977,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.1483038067817688,
+      "resid_min": -0.7150843739509583,
+      "resid_max": 14.743335545063019
+    },
+    {
+      "solver": "xadenryan",
+      "n": 11,
+      "median": 530.3491055965424,
+      "min": 526.4675170183182,
+      "max": 543.8950061798096,
+      "span": 17.427489161491394,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.09638816118240356,
+      "resid_min": -3.8804709911346436,
+      "resid_max": 0.9585171937942505
+    },
+    {
+      "solver": "vibecodooor",
+      "n": 36,
+      "median": 526.9835665822029,
+      "min": 504.79452311992645,
+      "max": 543.8524782657623,
+      "span": 39.05795514583588,
+      "n_below_512": 1,
+      "share_below_512": 0.027777777777777776,
+      "median_day_residual": -0.08882582187652588,
+      "resid_min": -21.941259503364563,
+      "resid_max": 0.7789433002471924
+    },
+    {
+      "solver": "kaarelkaarelson",
+      "n": 21,
+      "median": 526.7878770828247,
+      "min": 524.1106301546097,
+      "max": 527.2638648748398,
+      "span": 3.1532347202301025,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.06785988807678223,
+      "resid_min": -2.7686655521392822,
+      "resid_max": 0.425875186920166
+    },
+    {
+      "solver": "Carme99",
+      "n": 8,
+      "median": 526.7269313335419,
+      "min": 526.499018073082,
+      "max": 527.0441323518753,
+      "span": 0.545114278793335,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.06695836782455444,
+      "resid_min": -0.3529787063598633,
+      "resid_max": 0.19213557243347168
+    },
+    {
+      "solver": "igneous-prose",
+      "n": 15,
+      "median": 526.816114783287,
+      "min": 526.3286083936691,
+      "max": 544.1824942827225,
+      "span": 17.853885889053345,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.06318092346191406,
+      "resid_min": -0.4071742296218872,
+      "resid_max": 13.675697147846222
+    },
+    {
+      "solver": "nijaru",
+      "n": 11,
+      "median": 526.9832462072372,
+      "min": 525.7762372493744,
+      "max": 530.8077484369278,
+      "span": 5.031511187553406,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.06161630153656006,
+      "resid_min": -1.0757595300674438,
+      "resid_max": 0.3985166549682617
+    },
+    {
+      "solver": "Lieisyourlie",
+      "n": 78,
+      "median": 526.9290655851364,
+      "min": 526.2496173381805,
+      "max": 545.2879965305328,
+      "span": 19.038379192352295,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.056162476539611816,
+      "resid_min": -3.780961036682129,
+      "resid_max": 14.435045421123505
+    },
+    {
+      "solver": "ofou",
+      "n": 17,
+      "median": 526.787132024765,
+      "min": 526.132121682167,
+      "max": 529.2673707008362,
+      "span": 3.1352490186691284,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.05085766315460205,
+      "resid_min": -3.8498789072036743,
+      "resid_max": 2.3880749940872192
+    },
+    {
+      "solver": "scarletbright",
+      "n": 49,
+      "median": 526.9553661346436,
+      "min": 504.64336574077606,
+      "max": 545.2436208724976,
+      "span": 40.6002551317215,
+      "n_below_512": 1,
+      "share_below_512": 0.02040816326530612,
+      "median_day_residual": -0.04380941390991211,
+      "resid_min": -22.092416882514954,
+      "resid_max": 14.736823737621307
+    },
+    {
+      "solver": "DawgZter",
+      "n": 13,
+      "median": 530.3329825401306,
+      "min": 526.9974917173386,
+      "max": 779.8798531293869,
+      "span": 252.88236141204834,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.03016740083694458,
+      "resid_min": -0.7476881146430969,
+      "resid_max": 253.00055742263794
+    },
+    {
+      "solver": "ivanfioravanti",
+      "n": 22,
+      "median": 526.8400013446808,
+      "min": 526.399776339531,
+      "max": 545.2841222286224,
+      "span": 18.88434588909149,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.026278197765350342,
+      "resid_min": -0.45596063137054443,
+      "resid_max": 14.525584876537323
+    },
+    {
+      "solver": "morganmcg1",
+      "n": 32,
+      "median": 526.8467366695404,
+      "min": 525.9569883346558,
+      "max": 537.7781391143799,
+      "span": 11.821150779724121,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.025968998670578003,
+      "resid_min": -3.4229904413223267,
+      "resid_max": 11.042356491088867
+    },
+    {
+      "solver": "fabinulleins",
+      "n": 3,
+      "median": 530.4871499538422,
+      "min": 529.9308747053146,
+      "max": 530.5554866790771,
+      "span": 0.6246119737625122,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.019647181034088135,
+      "resid_min": -0.575922429561615,
+      "resid_max": 0.04868954420089722
+    },
+    {
+      "solver": "paul-hf",
+      "n": 6,
+      "median": 526.9168019294739,
+      "min": 526.7390161752701,
+      "max": 531.2822312116623,
+      "span": 4.543215036392212,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": -0.009976327419281006,
+      "resid_min": -3.4048855304718018,
+      "resid_max": 0.7754340767860413
+    },
+    {
+      "solver": "francip",
+      "n": 8,
+      "median": 526.9835665822029,
+      "min": 525.6836414337158,
+      "max": 530.5152088403702,
+      "span": 4.831567406654358,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.004407018423080444,
+      "resid_min": -1.1543482542037964,
+      "resid_max": 0.16076862812042236
+    },
+    {
+      "solver": "newjordan",
+      "n": 68,
+      "median": 526.8918797373772,
+      "min": 526.1382609605789,
+      "max": 545.2611297369003,
+      "span": 19.12286877632141,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.007539987564086914,
+      "resid_min": -3.9523839950561523,
+      "resid_max": 14.754332602024078
+    },
+    {
+      "solver": "Amal-David",
+      "n": 31,
+      "median": 526.8747508525848,
+      "min": 504.6730190515518,
+      "max": 944.9496269226074,
+      "span": 440.2766078710556,
+      "n_below_512": 2,
+      "share_below_512": 0.06451612903225806,
+      "median_day_residual": 0.017099082469940186,
+      "resid_min": -22.062763571739197,
+      "resid_max": 414.6016389131546
+    },
+    {
+      "solver": "zeeshan8281",
+      "n": 4,
+      "median": 530.2881225943565,
+      "min": 530.002698302269,
+      "max": 530.5531471967697,
+      "span": 0.5504488945007324,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.018030405044555664,
+      "resid_min": -0.5040988326072693,
+      "resid_max": 3.224000334739685
+    },
+    {
+      "solver": "gibavargas",
+      "n": 6,
+      "median": 526.942752301693,
+      "min": 526.7622470855713,
+      "max": 545.050859451294,
+      "span": 18.288612365722656,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.024259090423583984,
+      "resid_min": -0.11704862117767334,
+      "resid_max": 14.544062316417694
+    },
+    {
+      "solver": "jungjipdo",
+      "n": 17,
+      "median": 527.2667407989502,
+      "min": 525.9739905595779,
+      "max": 544.798418879509,
+      "span": 18.82442831993103,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.028699636459350586,
+      "resid_min": -0.7617920637130737,
+      "resid_max": 14.291621744632721
+    },
+    {
+      "solver": "hadakang",
+      "n": 32,
+      "median": 526.8829315900803,
+      "min": 526.1891335248947,
+      "max": 545.2707260847092,
+      "span": 19.081592559814453,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.03349035978317261,
+      "resid_min": -0.690162181854248,
+      "resid_max": 14.664314687252045
+    },
+    {
+      "solver": "458187375-ship-it",
+      "n": 4,
+      "median": 530.9062823653221,
+      "min": 530.0021320581436,
+      "max": 544.2445129156113,
+      "span": 14.242380857467651,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.04795566201210022,
+      "resid_min": -0.5046650767326355,
+      "resid_max": 0.7696151733398438
+    },
+    {
+      "solver": "nagaral",
+      "n": 16,
+      "median": 526.9003957509995,
+      "min": 526.4003723859787,
+      "max": 529.881626367569,
+      "span": 3.481253981590271,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.04839897155761719,
+      "resid_min": -0.45162439346313477,
+      "resid_max": 3.0296295881271362
+    },
+    {
+      "solver": "andreolf",
+      "n": 11,
+      "median": 527.3387134075165,
+      "min": 526.3524651527405,
+      "max": 530.5694937705994,
+      "span": 4.217028617858887,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.04988908767700195,
+      "resid_min": -0.5268305540084839,
+      "resid_max": 0.5007237195968628
+    },
+    {
+      "solver": "ArcherHume",
+      "n": 4,
+      "median": 526.9204825162888,
+      "min": 526.8214046955109,
+      "max": 527.5002717971802,
+      "span": 0.6788671016693115,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.052966177463531494,
+      "resid_min": -0.034332275390625,
+      "resid_max": 0.6445348262786865
+    },
+    {
+      "solver": "jonathan308",
+      "n": 55,
+      "median": 527.00075507164,
+      "min": 526.3523757457733,
+      "max": 536.4804863929749,
+      "span": 10.128110647201538,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.05611777305603027,
+      "resid_min": -0.5960389971733093,
+      "resid_max": 6.132498383522034
+    },
+    {
+      "solver": "rinaldofesta",
+      "n": 4,
+      "median": 528.5648331046104,
+      "min": 526.6960114240646,
+      "max": 536.2923890352249,
+      "span": 9.596377611160278,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.06279349327087402,
+      "resid_min": -0.11946260929107666,
+      "resid_max": 5.944401025772095
+    },
+    {
+      "solver": "welttowelt",
+      "n": 9,
+      "median": 530.4292291402817,
+      "min": 526.8333852291107,
+      "max": 530.7914614677429,
+      "span": 3.958076238632202,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.08124113082885742,
+      "resid_min": -0.3051161766052246,
+      "resid_max": 0.4434734582901001
+    },
+    {
+      "solver": "bold84",
+      "n": 3,
+      "median": 530.4338932037354,
+      "min": 526.7660319805145,
+      "max": 530.4860174655914,
+      "span": 3.7199854850769043,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.08590519428253174,
+      "resid_min": -3.5819560289382935,
+      "resid_max": 0.13802945613861084
+    },
+    {
+      "solver": "audreyt",
+      "n": 21,
+      "median": 527.0021110773087,
+      "min": 526.3577550649643,
+      "max": 544.8528677225113,
+      "span": 18.495112657546997,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.14226138591766357,
+      "resid_min": -0.6557032465934753,
+      "resid_max": 1.269705593585968
+    },
+    {
+      "solver": "yijunyu",
+      "n": 20,
+      "median": 527.139700949192,
+      "min": 525.8044749498367,
+      "max": 544.9786186218262,
+      "span": 19.17414367198944,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.15773624181747437,
+      "resid_min": -14.302745461463928,
+      "resid_max": 14.47182148694992
+    },
+    {
+      "solver": "BitWonka",
+      "n": 12,
+      "median": 528.4537449479103,
+      "min": 500.30723214149475,
+      "max": 545.207142829895,
+      "span": 44.89991068840027,
+      "n_below_512": 1,
+      "share_below_512": 0.08333333333333333,
+      "median_day_residual": 0.16223639249801636,
+      "resid_min": -30.04075586795807,
+      "resid_max": 14.700345695018768
+    },
+    {
+      "solver": "kirtangajjar",
+      "n": 5,
+      "median": 526.9180238246918,
+      "min": 526.6377627849579,
+      "max": 527.2461324930191,
+      "span": 0.6083697080612183,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.18224120140075684,
+      "resid_min": -0.09801983833312988,
+      "resid_max": 0.5103498697280884
+    },
+    {
+      "solver": "fkiene",
+      "n": 35,
+      "median": 527.0707458257675,
+      "min": 526.0160118341446,
+      "max": 531.2980115413666,
+      "span": 5.281999707221985,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.21460652351379395,
+      "resid_min": -3.5409778356552124,
+      "resid_max": 2.2401362657546997
+    },
+    {
+      "solver": "lBroth",
+      "n": 3,
+      "median": 527.0572304725647,
+      "min": 526.6513824462891,
+      "max": 527.2661298513412,
+      "span": 0.6147474050521851,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.21924078464508057,
+      "resid_min": -0.1866072416305542,
+      "resid_max": 0.42814016342163086
+    },
+    {
+      "solver": "SSHdotCodes",
+      "n": 6,
+      "median": 530.5676907300949,
+      "min": 526.9960016012192,
+      "max": 779.3347388505936,
+      "span": 252.3387372493744,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.21970272064208984,
+      "resid_min": -3.3519864082336426,
+      "resid_max": 252.4554431438446
+    },
+    {
+      "solver": "Floofy6",
+      "n": 15,
+      "median": 530.6541174650192,
+      "min": 526.8661230802536,
+      "max": 544.9067503213882,
+      "span": 18.040627241134644,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.30612945556640625,
+      "resid_min": -0.48341602087020874,
+      "resid_max": 14.342956244945526
+    },
+    {
+      "solver": "yzxoi",
+      "n": 4,
+      "median": 544.4523096084595,
+      "min": 530.2726328372955,
+      "max": 545.2752411365509,
+      "span": 15.002608299255371,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.3521554172039032,
+      "resid_min": -0.2792626619338989,
+      "resid_max": 14.340318739414215
+    },
+    {
+      "solver": "noskillcoding",
+      "n": 6,
+      "median": 527.32203155756,
+      "min": 526.7403721809387,
+      "max": 535.8427613973618,
+      "span": 9.102389216423035,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.47003477811813354,
+      "resid_min": -0.11162459850311279,
+      "resid_max": 8.990764617919922
+    },
+    {
+      "solver": "yoits9090",
+      "n": 4,
+      "median": 544.5379018783569,
+      "min": 531.1103761196136,
+      "max": 545.1758652925491,
+      "span": 14.065489172935486,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 0.7213391363620758,
+      "resid_min": -0.31834840774536133,
+      "resid_max": 14.5505890250206
+    },
+    {
+      "solver": "alfranli123",
+      "n": 4,
+      "median": 534.0803042054176,
+      "min": 526.536762714386,
+      "max": 536.9893461465836,
+      "span": 10.45258343219757,
+      "n_below_512": 0,
+      "share_below_512": 0.0,
+      "median_day_residual": 3.7323161959648132,
+      "resid_min": -3.8112252950668335,
+      "resid_max": 6.641358137130737
+    }
+  ],
+  "e2_consistent_low_solvers": [],
+  "e2_always_below_pack_solvers": [],
+  "e2_low_receipts": [
+    {
+      "day": "2026-08-18",
+      "solver": "BitWonka",
+      "id": "5cdc9c17-0fdc-4d49-b2c8-8cea75eb9c6f",
+      "prefill_ms": 500.30723214149475,
+      "status": "rejected"
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "scarletbright",
+      "id": "ac89ef87-3d4d-4bd9-88a0-9ae586b2bedf",
+      "prefill_ms": 504.64336574077606,
+      "status": "rejected"
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "Amal-David",
+      "id": "a9dd132a-eff8-4b5c-acb6-1a93b5a53799",
+      "prefill_ms": 504.6730190515518,
+      "status": "rejected"
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "vibecodooor",
+      "id": "8b84c190-34d8-49a7-9572-5d979a7a4bca",
+      "prefill_ms": 504.79452311992645,
+      "status": "rejected"
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "Amal-David",
+      "id": "43925f29-ac1e-4ae1-8fef-c0c5dd8af10c",
+      "prefill_ms": 504.8033446073532,
+      "status": "rejected"
+    }
+  ],
+  "e2_solver_median_residual_spread": {
+    "min": -0.3850124776363373,
+    "max": 3.7323161959648132,
+    "sd": 0.560497571178719,
+    "n_within_0p5ms": 46,
+    "n_solvers": 48
+  },
+  "e2_anova": {
+    "groups": 48,
+    "n": 764,
+    "ms_between": 456.6902753162716,
+    "ms_within": 416.5604988842915,
+    "F": 1.0963360101100872,
+    "df": [
+      47,
+      716
+    ],
+    "solver_sd_ms": 1.5878420886046252,
+    "within_sd_ms": 20.409813788574642
+  },
+  "serial_reference": {
+    "plutarch": 0.037987361057082454,
+    "drama": 0.037979217426321356,
+    "travel": 0.03799415571871036,
+    "beagle": 0.037979209126109935,
+    "medicine": 0.03798085268689218,
+    "essays": 0.03799026990613108,
+    "republic": 0.037979695183192386,
+    "botany": 0.03799011286458774
+  },
+  "e3_neutral_all": [
+    {
+      "id": "8b84c190-34d8-49a7-9572-5d979a7a4bca",
+      "solver": "vibecodooor",
+      "day": "2026-08-23",
+      "official": 3.71979181535607,
+      "neutral": 3.7289235049595675,
+      "neutral_prefill_corrected": 3.712479091008428,
+      "prefill_ms": 504.79452311992645,
+      "commit": "bd174e6928b867fa867d46460da694bbb604af92"
+    },
+    {
+      "id": "ac89ef87-3d4d-4bd9-88a0-9ae586b2bedf",
+      "solver": "scarletbright",
+      "day": "2026-08-23",
+      "official": 3.72298063751445,
+      "neutral": 3.7241681006235545,
+      "neutral_prefill_corrected": 3.7078439857283847,
+      "prefill_ms": 504.64336574077606,
+      "commit": "9b226614edb75442c5d0931008e2656be8709c9c"
+    },
+    {
+      "id": "43925f29-ac1e-4ae1-8fef-c0c5dd8af10c",
+      "solver": "Amal-David",
+      "day": "2026-08-23",
+      "official": 3.71654402427203,
+      "neutral": 3.7214534666386645,
+      "neutral_prefill_corrected": 3.7051214607579874,
+      "prefill_ms": 504.8033446073532,
+      "commit": "0bd305cd908d5a2a4ad5a6ffde1deffd826ce647"
+    },
+    {
+      "id": "9f63972a-ff20-4bc1-b769-47f09557ef68",
+      "solver": "ofou",
+      "day": "2026-08-23",
+      "official": 3.70221861613561,
+      "neutral": 3.7177563218151004,
+      "neutral_prefill_corrected": 3.7160515110124948,
+      "prefill_ms": 526.132121682167,
+      "commit": "1f61c9f60f0f499305905c96ddfaf1b265fd379a"
+    },
+    {
+      "id": "b3868faa-ea95-4494-9ab2-319fe7c8c700",
+      "solver": "a-github-name",
+      "day": "2026-08-23",
+      "official": 3.70438562004587,
+      "neutral": 3.717196218293557,
+      "neutral_prefill_corrected": 3.7156734109761804,
+      "prefill_ms": 526.3831168413162,
+      "commit": "8ad3ffcc10a30ac95f7c981148577d19a17785b8"
+    },
+    {
+      "id": "ec24d591-0c2d-4069-8900-94f3068c4a28",
+      "solver": "newjordan",
+      "day": "2026-08-23",
+      "official": 3.7291100105909,
+      "neutral": 3.716765403237182,
+      "neutral_prefill_corrected": 3.7156667524459976,
+      "prefill_ms": 526.2005031108856,
+      "commit": "0863b06ac16e26e48fc06e97444095b00feb66d4"
+    },
+    {
+      "id": "10bdecde-50ae-4cf8-9329-88c48ae35e4a",
+      "solver": "jungjipdo",
+      "day": "2026-08-23",
+      "official": 3.71140769136156,
+      "neutral": 3.7134604944155214,
+      "neutral_prefill_corrected": 3.712636352040851,
+      "prefill_ms": 526.7644822597504,
+      "commit": "79e7f9c40275165a9e37227d000ba7cbf8e663f7"
+    },
+    {
+      "id": "f89b0aeb-1666-4356-aa0f-a8ab6acc3298",
+      "solver": "igneous-prose",
+      "day": "2026-08-23",
+      "official": 3.71243030620336,
+      "neutral": 3.713344272865074,
+      "neutral_prefill_corrected": 3.7131845129012464,
+      "prefill_ms": 527.2636413574219,
+      "commit": "ed9389eaaf85e03b19bf14cb181e3ff8c20ae3bc"
+    },
+    {
+      "id": "4debb1df-09a2-4ba3-9149-d94a661b1917",
+      "solver": "nijaru",
+      "day": "2026-08-23",
+      "official": 3.69722452038952,
+      "neutral": 3.71189561121961,
+      "neutral_prefill_corrected": 3.7106286882709263,
+      "prefill_ms": 526.2472480535507,
+      "commit": "e6f166dc34eef3e6bdd4c10c7de155bc41772f70"
+    },
+    {
+      "id": "570e0e35-ab52-4384-9b07-e391e3af1efe",
+      "solver": "rinaldofesta",
+      "day": "2026-08-23",
+      "official": 3.70543887502224,
+      "neutral": 3.7115012227430313,
+      "neutral_prefill_corrected": 3.711004548428575,
+      "prefill_ms": 526.9011408090591,
+      "commit": "76ac44e7fdc4679ce4b25bec46ddf3496a7d9e6d"
+    },
+    {
+      "id": "5a9f130a-a29b-4b92-84ad-f0a2a59af210",
+      "solver": "morganmcg1",
+      "day": "2026-08-23",
+      "official": 3.70784519415395,
+      "neutral": 3.709058447251432,
+      "neutral_prefill_corrected": 3.709163189793437,
+      "prefill_ms": 527.3595005273819,
+      "commit": "8ba6e73837f525553cc99a5b71ec1a5e479ca7b0"
+    },
+    {
+      "id": "26846d30-518d-4b58-86b4-82f4cbebd9e5",
+      "solver": "Lieisyourlie",
+      "day": "2026-08-23",
+      "official": 3.7000948232235,
+      "neutral": 3.7082169633871844,
+      "neutral_prefill_corrected": 3.7075342648474363,
+      "prefill_ms": 526.8809795379639,
+      "commit": "cf980b4cf7c5ff8bfad18626737d15fd50bc07b7"
+    }
+  ],
+  "e3_neutral_excluding_anomaly": [
+    {
+      "id": "9f63972a-ff20-4bc1-b769-47f09557ef68",
+      "solver": "ofou",
+      "day": "2026-08-23",
+      "official": 3.70221861613561,
+      "neutral": 3.7177563218151004,
+      "neutral_prefill_corrected": 3.7160515110124948,
+      "prefill_ms": 526.132121682167,
+      "commit": "1f61c9f60f0f499305905c96ddfaf1b265fd379a"
+    },
+    {
+      "id": "83134a4a-b00c-493b-98ed-76556d9b802d",
+      "solver": "scarletbright",
+      "day": "2026-08-23",
+      "official": 3.70748656071168,
+      "neutral": 3.7173177148014647,
+      "neutral_prefill_corrected": 3.711556967272857,
+      "prefill_ms": 520.1586484909058,
+      "commit": null
+    },
+    {
+      "id": "b3868faa-ea95-4494-9ab2-319fe7c8c700",
+      "solver": "a-github-name",
+      "day": "2026-08-23",
+      "official": 3.70438562004587,
+      "neutral": 3.717196218293557,
+      "neutral_prefill_corrected": 3.7156734109761804,
+      "prefill_ms": 526.3831168413162,
+      "commit": "8ad3ffcc10a30ac95f7c981148577d19a17785b8"
+    },
+    {
+      "id": "ec24d591-0c2d-4069-8900-94f3068c4a28",
+      "solver": "newjordan",
+      "day": "2026-08-23",
+      "official": 3.7291100105909,
+      "neutral": 3.716765403237182,
+      "neutral_prefill_corrected": 3.7156667524459976,
+      "prefill_ms": 526.2005031108856,
+      "commit": "0863b06ac16e26e48fc06e97444095b00feb66d4"
+    },
+    {
+      "id": "10bdecde-50ae-4cf8-9329-88c48ae35e4a",
+      "solver": "jungjipdo",
+      "day": "2026-08-23",
+      "official": 3.71140769136156,
+      "neutral": 3.7134604944155214,
+      "neutral_prefill_corrected": 3.712636352040851,
+      "prefill_ms": 526.7644822597504,
+      "commit": "79e7f9c40275165a9e37227d000ba7cbf8e663f7"
+    },
+    {
+      "id": "f89b0aeb-1666-4356-aa0f-a8ab6acc3298",
+      "solver": "igneous-prose",
+      "day": "2026-08-23",
+      "official": 3.71243030620336,
+      "neutral": 3.713344272865074,
+      "neutral_prefill_corrected": 3.7131845129012464,
+      "prefill_ms": 527.2636413574219,
+      "commit": "ed9389eaaf85e03b19bf14cb181e3ff8c20ae3bc"
+    },
+    {
+      "id": "4117c901-8b77-4a0a-9554-5b8a13bca9f9",
+      "solver": "vibecodooor",
+      "day": "2026-08-23",
+      "official": 3.70838853836379,
+      "neutral": 3.7119289896422814,
+      "neutral_prefill_corrected": 3.7112236081788366,
+      "prefill_ms": 527.2396206855774,
+      "commit": "3f7981b11d9e73d0142c6fa7c3dd4924c2fcc6d3"
+    },
+    {
+      "id": "4debb1df-09a2-4ba3-9149-d94a661b1917",
+      "solver": "nijaru",
+      "day": "2026-08-23",
+      "official": 3.69722452038952,
+      "neutral": 3.71189561121961,
+      "neutral_prefill_corrected": 3.7106286882709263,
+      "prefill_ms": 526.2472480535507,
+      "commit": "e6f166dc34eef3e6bdd4c10c7de155bc41772f70"
+    },
+    {
+      "id": "570e0e35-ab52-4384-9b07-e391e3af1efe",
+      "solver": "rinaldofesta",
+      "day": "2026-08-23",
+      "official": 3.70543887502224,
+      "neutral": 3.7115012227430313,
+      "neutral_prefill_corrected": 3.711004548428575,
+      "prefill_ms": 526.9011408090591,
+      "commit": "76ac44e7fdc4679ce4b25bec46ddf3496a7d9e6d"
+    },
+    {
+      "id": "5b923d0f-274a-4bae-b877-90f58824d697",
+      "solver": "Amal-David",
+      "day": "2026-08-23",
+      "official": 3.70574769319058,
+      "neutral": 3.7107729534618565,
+      "neutral_prefill_corrected": 3.7099134494754336,
+      "prefill_ms": 526.7977714538574,
+      "commit": "6d4fad6eca9068bd085e6e87b878e84917b0e842"
+    },
+    {
+      "id": "5a9f130a-a29b-4b92-84ad-f0a2a59af210",
+      "solver": "morganmcg1",
+      "day": "2026-08-23",
+      "official": 3.70784519415395,
+      "neutral": 3.709058447251432,
+      "neutral_prefill_corrected": 3.709163189793437,
+      "prefill_ms": 527.3595005273819,
+      "commit": "8ba6e73837f525553cc99a5b71ec1a5e479ca7b0"
+    },
+    {
+      "id": "26846d30-518d-4b58-86b4-82f4cbebd9e5",
+      "solver": "Lieisyourlie",
+      "day": "2026-08-23",
+      "official": 3.7000948232235,
+      "neutral": 3.7082169633871844,
+      "neutral_prefill_corrected": 3.7075342648474363,
+      "prefill_ms": 526.8809795379639,
+      "commit": "cf980b4cf7c5ff8bfad18626737d15fd50bc07b7"
+    }
+  ],
+  "e3_neutral_prefill_corrected": [
+    {
+      "id": "9f63972a-ff20-4bc1-b769-47f09557ef68",
+      "solver": "ofou",
+      "day": "2026-08-23",
+      "official": 3.70221861613561,
+      "neutral": 3.7177563218151004,
+      "neutral_prefill_corrected": 3.7160515110124948,
+      "prefill_ms": 526.132121682167,
+      "commit": "1f61c9f60f0f499305905c96ddfaf1b265fd379a"
+    },
+    {
+      "id": "b3868faa-ea95-4494-9ab2-319fe7c8c700",
+      "solver": "a-github-name",
+      "day": "2026-08-23",
+      "official": 3.70438562004587,
+      "neutral": 3.717196218293557,
+      "neutral_prefill_corrected": 3.7156734109761804,
+      "prefill_ms": 526.3831168413162,
+      "commit": "8ad3ffcc10a30ac95f7c981148577d19a17785b8"
+    },
+    {
+      "id": "ec24d591-0c2d-4069-8900-94f3068c4a28",
+      "solver": "newjordan",
+      "day": "2026-08-23",
+      "official": 3.7291100105909,
+      "neutral": 3.716765403237182,
+      "neutral_prefill_corrected": 3.7156667524459976,
+      "prefill_ms": 526.2005031108856,
+      "commit": "0863b06ac16e26e48fc06e97444095b00feb66d4"
+    },
+    {
+      "id": "f89b0aeb-1666-4356-aa0f-a8ab6acc3298",
+      "solver": "igneous-prose",
+      "day": "2026-08-23",
+      "official": 3.71243030620336,
+      "neutral": 3.713344272865074,
+      "neutral_prefill_corrected": 3.7131845129012464,
+      "prefill_ms": 527.2636413574219,
+      "commit": "ed9389eaaf85e03b19bf14cb181e3ff8c20ae3bc"
+    },
+    {
+      "id": "10bdecde-50ae-4cf8-9329-88c48ae35e4a",
+      "solver": "jungjipdo",
+      "day": "2026-08-23",
+      "official": 3.71140769136156,
+      "neutral": 3.7134604944155214,
+      "neutral_prefill_corrected": 3.712636352040851,
+      "prefill_ms": 526.7644822597504,
+      "commit": "79e7f9c40275165a9e37227d000ba7cbf8e663f7"
+    },
+    {
+      "id": "8b84c190-34d8-49a7-9572-5d979a7a4bca",
+      "solver": "vibecodooor",
+      "day": "2026-08-23",
+      "official": 3.71979181535607,
+      "neutral": 3.7289235049595675,
+      "neutral_prefill_corrected": 3.712479091008428,
+      "prefill_ms": 504.79452311992645,
+      "commit": "bd174e6928b867fa867d46460da694bbb604af92"
+    },
+    {
+      "id": "83134a4a-b00c-493b-98ed-76556d9b802d",
+      "solver": "scarletbright",
+      "day": "2026-08-23",
+      "official": 3.70748656071168,
+      "neutral": 3.7173177148014647,
+      "neutral_prefill_corrected": 3.711556967272857,
+      "prefill_ms": 520.1586484909058,
+      "commit": null
+    },
+    {
+      "id": "570e0e35-ab52-4384-9b07-e391e3af1efe",
+      "solver": "rinaldofesta",
+      "day": "2026-08-23",
+      "official": 3.70543887502224,
+      "neutral": 3.7115012227430313,
+      "neutral_prefill_corrected": 3.711004548428575,
+      "prefill_ms": 526.9011408090591,
+      "commit": "76ac44e7fdc4679ce4b25bec46ddf3496a7d9e6d"
+    },
+    {
+      "id": "4debb1df-09a2-4ba3-9149-d94a661b1917",
+      "solver": "nijaru",
+      "day": "2026-08-23",
+      "official": 3.69722452038952,
+      "neutral": 3.71189561121961,
+      "neutral_prefill_corrected": 3.7106286882709263,
+      "prefill_ms": 526.2472480535507,
+      "commit": "e6f166dc34eef3e6bdd4c10c7de155bc41772f70"
+    },
+    {
+      "id": "5b923d0f-274a-4bae-b877-90f58824d697",
+      "solver": "Amal-David",
+      "day": "2026-08-23",
+      "official": 3.70574769319058,
+      "neutral": 3.7107729534618565,
+      "neutral_prefill_corrected": 3.7099134494754336,
+      "prefill_ms": 526.7977714538574,
+      "commit": "6d4fad6eca9068bd085e6e87b878e84917b0e842"
+    },
+    {
+      "id": "5a9f130a-a29b-4b92-84ad-f0a2a59af210",
+      "solver": "morganmcg1",
+      "day": "2026-08-23",
+      "official": 3.70784519415395,
+      "neutral": 3.709058447251432,
+      "neutral_prefill_corrected": 3.709163189793437,
+      "prefill_ms": 527.3595005273819,
+      "commit": "8ba6e73837f525553cc99a5b71ec1a5e479ca7b0"
+    },
+    {
+      "id": "26846d30-518d-4b58-86b4-82f4cbebd9e5",
+      "solver": "Lieisyourlie",
+      "day": "2026-08-23",
+      "official": 3.7000948232235,
+      "neutral": 3.7082169633871844,
+      "neutral_prefill_corrected": 3.7075342648474363,
+      "prefill_ms": 526.8809795379639,
+      "commit": "cf980b4cf7c5ff8bfad18626737d15fd50bc07b7"
+    }
+  ],
+  "anchor_5a9f130a": {
+    "id": "5a9f130a-a29b-4b92-84ad-f0a2a59af210",
+    "solver": "morganmcg1",
+    "day": "2026-08-23",
+    "official": 3.70784519415395,
+    "neutral": 3.709058447251432,
+    "neutral_prefill_corrected": 3.709163189793437,
+    "prefill_ms": 527.3595005273819,
+    "commit": "8ba6e73837f525553cc99a5b71ec1a5e479ca7b0"
+  },
+  "anchor_ec24d591": {
+    "id": "ec24d591-0c2d-4069-8900-94f3068c4a28",
+    "solver": "newjordan",
+    "day": "2026-08-23",
+    "official": 3.7291100105909,
+    "neutral": 3.716765403237182,
+    "neutral_prefill_corrected": 3.7156667524459976,
+    "prefill_ms": 526.2005031108856,
+    "commit": "0863b06ac16e26e48fc06e97444095b00feb66d4"
+  },
+  "e3_receipts_below_525ms": [
+    {
+      "day": "2026-08-18",
+      "solver": "BitWonka",
+      "id": "5cdc9c17-0fdc-4d49-b2c8-8cea75eb9c6f",
+      "prefill_ms": 500.30723214149475
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "scarletbright",
+      "id": "ac89ef87-3d4d-4bd9-88a0-9ae586b2bedf",
+      "prefill_ms": 504.64336574077606
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "Amal-David",
+      "id": "a9dd132a-eff8-4b5c-acb6-1a93b5a53799",
+      "prefill_ms": 504.6730190515518
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "vibecodooor",
+      "id": "8b84c190-34d8-49a7-9572-5d979a7a4bca",
+      "prefill_ms": 504.79452311992645
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "Amal-David",
+      "id": "43925f29-ac1e-4ae1-8fef-c0c5dd8af10c",
+      "prefill_ms": 504.8033446073532
+    },
+    {
+      "day": "2026-08-23",
+      "solver": "scarletbright",
+      "id": "83134a4a-b00c-493b-98ed-76556d9b802d",
+      "prefill_ms": 520.1586484909058
+    },
+    {
+      "day": "2026-08-19",
+      "solver": "kaarelkaarelson",
+      "id": "d5e94249-1dfb-4d98-abf9-3f042cf9d727",
+      "prefill_ms": 524.1106301546097
+    }
+  ],
+  "e3b_slope_best": {
+    "slope": 0.19082441167461148,
+    "se": 0.023674075609813404,
+    "t": 8.060479945223742,
+    "n": 62
+  },
+  "e3b_slope_median": {
+    "slope": 0.09083241163148567,
+    "se": 0.02668216278843524,
+    "t": 3.404237218388266,
+    "n": 62
+  },
+  "e3_neutral_latest_receipt": [
+    {
+      "id": "b3868faa-ea95-4494-9ab2-319fe7c8c700",
+      "solver": "a-github-name",
+      "day": "2026-08-23",
+      "official": 3.70438562004587,
+      "neutral": 3.717196218293557,
+      "neutral_prefill_corrected": 3.7156734109761804,
+      "prefill_ms": 526.3831168413162,
+      "commit": "8ad3ffcc10a30ac95f7c981148577d19a17785b8"
+    },
+    {
+      "id": "db5aeaeb-1436-4b4e-ad51-9217c2481128",
+      "solver": "newjordan",
+      "day": "2026-08-23",
+      "official": 3.7150755541061,
+      "neutral": 3.713132619591041,
+      "neutral_prefill_corrected": 3.7131006754841054,
+      "prefill_ms": 527.3703932762146,
+      "commit": "1bc5a551555c5dcb574c51e06eef133bd0625303"
+    },
+    {
+      "id": "8b84c190-34d8-49a7-9572-5d979a7a4bca",
+      "solver": "vibecodooor",
+      "day": "2026-08-23",
+      "official": 3.71979181535607,
+      "neutral": 3.7289235049595675,
+      "neutral_prefill_corrected": 3.712479091008428,
+      "prefill_ms": 504.79452311992645,
+      "commit": "bd174e6928b867fa867d46460da694bbb604af92"
+    },
+    {
+      "id": "570e0e35-ab52-4384-9b07-e391e3af1efe",
+      "solver": "rinaldofesta",
+      "day": "2026-08-23",
+      "official": 3.70543887502224,
+      "neutral": 3.7115012227430313,
+      "neutral_prefill_corrected": 3.711004548428575,
+      "prefill_ms": 526.9011408090591,
+      "commit": "76ac44e7fdc4679ce4b25bec46ddf3496a7d9e6d"
+    },
+    {
+      "id": "4debb1df-09a2-4ba3-9149-d94a661b1917",
+      "solver": "nijaru",
+      "day": "2026-08-23",
+      "official": 3.69722452038952,
+      "neutral": 3.71189561121961,
+      "neutral_prefill_corrected": 3.7106286882709263,
+      "prefill_ms": 526.2472480535507,
+      "commit": "e6f166dc34eef3e6bdd4c10c7de155bc41772f70"
+    },
+    {
+      "id": "5b923d0f-274a-4bae-b877-90f58824d697",
+      "solver": "Amal-David",
+      "day": "2026-08-23",
+      "official": 3.70574769319058,
+      "neutral": 3.7107729534618565,
+      "neutral_prefill_corrected": 3.7099134494754336,
+      "prefill_ms": 526.7977714538574,
+      "commit": "6d4fad6eca9068bd085e6e87b878e84917b0e842"
+    },
+    {
+      "id": "538e2eb6-ee6d-4c51-8ae1-19f0fa414cbe",
+      "solver": "ofou",
+      "day": "2026-08-23",
+      "official": 3.7079053265063,
+      "neutral": 3.7098107308589174,
+      "neutral_prefill_corrected": 3.7089305587132193,
+      "prefill_ms": 527.4524986743927,
+      "commit": "134881b5b12e9de4b9be66ce54726c4559c4d68e"
+    },
+    {
+      "id": "3bc963db-f75b-4383-ab65-2c2fe6feb9a9",
+      "solver": "Lieisyourlie",
+      "day": "2026-08-23",
+      "official": 3.69858756000674,
+      "neutral": 3.7081695420793386,
+      "neutral_prefill_corrected": 3.7072903601903926,
+      "prefill_ms": 526.735782623291,
+      "commit": "cdceb61c34b4373cc2e5a5723d87b2037cddc4ca"
+    },
+    {
+      "id": "5fe22f58-a7be-4c82-a8b7-c02ef2aa760d",
+      "solver": "igneous-prose",
+      "day": "2026-08-23",
+      "official": 3.70336103100174,
+      "neutral": 3.7074429389533154,
+      "neutral_prefill_corrected": 3.7069863335100774,
+      "prefill_ms": 527.2512435913086,
+      "commit": "5fbde1e6f12b344279588d8dbe002b31485beae9"
+    },
+    {
+      "id": "de827d46-ffe2-47a5-a976-5430f969a879",
+      "solver": "kirtangajjar",
+      "day": "2026-08-23",
+      "official": 3.69740284099821,
+      "neutral": 3.7062143599845507,
+      "neutral_prefill_corrected": 3.7055270134924343,
+      "prefill_ms": 527.1179974079132,
+      "commit": "c6cab5ec8dc1f239aa1d465a9b1761c56a1267e4"
+    },
+    {
+      "id": "165d4ba7-1abb-469d-a8cf-e546c3ab6622",
+      "solver": "jonathan308",
+      "day": "2026-08-23",
+      "official": 3.69634718565856,
+      "neutral": 3.7008812113555143,
+      "neutral_prefill_corrected": 3.7003267636506685,
+      "prefill_ms": 527.2001326084137,
+      "commit": "2fbf8573741611235323799c7575407a2d38f61a"
+    },
+    {
+      "id": "1509bf95-cee0-423f-92ea-0f58edbf5d80",
+      "solver": "morganmcg1",
+      "day": "2026-08-23",
+      "official": 3.68242218292127,
+      "neutral": 3.696322607448073,
+      "neutral_prefill_corrected": 3.695214094653348,
+      "prefill_ms": 526.7127454280853,
+      "commit": null
+    }
+  ],
+  "e3_neutral_lastday_mean": [
+    {
+      "solver": "vibecodooor",
+      "n": 3,
+      "mean": 3.706590077399861,
+      "sem": 0.005273740436499095,
+      "best": 3.712479091008428
+    },
+    {
+      "solver": "igneous-prose",
+      "n": 5,
+      "mean": 3.700457353451316,
+      "sem": 0.007525961729193184,
+      "best": 3.7131845129012464
+    },
+    {
+      "solver": "a-github-name",
+      "n": 4,
+      "mean": 3.699636661430269,
+      "sem": 0.00939340351021646,
+      "best": 3.7156734109761804
+    },
+    {
+      "solver": "newjordan",
+      "n": 11,
+      "mean": 3.696952706042871,
+      "sem": 0.006739195862946841,
+      "best": 3.7156667524459976
+    },
+    {
+      "solver": "jungjipdo",
+      "n": 7,
+      "mean": 3.692264430296902,
+      "sem": 0.00899269257675459,
+      "best": 3.712636352040851
+    },
+    {
+      "solver": "scarletbright",
+      "n": 10,
+      "mean": 3.686350655124597,
+      "sem": 0.007349181004509589,
+      "best": 3.711556967272857
+    },
+    {
+      "solver": "ofou",
+      "n": 8,
+      "mean": 3.6854349111686076,
+      "sem": 0.011997531273574768,
+      "best": 3.7160515110124948
+    },
+    {
+      "solver": "Lieisyourlie",
+      "n": 7,
+      "mean": 3.677006332361069,
+      "sem": 0.018129690663072417,
+      "best": 3.7075342648474363
+    },
+    {
+      "solver": "Amal-David",
+      "n": 5,
+      "mean": 3.6705810671735852,
+      "sem": 0.017110601652658316,
+      "best": 3.7099134494754336
+    },
+    {
+      "solver": "kirtangajjar",
+      "n": 5,
+      "mean": 3.6649825949147434,
+      "sem": 0.017110885321163085,
+      "best": 3.7064437408929463
+    },
+    {
+      "solver": "yijunyu",
+      "n": 3,
+      "mean": 3.632279285535327,
+      "sem": 0.05032969415993557,
+      "best": 3.698638775454052
+    },
+    {
+      "solver": "fkiene",
+      "n": 4,
+      "mean": 3.6166044570730427,
+      "sem": 0.0668696677237133,
+      "best": 3.7028106713553672
+    }
+  ],
+  "e3_best_of_n_exposure": [
+    {
+      "solver": "ofou",
+      "n": 17,
+      "max": 3.7160515110124948,
+      "second": 3.714543973811682,
+      "n_within_0p01_of_max": 4,
+      "top2_mean": 3.7152977424120883
+    },
+    {
+      "solver": "a-github-name",
+      "n": 5,
+      "max": 3.7156734109761804,
+      "second": 3.706366889165242,
+      "n_within_0p01_of_max": 2,
+      "top2_mean": 3.711020150070711
+    },
+    {
+      "solver": "newjordan",
+      "n": 68,
+      "max": 3.7156667524459976,
+      "second": 3.7131006754841054,
+      "n_within_0p01_of_max": 6,
+      "top2_mean": 3.7143837139650513
+    },
+    {
+      "solver": "igneous-prose",
+      "n": 15,
+      "max": 3.7131845129012464,
+      "second": 3.7069863335100774,
+      "n_within_0p01_of_max": 4,
+      "top2_mean": 3.710085423205662
+    },
+    {
+      "solver": "jungjipdo",
+      "n": 17,
+      "max": 3.712636352040851,
+      "second": 3.7112177076640225,
+      "n_within_0p01_of_max": 4,
+      "top2_mean": 3.7119270298524367
+    },
+    {
+      "solver": "vibecodooor",
+      "n": 36,
+      "max": 3.712479091008428,
+      "second": 3.7112236081788366,
+      "n_within_0p01_of_max": 2,
+      "top2_mean": 3.7118513495936325
+    },
+    {
+      "solver": "scarletbright",
+      "n": 49,
+      "max": 3.711556967272857,
+      "second": 3.7083995274801786,
+      "n_within_0p01_of_max": 7,
+      "top2_mean": 3.709978247376518
+    },
+    {
+      "solver": "rinaldofesta",
+      "n": 4,
+      "max": 3.711004548428575,
+      "second": 3.7067973868748982,
+      "n_within_0p01_of_max": 2,
+      "top2_mean": 3.7089009676517364
+    },
+    {
+      "solver": "nijaru",
+      "n": 11,
+      "max": 3.7106286882709263,
+      "second": 3.709704991997409,
+      "n_within_0p01_of_max": 2,
+      "top2_mean": 3.7101668401341676
+    },
+    {
+      "solver": "Amal-David",
+      "n": 31,
+      "max": 3.7099134494754336,
+      "second": 3.7069669943579306,
+      "n_within_0p01_of_max": 3,
+      "top2_mean": 3.708440221916682
+    },
+    {
+      "solver": "morganmcg1",
+      "n": 32,
+      "max": 3.709163189793437,
+      "second": 3.695214094653348,
+      "n_within_0p01_of_max": 1,
+      "top2_mean": 3.7021886422233923
+    },
+    {
+      "solver": "Lieisyourlie",
+      "n": 78,
+      "max": 3.7075342648474363,
+      "second": 3.7072903601903926,
+      "n_within_0p01_of_max": 4,
+      "top2_mean": 3.7074123125189145
+    }
+  ],
+  "e3_neutral_top2_mean": [
+    {
+      "solver": "ofou",
+      "top2_mean": 3.7152977424120883,
+      "n": 17
+    },
+    {
+      "solver": "newjordan",
+      "top2_mean": 3.7143837139650513,
+      "n": 68
+    },
+    {
+      "solver": "jungjipdo",
+      "top2_mean": 3.7119270298524367,
+      "n": 17
+    },
+    {
+      "solver": "vibecodooor",
+      "top2_mean": 3.7118513495936325,
+      "n": 36
+    },
+    {
+      "solver": "a-github-name",
+      "top2_mean": 3.711020150070711,
+      "n": 5
+    },
+    {
+      "solver": "nijaru",
+      "top2_mean": 3.7101668401341676,
+      "n": 11
+    },
+    {
+      "solver": "igneous-prose",
+      "top2_mean": 3.710085423205662,
+      "n": 15
+    },
+    {
+      "solver": "scarletbright",
+      "top2_mean": 3.709978247376518,
+      "n": 49
+    },
+    {
+      "solver": "rinaldofesta",
+      "top2_mean": 3.7089009676517364,
+      "n": 4
+    },
+    {
+      "solver": "Amal-David",
+      "top2_mean": 3.708440221916682,
+      "n": 31
+    },
+    {
+      "solver": "Lieisyourlie",
+      "top2_mean": 3.7074123125189145,
+      "n": 78
+    },
+    {
+      "solver": "kirtangajjar",
+      "top2_mean": 3.7059853771926905,
+      "n": 5
+    }
+  ],
+  "e3c": {
+    "top12_spread": 0.008517246165058445,
+    "first_minus_second": 0.00037810003631433275,
+    "first_minus_fourth": 0.0028669981112483534,
+    "run_level_neutral_sd_units_at_beta_point": 0.0070413973661571354
+  }
+}

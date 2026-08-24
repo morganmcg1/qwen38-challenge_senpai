@@ -1,0 +1,96 @@
+==============================================================================
+E1  uniform candidate-leg lever priced through the real median rule
+==============================================================================
+receipt          : 5a9f130a
+solver           : morganmcg1
+commit           : 8ba6e738
+status           : rejected  createdAt 2026-08-23T16:29:11.470Z
+decode_tokens    : 512
+pairs_per_prompt : 1
+board officialScore          : 3.70784519415395
+recomputed published (delta=0): 3.707845194
+max |serial/mtp - raw_ratio_of_means| = 4.545e-11
+
+baseline per-prompt state (sorted by raw)
+  rank  prompt             serial_spt      mtp_spt  cand_leg_ms        raw  central
+     1  plutarch            0.0379740    0.0301213    15422.125   1.260700  
+     2  drama               0.0379454    0.0178803     9154.715   2.122190  
+     3  travel              0.0379646    0.0156379     8006.595   2.427732  
+     4  beagle              0.0379208    0.0106961     5476.397   3.545297  <-- paid
+     5  essays              0.0380201    0.0098233     5029.534   3.870394  <-- paid
+     6  medicine            0.0379068    0.0097036     4968.243   3.906467  
+     7  republic            0.0380130    0.0096975     4965.096   3.919898  
+     8  botany              0.0379495    0.0096485     4940.021   3.933208  
+
+sweep: uniform -delta ms removed from the candidate leg of ALL 8 prompts
+  delta_ms   published      d_pub   d_pub_%     per_ms  central prompts                    reorder?
+       2.0    3.709263  +0.001417  +0.0382%   0.000709  beagle, essays                     
+       5.0    3.711391  +0.003546  +0.0956%   0.000709  beagle, essays                     
+      10.0    3.714943  +0.007098  +0.1914%   0.000710  beagle, essays                     
+      15.0    3.718503  +0.010657  +0.2874%   0.000710  beagle, essays                     
+      20.0    3.722069  +0.014224  +0.3836%   0.000711  beagle, essays                     
+      25.0    3.725642  +0.017797  +0.4800%   0.000712  beagle, essays                     
+
+fine scan for order-statistic crossings (0.1 ms grid, 0..40 ms)
+  none: the 4th/5th order statistics keep the same identity over 0..40 ms
+
+exact crossing delta for each adjacent pair (closed form, ms)
+  raw_i(d) = s_i/(m_i - d/T) so raw_i > raw_j  <=>  s_i*m_j - s_j*m_i > (d/T)*(s_i - s_j)
+  rank1/2  plutarch   vs drama       d* = -8317126.8 ms  (wrong sign: a saving never causes this swap)
+  rank2/3  drama      vs travel      d* = +2280174.6 ms
+  rank3/4  travel     vs beagle      d* = -2185953.3 ms  (wrong sign: a saving never causes this swap)
+  rank4/5  beagle     vs essays      d* = +176187.6 ms
+  rank5/6  essays     vs medicine    d* = -15541.6 ms  (wrong sign: a saving never causes this swap)
+  rank6/7  medicine   vs republic    d* = +6091.2 ms
+  rank7/8  republic   vs botany      d* = -10033.1 ms  (wrong sign: a saving never causes this swap)
+  max evaluable delta = shortest candidate leg = 4940.0 ms (a larger saving would make a leg non-positive)
+  smallest positive crossing delta = 6091.2 ms > 4940.0 ms, so NO reordering is reachable by any uniform saving.
+
+extended sweep: larger levers, including full prefill removal
+  published prefill probe = 0.001029999 s/seed-token -> 527.36 ms over 512 seed tokens
+    delta_ms   published      d_pub   d_pub_%     per_ms  central prompts            note
+       1.140    3.708653  +0.000808  +0.0218%   0.000709  beagle, essays             measured ours-vs-ec24d591 prefill gap
+      50.000    3.743610  +0.035765  +0.9646%   0.000715  beagle, essays             
+     100.000    3.780073  +0.072228  +1.9480%   0.000722  beagle, essays             
+     250.000    3.893861  +0.186016  +5.0168%   0.000744  beagle, essays             
+     527.360    4.123414  +0.415568 +11.2078%   0.000788  beagle, essays             
+
+what the median rule costs you versus the two common shortcuts
+  delta_ms  median rule  mean-of-raw  central-only  median/mean
+       2.0    +0.001417    +0.001102     +0.001417       1.2865
+       5.0    +0.003546    +0.002756     +0.003546       1.2865
+      10.0    +0.007098    +0.005517     +0.007098       1.2865
+      15.0    +0.010657    +0.008284     +0.010657       1.2866
+      20.0    +0.014224    +0.011055     +0.014224       1.2866
+      25.0    +0.017797    +0.013832     +0.017797       1.2866
+
+analytic marginal published score per ms at delta=0
+  d(published)/d(delta_ms) = 0.000708   (mean of the two central prompts)
+  per-prompt d(raw)/d(delta_ms):
+    rank1 plutarch         0.000082
+    rank2 drama            0.000232
+    rank3 travel           0.000303
+    rank4 beagle           0.000647  <-- paid
+    rank5 essays           0.000770  <-- paid
+    rank6 medicine         0.000786
+    rank7 republic         0.000789
+    rank8 botany           0.000796
+  spread max/min across prompts = 9.7398x
+  a uniform ms lever is NOT uniform in raw: the fastest-candidate prompt gains the most raw per ms.
+
+who pays: share of the uniform lever that reaches the published number
+  delta=  2.0 ms: sum of all 8 raw gains = +0.008815, published gain = +0.001417 (16.1% of the total raw movement)
+  delta=  5.0 ms: sum of all 8 raw gains = +0.022049, published gain = +0.003546 (16.1% of the total raw movement)
+  delta= 10.0 ms: sum of all 8 raw gains = +0.044139, published gain = +0.007098 (16.1% of the total raw movement)
+  delta= 15.0 ms: sum of all 8 raw gains = +0.066269, published gain = +0.010657 (16.1% of the total raw movement)
+  delta= 20.0 ms: sum of all 8 raw gains = +0.088442, published gain = +0.014224 (16.1% of the total raw movement)
+  delta= 25.0 ms: sum of all 8 raw gains = +0.110655, published gain = +0.017797 (16.1% of the total raw movement)
+
+gap accounting versus the promoted frontier receipt
+  reference          : ec24d591 score 3.729110011
+  ours               : 5a9f130a score 3.707845194
+  published gap      : +0.021264816
+  uniform candidate-leg saving needed to close it: 29.844 ms
+  measured prefill-probe gap (ours - reference): +1.159 ms = 3.88% of the 29.8 ms needed
+  that prefill gap priced through the median rule: +0.000821 published (3.86% of the gap)
+

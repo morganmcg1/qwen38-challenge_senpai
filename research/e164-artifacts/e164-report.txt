@@ -106,3 +106,36 @@ Q4  FINDING 259 and FINDING 279 are two replicates of ONE arm
   provenance of -0.0390 % +/- 0.0799: 1 match(es) from the base
      684821ed -> 24fb4012  channel=mtp      mean -0.0390 % sd 0.2259 se 0.0799
   -> FINDING 279's figure is a real candidate-leg measurement, not a mislabelled prefill number
+
+==============================================================================
+PROPOSED RULE E164  Significance of a board-deconvolved ranked A/B
+==============================================================================
+  scope: any claim of the form 'arm X moves the ranked serial leg, candidate leg or raw by D %' that is obtained by differencing officialMetrics.per_prompt cells of two Yukon receipts. harness=ranked only.
+
+  denominator ladder, use the first rung that applies:
+    rung 1  when two or more independent ranked receipts exist for the SAME arm against the SAME base
+             use  the sample sd of those single-receipt-pair estimates, with Student-t on n-1 dof
+             why  this is the only denominator that prices the whole receipt-level error
+    rung 2  when only one ranked receipt exists for the arm
+             use  the channel floor below, as a LOWER bound on the standard error
+             floor se, mean of 8, one receipt pair:  serial 0.1757 %   candidate 0.7759 %   raw 0.7064 %
+             why  the serial floor is exact: the pinned serial build is byte-identical on every receipt, so 199798 board pairs are a true null. The candidate and raw floors come from the single same-arm replicate pair on the board (dof 1), so they are the weakest supported values, not point estimates
+    rung 3  when never
+             use  the between-prompt sd of one receipt pair divided by sqrt(8)
+             why  it prices the prompt-to-prompt spread of one draw, not the error of the effect. The eight prompts are positively correlated on every off-diagonal
+
+  if a naive between-prompt z is unavoidable, use the measured critical values:
+    nominal |z|>1.96 really fires  30.0 % of the time under the true null
+    nominal |z|>3.00 really fires  13.5 % of the time under the true null
+    true 5 % critical value 4.30   2.5 % 5.24   1 % 6.53
+    sign test, all 8 same sign: nominal p 0.0078, measured rate 0.0685
+    sign test, 7 or 8 of 8:     nominal p 0.0703, measured rate 0.2303
+
+  minimum detectable effect from ONE receipt pair at 95 %:  serial 0.344 %   candidate 1.521 %   raw 1.385 %
+  a wide error bar still refutes a far larger prediction. An observed candidate-leg effect of 1.06 % with a 0.78 % standard error refutes a predicted 28.4 % at more than 30 sigma. State 'the effect is below X'; do not state 'the effect is exactly X'
+  every board-derived ranked A/B must report:
+    - name the channel: serial, candidate or raw
+    - name the number of independent ranked receipts behind the arm
+    - name which rung of the ladder produced the denominator
+    - quote a one-receipt candidate-leg effect as a bound, never as a point estimate
+  worked example: FINDING 259 claimed +1.0583 % on the candidate leg, se 0.2542, z 4.16 on rung 3. On rung 1 it is se 0.7759 %, t +0.929, p 0.523. not resolved. The two replicates of this arm differ by 1.0972 pp
