@@ -193,6 +193,91 @@ def observations(rounds: list[dict], position: int) -> list[tuple[float, int, fl
     return out
 
 
+def auc_interval(area: float, positives: int, negatives: int) -> tuple[float, float]:
+    """Hanley-McNeil 95% interval, so a null AUC is stated with its precision.
+
+    An AUC near 0.5 only closes a signal if the interval is narrow enough to
+    exclude a useful effect. Reporting the point estimate alone would let a
+    small sample masquerade as a negative result.
+    """
+    if positives < 1 or negatives < 1 or math.isnan(area):
+        return float("nan"), float("nan")
+    q1 = area / (2.0 - area)
+    q2 = 2.0 * area * area / (1.0 + area)
+    variance = (
+        area * (1.0 - area)
+        + (positives - 1) * (q1 - area * area)
+        + (negatives - 1) * (q2 - area * area)
+    ) / (positives * negatives)
+    spread = 1.959963985 * math.sqrt(max(variance, 0.0))
+    return max(0.0, area - spread), min(1.0, area + spread)
+
+
+def signal_auc(rounds: list[dict], position: int) -> dict:
+    """AUC of every signal the round already has, not just the margin.
+
+    The clamp uses the margin, and the streak gate uses the run of full
+    accepts. If none of them ranks acceptance better than chance, then no
+    re-tuning of this controller can help: the controller cannot separate
+    rounds it cannot tell apart, and the ceiling is a constant depth.
+    """
+    rows = []
+    for record in rounds:
+        if record["d"] <= position or record["acc"] < position:
+            continue
+        if math.isnan(record["margin"]) or record["streak"] is None:
+            continue
+        rows.append(
+            {
+                "accepted": 1 if record["acc"] > position else 0,
+                "margin": record["margin"],
+                "ema": record["ema"][position],
+                "streak": float(record["streak"]),
+            }
+        )
+    if not rows:
+        return {}
+    positives = sum(r["accepted"] for r in rows)
+    negatives = len(rows) - positives
+    scores = {}
+    for name in ("margin", "ema", "streak"):
+        value = auc([(r[name], r["accepted"], 0.0) for r in rows])
+        low, high = auc_interval(value, positives, negatives)
+        scores[name] = {"auc": value, "ci_low": low, "ci_high": high}
+    return {
+        "n": len(rows),
+        "positives": positives,
+        "base_rate": positives / len(rows),
+        "auc": scores,
+    }
+
+
+def oracle_ceiling(legs: list[dict]) -> list[dict]:
+    """The best any per-round depth rule could do, given perfect foresight.
+
+    A round that will accept `a` drafts gains nothing from proposing more than
+    `a` and loses a token for every one fewer, so `d = a` is the per-round
+    optimum whenever a marginal accepted token outprices a verify row. This is
+    an upper bound on adaptivity itself: no signal, however good, can beat it.
+    """
+    out = []
+    for leg in legs:
+        rounds = leg["rounds"]
+        if not rounds:
+            continue
+        mean_a = sum(record["acc"] for record in rounds) / len(rounds)
+        out.append(
+            {
+                "label": leg["label"],
+                "rounds": len(rounds),
+                "mean_depth": mean_a,
+                "mean_accepted": mean_a,
+                "raw": ranked_price(mean_a, mean_a)["raw"],
+            }
+        )
+    return out
+
+
 def fit_temperature(samples: list[tuple[float, int, float]]) -> tuple[float, float]:
     """MLE of T in P(accept) = sigmoid(margin / T) by golden-section search."""
     if not samples:
@@ -1036,6 +1121,11 @@ def main() -> int:
         report["clamp_counterfactual"] = clamp_counterfactual(
             adapt_legs, profile, args.offered
         )
+        pooled_pinned = [r for leg in pinned_legs for r in leg["rounds"]]
+        report["signal_auc"] = {
+            position: signal_auc(pooled_pinned, position) for position in (0, 1, 2)
+        }
+        report["oracle_ceiling"] = oracle_ceiling(pinned_legs)
         report["policy_sweep"] = policy_sweep(
             adapt_legs,
             profile,
@@ -1115,6 +1205,31 @@ def main() -> int:
                 f"{'':>9}{'':>8}{counter['pooled']['mean_model_error']:>+8.3f}"
                 f"{'':>8}{'':>9}"
                 f"{counter['pooled']['mean_raw_gain_from_clamp']:>+10.3f}"
+            )
+        print()
+
+    if report.get("signal_auc"):
+        print("=== can ANY recorded signal rank acceptance? (pinned arm) ===")
+        print(f"{'position':<9}{'n':>5}{'base':>7}   AUC with 95% interval")
+        for position, block in report["signal_auc"].items():
+            if not block:
+                continue
+            cells = "  ".join(
+                f"{name} {s['auc']:.3f} [{s['ci_low']:.3f},{s['ci_high']:.3f}]"
+                for name, s in block["auc"].items()
+            )
+            print(
+                f"{position:<9}{block['n']:>5}{block['base_rate']:>7.3f}   {cells}"
+            )
+        print("0.5 is chance; a useful controller signal needs clearly more.")
+        print()
+
+    if report.get("oracle_ceiling"):
+        print("=== oracle ceiling: perfect per-round foresight ===")
+        for entry in report["oracle_ceiling"]:
+            print(
+                f"  {entry['label']:<20} mean d = mean A = "
+                f"{entry['mean_depth']:.3f}  raw {entry['raw']:.3f}"
             )
         print()
 
