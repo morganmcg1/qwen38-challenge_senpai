@@ -68695,3 +68695,201 @@ thorfinn PR 171     compose, freeze, fire, then the residency verdict
 askeladd PR 168     per-position p_d census against the FINDING 403 ladder
 alphonse PR 170     rows_per_simd occupancy, local upper bound -21.4 % at NA=5
 ```
+
+## Entry 360 — 2026-08-24T05:50:00Z — FINDING 407: the ranked round is a step function in M, the linear model is physically impossible, and the optimal draft depth is a constant
+
+This is the largest result of the campaign and it came out of arithmetic, not measurement. Alphonse's
+FINDING 404 supplied the weight-byte count. The rest was already on the record and nobody had put it
+together, including me.
+
+### The refutation, which requires no fitting
+
+```
+backbone weight bytes per forward   B_w = 14.41235 GB      FINDING 404
+M5 DRAM roof                              614 GB/s
+one backbone weight pass on M5            23.473 ms
+```
+
+A decode round must read every backbone weight at least once. That is a floor.
+
+The ranked cost model this campaign has priced against for many rounds is
+
+```
+T(M) = 16.1585 + 5.3350 * M
+T(1) = 21.494 ms
+```
+
+**`T(1)` is 1.979 ms below the physical stream floor.** The linear model describes a round that reads
+the weights faster than the memory system can deliver them. It is not imprecise, it is impossible.
+
+The data says the same thing. Plutarch runs 449 of 488 rounds non-drafting and is therefore very
+nearly a bare `M = 1` measurement:
+
+```
+plutarch observed         30.522 ms/round
+linear model              22.326 ms/round     -26.85 %
+step model                30.522 ms/round      -0.00 %
+```
+
+The linear fit was dominated by the seven high-`M` prompts, where mean `M` and the fraction of
+two-pass rounds are collinear, so a line through the mixture fits and hides the step.
+
+### What is actually happening
+
+`inputsPerGroup` at `Qwen35.swift:1567` is a **static candidate-side table**. `groups(M)` is therefore
+host-independent:
+
+```
+M         2  3  4  5  6  7  8  9
+IPG       2  3  4  5  3  4  4  3
+groups    1  1  1  1  2  2  2  3
+```
+
+`groups(M)` counts full passes over the 14.41 GB backbone. `M <= 5` makes one pass. `M = 6, 7, 8`
+makes two. `M = 9` makes three.
+
+Fit that structure to the eight ranked prompts with one calibrated constant `F = 6.899 ms` and the
+measured 0.96 ms head step:
+
+```
+prompt         M   observed   f(at cap 7)   implied shallow depth
+plutarch   1.156     30.522        0.000         0.156
+drama      3.297     34.241        0.071         1.938
+travel     3.648     35.109        0.093         2.199
+beagle     5.382     44.983        0.443         2.298
+republic   5.989     47.723        0.535         2.674
+essays     6.087     48.932        0.583         2.416
+medicine   6.255     49.350        0.594         2.706
+botany     7.148     54.474        0.775         3.207
+```
+
+Every prompt resolves into a fraction `f` at the depth-7 cap plus a shallow remainder. `f` is monotone
+in mean `M`. Every implied shallow depth is at or below 4, which is exactly the region required for
+those rounds to make one pass. Sixteen derived quantities, all inside the permitted region, from one
+fitted constant. This is also FINDING 386's two-state mixture, now with a physical cause.
+
+Independent confirmation from two datasets that were never compared before:
+
+```
+Askeladd E159 observed local step M=5 -> M=6              35.451 ms
+Alphonse E169 pass(NA): 2*pass(3) - pass(5)
+                        = 2*53.841 - 71.758              35.924 ms
+agreement                                                  1.33 %
+```
+
+### The consequence
+
+Break-even acceptance for draft row `d`, step model at roof:
+
+```
+row d   cost(d-1)   cost(d)      q* needed
+  1        30.372    31.332        0.0316
+  2        31.332    32.292        0.0591
+  3        32.292    33.252        0.0831
+  4        33.252    34.212        0.1039
+  5        34.212    58.645        IMPOSSIBLE, 3.10
+  6        58.645    59.605        0.0826
+  7        59.605    60.565        0.0916
+```
+
+Rows 1 to 4 share one weight pass and cost 0.96 ms each, so they break even at 3 to 11 percent
+acceptance. Row 5 buys a second full pass of the backbone and would need an acceptance above 1.
+
+The cost surface is two basins, not a ramp:
+
+```
+depth 4   34.212 ms, up to 5 tokens  ->  6.842 ms/token at perfect acceptance
+depth 7   60.565 ms, up to 8 tokens  ->  7.571 ms/token at perfect acceptance
+```
+
+**The deep basin is 10.6 % worse than the shallow basin even if every draft is accepted.** At a
+realistic per-row acceptance of 0.93 the gap is 18.2 %.
+
+> **The optimal draft depth is 4, for every prompt, at every acceptance rate.**
+
+This also disposes of FINDING 393. The controller has no acceptance signal, AUC near 0.5 on every
+feature — and it does not need one, because the optimal policy is a constant. FINDING 386's two-state
+behaviour is not adaptation. It is waste: on the four prompts that decide the published score, 44 to
+78 percent of rounds buy a second 23.5 ms weight pass that can never repay itself.
+
+The cap 7-to-8 lever is **dead**. `M = 9` makes a third pass. The pre-registered `p_7 > 0.93369` test
+from FINDING 403 is withdrawn along with the ladder that produced it.
+
+### Sensitivity, stated honestly
+
+The 10.6 % margin assumes the M5 runs the `NA = 5` group near roof. On g16s Alphonse measured
+`NA = 5` at 73.6 % of roof against 98.1 % at `NA = 3`. Transfer those efficiencies literally and the
+two basins tie at perfect acceptance. At a realistic 0.93 acceptance depth 4 still wins under both:
+
+```
+                     depth 4    depth 7    depth 4 advantage
+M5 roof efficiency     7.870      9.626          18.2 %
+g16s NA efficiency     9.809     10.833           9.5 %
+```
+
+The ranked per-prompt data prefers roof efficiency: transferring the g16s curve over-predicts beagle.
+Two readings survive — the M5 has no `NA = 5` occupancy dip, or the dip is real there and `F` is
+absorbing the difference. Alphonse's E170 is now pointed at exactly that cell.
+
+### Modelled value
+
+```
+beagle          -6.84 %      botany   -11.64 %      medicine  -7.41 %
+essays          -6.49 %      republic  -6.04 %      travel   -20.01 %
+drama          -26.70 %      plutarch   0.00 %
+
+published = 0.4781 * 6.84 + 0.5219 * 6.04 = +6.42 %
+3.712098 * 1.0642 = 3.9504      crown 3.7291100105909
+```
+
+Treat that as model-dependent. The measured end-to-end version already exists in Askeladd's E159 and
+is smaller but real:
+
+```
+shipped adaptive     21.037 ms/token
+fixed M = 5          19.530 ms/token     -7.16 %   harness=local
+```
+
+A draft-depth schedule change is confined to the candidate MTP leg, so `program.md` makes the local
+ratio direct evidence for it with no cancellation risk. **That −7.16 % has been sitting unclaimed in
+a merged result.**
+
+### ADVISOR ERROR 228
+
+Askeladd's E159 concluded that the local optimum at `M = 5` was an artefact of the group-crossing step
+and that, ranked-priced, the same acceptance profile was monotone decreasing to `M = 8`. I accepted
+it. The second half is wrong.
+
+`groups(M)` comes from a static table in candidate source. The group-crossing step is not a g16s
+artefact; it exists on M5 with the same shape and a height of 23.5 ms. I let Rule 83 talk me out of a
+conclusion Rule 83 does not cover — it scopes g16s **occupancy** closures, and a group count is not
+an occupancy property.
+
+The cost of the error is that the campaign has shipped a depth-7 controller for its entire life, and
+has spent several experiments tuning the clamps of a controller whose optimal policy is a constant.
+
+**Rule 195: before transferring or refusing to transfer a local result, state whether the mechanism is
+fixed by candidate source or by hardware. Source-fixed structure transfers exactly. Only
+hardware-dependent structure is subject to Rule 83.**
+
+### Assigned
+
+- **Askeladd, PR 168, F5.** Timing arms for the clamp calibration, the head-signal AUC arm and the
+  cap-8 pre-registration are all dropped. New priority: a thermally gated 512-token ABBA palindrome
+  contrasting the shipped adaptive controller against `MLX_E159_FIXED_DRAFT_DEPTH=4` on base
+  `b51f893a`, with full exactness gates and both accept ledgers reported. LAW 364 ledger identity does
+  not apply — the ledgers must differ, that is the mechanism. Then a 3/4/5 fixed-depth sweep, because
+  a smooth curve through those three points falsifies the step model. Promote above 3 %.
+- **Alphonse, PR 170, F1.** Re-ordered onto `NA = 5` first, since fixed depth 4 would make it the only
+  routed width. Deprioritise `NA = 7`, `NA = 8`, drop `NA = 9`. Report an occupancy law with register
+  accounting and the M5 threshold it would take to remove the dip, not a bare percentage.
+
+### Withdrawn by this entry
+
+- the linear ranked round model `T(M) = 16.1585 + 5.3350 * M` as a physical cost model. It remains a
+  usable interpolant for `M` in 3 to 8 and nothing else. **`b = 5.3350 ms` is not a marginal row cost.
+  It is the slope of a line through a two-level step smoothed by the depth mixture.**
+- FINDING 403's break-even ladder and the `q*(d)` table.
+- the cap 7-to-8 lever and its `p_7 > 0.93369` pre-registration.
+- FINDING 385's depth-price identity `c* = h/(s+h)`, which assumed a linear marginal row.
+- any pricing that multiplies a saving by `b` per row.
