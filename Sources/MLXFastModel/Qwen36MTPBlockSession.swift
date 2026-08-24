@@ -2197,7 +2197,7 @@ public final class Qwen36MTPBlockSession {
     ///   alt4     truncate 4 drafts on odd rounds
     ///   cycle8   1 / 2 / 4 drafts on rounds 1 / 3 / 5 mod 8
     private static let e205TruncMode =
-        ProcessInfo.processInfo.environment["MLX_E205_TRUNC"] ?? "off"
+        ProcessInfo.processInfo.environment["MLX_E205_TRUNCATION"] ?? "off"
 
     @inline(__always)
     private static func e205TruncRequested(round: Int) -> Int {

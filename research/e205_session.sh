@@ -55,9 +55,9 @@ run_leg() {
   return "${leg_status}"
 }
 
-run_leg "${prefix}-alt4" MLX_E205_TRUNC=alt4
-run_leg "${prefix}-alt1" MLX_E205_TRUNC=alt1
-run_leg "${prefix}-alt2" MLX_E205_TRUNC=alt2
+run_leg "${prefix}-alt4" MLX_E205_TRUNCATION=alt4
+run_leg "${prefix}-alt1" MLX_E205_TRUNCATION=alt1
+run_leg "${prefix}-alt2" MLX_E205_TRUNCATION=alt2
 
 worker_after="$(shasum -a 256 .build-worker/release/mlxfast-runtime-worker \
   | awk '{print $1}')"

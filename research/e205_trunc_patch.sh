@@ -211,7 +211,7 @@ edits = [
      "    ///   alt4     truncate 4 drafts on odd rounds\n"
      "    ///   cycle8   1 / 2 / 4 drafts on rounds 1 / 3 / 5 mod 8\n"
      "    private static let e205TruncMode =\n"
-     "        ProcessInfo.processInfo.environment[\"MLX_E205_TRUNC\"] ?? \"off\"\n"
+     "        ProcessInfo.processInfo.environment[\"MLX_E205_TRUNCATION\"] ?? \"off\"\n"
      "\n"
      "    @inline(__always)\n"
      "    private static func e205TruncRequested(round: Int) -> Int {\n"
