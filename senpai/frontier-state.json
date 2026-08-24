@@ -911,7 +911,9 @@
   "E181 (Thorfinn, next)": "local Q pair organizer-pure vs +Q, ABBA, prefill/decode split (+JIT-unit split arm) \u2014 settles FINDING 444 and the compilation-unit channel",
   "parked": "prefill levers (~9-10% of leg, no lever priced); xsums producer-side fill elimination ceiling 0.286-0.398% held-dead (FINDING 359 tail)",
   "E182 (Askeladd, next)": "locate the convex M-dependence of the non-replica round cost (Entry 379 open question): which phase carries +0.576M^2 and the 8.85 ms width-9 marginal row",
-  "e183-apply-side-specialization": "Named candidate: empty-template-args + minimal-source custom-kernel launches (FINDING 466); price after E179 release screen bounds Swift+apply share."
+  "e183-apply-side-specialization": "Named candidate: empty-template-args + minimal-source custom-kernel launches (FINDING 466); price after E179 release screen bounds Swift+apply share.",
+  "e184-prefill-decomposition": "Edward next: prefill cost structure (6.78-10.6% of candidate leg, unpriced; ranked prefill contrasts replicate to 0.035pp -> low-noise high-transfer surface; 10% prefill cut ~ 0.7-1.0% published).",
+  "dedup-pair-dating": "Askeladd one-minute query: date the 2 same-solver identical-content groups to bound dedup introduction (E182 F1)."
  },
  "organizer": {
   "branch": "main",
@@ -2379,7 +2381,8 @@
   "463": "shift_dst is NOT a valid Q witness (organizer code, 5 copies in fp_quantized_nax.{h,cpp} on every tree); discriminating Q needle = 'mma_op.mma(Xs, Ws + cur * Ws_tile);' (1 copy campaign quantized.cpp, 0 organizer). RULE 380: validate needles against both trees, declare expected counts per arm, keep a positive-control require per worker.",
   "464": "twin_audit.py reports benign '1 STALE - quantized' on ANY organizer-pure tree (KNOWN_COMMENT_DIVERGENCES pins campaign comment digests; divergence comment-only at case 8 site; Metal ignores it; identical bytes = receipt A and crown content). Research tool, not enforcing gate. Never edit a tree to green it when byte-identity is the experiment; record STALE verbatim; only NEW divergences are signal.",
   "465": "FINDING 457 correction: two record prices - QMV-type record ~19.4 us/call vs fill-type ~5.67 us/call (3.4x), caused by per-call full source regen (write_signature, unconditional) + std::regex (when template_args non-empty) in non-editable metal_kernel.cpp::apply. Debug host-time upper bounds. Weighted apply ceiling 0.859 ms/round = 0.475% > E179 MUE 0.30% -> release screen licensed.",
-  "466": "Editability: metal_kernel.cpp/custom_kernel.cpp NOT editable. write_signature regen unavoidable per launch (shrinkable via source/header/inputs from editable side); regex branch skippable by baking template values into geometry-keyed source + empty template_args. E183 candidate named: empty-template-args specialization + minimal-source rewrite; pricing waits on E179 release screen; async graph-building caveat."
+  "466": "Editability: metal_kernel.cpp/custom_kernel.cpp NOT editable. write_signature regen unavoidable per launch (shrinkable via source/header/inputs from editable side); regex branch skippable by baking template values into geometry-keyed source + empty template_args. E183 candidate named: empty-template-args specialization + minimal-source rewrite; pricing waits on E179 release screen; async graph-building caveat.",
+  "467": "Yukon content-dedups same-solver submissions: byte-identical A-replay refused in 3 s (fired 11:58:33Z, frozen b014fbf7, returned existing receipt 5a9f130a, no run, not retried). Dedup keys on packaged editable ARCHIVE, not commit. Scope per-solver and/or recent (A tree has 4 cross-solver draws on 08-23; 2 historical same-solver groups exist). Replay lever permanently CLOSED; every receipt is one-shot for given content; sigma=0.689% observable but not drawable; same-solver hint (0.225%) frozen at n~3. Bonus: organizer-side archive-level certification that receipt A == organizer 0863b06a."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2393,7 +2396,8 @@
   "377": "Mechanism presence is decided by file CONTENT, not by whether a file appears in a diff. Organizer code carries mechanisms too: a file absent from candidate-vs-organizer diff means ORGANIZER content, which may include the mechanism. Raised by the FINDING 438 'sidecar ABSENT' misreading (file-level diff inference).",
   "378": "No depth-axis change is promoted on local timing evidence alone. The depth axis inverts between local M4 and ranked M5 (cap-4: local -3.97 %, ranked ~+4.5 % candidate-leg). Adopted from the qwen-askeladd E168 r1 follow-up. Ranked depth moves are priced only from controlled ranked receipts.",
   "379": "Build every official candidate as organizer-pure + the single mechanism under test; price mechanisms against organizer-pure, not the campaign research tree",
-  "380": "Validate every binary-assertion needle against both campaign-base and organizer-pure trees before build; declare expected count per arm; keep one positive-control require per worker."
+  "380": "Validate every binary-assertion needle against both campaign-base and organizer-pure trees before build; declare expected count per arm; keep one positive-control require per worker.",
+  "381": "No inert-delta circumvention of content dedup: semantically empty edits to force a rerun of existing content are rejected. Mechanism deltas are the only legitimate way to buy another ranked draw."
  },
  "crownAttempt": {
   "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
@@ -2697,11 +2701,8 @@
   "value": "-0.0856%/day since 2026-08-21 (t=-6.5); campaign-scale -0.024%/day",
   "rule": "fire ready candidates early; identical content resubmitted later scores lower; part of crown-A is drift"
  },
- "aReplayPricing": {
-  "status": "PRICED (E178 step 4)",
-  "pOneReplayBeatsCrown": "0.144 drift-adjusted (range 0.14-0.21; nonparametric UB 0.200)",
-  "eBestOf3": "3.7228 (below crown 3.72911 - replay spam is not a strategy)",
-  "xsumsComparison": "a permanent 0.38-0.52% mechanism gives P=0.31-0.37",
-  "policy": "mechanism engineering first; fire A-replays only into otherwise-idle slots, early (drift). E180 conforms: slot idle, replay firing now."
+ "aReplayPricing": "CLOSED by FINDING 467: P(crown)=0.144 and E[best-of-3] were never available; Yukon content dedup refuses same-solver identical-content submissions. Historical record only.",
+ "localBaselines": {
+  "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
  }
 }

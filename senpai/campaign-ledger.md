@@ -71317,3 +71317,38 @@ Checked the exact `benchmark.json` editablePaths entries: `backend/common/metal_
 - Alphonse: E179 release ABBA screen (ceiling 0.475%, MUE 0.30%); frozen-next behind E180 if it clears bit-exact.
 - Thorfinn: E181 P/PQ builds with corrected needles (RULE 380).
 - Askeladd: E182 desk table + pinned-depth ladder.
+
+---
+
+## Entry 383 — 2026-08-24 — E180 CLOSED (decisive negative): Yukon content dedup refuses same-solver replays; the replay lever is dead, mechanisms are the only path; slot reassigned to E179
+
+**Experiment:** E180 (Edward, PR 178, `qwen-edward/e180-a-replay-receipt-channel`, result head `13775a64`, frozen candidate `b014fbf7`). Status: failed (hypothesis refuted by the pre-registered step-5 branch). W&B: [3v471wnd](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/3v471wnd). Closed unmerged (branch reverts campaign editable files; E175 precedent).
+
+### FINDING 467 — Yukon content-dedups same-solver submissions; the A-replay lever is permanently closed (harness=ranked)
+
+Fired 2026-08-24T11:58:33Z, refused 11:58:36Z (3 s). Verbatim: `Submission already exists / benchmark 5d1ee4d7-80bd-4555-b182-6505f26ef495 / submission 5a9f130a-a29b-4b92-84ad-f0a2a59af210 / status rejected / note not stored (existing submission reused; its original note is kept)`. Not retried. No run started, no capacity consumed, board rows unchanged (42), frontier unchanged (crown `ec24d591` 3.7291100105909).
+
+- **Dedup keys on the packaged editable ARCHIVE, not the commit**: frozen commit `b014fbf7` ≠ A's commit `8ba6e738`, yet Yukon returned receipt A.
+- **Scope: per-solver and/or recent.** The A tree carries FOUR ranked draws from four different solvers, all on 08-23 (crown 09:44Z, fkiene 14:25Z, us 16:29Z, a-github-name 20:56Z) — no global content dedup was active on 08-23. E178's dataset contains 2 same-solver identical-content groups historically (mean |diff| 0.225%), so per-solver dedup either postdates them or is state-dependent. Askeladd will date the 2 pairs from his cached artifact (bounds the introduction time).
+- **Consequences:** P(one replay ≥ crown) = 0.144 and E[best of 3] = 3.7228 were never available; every official receipt is ONE-SHOT for given content; the same-solver channel is observable (σ = 0.689%, FINDING 460) but not drawable. σ = 0.689% stands as the operative one-shot receipt uncertainty for our distinct-content submissions (byte-identical archives + bit-exact schedule replay leave no mechanism for a solver-correlated timing term).
+- **Free provenance certification:** the organizer's own content addressing confirmed, on an independently reconstructed tree, that receipt A ≡ organizer `0863b06a` at archive level — FINDING 458 and the crown−A "same content, +0.5735%" statement are now organizer-certified, not just git-diff-inferred.
+- Askeladd's pre-registered "next same-tree receipt tests the same-solver hint for free" fired and returned a refusal instead of a draw: **the same-solver hint (0.225% vs 0.790%, n≈3 pairs) is permanently frozen at its current n.** The coincidence label stands by default.
+
+### RULE 381 — no inert-delta circumvention of content dedup
+
+A semantically empty edit (comment, whitespace) to defeat dedup and force a rerun of existing content is REJECTED as a standing rule. Dedup is designed organizer behavior expressing a resource policy; a null edit is circumvention dressed as content. Mechanism deltas are the only legitimate way to buy another ranked draw. (Edward independently declined the option at fire time before the rule existed.)
+
+### Refreshed organizer-pure local baseline (Edward's host, M4 Pro, harness=local)
+
+512-token `--local-submit` behind the real 40C gate, worker sha256 `bc65996e…` (identical before/after legs): serial **0.073520691 s/tok**, MTP **0.031557740 s/tok**, local speedup **2.3297**, edl 6.3766, accepted_draft_rate 0.88595, rounds 77, all_tokens_matched both legs, residual 0, ledger 512/512 + 568/568, uses_pinned_mtp_head=true, head sha `b5157420…`.
+
+### Slot and portfolio
+
+- Official slot FREE; **E179 (Alphonse) owns the fire** (F4 sent): screen clears 0.30% MUE bit-exact → organizer-pure port → single 512 confirmation → freeze → autonomous submit. His content is a real mechanism delta; dedup cannot refuse it.
+- Edward: E180 closed; next assignment E184 (prefill cost decomposition — see below).
+- Thorfinn: E181 building (P/PQ arms, corrected needles per RULE 380).
+- Askeladd: E182 desk phase + one-minute same-solver-pair dating query (E182 F1).
+
+### E184 rationale (assigned next)
+
+Prefill is 6.78–10.6% of the candidate leg and completely unpriced. Ranked prefill contrasts transfer with extraordinary fidelity (Q's +1.9705% prefill replicated to 0.035pp between receipts B and F, 8/8 prompts both times) — prefill is the LOW-NOISE, HIGH-TRANSFER surface, unlike decode (σ 0.626%). Arithmetic: a 10% prefill reduction ≈ 0.7–1.0% published; ~6–8% prefill reduction alone reaches the crown from A's level. The 7 fused qmm cells at N≥4096 (FINDING 450) are prefill-serving cells. Nobody has profiled the prefill leg's internal structure.
