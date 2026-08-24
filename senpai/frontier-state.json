@@ -905,11 +905,12 @@
   ]
  },
  "openQueue": {
-  "E178 (Askeladd, in flight)": "receipt-channel statistics from the 1333-row board \u2014 decision-critical after F",
+  "E178 (Askeladd, in flight)": "DONE - merged Entry 381",
   "E179 (Alphonse, next)": "kernel-record/config cache in the replica path \u2014 largest priced open lever 0.35-1.13% (E174 item 2)",
   "E180 (Edward, next)": "A-replay official submission \u2014 channel pricing + crown draw",
   "E181 (Thorfinn, next)": "local Q pair organizer-pure vs +Q, ABBA, prefill/decode split (+JIT-unit split arm) \u2014 settles FINDING 444 and the compilation-unit channel",
-  "parked": "prefill levers (~9-10% of leg, no lever priced); xsums producer-side fill elimination ceiling 0.286-0.398% held-dead (FINDING 359 tail)"
+  "parked": "prefill levers (~9-10% of leg, no lever priced); xsums producer-side fill elimination ceiling 0.286-0.398% held-dead (FINDING 359 tail)",
+  "E182 (Askeladd, next)": "locate the convex M-dependence of the non-replica round cost (Entry 379 open question): which phase carries +0.576M^2 and the 8.85 ms width-9 marginal row"
  },
  "organizer": {
   "branch": "main",
@@ -2198,8 +2199,8 @@
   "frozenNext": null,
   "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
  },
- "lastAdvisorUpdate": "2026-08-24T11:50Z ledger entry 380: receipt F rejected 3.65474, Q OUT of ship set (FINDINGs 457-459, RULE 379); E175 closed unmerged; E176 r1 + E174 merged; slot FREE; next E180 A-replay (Edward), E179 record cache (Alphonse), E181 local Q pair (Thorfinn); E178 in flight (Askeladd).",
- "ledgerEntry": 380,
+ "lastAdvisorUpdate": "2026-08-24T12:05Z ledger entry 381: E178 merged \u2014 receipt channel sigma 0.689% Gaussian runner-side (FINDING 460), serial drift -0.086%/day (FINDING 461), corrections incl. C-outlier withdrawal (FINDING 462); A-replay P=0.144, policy = mechanisms first + replays into idle slots early; E180/E179/E181 dispatched; E182 next for Askeladd.",
+ "ledgerEntry": 381,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2370,7 +2371,10 @@
   "456": "Ranked round cost is CONVEX: R(M)=30.640-0.939M+0.576M^2 ms (OOS: A-only fit predicts paid cap-4 to -0.381%). Cells: cap5 3.65289 / cap6 3.70170 / cap7 3.70785 / cap8 3.67148 / oracle=cap7. No cell reaches crown 3.72911 (short 0.5735%). Cap-8 DEAD on data (marginal row 8.848 ms vs break-evens 6.19-8.13). Depth axis CLOSED. harness=ranked. (E177, merged 082a1d60)",
   "457": "Q ranked decomposition: prefill +1.9705% replicated across receipts; decode +1.0984% 8/8 unexplained by call graph; shared-JIT-compilation-unit channel named (testable locally); B-vs-F decode tension held open",
   "458": "Q is a ranked regression (-1.43% single-factor); Q out of ship set; organizer-pure is the strongest known tree; FINDING 440 B/C attribution dead as a mechanism claim",
-  "459": "Ranked decode channel is wide-tailed: four inert-or-identical draws span -0.23%..+1.10%; single-receipt sub-1% claims unsafe (supersedes 0.25% floor upward); crown edge over byte-identical A consistent with a channel draw"
+  "459": "Ranked decode channel is wide-tailed: four inert-or-identical draws span -0.23%..+1.10%; single-receipt sub-1% claims unsafe (supersedes 0.25% floor upward); crown edge over byte-identical A consistent with a channel draw",
+  "460": "Ranked receipt channel measured: Gaussian sigma 0.689% published (CI95 0.58-0.85), candidate-leg side (serial sigma 0.114%), runner-side timing, i.i.d.; single-receipt threshold ~1.4%",
+  "461": "Serial-numerator drift -0.086%/day since 08-21: score headwind on identical content; fire early",
+  "462": "Corrections: FINDING 452 draw z=-0.27; FINDING 453 C-outlier withdrawn (z=+1.12, per-prompt scatter understates cross-receipt uncertainty 7.8x); FINDING 459 Gaussian-not-fat-tailed; FINDING 458 tempered (F z=-1.55, Q excluded as gain, harm unproven at published level)"
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2618,14 +2622,15 @@
   "harness": "ranked",
   "statement": "Byte-identical receipt pair ec24d591 (crown) vs 5a9f130a (A) shows the cross-receipt null is NOT sign-symmetric: a coherent whole-receipt candidate-channel offset of -0.2346% appears 8/8 same-sign on prefill, decode, and leg with 0.18% per-prompt spread. Serial channel clean (mean8 +0.0051%; one +1.13% essays excursion kills essays as a per-prompt falsification lever). RULE OF USE: any cross-receipt claim below ~0.25% is unsafe; the 0.189% mean7 pairwise 1-sigma understates the offset because it is coherent, not random.",
   "source": "E176 task 2, W&B vxdn8h60",
-  "supersededNote": "FINDING 459 widens the caution: decode-channel draws on inert-or-identical contrasts span -0.2346% (crown-A) to +1.0984% (F-A), four draws over ~1.33pp. Treat single-receipt claims below ~1% as unconfirmed pending E178."
+  "supersededNote": "FINDING 459 widens the caution: decode-channel draws on inert-or-identical contrasts span -0.2346% (crown-A) to +1.0984% (F-A), four draws over ~1.33pp. Treat single-receipt claims below ~1% as unconfirmed pending E178.",
+  "superseded": "FINDING 462: the -0.2346% draw is z=-0.27 under FINDING 460 sigma; use 0.689% for all cross-receipt z-scores"
  },
  "receiptCOutlier": {
   "finding": 453,
   "harness": "ranked",
   "statement": "Receipt C (fda590bb, inert-instrumentation-only contrast vs A) is an outlier: C-A decode channel +0.9889% mean7, 7/8 positive = 7.0 sigma on the 0.1421% common-offset sd. B-C's -0.6691% 'Q gain' leaves -0.8687% unexplained, located in C. The +0.0070% additivity residual is an identity ((C-A)+(B-C)+(D-B)=D-A) and cannot detect this. Converges with Edward's independent C/A -1.08% published anomaly and FINDING 443 (C's commit 080d4cd3 unfetchable). B-A (both trees inspected first-hand) splits clean: decode +0.0153% mean8 sd 0.11 (null); prefill +1.9359% 0/8 negative = Edward's local +1.936% reproduced on ranked M5 to three digits. Q is prefill-only, net +0.20% leg SLOWER. FINDING 440's Q attribution is conditional on the E175 receipt (three-model registration adjudicates).",
   "source": "E176 tasks 2-3, W&B vxdn8h60",
-  "status": "REVISED by FINDING 459: C is no longer a unique outlier \u2014 wide-tailed receipt decode channel is the leading explanation (F-A +1.0984% with zero call-graph consumers)."
+  "status": "WITHDRAWN (FINDING 462): C anomaly is z=+1.12, not 7 sigma; per-prompt scatter understates cross-receipt uncertainty 7.8x; C was never an outlier"
  },
  "rejectedReceiptsExposePerPrompt": {
   "finding": 455,
@@ -2658,6 +2663,39 @@
   "status": "MEASURED-NEGATIVE (FINDINGs 457-458)",
   "value": "Q on organizer-pure = 3.65474 = -1.43% published; prefill +1.9705% (replicates B to 0.035pp); decode +1.0984% 8/8 despite zero call-graph consumers",
   "shipSet": "Q OUT. Every Q-bearing receipt underperforms A (B -0.086%, D -1.34%, F -1.43%).",
-  "openChannel": "shared-JIT-compilation-unit channel: quantized.cpp is one JIT source string; any edit changes compiled module + metallib layout for the whole quantized family incl. qmv kernels Q never calls. Named independently by Edward (E175 result) and Thorfinn (E176 r1). Tension: B decode was null with identical quantized.cpp \u2014 deterministic JIT penalty predicts equal deltas; wide-tailed receipt channel is the rival explanation. E181 local pair discriminates."
+  "openChannel": "shared-JIT-compilation-unit channel: quantized.cpp is one JIT source string; any edit changes compiled module + metallib layout for the whole quantized family incl. qmv kernels Q never calls. Named independently by Edward (E175 result) and Thorfinn (E176 r1). Tension: B decode was null with identical quantized.cpp \u2014 deterministic JIT penalty predicts equal deltas; wide-tailed receipt channel is the rival explanation. E181 local pair discriminates.",
+  "tempered": "FINDING 462: F -1.43% is z=-1.55 drift-adjusted \u2014 excludes Q as >=+0.4% gain, does not prove published-level harm; replicated prefill penalty +1.94/+1.97% (8/8 twice) remains real; Q stays OUT of ship set"
+ },
+ "rankedReceiptChannelSigma": {
+  "status": "MEASURED (FINDING 460, E178, W&B 0810d370)",
+  "sigmaPublishedPct": 0.689,
+  "ci95": [
+   0.578,
+   0.85
+  ],
+  "dof": 53,
+  "topBandSigmaPct": 0.84,
+  "shape": "Gaussian (skew -0.22, ex-kurt +0.02, max|z|=2.80); NOT fat-tailed",
+  "coherence": "6.48/8 same sign; score pass-through slope 1.110 (t=32.4)",
+  "legSplit": {
+   "decodeSigmaPct": 0.626,
+   "mtpSigmaPct": 0.612,
+   "serialSigmaPct": 0.114
+  },
+  "origin": "runner-side timing only (35/35 identical-tree groups replay schedules bit-exactly); structure tests null -> i.i.d.",
+  "sample": "35 byte-identical editable-archive groups / 88 receipts / 1316 refs content-addressed",
+  "consequence": "single-receipt confirmation threshold ~1.4% (2sigma); per-prompt pairing does not evade the coherent offset"
+ },
+ "serialDriftHeadwind": {
+  "status": "MEASURED (FINDING 461)",
+  "value": "-0.0856%/day since 2026-08-21 (t=-6.5); campaign-scale -0.024%/day",
+  "rule": "fire ready candidates early; identical content resubmitted later scores lower; part of crown-A is drift"
+ },
+ "aReplayPricing": {
+  "status": "PRICED (E178 step 4)",
+  "pOneReplayBeatsCrown": "0.144 drift-adjusted (range 0.14-0.21; nonparametric UB 0.200)",
+  "eBestOf3": "3.7228 (below crown 3.72911 - replay spam is not a strategy)",
+  "xsumsComparison": "a permanent 0.38-0.52% mechanism gives P=0.31-0.37",
+  "policy": "mechanism engineering first; fire A-replays only into otherwise-idle slots, early (drift). E180 conforms: slot idle, replay firing now."
  }
 }

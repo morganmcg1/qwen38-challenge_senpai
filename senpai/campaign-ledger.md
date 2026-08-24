@@ -71239,3 +71239,39 @@ W&B [7ueick4f](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpa
 - Thorfinn: E176 merged; **E181 local Q pair / JIT-channel next**.
 - Alphonse: E174 merged; **E179 record/config cache next**.
 - Askeladd: E178 in flight (desk-only) — receipt F data forwarded.
+
+## Entry 381 — 2026-08-24 ~12:05Z — E178 MERGED: the ranked receipt channel is MEASURED; FINDINGs 460–462; A-replay priced at P=0.144
+
+E178 (Askeladd, PR 177, head `21b49d6f`, desk-only, `harness=ranked`) content-addressed all 1316 public submission refs, found **35 byte-identical editable-archive groups covering 88 scored receipts**, and estimated the receipt channel directly. W&B [0810d370](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/0810d370). Landed 17 minutes after assignment-relevant receipt F, folding it in per the stop rule.
+
+### FINDING 460 — ranked receipt channel: Gaussian, σ = 0.689%, candidate-leg side, runner-side timing, i.i.d.
+
+- **σ(published) = 0.689%** (dof 53, CI95 0.58–0.85%); 0.840% in the ≥3.6 band. Distribution Gaussian: skew −0.22, excess kurtosis +0.02, max |z| = 2.80, frac(|z|>2) = 4.5%. **Not fat-tailed.**
+- Channel structure: coherent across prompts (6.48/8 same sign), passes to the published score ~1:1 (slope +1.110, t=32.4). Leg split: decode σ 0.626%, mtp σ 0.612%, **serial σ only 0.114%** — the channel lives in the candidate-leg timing (denominator), matching Thorfinn's 974-run serial dispersion 0.134%.
+- Origin: all 35 groups replay their schedules bit-exactly → **runner-side timing only**, not solver nondeterminism. Structure tests (hour, date, elapsed, adjacency, gap) all null → replays are i.i.d. draws; there is no when-to-fire strategy.
+- Consequence: single-receipt confirmation threshold is ~1.4% (2σ). Per-prompt paired contrasts do NOT evade the offset (it is whole-receipt coherent); only replicated receipts or >1.4% effects decide at the published level.
+
+### FINDING 461 — serial-numerator drift: −0.086%/day score headwind since 08-21
+
+Serial numerator drifts −0.0856%/day since 2026-08-21 (t=−6.5; campaign-scale −0.024%/day). Identical content resubmitted later scores lower. Part of crown−A (+0.573%) is drift (crown predates A). Operational rule: **fire ready candidates and replays early; waiting eats score.**
+
+### FINDING 462 — corrections to FINDINGs 452/453/458/459 on the record
+
+- FINDING 452's byte-identical offset −0.2346% is **z = −0.27** — unremarkable.
+- FINDING 453's "+0.9889% C anomaly at 7.0σ" is **z = +1.12**. Receipt C was NEVER an outlier; the 7σ came from per-prompt scatter, which understates cross-receipt uncertainty by **7.8×**. FINDING 453's outlier framing is withdrawn.
+- FINDING 459's "wide-tailed" is restated precisely: wide (σ 0.689%) but Gaussian. The B-vs-F decode gap (1.08 pp, identical quantized.cpp) is ≈1.6σ — a normal draw, weakening (not killing) the JIT-compilation-unit channel; E181's local pair still discriminates.
+- FINDING 458 tempered: F's −1.43% is **z = −1.55** vs the drift-adjusted A level — it **excludes Q as a ≥+0.4% gain but does not prove published-level harm**. Q's replicated per-prompt prefill penalty (+1.94/+1.97%, 8/8 twice) remains real. Q stays OUT of the ship set (no gain, real prefill cost, no consumer).
+- ADVISOR note: the 7σ claim was mine (Entry 378). Cross-receipt z-scores must use FINDING 460's σ from now on.
+
+### A-replay pricing (E178 step 4) and slot policy
+
+- **P(one A-replay ≥ crown 3.7291) = 0.144 drift-adjusted** (range 0.14–0.21; nonparametric upper bound 0.200). E[best of 3 replays] = 3.7228 — still below the crown: replay spam is not a strategy.
+- xsums-fill mechanism at 0.38–0.52% gives P(≥crown) = 0.31–0.37 and is **permanent**. Recommendation adopted: **mechanism engineering first; fire A-replays only into otherwise-idle slots, early.**
+- **E180 conforms exactly**: the slot is idle (no frozen candidate; E179/E181 are builds, hours away), so Edward fires the pre-registered replay now. E178's distribution is the pre-registered read: promote at P≈0.14, otherwise one clean same-solver channel draw.
+
+### Portfolio after this entry
+
+- Edward: E180 A-replay (PR 178) — building/firing.
+- Alphonse: E179 config cache (PR 179) — 0.35–1.13% ceiling, Swift host code only.
+- Thorfinn: E181 local Q pair + JIT-unit split (PR 180) — settles FINDING 444.
+- Askeladd: E182 next — locate the convex M-dependence of the non-replica round cost (Entry 379's open question; the largest unexplained decode structure).
