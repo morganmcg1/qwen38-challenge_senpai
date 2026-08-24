@@ -464,7 +464,15 @@ def leg_bookkeeping(rounds: list[dict]) -> dict:
     capped = [record for record in rounds if record["cap"] is not None]
     histogram: dict[int, int] = defaultdict(int)
     bins: dict[int, dict] = defaultdict(
-        lambda: {"rounds": 0, "proposed": 0, "accepted": 0}
+        lambda: {
+            "rounds": 0,
+            "proposed": 0,
+            "accepted": 0,
+            "reached0": 0,
+            "accepted0": 0,
+            "margin_sum": 0.0,
+            "margin_n": 0,
+        }
     )
     for record in rounds:
         histogram[record["d"]] += 1
@@ -472,11 +480,29 @@ def leg_bookkeeping(rounds: list[dict]) -> dict:
         bucket["rounds"] += 1
         bucket["proposed"] += record["d"]
         bucket["accepted"] += record["acc"]
+        # Accepted-over-proposed inside a depth bin falls with depth for any
+        # chain with q < 1, because a deeper round proposes rows the chain
+        # rarely reaches. That is arithmetic, not selection. `q0` is the
+        # unconfounded comparison: it asks whether the FIRST draft of a deep
+        # round is more likely to be right than the first draft of a shallow
+        # one, which is what "the controller picks its spots" has to mean.
+        if record["d"] >= 1:
+            bucket["reached0"] += 1
+            bucket["accepted0"] += 1 if record["acc"] >= 1 else 0
+        if not math.isnan(record["margin"]):
+            bucket["margin_sum"] += record["margin"]
+            bucket["margin_n"] += 1
     for bucket in bins.values():
         bucket["accept_fraction"] = (
             bucket["accepted"] / bucket["proposed"] if bucket["proposed"] else 0.0
         )
         bucket["tokens_per_round"] = 1.0 + bucket["accepted"] / bucket["rounds"]
+        bucket["q0"] = (
+            bucket["accepted0"] / bucket["reached0"] if bucket["reached0"] else None
+        )
+        bucket["mean_margin"] = (
+            bucket["margin_sum"] / bucket["margin_n"] if bucket["margin_n"] else None
+        )
     return {
         "rounds": count,
         "proposed": proposed,
@@ -641,6 +667,7 @@ def analyse_adapt(legs: list[dict], offered_default: int) -> dict:
         result["legs"].append(
             {
                 "label": leg["label"],
+                "counts": leg_bookkeeping(leg["rounds"]),
                 "rounds": leg_total,
                 "bind_fraction": leg_binds / leg_total if leg_total else 0.0,
                 "depth_loss_fraction": leg_loss / leg_total if leg_total else 0.0,
@@ -870,6 +897,18 @@ def main() -> int:
                 f"cap_stop={leg['cap_stop_fraction']:.3f} "
                 f"mean_d={leg['mean_d']:.3f} "
                 f"acc_frac={leg['accept_fraction']:.3f}"
+            )
+            counts = leg["counts"]
+            print(f"  {'':<24} depth histogram {counts['depth_histogram']}")
+            print(
+                f"  {'':<24} "
+                + "  ".join(
+                    f"d={depth}: n={bucket['rounds']} "
+                    f"acc/prop={bucket['accept_fraction']:.3f} "
+                    f"q0={bucket['q0']:.3f} m={bucket['mean_margin']:.2f}"
+                    for depth, bucket in counts["depth_bins"].items()
+                    if depth > 0
+                )
             )
         print_profile("shipped adaptive", report["adapt"]["profile"])
         print()
