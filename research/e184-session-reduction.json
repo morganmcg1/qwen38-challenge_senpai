@@ -1,0 +1,66 @@
+{
+  "abba_drift": {
+    "coarse": {
+      "drift_pct": -0.17673329906130464,
+      "first_arm": "a2-coarse",
+      "first_mean": 4.086685001850128,
+      "last_arm": "a5-coarse",
+      "last_mean": 4.079462468624115
+    },
+    "fine": {
+      "drift_pct": 0.04039800659823012,
+      "first_arm": "a3-fine",
+      "first_mean": 4.143760025501251,
+      "last_arm": "a4-fine",
+      "last_mean": 4.145434021949768
+    },
+    "off": {
+      "drift_pct": 0.2193185004960796,
+      "first_arm": "a1-off",
+      "first_mean": 3.9146050214767456,
+      "last_arm": "a6-off",
+      "last_mean": 3.923190474510193
+    }
+  },
+  "cool_gate_passed_real_gate": false,
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "instrument_overhead_pct": {
+    "coarse": 4.189340926991858,
+    "fine": 5.759254010840209
+  },
+  "sandbox_comparison": {
+    "delta_pct": 0.16835951930890378,
+    "delta_seconds": 0.006586747993469366,
+    "inside_noise": true,
+    "off_arm_rel_sd_pct": 0.18787226049321595,
+    "sandboxed_anchor_seconds": 3.912311,
+    "unsandboxed_off_mean_seconds": 3.9188977479934692
+  },
+  "seed_prefill_seconds_by_mode": {
+    "coarse": {
+      "max": 4.096526026725769,
+      "mean": 4.083073735237122,
+      "min": 4.074458956718445,
+      "n": 4,
+      "rel_sd_pct": 0.24324520704249045,
+      "sd": 0.009931881160975084
+    },
+    "fine": {
+      "max": 4.149566054344177,
+      "mean": 4.14459702372551,
+      "min": 4.137953996658325,
+      "n": 4,
+      "rel_sd_pct": 0.1283621842393236,
+      "sd": 0.005320095267572061
+    },
+    "off": {
+      "max": 3.924546957015991,
+      "mean": 3.9188977479934692,
+      "min": 3.9080770015716553,
+      "n": 4,
+      "rel_sd_pct": 0.18787226049321595,
+      "sd": 0.0073625217855730635
+    }
+  }
+}

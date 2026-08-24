@@ -68,15 +68,16 @@ def gemm_tflop():
     }
 
 
-def load_phases(path):
+def load_phases(paths):
     """Mean seconds and call count per phase over every seed-width forward."""
     rows = [
         json.loads(line)
+        for path in paths
         for line in open(path)
         if '"e184_prefill_profile"' in line
     ]
     if not rows:
-        raise SystemExit(f"no profile records in {path}")
+        raise SystemExit(f"no profile records in {paths}")
     totals = [r["bracketed_total_seconds"] for r in rows]
     phases = {}
     for r in rows:
@@ -257,7 +258,7 @@ def mue_ladder(table, gemm_seconds, non_gemm_seconds, off_mode_seed_seconds):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--phases", required=True, help="e184-phases-<arm>.jsonl")
+    ap.add_argument("--phases", required=True, nargs="+", help="e184-phases-<arm>.jsonl")
     ap.add_argument("--trusted-seed-seconds", type=float, required=True,
                     help="trusted seed_prefill_seconds for the instrumented leg")
     ap.add_argument("--off-mode-seed-seconds", type=float, required=True,

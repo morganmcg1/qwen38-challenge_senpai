@@ -1,0 +1,249 @@
+{
+  "e16_residual_attribution": {
+    "aggregate_achieved_tflops": 6.371260321453365,
+    "aggregate_pct_of_peak": 84.81421739918719,
+    "e16_gemm_at_ceiling_pct": 84.148,
+    "e16_gemm_at_ceiling_plus_residual_pct": 94.687,
+    "e16_non_gemm_pct": 5.313,
+    "e16_residual_pct": 10.539,
+    "gemm_budget_disagreement_pp": 0.3434197202704894,
+    "implied_e16_ceiling_tflops": 7.169220017795488,
+    "measured_gemm_share_pct": 95.03041972027049,
+    "measured_non_gemm_share_pct": 4.969580279729518,
+    "non_gemm_budget_disagreement_pp": -0.3434197202704814,
+    "peak_tflops_from_e65": 7.512019230769231,
+    "verdict": "The E16 residual is GEMM time above the modelled roofline ceiling, not an unmeasured operator and not host or overlap time."
+  },
+  "forwards": 32,
+  "gemm_seconds": 3.9136635845625,
+  "harness": "local",
+  "mue_ladder": {
+    "best_observed_pct_of_peak": 85.57569842967024,
+    "ladder": [
+      {
+        "clears_mue": false,
+        "feasibility": "Buildable and bit-exact, but the ceiling is the whole prize.",
+        "mechanism": "Perfectly fuse the four GDN in-projections at seed width",
+        "prefill_reduction_pct": 0.28910769784536416,
+        "prefill_seconds_saved": 0.011329835060137738,
+        "published_score_gain_pct": 0.029026412863674564
+      },
+      {
+        "clears_mue": false,
+        "feasibility": "Requires a shape-specific quantized GEMM win on two shapes.",
+        "mechanism": "Lift the two weakest GEMM brackets to the best observed efficiency",
+        "prefill_reduction_pct": 0.4306027925884084,
+        "prefill_seconds_saved": 0.016874883141544124,
+        "published_score_gain_pct": 0.0432325203758762
+      },
+      {
+        "clears_mue": false,
+        "feasibility": "Not bit-exact. Owes the WY/UT triangular inverse and a step-7 numerics gate.",
+        "mechanism": "Chunk-parallel reordered delta rule (E184 shape b ceiling)",
+        "prefill_reduction_pct": 1.5354626254489425,
+        "prefill_seconds_saved": 0.060173210250000005,
+        "published_score_gain_pct": 0.15416044759507383
+      },
+      {
+        "clears_mue": false,
+        "feasibility": "Unattainable. Bounds the whole scan axis, so it closes FINDING 470.",
+        "mechanism": "Make the GDN recurrent scan completely free (unphysical bound)",
+        "prefill_reduction_pct": 2.66843426327066,
+        "prefill_seconds_saved": 0.10457321025,
+        "published_score_gain_pct": 0.2679108000323743
+      },
+      {
+        "clears_mue": true,
+        "feasibility": "Unattainable. Embedding, norms, conv, RoPE, SDPA and the scan are required.",
+        "mechanism": "Eliminate every non-GEMM bracket (unphysical bound)",
+        "prefill_reduction_pct": 5.2224780411415574,
+        "prefill_seconds_saved": 0.20466357434374993,
+        "published_score_gain_pct": 0.5243367953306124
+      },
+      {
+        "clears_mue": true,
+        "feasibility": "The only class that clears MUE. It is also the campaign's most attacked and most failed axis (FINDING 293/389 NAX graveyard).",
+        "mechanism": "Lift every GEMM bracket to the E65 roofline peak",
+        "prefill_reduction_pct": 15.165500145624858,
+        "prefill_seconds_saved": 0.5943204436788387,
+        "published_score_gain_pct": 1.5226162146207358
+      }
+    ],
+    "mue_published_pct": 0.3,
+    "prefill_reduction_needed_for_mue_pct": 2.9880478087649402,
+    "prefill_seconds_needed_for_mue": 0.11709853828665744
+  },
+  "noise": {
+    "bracketed_total_rel_sd_pct": 0.6724318577458636,
+    "ranked_prefill_spt_rel_sd_pct": 0.2
+  },
+  "non_gemm_seconds": 0.20466357434374993,
+  "phase_table": [
+    {
+      "calls_per_forward": 1,
+      "kind": "non_gemm",
+      "mean_seconds": 0.00498491403125,
+      "phase": "00_embed",
+      "rel_sd_pct": 98.76210386376803,
+      "share_of_bracketed_pct": 0.1210422057040728
+    },
+    {
+      "calls_per_forward": 1,
+      "kind": "non_gemm",
+      "mean_seconds": 1.179034375e-05,
+      "phase": "01_masks",
+      "rel_sd_pct": 123.2411828036786,
+      "share_of_bracketed_pct": 0.000286289633996229
+    },
+    {
+      "calls_per_forward": 64,
+      "kind": "non_gemm",
+      "mean_seconds": 0.0147659659375,
+      "phase": "10_entry_resid_norm",
+      "rel_sd_pct": 2.722430243906721,
+      "share_of_bracketed_pct": 0.35854281041192376
+    },
+    {
+      "achieved_tflops": 6.317517642557024,
+      "calls_per_forward": 48,
+      "kind": "gemm",
+      "mean_seconds": 0.65648060359375,
+      "pct_of_peak": 84.0987948577191,
+      "phase": "41_gdn_in_projections",
+      "rel_sd_pct": 1.4076898029528206,
+      "share_of_bracketed_pct": 15.940467531192908,
+      "tflop": 4.1473277952
+    },
+    {
+      "calls_per_forward": 48,
+      "kind": "non_gemm",
+      "mean_seconds": 0.0343603358125,
+      "phase": "42_gdn_conv_qknorm",
+      "rel_sd_pct": 8.264656008764572,
+      "share_of_bracketed_pct": 0.8343274947982874
+    },
+    {
+      "calls_per_forward": 48,
+      "kind": "non_gemm",
+      "mean_seconds": 0.10457321025,
+      "phase": "43_gdn_recurrent_scan",
+      "rel_sd_pct": 1.6776509614618451,
+      "share_of_bracketed_pct": 2.539215711016331
+    },
+    {
+      "achieved_tflops": 6.096372248512714,
+      "calls_per_forward": 48,
+      "kind": "gemm",
+      "mean_seconds": 0.25362431353125,
+      "pct_of_peak": 81.15490737220125,
+      "phase": "44_gdn_postnorm_outproj",
+      "rel_sd_pct": 0.764116234687086,
+      "share_of_bracketed_pct": 6.158430443845743,
+      "tflop": 1.54618822656
+    },
+    {
+      "calls_per_forward": 48,
+      "kind": "non_gemm",
+      "mean_seconds": 0.00052053328125,
+      "phase": "49_gdn_layer_tail",
+      "rel_sd_pct": 12.62243282751896,
+      "share_of_bracketed_pct": 0.012639434925035041
+    },
+    {
+      "achieved_tflops": 6.296918297500956,
+      "calls_per_forward": 16,
+      "kind": "gemm",
+      "mean_seconds": 0.19098085540625,
+      "pct_of_peak": 83.82457637633273,
+      "phase": "51_fa_qkv_projection",
+      "rel_sd_pct": 3.3855246932415732,
+      "share_of_bracketed_pct": 4.637340552054901,
+      "tflop": 1.20259084288
+    },
+    {
+      "calls_per_forward": 16,
+      "kind": "non_gemm",
+      "mean_seconds": 0.00693457175,
+      "phase": "52_fa_qk_norm_rope",
+      "rel_sd_pct": 11.83425980872064,
+      "share_of_bracketed_pct": 0.16838321683607313
+    },
+    {
+      "calls_per_forward": 16,
+      "kind": "non_gemm",
+      "mean_seconds": 0.0230266181875,
+      "phase": "53_fa_sdpa_cache_update",
+      "rel_sd_pct": 9.484120052935706,
+      "share_of_bracketed_pct": 0.5591255210918075
+    },
+    {
+      "achieved_tflops": 6.139550541356202,
+      "calls_per_forward": 16,
+      "kind": "gemm",
+      "mean_seconds": 0.08394687396875,
+      "pct_of_peak": 81.72969680653377,
+      "phase": "54_fa_gate_outproj",
+      "rel_sd_pct": 1.5031805698624336,
+      "share_of_bracketed_pct": 2.0383731240779985,
+      "tflop": 0.51539607552
+    },
+    {
+      "calls_per_forward": 16,
+      "kind": "non_gemm",
+      "mean_seconds": 0.0001630443125,
+      "phase": "59_fa_layer_tail",
+      "rel_sd_pct": 9.101190421797437,
+      "share_of_bracketed_pct": 0.003958993693529231
+    },
+    {
+      "calls_per_forward": 64,
+      "kind": "non_gemm",
+      "mean_seconds": 0.01509637559375,
+      "phase": "60_post_attn_resid_norm",
+      "rel_sd_pct": 2.95852548294982,
+      "share_of_bracketed_pct": 0.3665657197996701
+    },
+    {
+      "achieved_tflops": 6.428462922901911,
+      "calls_per_forward": 64,
+      "kind": "gemm",
+      "mean_seconds": 1.81727905803125,
+      "pct_of_peak": 85.57569842967024,
+      "phase": "61_mlp_gate_up_act",
+      "rel_sd_pct": 0.7639456870512179,
+      "share_of_bracketed_pct": 44.126631710188974,
+      "tflop": 11.68231104512
+    },
+    {
+      "achieved_tflops": 6.409330633475742,
+      "calls_per_forward": 64,
+      "kind": "gemm",
+      "mean_seconds": 0.91135188003125,
+      "pct_of_peak": 85.32100939282907,
+      "phase": "62_mlp_down",
+      "rel_sd_pct": 0.5936272774676259,
+      "share_of_bracketed_pct": 22.12917635890996,
+      "tflop": 5.84115552256
+    },
+    {
+      "calls_per_forward": 1,
+      "kind": "non_gemm",
+      "mean_seconds": 0.0002251275625,
+      "phase": "99_tail",
+      "rel_sd_pct": 20.687811684859945,
+      "share_of_bracketed_pct": 0.005466480777592949
+    }
+  ],
+  "reconciliation": {
+    "bracketed_total_mean_seconds": 4.11832715890625,
+    "bracketed_total_rel_sd_pct": 0.6724318577458636,
+    "instrument_overhead_pct": 5.759254010840218,
+    "instrument_overhead_seconds": 0.22569927573204085,
+    "note": "Bracket shares are upper bounds on serialized time. The brackets force eval boundaries, so normally overlapped work is exposed.",
+    "serialized_excess_over_off_mode_seconds": 0.199429410912781,
+    "trusted_seed_prefill_seconds_instrumented": 4.14459702372551,
+    "trusted_seed_prefill_seconds_off_mode": 3.918897747993469,
+    "unbracketed_remainder_pct": 0.633833993241792,
+    "unbracketed_remainder_seconds": 0.02626986481925986
+  }
+}
