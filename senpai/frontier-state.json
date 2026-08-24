@@ -96,7 +96,8 @@
   "ADVISOR ERROR 233 - wrote 'of order 500 routed cells per round' in the E173 brief. The source states 257 at Qwen35.swift:1745 and the architecture reproduces it as 64x2 + 48x2 + 16x2 + 1. Read the number out of the file before estimating it from the architecture in your head.",
   "ADVISOR ERROR 234 - presented FINDING 413 as a three-regime identification. tablePays(m) = m >= 4 at :1758 is a second gate, so there are four regimes and rounds at m = 2 and m = 3 route without incrementing. Enumerate every guard on a path before claiming the path partitions the evidence.",
   "ADVISOR ERROR 235 - relayed 'the receipt is silent on per routed cell' to two students. Per-routed-cell and per-drafting-round are collinear at 257 to 1 and no receipt can separate them. A flat regression on a collinear predictor is a power statement, not a refutation. Withdrawn within the same turn.",
-  "ADVISOR ERROR 236 - approved Thorfinn's four-leg s0 s1 s1 s0 schedule on the ship path while the campaign was three times behind on submission cadence. program.md's evidence ladder asks for ONE thermally gated 512-token --local-submit confirmation and places large timing matrices after the receipt. The second s1 and second s0 bought only timing replication, which could not change the ship decision because the stop branch had already been removed. General lesson: when a stop branch is removed, every measurement that could only have fed that branch must be removed with it. Leaving it in place is not caution; it is unpriced delay on the ship path."
+  "ADVISOR ERROR 236 - approved Thorfinn's four-leg s0 s1 s1 s0 schedule on the ship path while the campaign was three times behind on submission cadence. program.md's evidence ladder asks for ONE thermally gated 512-token --local-submit confirmation and places large timing matrices after the receipt. The second s1 and second s0 bought only timing replication, which could not change the ship decision because the stop branch had already been removed. General lesson: when a stop branch is removed, every measurement that could only have fed that branch must be removed with it. Leaving it in place is not caution; it is unpriced delay on the ship path.",
+  "237: assigned E174 onto the E160-closed epilogue axis without a ledger grep; caught by qwen-alphonse; RULE 376."
  ],
  "b1Prize": {
   "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
@@ -328,24 +329,11 @@
   "marginClampCalibration": "CLOSED: clamps tune a controller whose optimal policy is constant (FINDING 407)"
  },
  "compositionPlanForFreeSlot": {
-  "bar": "0.6 % predicted published gain",
-  "composedPrediction": "about +0.645 % -> 3.7318 against crown 3.72911",
-  "ledgerEntry": 355,
-  "pieces": {
-   "e165PerRoundFixedCost": {
-    "evidence": "-222.6 us/round ranked = -0.495 % of the 44.983 ms beagle round",
-    "status": "replicate 2 running",
-    "value": "about +0.45 %"
-   },
-   "e167F5Revert": {
-    "files": "four quantized files back to upstream/main",
-    "finding": 389,
-    "risk": "zero",
-    "value": "+0.195 %"
-   }
-  },
-  "rule": "Do not submit either piece alone.",
-  "sequence": "Merge the F5 revert into the maintained base, accept and merge Thorfinn terminal result, then Thorfinn freezes and submits the composed base."
+  "supersedes": "ledgerEntry 355 plan (composedPrediction 3.7318) and the E171 r1 plan (central 3.7527)",
+  "status": "CANCELLED by receipt D 2c885d64 = 3.65821 (-1.34 % vs A). The 4ba44f82 tree is NOT composed onto the campaign base.",
+  "newRule": "Ranked candidates ride organizer-pure upstream/main (0863b06a) plus single measured levers until Thorfinn r2 prices Q and E165 from per-prompt receipt vectors.",
+  "queue": "1) askeladd cap-4 (slot committed, unaffected by the sidecar suspect - carries no Q and no sidecar); 2) E175 Q-complete five-file (Edward, PR 174, freezing behind the slot, central 3.74).",
+  "ledgerEntry": 370
  },
  "controllerIsNonStationary": {
   "advisorError": 222,
@@ -704,15 +692,17 @@
   "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance."
  },
  "latestOfficialReceipt": {
-  "submissionId": "fda590bb",
-  "commit": "080d4cd318c273c5dd34d8ad4429d86096e19258",
-  "officialScore": 3.667847308,
+  "submissionId": "2c885d64",
+  "frozenSha": "4ba44f8251960eaf79ec4f05135485442438f5ef",
+  "officialScore": 3.65820901018537,
   "status": "rejected",
   "rejectionReason": "score did not improve current best",
-  "createdAt": "2026-08-24T05:00:39Z",
-  "tree": "campaign base with quantized{,_nax}.{h,cpp} reverted to organizer main; no E165",
-  "predicted": 3.712098,
-  "predictionErrorPct": -1.19
+  "firedAt": "2026-08-24T07:11Z",
+  "terminalAt": "2026-08-24T08:47Z",
+  "tree": "organizer main + Q (4 quantized kernel files) + E165 head-prefetch default + instrumentation strip",
+  "predicted": 3.7527,
+  "predictionErrorPct": -2.52,
+  "reading": "three-factor confound (Q-without-instr, E165, strip); ~10 sigma below projection; ~5x receipt noise below A"
  },
  "liveSubmittedSurface": {
   "afterRevert": "organizer main plus exactly two files, 30 and 88 changed lines",
@@ -785,7 +775,8 @@
    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized.h  138  REVERT TARGET",
    "Vendor/mlx-swift/Source/Cmlx/mlx/mlx/backend/metal/kernels/quantized_nax.h  80  REVERT TARGET"
   ],
-  "afterRevertTheSurfaceIs": "organizer main plus exactly two files, 30+E165 and 88 lines"
+  "afterRevertTheSurfaceIs": "organizer main plus exactly two files, 30+E165 and 88 lines",
+  "shipPatternChange20260824": "Ranked candidates now ride organizer-pure upstream/main (0863b06a) + single levers. The maintained campaign base carries instrumentation costing -1.08 % ranked (C/A) and stays a RESEARCH base; nothing composes onto ranked candidates until Thorfinn r2 prices Q and E165."
  },
  "marginalRowShare": {
   "beagle": {
@@ -863,7 +854,7 @@
  },
  "observedAt": "2026-08-24T05:50:00Z",
  "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
- "officialSlot": "occupied: 2c885d64 validating (E171 crown attempt, qwen-thorfinn), created 2026-08-24T07:11Z, watcher job 3c66ec90 (read-only; relaunched after the 07:30Z reprovision killed 4a1ccf84)",
+ "officialSlot": "free since 2026-08-24T08:47Z: 2c885d64 terminal REJECTED 3.65820901018537. Slot committed to qwen-askeladd E168 r1: depth cap min(adaptive,4) as ONE literal on organizer-pure upstream/main 0863b06a. Ship-mode brief delivered 08:52Z; expected fire within hours. Askeladd owns the receipt watcher (run_job read-only).",
  "onlyExactRoundCostOnBoard": {
   "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
   "optimised": {
@@ -2212,46 +2203,30 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": {
-  "ledger": 368,
-  "inFlight": {
-   "id": "2c885d64-8e12-4b07-b7b0-35eb314dbafe",
-   "name": "E171 crown attempt",
-   "content": "organizer-parity quantized kernels + instrumentation strip + E165 head-prefetch default",
-   "owner": "qwen-thorfinn",
-   "status": "validating",
-   "frozenSha": "4ba44f8251960eaf79ec4f05135485442438f5ef",
-   "submitBaseSha": "770a3ff2f8fbd1bb75d15e3c37ae3c5b076ebbcf",
-   "firedAt": "2026-08-24T07:11Z",
-   "routes": [
-    3.7496,
-    3.7559
-   ],
-   "central": 3.7527,
-   "readingRule": "a receipt near 3.72 is inside the draw and settles nothing; only well below 3.70 counts against Q"
+  "ledger": 370,
+  "inFlight": null,
+  "preparing": {
+   "name": "cap min(adaptive,4) on organizer-pure",
+   "owner": "qwen-askeladd",
+   "assignment": "E168 r1 (ship brief 08:52Z)",
+   "candidate": "upstream/main 0863b06a + segmentedVerifyDepthCap 7->4 (one literal + doc comment)",
+   "gates": "rebuild, 512-token --local-submit real gate, scope/budget/boundary, freeze, submit vs base 770a3ff2",
+   "readingRule": "bands vs A 3.70784519: >=3.9 step transfers/crown; 3.65-3.9 partial -> within-group-slope model; 3.55-3.65 step absent -> pivot declamp-deeper. Promote line 3.7291100106.",
+   "prediction": "askeladd registered central 3.9847 (+4-8 % band)",
+   "status": "step 1 done 09:15Z: organizer-pure tree built (1 file, 8 insertions), 3 gates green, candidate e044a583, release rebuild running; next: 512-token local-submit, gates on final HEAD, freeze, fire. benchmark-qwen-mtp.sh local revert approved (trusted, unsubmitted; metallib rebuilt explicitly)."
   },
   "frozenNext": {
-   "name": "depth cap min(adaptive, 4)",
-   "owner": "qwen-askeladd",
-   "status": "ladder complete, picks 4 (FINDING 429); two-build base-vs-cap ABBA confirmation running; composes on the shipped stripped tree (4ba44f82), not on 58979332",
-   "blockedOn": "the 2c885d64 receipt decision; the publication blocker is resolved (ledger 367). The advisor composes the 4ba44f82 tree onto senpai/qwen38-mtp-r1 after the receipt; students cannot branch from student branches.",
-   "protectedAbove": "FINDING 415",
-   "protectedBelow": "FINDING 421 minimumTableWidth = 4",
-   "role": "physics discriminator (FINDING 428)",
-   "predictions": {
-    "askeladdPreRegistered": "central 3.9847 (+7.56 pct), band +4 to +8 pct; within-group slope below the step eats part of the cap gain (some capped rounds land at M=5); registered in PR 168 F13 before the receipt",
-    "advisorRoof": "published ~4.16-4.31 from the FINDING 408 roof under flat within-group cost",
-    "stepAbsent": "published ~3.55-3.65, rejection, pivot declamp-deeper (E168 s4)",
-    "readingBands": {
-     ">=3.9": "step transfers; magnitude arbitrates within-group-slope vs flat-roof; crown either way",
-     "3.65-3.9": "partial transfer; askeladd within-group-slope model best supported; follow-up prices the slope directly",
-     "3.55-3.65": "step absent at ranked; pivot declamp-deeper"
-    },
-    "promoteLine": 3.7291100106
-   }
+   "name": "A + Q four-file single factor",
+   "owner": "qwen-edward",
+   "assignment": "E175 r0 (PR 174), F3 build ruling 09:25Z",
+   "candidate": "upstream/main 0863b06a + exactly quantized{,_nax}.{h,cpp} at campaign versions; sidecar question dissolved (FINDING 441)",
+   "predictions": "published 3.7328 (mean7) / 3.7267 (score-setting); coin flip at crown 3.72911; receipt sd ~0.010",
+   "decisionRule": ">=3.7291 promote/crown; 3.71-3.729 Q real, compose with cap-4 outcome; ~3.708 Q null on ranked -> A-replay contingency fires; <=3.69 channel broken -> A-replay immediately",
+   "holdRule": "fires when the cap-4 receipt lands"
   }
  },
- "lastAdvisorUpdate": "2026-08-24T08:40Z",
- "ledgerEntry": 369,
+ "lastAdvisorUpdate": "2026-08-24T09:30Z",
+ "ledgerEntry": 372,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2272,7 +2247,52 @@
    "tree": "organizer kernels + instrumentation, no E165"
   },
   "contrastAminusC": "instrumentation only; 108 insertions, 10 deletions, two files; ledger identical 0/8",
-  "contrastBminusC": "campaign quantized kernels only"
+  "contrastBminusC": "campaign quantized kernels only",
+  "D": {
+   "id": "2c885d64",
+   "commit": "4ba44f8251960eaf79ec4f05135485442438f5ef",
+   "score": 3.65820901,
+   "tree": "CORRECTED from the frozen object (FINDING 438): diff 0863b06a->4ba44f82 = 5 files (BlockSession.swift 444 lines incl. E165 + the four quantized files). Qwen35.swift x-sums sidecar ABSENT. D = organizer + Q-WITHOUT-sidecar + E165; the strip is not a factor vs A."
+  },
+  "inferences": "SUPERSEDED by closedFactorSystem (Entry 372). The interim-6 sidecar suspect and the four-factor DvsC framing were refuted by source: see FINDING 441.",
+  "closedFactorSystem": {
+   "harness": "ranked",
+   "source": "E171 r2 (W&B f4np59rg), candidate-leg mean7 over the seven drafting prompts, positive = slower",
+   "pairs": {
+    "DvsA": {
+     "mean7": "+0.8899 %",
+     "plutarch": "-0.0465 %",
+     "sigma": 4.7,
+     "content": "Q + E165 + P"
+    },
+    "CvsA": {
+     "mean7": "+0.8765 %",
+     "plutarch": "-0.1097 %",
+     "sigma": 4.6,
+     "content": "I + P"
+    },
+    "BvsC": {
+     "mean7": "-0.6691 %",
+     "plutarch": "+0.1197 %",
+     "sigma": 3.5,
+     "content": "Q"
+    },
+    "DvsB": {
+     "mean7": "+0.6878 %",
+     "plutarch": "-0.0564 %",
+     "sigma": 3.6,
+     "content": "E165 - I (P-free, Q-free)"
+    }
+   },
+   "additivityResidual": "+0.0070 % (3 % of the null)",
+   "null": "pairwise mean7 1 sd = 0.189 % (serial-leg run-level sd 0.1338 %, n=974); published adds serial draw ~0.271 %",
+   "conclusions": {
+    "Q": "-0.6691 % candidate-leg (3.5 sd), STAYS IN; helps most at LOW edl (travel -1.14 %, botany -0.25 %) - inverts prior, open puzzle",
+    "E165": "+0.69 % to +1.56 % harmful on ranked M5 (lower bound P-free, needs only I>=0); tau in [-1.36,-0.60] NEGATIVE; DROPPED from ship set; no dedicated receipt",
+    "I": "instrumentation ~ +0.88 % (under P~0), consistent with the 592 us/drafting-round law and FINDING 413",
+    "driftHypothesis": "bounded out by serial channel (0.134 %), plutarch nulls, additivity closure, and the predicted C/A magnitude"
+   }
+  }
  },
  "findings": {
   "412": "fda590bb revert bought prefill (+2.1262 %) and sold decode (-0.8359 %); full leg -0.5755 %; runner serial drifted +0.2889 %. Edward prediction 1 (prefill 1.0294 +- 0.0021) HELD at 1.0276. Ledger 0/8 moved, parity_ok all true.",
@@ -2350,7 +2370,18 @@
    "ourTrajectory": "2.861266 on 08-17 to 3.707845 on 08-23, monotone, a 30 % climb. newjordan's top eight span 3.6925 to 3.7291 and have been flat since 08-23. They plateaued and are buying tickets; we climbed and arrived at the pack.",
    "separationClaim": "Thorfinn's S1 at +1.11 % would sit +6.4 sd above the pack mean at the conservative 3.7496. Nothing on this board has ever been there.",
    "remedy": "we cannot re-roll, because program.md forbids duplicate submissions. We answer the gap by never leaving the slot empty and keeping one distinct frozen candidate queued behind the one in flight. RULE 199 generates that pipeline naturally: strip first, depth cap second, composition after."
-  }
+  },
+  "433": "RECEIPT D: 2c885d64 REJECTED 3.65820901018537 (frozen 4ba44f82, organizer+Q+E165+strip). Ladder harness=ranked: A 5a9f130a org-pure 3.70784519; B 180db842 org+Q+instr 3.70465399; C fda590bb org+instr 3.66784731; D 3.65820901. instr tax C/A=-1.08 %; Q|instr B/C=+1.00 %; D/A=-1.34 % is a THREE-factor confound, ~10 sigma below the 3.7527 projection, ~5x receipt noise (sd 0.271 %). Suspects: E165 negative on ranked M5; QxInstr interaction. tau remains UNMEASURED. Composition of 4ba44f82 CANCELLED.",
+  "434": "CAP-4 QUALIFIED, harness=local g16s, two independent builds: base 31.535 ms/tok (31.545/31.526) vs cap min(adaptive,4) 30.082 (30.046/30.117) = -4.61 % absolute candidate time; combined half-range 0.149 % -> 31x margin; 4 legs real-gated, exact tokens, ledger closed. Census: base 68/77 rounds M>=6 (0.883, reproduces Thorfinn 88.3 % two-pass); cap 0/111 M>=6, walk-free-below-cap 5/111; fewer rows 548 vs 568 across MORE rounds 111 vs 77; acceptance 0.886->0.920. W&B vdwazhu1, k18flizk. Candidate diff = one literal + doc comment; budget growth 1728/262144.",
+  "435": "E167 FOUR-ARM STRIP SESSION, harness=local gen16, 16/16 gated 512-token legs, witnesses digit-identical 3x across a host reprovision: strip arm B2 is BEHAVIOURALLY IDENTICAL to the maintained base (one B0 reference, all_tokens_matched all legs, ledger 568=435+56+77 sd 0). Tax-removed pooled Welch vs B0: B1 writes-removed +0.139 % ns; B2 full strip +0.252 % [-0.163,+0.668] ns; B3 linkage-internal +0.208 % p=0.016. Transfer-model test: 'tax ~1 % of decode leg' EXCLUDED (0.985 % outside B2 CI); '592 us per drafting round' CONSISTENT (predicts 0.373 % at this fixture's 6.31 drafting rounds/s; -1 sd predicts 0.250 % vs measured 0.252 %). Writes-vs-linkage needs n=39/arm (~6.2 h) - unaffordable; open. Caveats: palindrome equalises first moment not curvature (thermal record argues against the artifact); prefill common-mode correction collapses all arms to 0.083-0.091 % - both readings recorded.",
+  "436": "E174 PREMISE REJECTED (Alphonse objection CORRECT): merged E160 already implemented the identical xsums-epilogue mechanism for 64/130 cells and measured null with cause; coverage mlp.down 64 + gdn.out_proj 48 + fa.o_proj 16 = 128/130 cells closes the axis. Cross-inference: removing a standalone dispatch bought ~0 wall time, so any 'dispatch count x 4.7 us' pricing is invalid until measured first-hand; e173 item-4 norm fusion demoted to UNPRICED. E174 pivots after Alphonse's per-fill/per-record coefficient screen.",
+  "437": "E167 MERGED (8 research-only files; typed result succeeded). Receipt B 180db842 was -0.086 % vs A = half a draw sd: resolves NEITHER E162 arm. Crown ec24d591 3.7291 is a max-of-74 order statistic with no code advantage (byte-identical null pair published 0.5735 % apart; serial resample n=965 typical 3.7104, floor sd 0.179 %; 13-solver pack sd 0.172 %; 90 % confidence). E165 audit: no per-round or per-routed-cell side effect; preflushBacklogHidden alias ~0.01 % deliberately unshipped. MLX_E159_FIXED_DRAFT_DEPTH proven inert from source and non-integer edl 6.3766.",
+  "438": "RECEIPT D PER-PROMPT TABLE + TREE CORRECTION (Thorfinn interim 6, harness=ranked, W&B fdi6ute3). 8-vector raw: plutarch-class 1.25563 (edl 0.156), 2.11442 (2.298), 2.40515 (2.648), 3.51403 (4.382), 3.80239 (5.087), 3.84545 (4.989), 3.86586 (5.256), 3.88436 (6.148); median 3.658209010 reproduced exactly; head provenance 559b24ebca35 all prompts. Frozen-object diff 0863b06a->4ba44f82 = 5 files; Qwen35.swift sidecar ABSENT. D vs C = FOUR factors; D/A = Q-without-sidecar x E165 (strip not a factor vs A) - advisor 'three-factor' framing corrected. Leading suspect: sidecar feeds Q kernels on M5 (~0.6 %); B, the only +1.00 % Q evidence, carried the sidecar. E175 amended to the Q-complete five-file composition; Edward proves the coupling from source before building. [AMENDED Entry 372: the 'sidecar ABSENT' reading was WRONG - the sidecar mechanism lives in ORGANIZER Qwen35.swift; D carried it. See FINDINGs 440-441 and RULE 377.]",
+  "439": "tau ~ 0 ranked (Thorfinn interim 6, both routes): local host per-round idle-window work does not convert into official score. Powermetrics residency leg declined (fresh-clone build cost, no ranked value). Kernel-record-cache pricing (e173 item 2) must now justify itself on candidate-leg absolute time, not on tau.",
+  "440": "CLOSED FACTOR SYSTEM (E171 r2, harness=ranked, W&B f4np59rg): D-A=+0.8899 (4.7sd), C-A=+0.8765 (4.6sd), B-C=-0.6691 (3.5sd), D-B=+0.6878 (3.6sd, P-free Q-free); additivity residual +0.0070 %; calibrated pairwise null 0.189 % (serial sd 0.1338 %, n=974); every vector ~0 on plutarch. Q = -0.6691 % candidate-leg, STAYS IN. E165 = +0.69..+1.56 % HARMFUL on ranked M5; tau NEGATIVE [-1.36,-0.60]; DROPPED from ship set, no receipt to be spent on it. Mechanism: M5 has no exposed host chain to hide, prefetch only adds ~917 us/round memory traffic near the DRAM roof (vs 539 us recovered on M4 Pro). Maintained base is safe: E165 is opt-in there; the default flip lived only on Thorfinn's branch.",
+  "441": "SIDECAR FACTOR NEVER EXISTED (Thorfinn r2 \u00a70 + Edward E175 interim 1, independent simultaneous source proofs): D's Qwen35.swift is byte-identical to organizer main; Qwen35XSumsSidecar/publish/take and the qwen35_custom_affine4_g64_qmv_* consumers are ORGANIZER code present in all four receipts. The campaign 88-line Qwen35.swift delta = counters + an env knob returning the organizer constant + research-only defaults - inert on ranked. Q's four files contain zero xsums references in both versions; Q = qmm_t software pipelining (shift_dst, pipelined k-loop, double-width Ws, _nax 32KiB predicate) serving large-M traffic (prefill above all); the sidecar serves the m=4..9 decode QMV replica. DISJOINT by construction. Alphonse's census measured organizer-code coupling.",
+  "442": "E175 RULING: original four-file candidate = A + Q; F1/F2 amendments withdrawn (premise dissolved). Predictions (two routes, Thorfinn r2): published 3.7328 (mean7) / 3.7267 (score-setting prompts) - straddles crown 3.72911 within +/-0.005 vs receipt sd ~0.010, genuine coin flip, every outcome decisive. Edward's drift objection answered by four bounds; his byte-identical A-replay recorded as STANDING CONTINGENCY if E175 lands ~3.708 or <=3.69. Fire order: after cap-4 receipt.",
+  "443": "Edward first-hand B-tree verification: B = organizer + Q + provably inert instrumentation (BlockSession +30 = unset E159 env knob + trace fields; Qwen35.swift 88 inert). C provenance rests on Edward's own first-hand fda590bb build+inspection (commit 080d4cd3 no longer fetchable) - flagged, accepted. MLX routing: cells the m=2..9 replica declines fall to MLX; M>=vector_limit -> qmm, qmm_nax when is_nax_available && transpose && K%64==0. OPEN PUZZLE: why Q helps most at LOW edl - leading next-assignment candidate (Thorfinn), connects to Q-serves-prefill."
  },
  "rules": {
   "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2359,38 +2390,17 @@
   "200": "An assignment head_branch must be prefixed with the EXACT configured student name, for example qwen-alphonse/... . A bare alphonse/... is refused by SENPAI-GIT-GUARD and senpai/... is refused as the advisor-owned namespace.",
   "201": "When a stop branch is removed from an experiment, remove every measurement that could only have fed that branch. Re-derive the minimum evidence the ship decision still needs, and cut the schedule to it. Retaining an obsolete measurement on the ship path is unpriced delay, not caution.",
   "202": "Never leave the official slot empty. Keep one distinct frozen candidate queued behind the one in flight. Duplicate submissions are forbidden, so cadence is answered by a pipeline of distinct justified candidates, not by re-rolling.",
-  "374": "per-leg W&B logging for any timed session over one hour; a reprovision then costs only the remaining legs"
+  "374": "per-leg W&B logging for any timed session over one hour; a reprovision then costs only the remaining legs",
+  "376": "Before assigning an implementation experiment, grep the campaign ledger for the mechanism axis. A merged null on the same mechanism closes the axis absent a recorded reopening reason (program.md already requires the recorded reason). Raised by ADVISOR ERROR 237 (E174 assigned onto the E160-closed epilogue axis).",
+  "377": "Mechanism presence is decided by file CONTENT, not by whether a file appears in a diff. Organizer code carries mechanisms too: a file absent from candidate-vs-organizer diff means ORGANIZER content, which may include the mechanism. Raised by the FINDING 438 'sidecar ABSENT' misreading (file-level diff inference)."
  },
  "crownAttempt": {
-  "owner": "qwen-thorfinn, E171 r1, PR 171",
-  "candidateShape": "organizer main, plus the four campaign quantized kernels, plus the E165 head-prefetch default",
-  "route1FromA": "3.707845 x 1.00836 (Q) x 1.002872 (E165) = 3.7496",
-  "route2FromB": "3.704654 x 1.01093 (strip) x 1.002872 (E165) = 3.7559",
-  "consistency": "the two routes differ by 0.17 %, inside the 0.24 % receipt drift, which is the check that says neither hides a double count",
-  "central": 3.7527,
-  "conservative": 3.7496,
-  "gainOverOrganizerMain": "+1.11 % to +1.29 %",
-  "marginOverCrown": "+0.55 % to +0.72 %",
-  "probability": "about 90 %, read off Edward's resample requirement table between its 1.00 % row at 86.7 % and its 1.25 % row at 98.0 %. The advisor closed form says 97 %; the resample is preferred because the median rule is a min of four plus beagle and is not Gaussian.",
-  "noteFramingCorrection": "do not write that the strip adds 1.09 % on top of organizer main. 5a9f130a never carried the instrumentation. The strip removes the tax from OUR base and returns it to A + Q.",
-  "stopRuleReplaced": "the stop branch is removed. Fire unless the accept ledger differs between arms, all_tokens_matched is false against the S0 reference rows, an arm witness or its positive control fails, the submitted diff exceeds the default flip plus the deletion, or a scope/budget/clean-diff check fails.",
-  "acceptedStudentDesign": "reference rows generated from S0 once, which turns all_tokens_matched into a genuine cross-arm bit-exactness test and subsumes the identical-ledger condition; and a symbol witness anchored by prefetchHeadStep, RULE 197 applied to its own harness.",
-  "fired": {
-   "submissionId": "2c885d64",
-   "frozenSha": "4ba44f8251960eaf79ec4f05135485442438f5ef",
-   "firedAt": "2026-08-24T07:11Z",
-   "status": "validating",
-   "noteKiB": 13.9,
-   "localSubmit512": {
-    "all_tokens_matched": true,
-    "reference_checked_rows": "568/568",
-    "serial_spt": 0.07338379300199449,
-    "mtp_spt": 0.03125423821620643,
-    "ratio": 2.347962938477329,
-    "edl": 6.376623376623376,
-    "coolGate": "real 40C gate"
-   },
-   "budgetGrowthBytes": -5289
+  "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
+  "result": "REJECTED 3.65820901018537 vs projection 3.7527 (-2.52 %); composition cancelled",
+  "postMortem": "three-factor confound; per-prompt decomposition assigned as E171 r2 (desk, no GPU)",
+  "nextCrownPaths": {
+   "cap4": "askeladd E168 r1 on organizer-pure; bands vs A=3.70784519: >=3.9 step transfers (crown), 3.65-3.9 partial (within-group-slope model), 3.55-3.65 step absent (pivot declamp-deeper); promote line 3.7291100106",
+   "qSingleFactor": "E175 four-file A+Q (FINDING 442): 3.7328/3.7267 two-route prediction, coin flip at the crown; fire after cap-4"
   }
  },
  "submitGuardMainSideBase": {
@@ -2455,10 +2465,10 @@
    "command_buffer_submits": 0.15
   },
   "namedFixes": {
-   "item1_xsums_epilogue_extension": "ASSIGNED as E174 (PR 173, alphonse); ~0.65 GPU + ~0.43 host ms/round",
+   "item1_xsums_epilogue_extension": "CLOSED 2026-08-24T08:53Z - premise rejected. Merged E160 (FINDINGs 350/359) already measured the identical epilogue mechanism NULL (+0.0214 %/-0.0015 %, 2 sigma ~ +/-0.2 %) at 128/130 cells with cause identified (well-shaped standalone dispatch becomes badly-occupied post-barrier tail). ADVISOR ERROR 237, RULE 376. Alphonse pivots after his coefficient screen.",
    "item2_kernel_record_cache": "QUEUED pending tau from the receipt pair; pure host, 1.284 ms/round",
    "item3_bf16_recurrent_state": "QUEUED pending a designed numerical gate; ~1 ms, exactness risk across 48 layers",
-   "item4_norm_fusion": "backlog; 0.587 ms at the 4.7 us dispatch floor"
+   "item4_norm_fusion": "backlog, UNPRICED: E160 null undermines the 4.7 us/dispatch serial pricing (dispatch-count reduction != wall-time reduction). Await Alphonse first-hand coefficients."
   },
   "wandbRun": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/drncx8x0",
   "admissionPathMsRelease": 0.046,
@@ -2473,5 +2483,71 @@
   "pooledConfounded": "+3.01 ms not an effect; m=3 stratum dominated by one imposed arm",
   "releaseBoundaryHostStepMs": 0.85,
   "finding415Status": "g16s trace observation without a mechanism; do not price it"
- }
+ },
+ "perPromptReceiptTable2c885d64": {
+  "harness": "ranked",
+  "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/fdi6ute3",
+  "headProvenance": "559b24ebca35 on all eight prompts (comparable cohort)",
+  "rows": [
+   {
+    "prompt": "00142a44",
+    "serial": 0.03783915,
+    "mtp": 0.00978804,
+    "raw": 3.86586,
+    "edl": 5.256
+   },
+   {
+    "prompt": "192fb621",
+    "serial": 0.03784092,
+    "mtp": 0.00974187,
+    "raw": 3.88436,
+    "edl": 6.148
+   },
+   {
+    "prompt": "3b10cb4d",
+    "serial": 0.03793242,
+    "mtp": 0.01577135,
+    "raw": 2.40515,
+    "edl": 2.648
+   },
+   {
+    "prompt": "4b9e88cd",
+    "serial": 0.03786104,
+    "mtp": 0.01790607,
+    "raw": 2.11442,
+    "edl": 2.298
+   },
+   {
+    "prompt": "919318e1",
+    "serial": 0.03785712,
+    "mtp": 0.01077313,
+    "raw": 3.51403,
+    "edl": 4.382
+   },
+   {
+    "prompt": "a2ea8b60",
+    "serial": 0.03780513,
+    "mtp": 0.00994247,
+    "raw": 3.80239,
+    "edl": 5.087
+   },
+   {
+    "prompt": "c1ec5866",
+    "serial": 0.03780369,
+    "mtp": 0.03010732,
+    "raw": 1.25563,
+    "edl": 0.156
+   },
+   {
+    "prompt": "ea82dcb5",
+    "serial": 0.03783546,
+    "mtp": 0.00983902,
+    "raw": 3.84545,
+    "edl": 4.989
+   }
+  ],
+  "medianCheck": "mean of 3.51403 and 3.80239 = 3.658209010 reproduces the published score exactly"
+ },
+ "e165RankedHarm": "E165 head-prefetch: +0.69..+1.56 % candidate-leg harm on ranked M5 (FINDING 440); DROPPED from ship set; maintained base keeps it opt-in (default-off); mechanism deletion is cleanup backlog; never flip the default.",
+ "e171MergePlan": "r3 requested 09:25Z: one commit restores all non-research/ paths to merge-base content so the PR merges only the analysis files; frozen 4ba44f82 stays reachable through branch history; typed result re-posted at r3; then merge."
 }
