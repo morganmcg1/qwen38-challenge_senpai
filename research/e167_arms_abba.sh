@@ -169,7 +169,7 @@ select_arm() {
 witness_of() {
   local xsums addr anchor
   xsums="$(nm -a "$1" 2>/dev/null | grep -c 'qwen35XSums' || true)"
-  addr="$(nm -a "$1" 2>/dev/null | grep 'qwen35XSums' | grep -c '_Sivau' || true)"
+  addr="$(nm -a "$1" 2>/dev/null | grep 'qwen35XSums' | grep -c 'Sivau' || true)"
   anchor="$(nm -a "$1" 2>/dev/null | grep -c 'Qwen36MTPBlockSession' || true)"
   echo "xsums=${xsums},addr=${addr},anchor=${anchor}"
 }

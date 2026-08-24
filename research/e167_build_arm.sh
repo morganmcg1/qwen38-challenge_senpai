@@ -134,7 +134,7 @@ CLANG_MODULE_CACHE_PATH="$PWD/.build-worker/clang-module-cache" \
 # stripped arm.
 sym_total="$(nm -a "${worker}" 2>/dev/null | wc -l | tr -d ' ')"
 xsums="$(nm -a "${worker}" 2>/dev/null | grep -c 'qwen35XSums' || true)"
-addr="$(nm -a "${worker}" 2>/dev/null | grep 'qwen35XSums' | grep -c '_Sivau' || true)"
+addr="$(nm -a "${worker}" 2>/dev/null | grep 'qwen35XSums' | grep -c 'Sivau' || true)"
 anchor="$(nm -a "${worker}" 2>/dev/null | grep -c 'Qwen36MTPBlockSession' || true)"
 if ((sym_total < 1000)) || ((anchor < 1)); then
   echo "e167_build_arm: witness probe is broken (symbols=${sym_total} anchor=${anchor})" >&2
@@ -143,9 +143,24 @@ fi
 if [[ "${arm}" == "B2" ]] && ((xsums != 0)); then
   echo "e167_build_arm: B2 still carries ${xsums} qwen35XSums symbols" >&2; exit 1
 fi
-if [[ "${arm}" == "B3" ]] && ((addr != 0)); then
-  echo "e167_build_arm: B3 still carries ${addr} unsafe mutable addressors" >&2; exit 1
-fi
+# The addressor probe needs its own positive control. The mangled name ends in
+# `Sivau` with no separator before it, so a pattern like `_Sivau` silently
+# matches nothing and reports a stripped arm for every build. B0 and B1 keep
+# the public declarations, so they MUST show addressors; if they do not, the
+# probe is broken rather than the arm being clean.
+case "${arm}" in
+  B0|B1)
+    if ((addr < 1)); then
+      echo "e167_build_arm: addressor probe returned 0 on ${arm}, which keeps the" \
+           "public declarations; the probe is broken" >&2
+      exit 1
+    fi ;;
+  B3)
+    if ((addr != 0)); then
+      echo "e167_build_arm: B3 still carries ${addr} unsafe mutable addressors" >&2
+      exit 1
+    fi ;;
+esac
 
 dest="${workers_root}/${arm}"
 mkdir -p "${dest}"
