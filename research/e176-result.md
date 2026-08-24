@@ -3,6 +3,9 @@
 `assignment_id` `e176-q-decode-consumer-census`, revision `r1`.
 Base `senpai/qwen38-mtp-r1` at `b13ad3b875546e784a9ebdc7efa25f20dac6712a`
 (r0 was written against `6368dc25265bd05461df4f070a18f4d97a18bc12`).
+The r1 branch merges base `b13ad3b8` before submission. That merge changes no
+file under `Sources/` or `Vendor/`, so every source citation and line number in
+section 1 stays valid on the merged tree.
 
 W&B r1: <https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zm2f4q6q>
 (run `zm2f4q6q`, corrected scored-tree census).
