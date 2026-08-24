@@ -1,0 +1,13 @@
+{
+  "run_id": "rlv5exao",
+  "url": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/rlv5exao",
+  "entity": "wandb-applied-ai-team",
+  "project": "qwen38-mlx-challenge-senpai",
+  "group": "e203-within-prompt-lookahead",
+  "name": "e203-desk-within-prompt-lookahead",
+  "harness": "ranked",
+  "gpu_used": false,
+  "experiment": "e203-within-prompt-lookahead-desk",
+  "base_sha": "7f10e147f2e270a8893c7c3a4ebe0e05cdc2fdd8",
+  "commit": "e6ed35fc6bf9762a3de0a6d89c48b80ec725c055"
+}
