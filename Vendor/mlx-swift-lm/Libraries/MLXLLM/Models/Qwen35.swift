@@ -1423,7 +1423,7 @@ private let qwen35CompiledFusedSwiGLU:
 /// `qwen35CustomAffine4XSumsKernel`. The table entry is the same float
 /// accumulation of the same BF16 expression tree, in the same `i` order, so the
 /// two paths agree bit for bit.
-private let qwen35E120QMVHeader = """
+let qwen35E120QMVHeader = """
     template <int NA, bool USE_TABLE>
     inline void qwen_e120_qmv_wide(
         const device uint32_t* w,
@@ -1558,14 +1558,58 @@ private let qwen35E120QMVHeader = """
     }
     """
 
+/// How the routed widths partition their input rows across threadgroups.
+///
+/// A group streams the whole weight matrix once, so `G(m) = ceil(m / IPG)` is
+/// the number of weight passes the cell pays. `staged` is the plan E120
+/// shipped, which keeps `IPG <= 5` and therefore pays two weight passes at
+/// m = 6, 7 and 8. `singlePass` serves those widths in one group, so every
+/// routed width up to 8 streams the weights once.
+public enum Qwen35QMVWidthPlan: String, Sendable {
+    case staged
+    case singlePass = "singlepass"
+
+    /// `(width, inputs per group)`. The Metal body maps group `g` to
+    /// `first_m = g * IPG`, so the pair fixes both the template instantiation
+    /// and the launched x-extent.
+    var pairs: [(m: Int, ipg: Int)] {
+        switch self {
+        case .staged:
+            return [
+                (2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3),
+            ]
+        case .singlePass:
+            return [
+                (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 3),
+            ]
+        }
+    }
+
+    /// The two plans compile different sources, so they must not share a JIT
+    /// kernel name.
+    var kernelSuffix: String { self == .staged ? "" : "_sp" }
+
+    /// Read once at process start; it never varies with the request, the
+    /// prompt or the benchmark phase. `sanitizedRuntimeWorkerEnvironment` drops
+    /// every `MLXFAST_*` name, so the switch carries the `MLX_` prefix, and the
+    /// name is long enough for `strings` to witness it in the built worker.
+    public static let active: Qwen35QMVWidthPlan = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E189_QMV_WIDTH_PLAN"]
+        guard let raw, !raw.isEmpty else { return .singlePass }
+        return Qwen35QMVWidthPlan(rawValue: raw) ?? .singlePass
+    }()
+}
+
 /// Geometry and width switch shared by both QMV pipelines. `table` decides
 /// whether the chunk-sum table is a bound buffer at all: the four-input
 /// pipeline has no such buffer and passes a null pointer that `USE_TABLE =
 /// false` never reads.
-private func qwen35E120QMVSource(table: Bool) -> String {
+func qwen35E120QMVSource(
+    table: Bool, plan: Qwen35QMVWidthPlan = Qwen35QMVWidthPlan.active
+) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
-    let cases = [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
+    let cases = plan.pairs
         .map { m, ipg in
             """
                     case \(m):
@@ -1746,7 +1790,7 @@ public enum Qwen35KernelConfigCache {
 }
 
 private let qwen35CachedAffine4QMVKernel = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1",
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1\(Qwen35QMVWidthPlan.active.kernelSuffix)",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
     source: qwen35E120QMVSource(table: false),
@@ -1754,7 +1798,7 @@ private let qwen35CachedAffine4QMVKernel = Qwen35CachedKernel(
 )
 
 private let qwen35CachedAffine4QMVTableKernel = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1",
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1\(Qwen35QMVWidthPlan.active.kernelSuffix)",
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
     source: qwen35E120QMVSource(table: true),
@@ -1762,7 +1806,7 @@ private let qwen35CachedAffine4QMVTableKernel = Qwen35CachedKernel(
 )
 
 private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1",
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1\(Qwen35QMVWidthPlan.active.kernelSuffix)",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
     source: qwen35E120QMVSource(table: false),
@@ -1771,7 +1815,7 @@ private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
 )
 
 private let qwen35CustomAffine4QMVTableKernel = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1",
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1\(Qwen35QMVWidthPlan.active.kernelSuffix)",
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
     source: qwen35E120QMVSource(table: true),
@@ -1881,26 +1925,28 @@ public enum Qwen35CustomQMV {
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
+    /// Input rows one threadgroup serves at this width, from the compiled
+    /// width plan. The launch witness and the kernel's own switch must read the
+    /// same table, so a width-plan edit cannot desynchronise them.
+    static func inputsPerGroup(
+        _ m: Int, plan: Qwen35QMVWidthPlan = Qwen35QMVWidthPlan.active
+    ) -> Int {
+        guard let entry = plan.pairs.first(where: { $0.m == m }) else {
+            preconditionFailure("Qwen wide QMV has no width plan for \(m)")
+        }
+        return entry.ipg
+    }
+
     /// Number of input-row threadgroups that can execute real work for the
     /// current shared QMV width table. The Metal body maps group `g` to
     /// `first_m = g * IPG` and returns before any read or write when
     /// `first_m >= M`; launching `M` groups therefore submitted 67--80 %
-    /// no-op groups at every routed width. Keep the table explicit so a future
-    /// width-plan edit must update this launch witness deliberately.
-    static func activeInputGroups(_ m: Int) -> Int {
-        let inputsPerGroup: Int
-        switch m {
-        case 2: inputsPerGroup = 2
-        case 3: inputsPerGroup = 3
-        case 4: inputsPerGroup = 4
-        case 5: inputsPerGroup = 5
-        case 6: inputsPerGroup = 3
-        case 7: inputsPerGroup = 4
-        case 8: inputsPerGroup = 4
-        case 9: inputsPerGroup = 3
-        default: preconditionFailure("Qwen wide QMV has no width plan for \(m)")
-        }
-        return (m + inputsPerGroup - 1) / inputsPerGroup
+    /// no-op groups at every routed width.
+    static func activeInputGroups(
+        _ m: Int, plan: Qwen35QMVWidthPlan = Qwen35QMVWidthPlan.active
+    ) -> Int {
+        let ipg = inputsPerGroup(m, plan: plan)
+        return (m + ipg - 1) / ipg
     }
 
     /// The chunk-sum table costs one fill dispatch, measured at 4 to 6 us and
