@@ -451,9 +451,9 @@
     "whyOnDeviceIsImpossible": "The verify tensor shape must be host-known, so the width decision cannot stay on device, and there is no existing host transfer before the verify forward to ride on."
   },
   "depthCapEightOpenLever": {
-    "status": "REPRICED-DEAD-BY-DATA",
-    "finding": 456,
-    "statement": "Cap-8 (width-9 rounds) priced 3.67148 by the convex law; marginal row cost at width 9 = 8.848 ms vs per-prompt break-evens 6.19-8.13 ms; costs on all five wide prompts; needs an 8.1% law error (tightest: beagle) to overturn. Replaces both the falsified step-law DEAD verdict and the interim REOPENED-UNPRICED state."
+    "status": "REOPENED-BY-E190",
+    "finding": 505,
+    "statement": "The convex law that priced cap-8 dead (3.67148; width-9 marginal row 8.848 ms vs break-evens 6.19-8.13 ms) is falsified. A saturating form with the big step at width 6 and flattening after (local FINDING 484 shape) could put the width-9 marginal row below the break-evens. E197 refit prices cap-8 before any paid receipt; parent offers depth 8 (receipt metadata mtp_max_draft_depth=8), so cap-8 is a one-line candidate (segmentedVerifyDepthCap 7->8)."
   },
   "depthControllerHasNoSignal": {
     "aucPosition0": {
@@ -713,30 +713,19 @@
     "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance."
   },
   "latestOfficialReceipt": {
-    "submissionId": "15017ddf-cfba-4f07-adb1-8c67e6e79a95",
+    "submissionId": "04710829-3c7e-4ace-9751-f1fda9e368e9",
     "benchmarkId": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
-    "frozenSha": "9c4fefe847dc088817034c8644f59b3dda4da748",
-    "candidateSurfaceCommit": "cba4307b",
-    "yukonCommitShown": "d5dfc76c",
-    "officialScore": 3.65473627339988,
+    "candidateSurfaceCommit": "913b0d59",
+    "yukonCommitShown": "a49f536c",
+    "officialScore": 3.52363580183674,
     "status": "rejected",
-    "rejectionReason": "score did not improve current best",
+    "rejectionReason": "score did not improve current best (law purchase, rejection predeclared)",
     "parityAllOk": true,
-    "firedAt": "2026-08-24T10:10Z",
-    "terminalAt": "2026-08-24T~11:15Z",
-    "tree": "organizer-pure upstream/main 0863b06a + exactly the four Q kernel files (ladder letter F)",
-    "deltaVsA": "-1.43% (A=3.70784519415395)",
-    "perPromptVsA": {
-      "prefill": "+1.9705% sd 0.153 8/8",
-      "decode": "+1.0984% sd 0.578 8/8",
-      "serial": "-0.2527% sd 0.240 7/8",
-      "published": "-1.3332% sd 0.673 8/8"
-    },
-    "wandb": [
-      "6ig6677q",
-      "8bc65oel"
-    ],
-    "ledger": "Entry 380, FINDINGs 457-459"
+    "firedAt": "2026-08-24T15:33Z",
+    "terminalAt": "2026-08-24T17:56Z",
+    "tree": "campaign lineage with segmentedVerifyDepthCap 7->5 (E190 cap-5 law purchase)",
+    "keyResult": "FINDINGs 504-506: both laws falsified; dR6 = +8.940 ms = 15.77 MUE",
+    "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zhs21ryd"
   },
   "liveSubmittedSurface": {
     "afterRevert": "organizer main plus exactly two files, 30 and 88 changed lines",
@@ -951,7 +940,9 @@
     "E195 (Askeladd, assigned)": "Cell-selective QMV width plan: per-(cell,m) plan - m=6 single-pass everywhere except mlp.down; m=7 lm_head-only IFF the non-monotone staged column replicates as real; m<=5 and m=8 staged (identical to shipped). Arms at m=6: staged / all-cells / selective. Frozen candidate ships winning plan as DEFAULT, research switch removed (RULE 198). CONTINUE iff selective m=6 >= 6 ms/round better than staged AND >= all-cells arm, clean gates. Cap-5 composition decision is the advisor's after the E190 receipt.",
     "E194 (Edward)": "DONE - closed unmerged Entry 396 per RULE 198: dispatch-level mechanism real, does not pay (FINDING 502); instrument floor FINDING 503; branch kept arm-switched for E192 composition",
     "E196 (Edward, in flight)": "price the second SDPA pass (2pass_1 vs 2pass_2) directly at qL 6-9 x kv 512/1024/2048, research-only, Route-1 go/no-go: >=1.0 ms/round recoverable -> fused one-pass next; <0.5 -> widthSixWall closed",
-    "E192 (queued)": "persistent in-place rollback slot + E194 arm composition; must use RULE 388 in-process arm switch (predicted effects sub-0.5 ms/round)"
+    "E192 (queued)": "persistent in-place rollback slot + E194 arm composition; must use RULE 388 in-process arm switch (predicted effects sub-0.5 ms/round)",
+    "E190 (Thorfinn)": "DONE - closed Entry 397: successful law purchase; receipt 3.52364; both laws falsified (FINDING 504); dR6 = +8.940 ms = 15.77 MUE (FINDING 505); replicate noise instrument (FINDING 506); cap-5 code not merged",
+    "E197 (Thorfinn, in flight)": "saturating ranked-law refit on paid caps {4,5,7} with per-prompt inversion (FINDING 455 + E159 lattice), constrained by dR6 and R(1) floor; price cap-6/cap-8/oracle + conditional repricing if E195/E196 shave the 6-row cell; decide whether a paid cap-8 receipt joins the slot queue"
   },
   "organizer": {
     "branch": "main",
@@ -1306,8 +1297,8 @@
     "status": "superseded in part: two controlled ranked depth points now exist \u2014 cap-7 (A) 3.70784519415395 and cap-4 (90c131dc) 3.54742900664627, single-factor. Board-only inference remains unidentifiable; law recovery from the paid receipts is E177 (qwen-askeladd)."
   },
   "rankedDepthOptimum": {
-    "finding": 456,
-    "statement": "Cap-7 confirmed as the ranked depth optimum by the convex law; per-prompt oracle cap equals paid cap-7 to all printed digits. Depth axis closed; RULE 378 stands."
+    "finding": 504,
+    "statement": "Cap-7 remains the empirical best paid cell (3.70785 > 3.54743 cap-4 > 3.52364 cap-5), but the FINDING 456 convex law that declared the depth axis closed is falsified at cap-5. Depth axis REOPENED pending the E197 saturating refit; RULE 378 stands until the refit prices cap-6/cap-8."
   },
   "rankedNoiseFloor": {
     "bestCaseCvPercent": 0.086,
@@ -1687,7 +1678,8 @@
     },
     "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/jf8cin0o",
     "e194Route": "Route 2-prime accepted (Entry 394): one sequence-major query materialization (transposed(0,2,1,3).contiguous() + transposed view [1,H,qL,D] strides [.,256,6144,1] satisfying q_copy_unless second layout). Removes g2_copy x2/FA layer and the inter-SDPA barrier (RAW chain broken: sdpaB reads prev_inputs_ member, writes fresh output), pays one transpose copy. Predeclared 0.10-0.65 ms/round point 0.30. Sub-threshold clean positive = composition material, no standalone Stage 3. Barrier census is first-class output either way; named trap: allocator recycling forcing spurious barrier via set_output_array prev_outputs_ check. Route 1 (fused-kernel sequence-major emission, file Vendor/mlx-swift-lm/Libraries/MLXLLM/Models/Qwen35.swift) deferred behind E189; would remove the last copy, +0.05-0.32 ms/round.",
-    "repricedByE194": "Entry 396: step removal CLOSED (FINDING 502). Split-step cost is dominated by the second SDPA call's own full-KV passes. Only Route 1 (one-pass form avoiding the second full-KV pass) remains. E196 prices 2pass_2 directly before any kernel build: >=1.0 ms/round recoverable -> Route-1 implementation; <0.5 ms/round -> axis closed sub-MUE."
+    "repricedByE194": "Entry 396: step removal CLOSED (FINDING 502). Split-step cost is dominated by the second SDPA call's own full-KV passes. Only Route 1 (one-pass form avoiding the second full-KV pass) remains. E196 prices 2pass_2 directly before any kernel build: >=1.0 ms/round recoverable -> Route-1 implementation; <0.5 ms/round -> axis closed sub-MUE.",
+    "rankedPrice": "E190/FINDING 505: the 5->6 row step costs +8.940 ms/round [8.345,9.544] on the ranked M5 = 15.77 MUE at the cap boundary. E195 (QMV ragged splits) and E196 (SDPA split second pass) attack components of this step; success shifts the depth optimum deeper and compounds with depth."
   },
   "withdrawnRules": {
     "CAMPAIGN_LAW_364": "ADVISOR ERROR 215, ledger 350.3. A timing contrast whose accept ledger differs between arms is not a runtime contrast and must never be priced with a runtime elasticity. Report the accept ledger next to every timing delta. If the ledger moved, decompose into a round-cost term and an acceptance term before quoting any score. Alphonse leg-2 protocol is the reference implementation.",
@@ -2214,13 +2206,13 @@
     "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
   },
   "submissionQueue": {
-    "ledger": 380,
-    "inFlight": "E190 cap-5: submission 04710829, validating (Entry 391); candidate 913b0d59",
-    "frozenNext": "E193 E165-prefetch retest (PR 190): Stage 1 palindrome screen running; freeze after 512-token confirmation; preauthorized autonomous submit behind the E190 receipt",
-    "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
+    "ledger": 397,
+    "inFlight": "E193 E165-prefetch retest (PR 190, Alphonse): submission 2681c3ac-9d9e-4367-aef1-fb3e4c587f35 validating, submitted 17:58Z two minutes after the slot freed; frozen tip e50b1511, submitted surface byte-identical to measured SHA 67662100; guard = fixed origin-tip submit-official.sh (RULE 385), merge-base arg 770a3ff2, model flag senpai. Alphonse owns the receipt watcher.",
+    "frozenNext": "none",
+    "decision": "Next slot: strongest of E195 selective-QMV winner (if the m=6 ladder wins), E197-priced cap-8 paid receipt (if the saturating refit predicts crown-relevance), or the E192+E194 composition."
   },
-  "lastAdvisorUpdate": "Entry 396: E194 closed unmerged (FINDINGs 502-503, RULEs 387-388); widthSixWall repriced onto Route 1; E196 assigned to Edward (second-SDPA-pass pricing). E190 receipt 0471082 validating; E193 frozen behind slot; E195 Stage-1 build.",
-  "ledgerEntry": 396,
+  "lastAdvisorUpdate": "Entry 397: E190 closed (FINDINGs 504-506; both ranked laws falsified; dR6 = 8.940 ms = 15.77 MUE; depth axis REOPENED, cap-8 lever reopened); E193 receipt 2681c3ac in flight; E197 (law refit + cap-8 pricing) assigned to Thorfinn. E195 ladder running; E196 with Edward.",
+  "ledgerEntry": 397,
   "threeReceiptFactorial": {
     "A": {
       "id": "5a9f130a",
@@ -2430,7 +2422,10 @@
     "500": "ROUTE 1 ALL-CELLS SINGLE-PASS QMV NOT USEFUL (E189, Askeladd, closed Entry 395). Bit-exact: 0/8,043,904 diffs, 0 ULP, all 7 fused cells x m=6,7,8, positive control fires - _sp single-pass kernels proven exact and reusable. Timing (12-leg palindrome ladder, 256 tokens, harness=local M4 Pro): m=8 +53.96 ms/round (+37.0%, s/token +19.86%); m=7 +30.81 probed; m=6 -3.92. Mechanism: acc/partial/a0..a3 = rows_per_simd x NA live floats; NA>=7 is register/occupancy-bound (mlp.down m=8 single-pass ~4x its bandwidth bound). Step law double-confirmed: staged arm reproduces FINDING 484 +35.56 step at +35.5 from an independent instrument. Null controls collapsed (-0.05 probe, -0.16 ladder). Needle note: inputsPerGroup inlined away (0 hits); use Qwen35QMVWidthPlan.",
     "501": "CELL-SUM PROJECTIONS UNDERSTATE ROUND EFFECTS; M=6 ALL-CELLS IS A REAL E2E WIN (E189). End-to-end m=6 all-cells single-pass: -3.92 ms/round (-3.1%, s/token -1.92%, -6.9 MUE) vs cell-sum projection -0.15 ms/round: 26x gap. Direction agrees at every width, magnitude does not - selective candidates need their own e2e ladder. Selective plan (single-pass at 6 of 7 winning cells at m=6, staged mlp.down) projects ~-7.5 ms/round from cell sums, plausibly more e2e. m=7 lm_head-only (~-1.3) rests on an unreplicated non-monotone staged column (8541@m7 vs 6175@m8) - replicate before pricing. Under cap-5 every drafting round runs m=6 (~100% duty cycle): cap-5 x selective composition is potentially crown-relevant; E190 receipt prices the cap-5 side.",
     "502": "E194: split-step overhead is the second SDPA call's own full-KV passes. Sequence-major shared-query form is real at dispatch level (8->7 dispatches, 3->2 barriers, 1->0 inter-SDPA barriers, 6->5 copies/FA layer at kv512; bf16 gate 0 diffs, positive control fires) but does not pay: |effect| <= ~0.15 ms/round, sign unresolved (W&B ewf4akzx). Both forms copy the whole query exactly once total; transposed copy pays strided-write penalty; overlap term only at short KV. FINDING 497's +1.58..+3.04 ms/round reprices onto Route 1 (one-pass form avoiding the second full-KV pass), not step surgery. Branch kept arm-switched (MLX_E194_SEQ_MAJOR_Q) as E192 composition material.",
-    "503": "Leg-level instrument noise floor ~ +/-0.24 ms/round (~0.42 MUE) for one-arm-per-leg ABBA contrasts on this host: depth-0 serial null control (causally unreachable) moved -0.147% in-session, >2x the +0.067% MTP effect (E194, 8 legs, 512 tokens). The serial null control is a free per-session noise-floor instrument; report it with every ABBA session."
+    "503": "Leg-level instrument noise floor ~ +/-0.24 ms/round (~0.42 MUE) for one-arm-per-leg ABBA contrasts on this host: depth-0 serial null control (causally unreachable) moved -0.147% in-session, >2x the +0.067% MTP effect (E194, 8 legs, 512 tokens). The serial null control is a free per-session noise-floor instrument; report it with every ABBA session.",
+    "504": "harness=ranked. E190 paid cap-5 receipt 04710829 published 3.52363580183674 (rejected non-improving, as predeclared). BOTH predeclared laws falsified: 5.60 sigma below FINDING 456 convex law (3.66501), 4.48 sigma above staircase-published (3.41814). Model-free rule selects staircase side by only 0.98 sigma below the cap-4 anchor: cap-5 ~ cap-4 on ranked. Depth response 3.52364 (cap5) <~ 3.54743 (cap4) << 3.70785 (cap7): shallow direction dead; open question is the law shape at widths 7-9. W&B zhs21ryd.",
+    "505": "harness=ranked. dR6 = R(6)-R(5) = +8.940 ms, 1sigma [8.345, 9.544] = 15.77 MUE; R(6)/R(5) = 1.2216. Single-cell bisection from the paid cap-4 anchor. Super-quadratic rise at the 6-row cell: quadratic underprices by 6.26 MUE, staircase variants overprice by 3.41-9.95 MUE; truth is a saturating form nearer staircase-published. Same m=6 boundary attacked by E195 (QMV ragged splits) and E196 (SDPA split second pass): shaving the 6-row cell speeds rounds AND shifts the ranked depth optimum deeper - the levers compound.",
+    "506": "harness=ranked. Cross-receipt replicate noise instrument: prompts with identical edl across all three paid receipts give repeat spread on inverted R of 0.041 ms (plutarch), 0.37 (drama), 0.47 (travel); dR6 is 19-218x replicate noise. plutarch's 449 non-drafting rounds / edl 0.156 identical in all three paid receipts: stable schedule-skip, not a cap artifact, far from the median."
   },
   "rules": {
     "197": "Pair every --forbid needle with a --require needle drawn from the same source string in the same file. A --forbid that cannot be present is not a weak gate, it is no gate at all, and it fails in the safe-looking direction. Raised by Thorfinn. RULE 196 applied to student assertions.",
@@ -2725,7 +2720,8 @@
     "openMechanismQuestion": "FINDING 454 replica grid predicts kernel-level R(8)~=R(7) (both 2x4 grids) but the law prices +7.7 ms between them; non-replica round cost (verification, GDN replay, attention cache, head) must carry the smooth M-dependence. Split unmeasured.",
     "source": "E177, W&B gjn7stes, merged 082a1d60",
     "admissibilityNote": "Entry 387: E186 showed a weight-pass staircase (steps at M=5 and M=8, plateau M=5..7) fits the same three ranked anchors with max residual 0.90 MUE and one fewer parameter (FINDING 488). Both forms keep cap-7 optimal and cap-8 dead. E190 (paid cap-5 cell) discriminates by ~12.6 MUE.",
-    "rowFormAudit": "FINDING 492: coefficients are in ROW form (R(rows=1)=30.277 = zero-draft anchor). e186_analyze.py's draft-form re-expression (32.155, -2.091, 0.576) evaluates one row low; FINDING 488 alpha/beta inherit the shift. E190 cap-5 receipt (in flight) discriminates: model-free boundary 3.5474; quadratic predicts 3.66501433, corrected staircase 3.37087944."
+    "rowFormAudit": "FINDING 492: coefficients are in ROW form (R(rows=1)=30.277 = zero-draft anchor). e186_analyze.py's draft-form re-expression (32.155, -2.091, 0.576) evaluates one row low; FINDING 488 alpha/beta inherit the shift. E190 cap-5 receipt (in flight) discriminates: model-free boundary 3.5474; quadratic predicts 3.66501433, corrected staircase 3.37087944.",
+    "status": "FALSIFIED at cap-5 by E190 (FINDINGs 504-505): receipt 3.52364 is 5.60 sigma below the law's 3.66501; the law underprices dR6 by 6.26 MUE. Demoted to a two-point interpolant for caps {4,7}. Do not price new cells with it; E197 refits a saturating family."
   },
   "crownGapIsReceiptChannel": {
     "statement": "Crown ec24d591 sits on a tree byte-identical to receipt A (5a9f130a): the +0.5735% crown gap is receipt-channel (luck), not mechanism. FINDING 452 offset scale ~0.23% coherent per receipt. Depth axis closed (FINDING 456). Open levers by priced size: xsums dedup/fill bracket (FINDING 451, 0.38-0.52% leg upper bound), receipt-channel statistics + A-replay option (E178), prefill (~10% of leg, no current lever).",
