@@ -58,6 +58,38 @@ PRIOR_HOST_ROWS = [
         "method": "prior-ledger (FINDING 363)",
         "side": "mixed",
     },
+    {
+        "name": "command_buffer_submits",
+        "mechanism": "11 command-buffer submits per round",
+        "ms_per_round": 0.15,
+        "method": "prior-ledger (E80 census, 11 submits at 13.5-17.6 us)",
+        "side": "host",
+    },
+]
+
+# Rows the E173 instruments do not measure directly but that source structure
+# plus one quoted in-source measurement fixes. `Qwen35XSumsSidecar` publishes
+# only from `qwen35FusedResidualRMSNorm` (Qwen35.swift:2362), which runs 127
+# times per round: 63 boundary-fused entry norms plus 64 post-attention norms.
+# The consumers of those 127 activations are gdn.in_proj (47 of 48; layer 0 uses
+# the unfused inputLayerNorm), fa.qkv (16) and mlp.gate_up (64). The other 130
+# routed cells - gdn.out_proj (48), mlp.down (64), fa.o_proj (16), lm_head (1),
+# gdn.in_proj at layer 0 (1) - read activations no publisher produces, so at
+# m >= 4 each one launches its own standalone `xsumsTable` fill.
+STANDALONE_FILL_CELLS = 130
+STANDALONE_FILL_US_EACH = 5.0  # Qwen35.swift:1732, "measured at 4 to 6 us"
+
+SOURCE_DERIVED_GPU_ROWS = [
+    {
+        "name": "gpu.xsums_standalone_fills",
+        "mechanism": f"{STANDALONE_FILL_CELLS} routed cells per round have no "
+        "publishing producer, so each launches its own chunk-sum fill dispatch "
+        "at m >= 4. The 8-slot sidecar serves only the 127 fused-norm outputs.",
+        "ms_per_round": STANDALONE_FILL_CELLS * STANDALONE_FILL_US_EACH / 1e3,
+        "method": "source-derived (producer/consumer census) x in-source measured "
+        "fill cost, Qwen35.swift:1732 and :2362",
+        "side": "gpu",
+    },
 ]
 
 
@@ -279,6 +311,7 @@ def main() -> int:
         gaps.append("gpu-line-items.json missing: GPU line items unpriced")
 
     rows.extend(PRIOR_HOST_ROWS)
+    rows.extend(SOURCE_DERIVED_GPU_ROWS)
 
     explained = sum(r["ms_per_round"] for r in rows)
     host = sum(r["ms_per_round"] for r in rows if r["side"] == "host")

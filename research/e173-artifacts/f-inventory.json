@@ -1,0 +1,416 @@
+{
+  "experiment": "e173-decompose-the-per-round-fixed-cost",
+  "harness": "local",
+  "target_f_ms": 11.792,
+  "target_source": "FINDING 404 fixed term, M4 Pro class (g16s)",
+  "ranked_f_ms_not_claimed": 6.899,
+  "rows": [
+    {
+      "name": "gdn.recurrence",
+      "mechanism": "state read + write per call, FP32 (48 calls/round, family gdn)",
+      "ms_per_round": 2.0871801857142858,
+      "method": "measured-gpu (E173 GPU line items, intercept of a linear fit over m in [1, 3, 4, 5])",
+      "side": "gpu"
+    },
+    {
+      "name": "admission.kernel_record_construction",
+      "mechanism": "MLXFastKernel.callAsFunction per routed cell: a fresh mlx_fast_metal_kernel_config, template args, grid, output args, an input vector_array and mlx_fast_metal_kernel_apply. At m >= 4 this runs twice per cell, because a sidecar miss adds the standalone xsums fill kernel. Residual of the 1.376 ms entry-point total after the predicate, sidecar and counters.",
+      "ms_per_round": 1.2842300786132812,
+      "method": "measured-host (E173 admission census, residual of the entry-point build)",
+      "side": "host"
+    },
+    {
+      "name": "head_chain_fixed",
+      "mechanism": "proposal-head chain per-round fixed component",
+      "ms_per_round": 1.2288,
+      "method": "prior-ledger (FINDING 363)",
+      "side": "mixed"
+    },
+    {
+      "name": "post_eval_host_tail",
+      "mechanism": "host work after the verify eval returns (row ledger, acceptance decision, response encode)",
+      "ms_per_round": 0.655,
+      "method": "prior-ledger (FINDING 363, 635-675 us range midpoint)",
+      "side": "host"
+    },
+    {
+      "name": "gpu.xsums_standalone_fills",
+      "mechanism": "130 routed cells per round have no publishing producer, so each launches its own chunk-sum fill dispatch at m >= 4. The 8-slot sidecar serves only the 127 fused-norm outputs.",
+      "ms_per_round": 0.65,
+      "method": "source-derived (producer/consumer census) x in-source measured fill cost, Qwen35.swift:1732 and :2362",
+      "side": "gpu"
+    },
+    {
+      "name": "envelope.rms_norm_5120",
+      "mechanism": "127 = 63 boundary-fused entry norms + 64 post-attention norms (127 calls/round, family dispatch_floor)",
+      "ms_per_round": 0.5867576042410714,
+      "method": "measured-gpu (E173 GPU line items, intercept of a linear fit over m in [1, 3, 4, 5])",
+      "side": "gpu"
+    },
+    {
+      "name": "commit",
+      "mechanism": "commit of the pending primary token at round entry",
+      "ms_per_round": 0.4331,
+      "method": "prior-ledger (FINDING 405)",
+      "side": "host"
+    },
+    {
+      "name": "fa.sdpa",
+      "mechanism": "K and V cache read at cache_length, mask none (16 calls/round, family attn)",
+      "ms_per_round": 0.42661278214285714,
+      "method": "measured-gpu (E173 GPU line items, intercept of a linear fit over m in [1, 3, 4, 5])",
+      "side": "gpu"
+    },
+    {
+      "name": "protocol_gap",
+      "mechanism": "worker protocol round-trip floor between parent and worker",
+      "ms_per_round": 0.3566,
+      "method": "prior-ledger (FINDING 399 floor)",
+      "side": "host"
+    },
+    {
+      "name": "mlp.swiglu_elementwise",
+      "mechanism": "gate and up read, product written (64 calls/round, family mlp)",
+      "ms_per_round": 0.28385751428571426,
+      "method": "measured-gpu (E173 GPU line items, intercept of a linear fit over m in [1, 3, 4, 5])",
+      "side": "gpu"
+    },
+    {
+      "name": "command_buffer_submits",
+      "mechanism": "11 command-buffer submits per round",
+      "ms_per_round": 0.15,
+      "method": "prior-ledger (E80 census, 11 submits at 13.5-17.6 us)",
+      "side": "host"
+    },
+    {
+      "name": "head.island_kv_matmul",
+      "mechanism": "BF16 KV pack read once per round by appendHistoryKV (1 calls/round, family head)",
+      "ms_per_round": 0.08937772522321427,
+      "method": "measured-gpu (E173 GPU line items, intercept of a linear fit over m in [1, 3, 4, 5])",
+      "side": "gpu"
+    },
+    {
+      "name": "admission.xsums_sidecar_take",
+      "mechanism": "Qwen35XSumsSidecar.take: NSLock plus an 8-slot weak scan with no early exit, once per routed cell (257 cells); 8 slots cannot serve 257 cells, so the miss cost is the common one",
+      "ms_per_round": 0.04619537353515625,
+      "method": "measured-host (E173 admission census, miss branch)",
+      "side": "host"
+    },
+    {
+      "name": "admission.routable_predicate",
+      "mechanism": "Qwen35CustomQMV.routable over 257 routed cells per weight pass (m=4: all accepted, 0 refusals). ~0.5 us of the call is MLXArray metadata queries before the shape guards can refuse.",
+      "ms_per_round": 0.0460106416015625,
+      "method": "measured-host (E173 admission census, no eval, no device buffer)",
+      "side": "host"
+    },
+    {
+      "name": "head.island_q_matmul_scatter",
+      "mechanism": "Q island GEMM plus putAlong into the 12288-wide output (1 calls/round, family head)",
+      "ms_per_round": 0.03553006316964286,
+      "method": "measured-gpu (E173 GPU line items, intercept of a linear fit over m in [1, 3, 4, 5])",
+      "side": "gpu"
+    },
+    {
+      "name": "head.top_two_readout",
+      "mechanism": "logits read by the two-pass reducer (1 calls/round, family readout)",
+      "ms_per_round": 0.008370502232142859,
+      "method": "measured-gpu (E173 GPU line items, intercept of a linear fit over m in [1, 3, 4, 5])",
+      "side": "gpu"
+    },
+    {
+      "name": "admission.counter_increments",
+      "mechanism": "qwen35XSumsStandaloneFills / SidecarHits counter pair, incremented once per routed cell at m >= 4",
+      "ms_per_round": 0.0,
+      "method": "measured-host (E173 admission census)",
+      "side": "host"
+    }
+  ],
+  "explained_ms": 8.367622470758928,
+  "host_ms": 2.9711360937499998,
+  "gpu_ms": 4.167686377008929,
+  "mixed_ms": 1.2288,
+  "residual_ms": 3.424377529241072,
+  "items_at_or_above_0p5ms": [
+    "gdn.recurrence",
+    "admission.kernel_record_construction",
+    "head_chain_fixed",
+    "post_eval_host_tail",
+    "gpu.xsums_standalone_fills",
+    "envelope.rms_norm_5120"
+  ],
+  "verdict": "instrument-not-seeing-F",
+  "admission_detail": {
+    "cells_per_round": 257,
+    "per_m_us": {
+      "1": {
+        "total_us": 11.006123779296875,
+        "cells": 257,
+        "accepted_cells": 0,
+        "refused_cells": 257,
+        "us_per_cell": 0.042825384355240755
+      },
+      "2": {
+        "total_us": 46.004880859375,
+        "cells": 257,
+        "accepted_cells": 257,
+        "refused_cells": 0,
+        "us_per_cell": 0.17900731851896887
+      },
+      "3": {
+        "total_us": 46.12517138671875,
+        "cells": 257,
+        "accepted_cells": 257,
+        "refused_cells": 0,
+        "us_per_cell": 0.17947537504559824
+      },
+      "4": {
+        "total_us": 46.0106416015625,
+        "cells": 257,
+        "accepted_cells": 257,
+        "refused_cells": 0,
+        "us_per_cell": 0.17902973385821982
+      },
+      "5": {
+        "total_us": 45.8147861328125,
+        "cells": 257,
+        "accepted_cells": 257,
+        "refused_cells": 0,
+        "us_per_cell": 0.17826765032222763
+      },
+      "9": {
+        "total_us": 46.35554272460938,
+        "cells": 257,
+        "accepted_cells": 257,
+        "refused_cells": 0,
+        "us_per_cell": 0.18037176157435555
+      },
+      "512": {
+        "total_us": 11.446573974609375,
+        "cells": 257,
+        "accepted_cells": 0,
+        "refused_cells": 257,
+        "us_per_cell": 0.044539198344783565
+      }
+    },
+    "routed_graph_build_total_ms": {
+      "1": 0.107639625,
+      "3": 0.52556321875,
+      "4": 1.37643609375
+    },
+    "vendor_counterfactual_ms": 0.107639625
+  },
+  "e120_table_path_net_ms_saved_at_m4": 3.18447,
+  "m_slopes_excluded_from_F": [
+    {
+      "name": "gdn.recurrence",
+      "ms_per_round_per_m": 0.09755269285714285,
+      "measured_ms_per_round": {
+        "1": 2.052577875,
+        "3": 2.501625,
+        "4": 2.7624375,
+        "5": 2.300265375
+      }
+    },
+    {
+      "name": "fa.sdpa",
+      "ms_per_round_per_m": 0.24803140357142855,
+      "measured_ms_per_round": {
+        "1": 0.6700312500000001,
+        "3": 1.1794218749999998,
+        "4": 1.419760375,
+        "5": 1.661645875
+      }
+    },
+    {
+      "name": "envelope.rms_norm_5120",
+      "ms_per_round_per_m": 0.004581695089285733,
+      "measured_ms_per_round": {
+        "1": 0.590103515625,
+        "3": 0.60283725,
+        "4": 0.6053583984375001,
+        "5": 0.6082932890625
+      }
+    },
+    {
+      "name": "mlp.swiglu_elementwise",
+      "ms_per_round_per_m": 0.028155957142857152,
+      "measured_ms_per_round": {
+        "1": 0.3104165,
+        "3": 0.373708,
+        "4": 0.392104,
+        "5": 0.425229
+      }
+    },
+    {
+      "name": "head.island_kv_matmul",
+      "ms_per_round_per_m": 0.005846316517857145,
+      "measured_ms_per_round": {
+        "1": 0.09168457031249999,
+        "3": 0.1133463515625,
+        "4": 0.1140615234375,
+        "5": 0.1144205703125
+      }
+    },
+    {
+      "name": "head.island_q_matmul_scatter",
+      "ms_per_round_per_m": 0.0042773339285714276,
+      "measured_ms_per_round": {
+        "1": 0.0371165390625,
+        "3": 0.053262046875,
+        "4": 0.0536028671875,
+        "5": 0.053744140625
+      }
+    },
+    {
+      "name": "head.top_two_readout",
+      "ms_per_round_per_m": 0.006885899553571427,
+      "measured_ms_per_round": {
+        "1": 0.015324875000000002,
+        "3": 0.028934890625,
+        "4": 0.035826828124999995,
+        "5": 0.042912109375
+      }
+    }
+  ],
+  "tablepays": {
+    "boundary_curvature_ms": {
+      "bootstrap_draws": 4000,
+      "contrast_ci95_ms": [
+        -0.7994999999999983,
+        3.2075000000000022
+      ],
+      "curvature_ci95_ms": {
+        "3": [
+          3.6870000000000003,
+          6.854500000000001
+        ],
+        "4": [
+          3.519,
+          4.777000000000001
+        ],
+        "5": [
+          17.617499999999996,
+          19.872
+        ]
+      },
+      "definition": "curvature(M) = inc(M -> M+1) - inc(M-1 -> M); contrast = curvature(3) - curvature(4); curvature(3) is the second difference that straddles tablePays",
+      "point": {
+        "contrast_ms": 1.7219999999999995,
+        "curvature_ms": {
+          "3": 5.939,
+          "4": 4.2170000000000005,
+          "5": 19.296
+        },
+        "increments_ms": {
+          "2": 5.802,
+          "3": 11.741,
+          "4": 15.958,
+          "5": 35.254
+        }
+      }
+    },
+    "controlled_m3_to_m4_increment": {
+      "eval_wall_us": {
+        "n": 395,
+        "r2": 0.6881776203538295,
+        "sigma_us": 1611.3216600493154,
+        "terms": [
+          {
+            "coef": 35589.478999168176,
+            "name": "intercept",
+            "se": 449.56592153549747,
+            "t": 79.16409428368571
+          },
+          {
+            "coef": 4910.894128600882,
+            "name": "is_m4",
+            "se": 184.0522417005387,
+            "t": 26.68206636999906
+          },
+          {
+            "coef": -0.09293225149209476,
+            "name": "cache_pos",
+            "se": 0.5468954313353014,
+            "t": -0.16992691137534485
+          },
+          {
+            "coef": -32.954702480740806,
+            "name": "shortfall",
+            "se": 84.78892833885335,
+            "t": -0.3886675197620085
+          },
+          {
+            "coef": 124.03732056214179,
+            "name": "medicine",
+            "se": 163.7263920909271,
+            "t": 0.7575890421701615
+          }
+        ]
+      },
+      "round_us": {
+        "n": 395,
+        "r2": 0.5218047748764394,
+        "sigma_us": 5287.124229853198,
+        "terms": [
+          {
+            "coef": 75315.96155637932,
+            "name": "intercept",
+            "se": 1475.1312140828938,
+            "t": 51.05712687613632
+          },
+          {
+            "coef": 10504.170258662221,
+            "name": "is_m4",
+            "se": 603.91856621845,
+            "t": 17.393355406236413
+          },
+          {
+            "coef": 3.8582037687309407,
+            "name": "cache_pos",
+            "se": 1.7944921600075752,
+            "t": 2.150025424861513
+          },
+          {
+            "coef": 798.4731736242234,
+            "name": "shortfall",
+            "se": 278.21235732033654,
+            "t": 2.8700133283614475
+          },
+          {
+            "coef": -436.0187336640841,
+            "name": "medicine",
+            "se": 537.2246871328548,
+            "t": -0.8116133604937209
+          }
+        ]
+      }
+    },
+    "uncontrolled_increments_ms": [
+      {
+        "crosses_table_boundary": false,
+        "from": 2,
+        "median_increment_ms": 5.8019999999999925,
+        "to": 3
+      },
+      {
+        "crosses_table_boundary": true,
+        "from": 3,
+        "median_increment_ms": 11.741,
+        "to": 4
+      },
+      {
+        "crosses_table_boundary": false,
+        "from": 4,
+        "median_increment_ms": 15.958000000000013,
+        "to": 5
+      },
+      {
+        "crosses_table_boundary": false,
+        "from": 5,
+        "median_increment_ms": 35.254000000000005,
+        "to": 6
+      }
+    ]
+  },
+  "gaps": []
+}
