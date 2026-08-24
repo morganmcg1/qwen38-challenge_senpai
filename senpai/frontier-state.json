@@ -2187,8 +2187,8 @@
   "text": "a guard that has never been green is not a guard; any invariant added to the campaign table must be shown failing on a deliberately broken tree AND passing on the current base, in the same session it is added"
  },
  "submissionQueue": "In flight: 2681c3ac (E193 prefetch, validating ~2h20m, watcher Alphonse). Next: E199 cap-8 paid receipt (frozen 4b967648, Thorfinn holding on slot trigger e0516d5b). Merged riders for the next composition: E195 selective QMV plan (0.181 ms/round ranked). Pending: E198 fused-SDPA terminal (Stage 4 null, liveness diagnosis); E192+E194 composition; E200 depth pricing (assigned).",
- "lastAdvisorUpdate": "2026-08-24T20:20Z Entry 402: E195 MERGED at cd3e7688 (FINDINGs 516-517, sub-MUE composition); E198 Stage 4 null under liveness diagnosis; E199 frozen holding; E200 depth pricing assigned to Askeladd",
- "ledgerEntry": 402,
+ "lastAdvisorUpdate": "2026-08-24T20:35Z Entry 403: E198 Stage-3 live-path + Stage-4 ABBA RETRACTED (HARNESS DEFECT 28 recurrence: MLXFAST_ arm switch silently dropped by worker env sanitizer; both arms ran shipped code). RULE 391 arm-witness requirement codified. Repair session approved.",
+ "ledgerEntry": 403,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2434,7 +2434,8 @@
   "387": "Never anchor a worker-certification needle on a Swift require/precondition/fatalError message literal, or any literal of the same kind, mechanism, or file as an existing require literal: failure-path strings can survive in a stale binary whose live path differs. Use a dedicated >=16-byte literal on the live code path (FINDING 474 sizing applies).",
   "388": "Any experiment predicting |effect| < 0.5 ms/round must not use one-arm-per-leg ABBA as its decisive contrast (FINDING 503 floor ~ +/-0.24 ms/round). Use an in-process arm switch alternating within one leg plus a causally unreachable null control in the same session, or raise the effect by composition first. A leg-level result below the floor is Unclear, not a negative.",
   "389": "Head identity: every timed leg, confirmation, and result must record head_provenance_sha256; for candidate evidence it must equal the head the candidate declares (declared-run digest dadbfb80-lineage when mtp-head.manifest.json is tracked; pinned 3a7fed84 otherwise). A confirmation under any other head is auxiliary correctness evidence only and must be re-run under the declared head before freeze/terminal. Clean-env run_job legs must export MLXFAST_QWEN_MTP_HEAD_DIR explicitly. Never infer head identity from uses_pinned_mtp_head or wrapper defaults.",
-  "390": "Head-identity comparison semantics (extends RULE 389): a pinned-cache head_provenance_sha256 is host-local and time-local (HARNESS DEFECT 45 \u2014 .mlxfast-reference-cache.lock with timestamps/inodes/ns-mtimes is inside the hashed tree); two differing pinned digests are NOT evidence of a head change. Digest-vs-screen identity comparisons are defined only for DECLARED heads (dadbfb80 stable across 52 legs, 3 experiments, fleet reprovision). Every leg records head class (declared|pinned) alongside the digest. Nobody edits computeQwenMTPHeadProvenance; the lock-file exclusion is a known upstream limitation."
+  "390": "Head-identity comparison semantics (extends RULE 389): a pinned-cache head_provenance_sha256 is host-local and time-local (HARNESS DEFECT 45 \u2014 .mlxfast-reference-cache.lock with timestamps/inodes/ns-mtimes is inside the hashed tree); two differing pinned digests are NOT evidence of a head change. Digest-vs-screen identity comparisons are defined only for DECLARED heads (dadbfb80 stable across 52 legs, 3 experiments, fleet reprovision). Every leg records head class (declared|pinned) alongside the digest. Nobody edits computeQwenMTPHeadProvenance; the lock-file exclusion is a known upstream limitation.",
+  "391": "(a) Model-side runtime switches must use a sanitizer-allowlisted name (DARKBLOOM_ standard; allowlist also passes MLX_, METAL_, MTL_, DYLD_, LC_ prefixes and the exact keys in sanitizedRuntimeWorkerEnvironment); anything else is dropped in silence (HARNESS DEFECT 28). (b) No multi-arm timed session is priced without a pre-registered positive arm witness (liveness counter, build witness string like qmv_plan=, or a counter delta only the changed path produces) proving the arms executed different code. A contrast without an arm witness is VOID by default, not a null. Raised by E198's void Stage-4 ABBA (Edward)."
  },
  "crownAttempt": {
   "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
@@ -2806,5 +2807,24 @@
   "evidence": "WITH lock: 5 files/849407066 B/3a7fed84; WITHOUT: 4 files/849406438 B/157f750e (matches lock file_count=4/byte_count); 62516c6f-vs-3a7fed84 = lock churn across 2026-08-24 fleet reprovision",
   "rankedImpact": "none \u2014 candidate leg uses declared head, whose directories contain no lock file and whose digest is stable",
   "foundBy": "qwen-alphonse, E193 desk audit, Entry 400"
+ },
+ "harnessDefect28SanitizerRecurrence": {
+  "status": "RECURRED in E198 (2026-08-24); both ABBA arms ran shipped code",
+  "mechanism": "sanitizedRuntimeWorkerEnvironment (QwenRuntimeWorker.swift:2566-2655) rebuilds the worker env from an allowlist; MLXFAST_* is excluded by design, so MLXFAST_QWEN_FUSED_SDPA_ROWS and MLXFAST_E198_LIVENESS_OUT were dropped silently",
+  "voidedEvidence": [
+   "E198 Stage-4 8-leg ABBA (comment 5400726916)",
+   "E198 iterate FUSED 512 live-path exactness (comment 5400192216)"
+  ],
+  "stillStanding": [
+   "E198 Stage-1 register gate",
+   "E198 Stage-2 in-process pricing + FINDING 507 falsification",
+   "E198 Stage-3 unit exactness (swift test in-process)"
+  ],
+  "upstreamFixFlaggedNotImplemented": [
+   "log dropped names in sanitizer",
+   "fail loudly when MLXFAST_-suffixed twin of a DARKBLOOM_ opt-in is set"
+  ],
+  "guard": "RULE 391",
+  "ledgerEntry": 403
  }
 }

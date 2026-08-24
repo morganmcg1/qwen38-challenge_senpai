@@ -72003,3 +72003,28 @@ FINDING 501's m=7 lm_head anomaly (−1538 µs/round projected, 12/12 ABBA probe
 ### State
 
 Receipt `2681c3ac` (E193) still validating (~2 h 20 m). E199 frozen at `4b967648`, note ready, watcher `e0516d5b` as slot trigger; swift-test accounting accepted (five pre-existing environmental failures, base rerun declined — feedback `e199-fb-swifttest-ack-405`). NOTE: E199's frozen tree predates the E195 merge by design — it submits its own tree; post-receipt compositions ride the new base. E200 (width-aware non-uniform depth pricing, FINDING 515 lever) assigned to Askeladd. Feedbacks this cycle: `e195-fb-m6-continue-404`, `e199-fb-swifttest-ack-405`.
+
+---
+
+## Entry 403 — 2026-08-24T20:35Z — E198 Stage-3 live-path and Stage-4 ABBA results RETRACTED (HARNESS DEFECT 28 recurrence); RULE 391 arm-witness requirement; repair session approved
+
+**Retraction (Edward, PR #195, comment `e198-stage4-retraction-defect28`).** The E198 Stage-4 8-leg ABBA and the Stage-3 `iterate FUSED 512` live-path exactness claim are both VOID. The arm switch `MLXFAST_QWEN_FUSED_SDPA_ROWS` and the liveness path `MLXFAST_E198_LIVENESS_OUT` were silently dropped by `sanitizedRuntimeWorkerEnvironment` (`QwenRuntimeWorker.swift:2566-2655`), which rebuilds the worker environment from an allowlist (exact keys + prefixes `DARKBLOOM_`, `DYLD_`, `LC_`, `METAL_`, `MLX_`, `MTL_`). `MLXFAST_*` is excluded by design so the trusted parent cannot leak a benchmark-phase oracle. `enabledRows` was empty in all eight legs: the session compared the shipped split against itself. The reported "+0.184 ms/round FUSED regression" was single-arm noise (whole magnitude one 2σ interval wide — the signature of one arm, not two). This is a recurrence of HARNESS DEFECT 28, already documented in `research/e134_warm_session.sh:38`, `research/e154_r2_session.sh:33`, `research/e128_session.sh:26`; every prior model-side session switch uses the `DARKBLOOM_` prefix for this reason.
+
+**Correction to Entry 402.** The Entry 402 E198 section ("Stage 4 — null, under mandatory liveness diagnosis") described a measurement that in fact had no arm contrast; treat it as VOID, not null. FINDING 517's supporting cross-reference to "E198's Stage 4" is withdrawn; FINDING 517 itself stands unchanged on E195's own evidence (selective7 end-to-end reversal with a working `qmv_plan=` arm witness).
+
+**Still standing from E198** (none goes through the runtime worker): Stage-1 register gate (m=6..9 reach 1024 threads/threadgroup), Stage-2 in-process pricing including the FINDING 507 falsification (recoverable qL6..9 cost is dispatch-fixed, not KV-re-read; Stage-2 gate fails at m=8 in the kL≈1020 cell), Stage-3 unit exactness (0 differing bf16 elements at m=6..9, kL 518-521 and 1020-1023, positive control fires on 24k-41k elements).
+
+### RULE 391 — allowlisted switch names and mandatory arm witness
+
+(a) Every model-side runtime switch must use a sanitizer-allowlisted name; `DARKBLOOM_` is the standard prefix for research switches. A switch outside the allowlist is dropped in silence (HARNESS DEFECT 28).
+(b) No multi-arm timed session may be priced without a positive arm witness: per-arm evidence captured inside the session that the arms executed different code — a liveness counter, a build witness string (E195's `qmv_plan=` pattern), or a counter delta only the changed path can produce. A contrast without an arm witness is VOID by default, not a null. Pre-register the witness before the session runs.
+
+**Retroactive audit under RULE 391(b):** E195 sessions carried the `qmv_plan=` build witness (valid). E193 and E199 arms are selected by commit/build, not env (valid). No other live evidence is exposed.
+
+**Repair approved** (feedback `e198-fb-retraction-rerun-406`, ~1 h GPU): commit `54ccf3df` renames both variables to `DARKBLOOM_QWEN_FUSED_SDPA_ROWS` / `DARKBLOOM_E198_LIVENESS_OUT`, probe now flushes on first call and every 128 calls. Order: (1) `research/e198_liveness.sh 6,7,8,9 64` — no timing reported until `served_by_rows > 0` at each width; if declines dominate, the reason histogram names the failing guard; (2) rerun `iterate FUSED 512` for genuine live-path exactness; (3) rerun the 8-leg ABBA at 512 tokens. Decision rule unchanged: recovery − 2σ ≥ 0.5 ms/round → freeze path (rebuild + confirm on the live tip, which now carries E195's QMV plan — different subsystem); otherwise terminal NEGATIVE, and a valid witnessed null becomes real evidence that in-process per-dispatch pricing does not transfer to the saturated decode round (FINDING 507 family).
+
+**DEFECT 28 upstream escalation (flagged, not implemented — trusted surface):** (i) have `sanitizedRuntimeWorkerEnvironment` log dropped names; (ii) make opt-ins fail loudly when an identically-suffixed `MLXFAST_` name is set in the parent. Recorded as the preferred organizer-side fix.
+
+**Base-change events.** research_base_changed notices for PRs #190/#195/#196 against `cd3e7688` (E195 merge, submitted-surface) and `fb67c8a7` (Entry 402, ledger-only) require no in-flight action: E193 froze and submitted before the merge (receipt decides; base validity assessed at terminal review); E199 submits its own tree by design (conditional re-confirmation only if E193 promotes); E198's ABBA is internally valid on its own tree, and any freeze rebases onto the live tip.
+
+**State.** Receipt `2681c3ac` (E193) still validating (~2 h 21 m). E199 frozen, holding, watcher live. E200 screen in progress (no interim yet). E198 repair session running on Edward's Mac.
