@@ -339,6 +339,105 @@ def main() -> int:
     if splice:
         pooled = splice["pooled"]
         summary.update({f"splice/{key}": value for key, value in pooled.items()})
+        if pooled.get("removed_resolved"):
+            observed = pooled["removed_accepted"] / pooled["removed_resolved"]
+            predicted = pooled["removed_predicted"] / pooled["removed_resolved"]
+            summary["splice/pure_loss_rate"] = observed
+            summary["splice/position_only_prediction"] = predicted
+            summary["splice/clamp_skill"] = observed - predicted
+
+    signals = report.get("signal_auc", {})
+    if signals:
+        table = wandb.Table(
+            columns=["position", "n", "base_rate", "signal", "auc", "ci_low", "ci_high"]
+        )
+        for position, block in signals.items():
+            if not block:
+                continue
+            for name, score in block["auc"].items():
+                table.add_data(
+                    int(position),
+                    block["n"],
+                    block["base_rate"],
+                    name,
+                    score["auc"],
+                    score["ci_low"],
+                    score["ci_high"],
+                )
+                summary[f"signal_auc/pos{position}/{name}"] = score["auc"]
+        run.log({"pinned/signal_auc": table})
+
+    oracle = report.get("oracle_ceiling", [])
+    if oracle:
+        table = wandb.Table(columns=["prompt", "rounds", "mean_depth", "raw"])
+        for entry in oracle:
+            table.add_data(
+                entry["label"], entry["rounds"], entry["mean_depth"], entry["raw"]
+            )
+        run.log({"pinned/oracle_ceiling": table})
+        values = sorted(entry["raw"] for entry in oracle)
+        summary["oracle/median_raw"] = values[len(values) // 2]
+
+    sweep = report.get("policy_sweep", {})
+    if sweep.get("pooled"):
+        table = wandb.Table(
+            columns=["policy", "median_raw", "min_raw", "max_raw", "deficit", "prompts"]
+        )
+        for row in sweep["pooled"]:
+            table.add_data(
+                row["policy"],
+                row["median_raw"],
+                row["min_raw"],
+                row["max_raw"],
+                row["median_deficit_vs_best"],
+                row["prompts"],
+            )
+            summary[f"policy/{row['policy']}"] = row["median_raw"]
+        run.log({"policy/median_by_policy": table})
+        detail = wandb.Table(
+            columns=[
+                "prompt",
+                "policy",
+                "mean_depth",
+                "predicted_accepted",
+                "raw",
+                "deficit",
+                "local_decode_ms_per_token",
+            ]
+        )
+        for label, rows in sweep["per_prompt"].items():
+            for row in rows:
+                detail.add_data(
+                    label,
+                    row["policy"],
+                    row["mean_depth"],
+                    row["predicted_accepted"],
+                    row["raw"],
+                    row["raw_deficit_vs_best"],
+                    row["local_decode_ms_per_token"],
+                )
+        run.log({"policy/per_prompt": detail})
+
+    counter = report.get("clamp_counterfactual", {})
+    if counter.get("legs"):
+        fields = [
+            "rounds",
+            "mean_depth_clamped",
+            "mean_depth_unclamped",
+            "predicted_accepted_clamped",
+            "measured_accepted",
+            "model_error",
+            "raw_clamped",
+            "raw_unclamped",
+            "raw_gain_from_clamp",
+        ]
+        table = wandb.Table(columns=["prompt", *fields])
+        for entry in counter["legs"]:
+            table.add_data(entry["label"], *(entry[field] for field in fields))
+        run.log({"policy/clamp_counterfactual": table})
+        summary.update(
+            {f"clamp_counterfactual/{k}": v for k, v in counter["pooled"].items()}
+        )
 
     run.summary.update(summary)
     run.finish()
