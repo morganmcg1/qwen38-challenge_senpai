@@ -37,6 +37,30 @@ says so.
 The reject path submits a recurrent-state prefetch inside `commit`, so its
 idle window is shorter than the anchors show. Accept and reject rounds are
 reported separately and the fit uses full-accept rounds only.
+
+IDLE OR SLOW. The round period splits into exactly two measured parts:
+
+    round_period = gpu_idle_window + gpu_covered
+
+`gpu_idle_window` is PROVABLY idle — the blocking eval is a full barrier, so
+at `t_eval_done` the device owns nothing and it owns nothing again until the
+next `asyncEval`. `gpu_covered` is the span in which at least one command
+buffer is enqueued; it is an UPPER bound on GPU-busy, because bubbles between
+enqueued kernels are invisible to a host clock. So
+
+    idle_fraction >= gpu_idle_window / round_period          (measured)
+    busy_fraction <= gpu_covered    / round_period           (measured)
+
+A schedule fix can only ever recover the first term. If it is small, the round
+is slow, not idle, and the host-reordering family of mechanisms is capped at
+that value whatever else is true.
+
+COUNTER HAZARD, campaign record. `verify_window` (`verify_build_us`) is NOT
+host graph construction. E86 removed the ladder and measured the split: host
+encode of the whole 64-layer verify graph is 2,294 us, so under the shipped
+ladder that counter is about 97 % GPU wait. Only `verify_pipeline`
+(`verify_window + gpu_verify_eval`) is meaningful, and a ladder-off leg is the
+only way to recover host encode from it.
 """
 from __future__ import annotations
 
@@ -136,9 +160,16 @@ def components(rounds: list[dict]) -> list[dict]:
             "row_trace": row_trace,
             "round_total": us(cur["t_round0"], cur["t_tail_done"]),
         }
+        record["upkeep_net"] = record["upkeep"] - row_trace
         record["host_post_eval_tail"] = (
-            record["readout"] + record["commit"] + record["upkeep"] - row_trace
+            record["readout"] + record["commit"] + record["upkeep_net"]
         )
+        # The only counter that may be quoted as a verify cost (E86 hazard).
+        record["verify_pipeline"] = (
+            record["verify_window"] + record["gpu_verify_eval"]
+        )
+        # First enqueue of the round to the barrier that drains it.
+        record["gpu_covered"] = us(cur["t_head1_built"], cur["t_eval_done"])
         if nxt is not None:
             trace_emit = 0.0
             if nxt.get("t_prev_trace_done", 0):
@@ -165,6 +196,9 @@ FIT_KEYS = [
     "readout",
     "commit",
     "upkeep",
+    "upkeep_net",
+    "host_draft_pre",
+    "host_head1_build",
     "protocol_gap",
     "next_pre_submit",
     "host_draft_build",
@@ -174,14 +208,165 @@ FIT_KEYS = [
     "snapshot",
     "verify_window",
     "gpu_verify_eval",
+    "verify_pipeline",
+    "gpu_covered",
     "round_period",
     "round_total",
 ]
+
+# Terms that partition `round_period` with no double counting, in wall order.
+# `row_trace` and `trace_emit` are removed from both sides, so a residual here
+# is genuinely unattributed rather than instrument cost.
+#
+# `gpu_covered` runs from `submit1` through `gpu_verify_eval`; every other term
+# is inside the provably idle window.
+BUDGET_COVERED = [
+    "submit1",
+    "host_chain_build",
+    "submit2",
+    "snapshot",
+    "verify_window",
+    "gpu_verify_eval",
+]
+BUDGET_IDLE = [
+    "readout",
+    "commit",
+    "upkeep_net",
+    "protocol_gap",
+    "host_draft_pre",
+    "host_head1_build",
+]
+BUDGET_KEYS = BUDGET_COVERED + BUDGET_IDLE
 
 
 def median_of(records: list[dict], key: str) -> float | None:
     values = [r[key] for r in records if key in r]
     return st.median(values) if values else None
+
+
+def budget_of(records: list[dict]) -> dict | None:
+    """Close the round period over the measured terms and name the residual.
+
+    Only rounds that carry a successor have a period, so the last round of a
+    leg drops out. Medians are taken per term rather than per round: the
+    residual then reports how well a MEDIAN round closes, which is the
+    quantity every share in the report is quoted against.
+    """
+    have = [r for r in records if "round_period" in r]
+    if not have:
+        return None
+    period = st.median(r["round_period"] for r in have)
+    terms = {k: median_of(have, k) for k in BUDGET_KEYS}
+    covered = sum(terms[k] or 0.0 for k in BUDGET_COVERED)
+    idle = sum(terms[k] or 0.0 for k in BUDGET_IDLE)
+    return {
+        "rounds": len(have),
+        "round_period": period,
+        "terms": terms,
+        "covered_us": covered,
+        "idle_us": idle,
+        "residual_us": period - covered - idle,
+        # Measured bounds, not estimates: see the module docstring.
+        "idle_fraction": idle / period,
+        "busy_fraction": covered / period,
+        "measured_idle_window_us": median_of(have, "gpu_idle_window"),
+    }
+
+
+def contrasts(legs: list[dict]) -> dict:
+    """The three between-leg questions the census exists to answer."""
+    out: dict[str, dict] = {}
+
+    def pick(**want) -> list[dict]:
+        return [
+            leg for leg in legs
+            if all(leg.get(k) == v for k, v in want.items())
+        ]
+
+    # 1. Does the instrument change the thing it measures? Same pin, same
+    #    build, same fixture: the only difference is the trace, so the two
+    #    seconds-per-token values bound its cost directly.
+    for untraced in pick(trace="0"):
+        peers = [
+            leg for leg in legs
+            if leg["trace"] != "0" and leg["ladder"] == untraced["ladder"]
+            and leg["sync_head"] != "1"
+            and leg["pinned_depth"] == untraced["pinned_depth"]
+        ]
+        if not peers or untraced["mtp_seconds_per_token"] is None:
+            continue
+        traced = st.mean(
+            leg["mtp_seconds_per_token"] for leg in peers
+            if leg["mtp_seconds_per_token"] is not None
+        )
+        ratio = traced / untraced["mtp_seconds_per_token"]
+        out[f"instrument neutrality d={untraced['pinned_depth']}"] = {
+            "untraced_tag": untraced["tag"],
+            "traced_tags": ",".join(leg["tag"] for leg in peers),
+            "untraced_s_per_tok": untraced["mtp_seconds_per_token"],
+            "traced_s_per_tok": traced,
+            "traced_over_untraced": round(ratio, 6),
+            "within_5_percent": abs(ratio - 1.0) <= 0.05,
+        }
+
+    # 2. The ladder hides host encode inside the eval wait. Removing it is the
+    #    only way to read the two apart: with no rungs, `verify_window` is the
+    #    host encode and `gpu_verify_eval` is the verify GPU wall.
+    for off in pick(ladder="off"):
+        peers = [
+            leg for leg in legs
+            if leg["ladder"] == "default" and leg["trace"] != "0"
+            and leg["sync_head"] != "1"
+            and leg["pinned_depth"] == off["pinned_depth"]
+            and leg["budget"]
+        ]
+        if not peers or not off["budget"]:
+            continue
+        base_pipe = st.mean(
+            leg["median"]["verify_pipeline"] for leg in peers)
+        base_period = st.mean(leg["budget"]["round_period"] for leg in peers)
+        host_encode = off["median"]["verify_window"]
+        gpu_wall = off["median"]["gpu_verify_eval"]
+        out[f"ladder exposure d={off['pinned_depth']}"] = {
+            "ladder_off_tag": off["tag"],
+            "shipped_tags": ",".join(leg["tag"] for leg in peers),
+            "host_encode_H_us": round(host_encode, 1),
+            "verify_gpu_wall_us": round(gpu_wall, 1),
+            "shipped_verify_pipeline_us": round(base_pipe, 1),
+            # What the shipped ladder still fails to hide.
+            "residual_encode_exposure_us": round(base_pipe - gpu_wall, 1),
+            "ladder_off_round_period_us": round(
+                off["budget"]["round_period"], 1),
+            "shipped_round_period_us": round(base_period, 1),
+            "ladder_worth_us_per_round": round(
+                off["budget"]["round_period"] - base_period, 1),
+        }
+
+    # 3. Draining the chain moves head GPU execute into `submit2`, which is
+    #    the only host-visible measurement of the GPU work a cross-round
+    #    prefetch could move into the idle window.
+    drained = sorted(
+        (leg for leg in pick(sync_head="1") if leg["median"].get("submit2")),
+        key=lambda leg: leg["pinned_depth"] or "",
+    )
+    if drained:
+        body = {
+            leg["tag"] + f" d={leg['pinned_depth']}":
+                f"head_chain_gpu_wall={leg['median']['submit2']:.1f} us "
+                f"idle_window={leg['median']['gpu_idle_window']:.1f} us"
+            for leg in drained
+        }
+        points = [
+            (float(leg["pinned_depth"]), leg["median"]["submit2"])
+            for leg in drained if leg["pinned_depth"]
+        ]
+        if len(points) >= 2:
+            intercept, slope = fit(points)
+            body["head_chain_gpu_intercept_us"] = round(intercept, 1)
+            body["head_chain_gpu_per_draft_us"] = round(slope, 1)
+        out["head chain GPU wall, sync-head legs"] = body
+
+    return out
 
 
 def fit(points: list[tuple[float, float]]) -> tuple[float, float]:
@@ -219,9 +404,6 @@ def main() -> None:
         meta = read_meta(tag)
         score = read_score(tag)
         recs = components(anchors(tag))
-        if not recs:
-            print(f"{tag}: no anchor rounds")
-            continue
         use = [r for r in recs if r["full_accept"]] if args.accept_only else recs
         depths = sorted({r["d"] for r in recs})
         leg = {
@@ -231,6 +413,8 @@ def main() -> None:
             "depths": depths,
             "sync_head": meta.get("sync_head"),
             "trace": meta.get("trace"),
+            "ladder": meta.get("e165_ladder", "default"),
+            "pinned_depth": meta.get("e165_pinned_depth"),
             "cool_gate": meta.get("cool_gate"),
             "gate_qualified_for_timing": meta.get("gate_qualified_for_timing"),
             "gpu_temp_entry_c": meta.get("gpu_temp_entry_c"),
@@ -248,6 +432,7 @@ def main() -> None:
 
         print(f"\n=== {tag}  rounds={len(recs)} used={len(use)} "
               f"depths={depths} sync_head={meta.get('sync_head')} "
+              f"ladder={meta.get('e165_ladder', 'default')} "
               f"gate={meta.get('cool_gate')} ===")
         print(f"  s/tok={leg['mtp_seconds_per_token']} "
               f"edl={leg['effective_mean_draft_len']} "
@@ -257,20 +442,50 @@ def main() -> None:
             if value is not None:
                 print(f"  {key:24s} {value:12.1f} us")
 
-        if len(depths) == 1:
-            per_depth.setdefault(depths[0], {})
-            if meta.get("sync_head") != "1" and meta.get("trace") != "0":
-                per_depth[depths[0]] = leg["median"]
+        budget = budget_of(use) if use else None
+        leg["budget"] = budget
+        if budget:
+            period = budget["round_period"]
+            print(f"  -- closed budget, median round_period "
+                  f"{period:.1f} us --")
+            for key in BUDGET_KEYS:
+                value = budget["terms"].get(key)
+                if value is None:
+                    continue
+                where = "covered" if key in BUDGET_COVERED else "IDLE"
+                print(f"     {key:22s} {value:10.1f} us "
+                      f"{100.0 * value / period:6.2f} %  {where}")
+            print(f"     {'residual':22s} {budget['residual_us']:10.1f} us "
+                  f"{100.0 * budget['residual_us'] / period:6.2f} %")
+            print(f"     idle_fraction >= {100.0 * budget['idle_fraction']:.2f}"
+                  f" %   busy_fraction <= "
+                  f"{100.0 * budget['busy_fraction']:.2f} %")
 
-    fit_depths = sorted(d for d, m in per_depth.items() if m)
+        # Only the plain traced legs carry the depth fit. Sync-head drains the
+        # chain, ladder-off moves GPU work across the encode boundary, and an
+        # untraced leg has no anchors at all.
+        if (len(depths) == 1 and meta.get("sync_head") != "1"
+                and meta.get("trace") != "0"
+                and meta.get("e165_ladder", "default") == "default"):
+            per_depth.setdefault(depths[0], []).append(leg["median"])
+
+    # Replicated depths average before the fit, so a bracketing replicate
+    # damps thermal drift instead of tilting the slope.
+    depth_median = {
+        d: {k: st.mean([m[k] for m in legs if m.get(k) is not None])
+            for k in FIT_KEYS
+            if any(m.get(k) is not None for m in legs)}
+        for d, legs in per_depth.items() if legs
+    }
+    fit_depths = sorted(depth_median)
     if len(fit_depths) >= 2:
         print(f"\n=== component fit against pinned depth d in {fit_depths} ===")
         print(f"  {'component':24s} {'intercept us':>14s} {'per-draft us':>14s}")
         for key in FIT_KEYS:
             points = [
-                (float(d), per_depth[d][key])
+                (float(d), depth_median[d][key])
                 for d in fit_depths
-                if per_depth[d].get(key) is not None
+                if depth_median[d].get(key) is not None
             ]
             if len(points) < 2:
                 continue
@@ -281,6 +496,12 @@ def main() -> None:
                 "points": points,
             }
             print(f"  {key:24s} {intercept:14.1f} {slope:14.1f}")
+
+    report["contrasts"] = contrasts(report["legs"])
+    for name, body in report["contrasts"].items():
+        print(f"\n=== {name} ===")
+        for key, value in body.items():
+            print(f"  {key:34s} {value}")
 
     if args.json:
         Path(args.json).write_text(json.dumps(report, indent=2) + "\n")
