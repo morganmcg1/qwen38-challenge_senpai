@@ -95,6 +95,7 @@ def probe(path: str) -> int:
 
 
 ROUND_RE = re.compile(r"round_us=(\d+)")
+DEPTH_RE = re.compile(r"round=\d+ d=(\d+) acc=(\d+)")
 
 
 def ladder(root: str) -> int:
@@ -107,20 +108,33 @@ def ladder(root: str) -> int:
             if "=" in line
         )
         leg_dir = meta_path.parent
-        rounds = []
+        # The local-iterate leg traces the serial reference rounds (d=0) and the
+        # drafting rounds (d>0) into one file. Only the drafting rounds carry
+        # the verified width this experiment changes.
+        drafting: list[float] = []
+        serial: list[float] = []
+        accepted: list[int] = []
         trace = leg_dir / "trace.txt"
         if trace.exists():
             for line in trace.read_text().splitlines():
-                if line.startswith("mtp-trace: round="):
-                    match = ROUND_RE.search(line)
-                    if match:
-                        rounds.append(int(match.group(1)) / 1000.0)
+                if not line.startswith("mtp-trace: round="):
+                    continue
+                round_match = ROUND_RE.search(line)
+                depth_match = DEPTH_RE.search(line)
+                if not round_match or not depth_match:
+                    continue
+                value = int(round_match.group(1)) / 1000.0
+                if int(depth_match.group(1)) > 0:
+                    drafting.append(value)
+                    accepted.append(int(depth_match.group(2)))
+                else:
+                    serial.append(value)
         score = {}
         score_path = leg_dir / "score.json"
         if score_path.exists():
             score = load(str(score_path)).get("metrics", {})
-        # Round 1 carries first-round warmup, so drop it from the median.
-        body = rounds[1:] if len(rounds) > 2 else rounds
+        # The first drafting round carries warmup, so drop it from the median.
+        body = drafting[1:] if len(drafting) > 2 else drafting
         legs.append(
             {
                 "arm": meta.get("e189_arm", "?"),
@@ -128,6 +142,8 @@ def ladder(root: str) -> int:
                 "plan": meta.get("width_plan", "?"),
                 "m": int(meta.get("verify_width_m", "0")),
                 "round_ms_median": median(body) if body else float("nan"),
+                "serial_ms_median": median(serial[1:]) if len(serial) > 2 else float("nan"),
+                "accepted_mean": sum(accepted) / len(accepted) if accepted else float("nan"),
                 "rounds": len(body),
                 "mtp_s_per_token": score.get("mtp_seconds_per_token"),
                 "serial_s_per_token": score.get("serial_seconds_per_token"),
@@ -139,8 +155,9 @@ def ladder(root: str) -> int:
             }
         )
     print(
-        f"{'leg':>4}{'arm':>6}{'m':>3}{'round_ms':>10}{'mtp_s/tok':>11}"
-        f"{'speedup':>9}{'matched':>9}{'entry_c':>9}{'exit_c':>9}"
+        f"{'leg':>4}{'arm':>6}{'m':>3}{'draft_ms':>10}{'serial_ms':>11}"
+        f"{'acc':>6}{'mtp_s/tok':>11}{'speedup':>9}{'matched':>9}"
+        f"{'entry_c':>9}{'exit_c':>9}"
     )
     for leg in sorted(legs, key=lambda item: item["leg"]):
         entry = float(leg["entry_c"]) if leg["entry_c"] not in (None, "unavailable") else float("nan")
@@ -148,7 +165,8 @@ def ladder(root: str) -> int:
         mtp = leg["mtp_s_per_token"]
         print(
             f"{leg['leg']:>4}{leg['arm']:>6}{leg['m']:>3}"
-            f"{leg['round_ms_median']:>10.2f}"
+            f"{leg['round_ms_median']:>10.2f}{leg['serial_ms_median']:>11.2f}"
+            f"{leg['accepted_mean']:>6.2f}"
             f"{(mtp if mtp is not None else float('nan')):>11.5f}"
             f"{(leg['speedup'] if leg['speedup'] is not None else float('nan')):>9.4f}"
             f"{str(leg['matched']):>9}{entry:>9.1f}{exit_c:>9.1f}"
