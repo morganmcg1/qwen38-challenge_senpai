@@ -46,6 +46,18 @@ depths="${E182_DEPTHS:-0 1 2 3 4 5 6 7 8}"
 
 research/e168_build.sh || exit 1
 
+# The ranked candidate leg runs the head that mtp-head.manifest.json declares.
+# setup-qwen-mtp.sh only provisions the organizer-pinned head, so an
+# unmodified --local-iterate would measure the drafting phase of a head the
+# ranked run never executes. Point at the resolved declared tree, as E37 does.
+head_dir="${E182_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
+[[ -s "${head_dir}/config.json" && -s "${head_dir}/model.safetensors" ]] || {
+  echo "e182: declared head tree missing at ${head_dir}; run research/fetch-declared-head.sh" >&2
+  exit 2
+}
+export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
+echo "e182: head $(shasum -a 256 "${head_dir}/model.safetensors" | cut -d' ' -f1)"
+
 export MLXFAST_MACMON_BIN="${MLXFAST_MACMON_BIN:-/opt/homebrew/bin/macmon}"
 export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
 export MLXFAST_LOCAL_COOL_GATE=0
