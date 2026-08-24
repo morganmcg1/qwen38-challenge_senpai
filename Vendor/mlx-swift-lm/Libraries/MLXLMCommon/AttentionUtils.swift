@@ -249,11 +249,13 @@ public enum FusedRowAmortizedSDPA {
 
         /// Count a call site upstream of `attend`, so a missing `attend` call
         /// is distinguishable from a declined one.
-        /// One research leg sets this to true. A crash is the only witness that
+        /// Set true for one research leg only. A crash is the only witness that
         /// no file path, environment variable, or discarded stderr stream can
         /// swallow, so it separates "this code never runs" from "the evidence
-        /// never reached me". Never true in a timed or submitted build.
-        private static let abortOnFirstReach = true
+        /// never reached me". It answered that question: the leg died with
+        /// `reached qwen35_attn_entry_L512`, proving the path is live and the
+        /// file channel was at fault. Never true in a timed or submitted build.
+        private static let abortOnFirstReach = false
 
         public static func reached(_ key: String) {
             if abortOnFirstReach { fatalError("E198 LIVENESS: reached \(key)") }

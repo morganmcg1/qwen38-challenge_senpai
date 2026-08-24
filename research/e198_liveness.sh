@@ -22,6 +22,13 @@ export MLXFAST_QWEN_MTP_HEAD_DIR="${MLXFAST_QWEN_MTP_HEAD_DIR:-${HOME}/.cache/ml
 export DARKBLOOM_QWEN_FUSED_SDPA_ROWS="${rows}"
 export DARKBLOOM_E198_LIVENESS_OUT="${PWD}/${out}/counts.json"
 export MLXFAST_LOCAL_COOL_GATE=0
+# The runtime-worker sandbox in benchmark.sh's write_runtime_worker_sandbox_profile
+# denies every file write except /dev/null, including TMPDIR, and the mtp-timed
+# parent discards worker stderr. A probe inside the worker therefore has no way
+# to report anything until the sandbox is lifted. This is the same local-only
+# escape the MLX_QWEN_MTP_TRACE sink uses; it is refused when
+# MLXFAST_OFFICIAL_BENCHMARK_RUN=1, so it cannot reach an official run.
+export MLXFAST_NO_SANDBOX=1
 export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
 export MLXFAST_SCORE_PATH="${PWD}/${out}/score.json"
 rm -f "${DARKBLOOM_E198_LIVENESS_OUT}"
