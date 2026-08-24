@@ -71681,3 +71681,61 @@ Four follow-ups recorded, none implemented: (1) emit query chunks from the fused
 The repriced step is the largest measured per-round cost with a named mechanism on the board (2.8–5.4 MUE at 85.9% duty cycle under cap-7, and under a cap-5 schedule drafting rounds run m=6, squarely inside the window). One hypothesis: the step is removable or hideable without changing any per-row accumulation order. Stage 0 chooses THE single route by source read across the menu above (route 3 stream-overlap is bit-exact by construction; route 4 single-vector-call has the highest ceiling but a named KV-copy risk; routes 1–2 are the dispatch-count floor, route 1 sequenced behind E189), predeclares expected recovery per the census, and posts the choice for advisor ack before building. E191's census and ABBA instruments are on the base and directly reusable.
 
 Queue: E190 receipt (in flight, 04710829) → E193 frozen candidate (screen running) → E194/E189-selective/E192 winners.
+
+## Entry 393 — 2026-08-24T16:15Z — HARNESS DEFECT 43 (trace gate collision) + RULE 386; E193 session relaunched; base-change dispositions
+
+**E193 mid-flight (PR 190, Alphonse, head ea291fcc).** The first screen session aborted at
+4 minutes on two independent defects. No timed evidence was lost that matters: one complete
+`on`-arm witness leg survived and was used to test the gate machinery before paying for
+another session. Corrected session relaunched: job `bf8c107e`, base `0416ea0b`, worker
+fingerprint `091625e0…` (RULE 384 satisfied), 2 witness legs + 8 timed palindrome legs at
+256 tokens, ungated under the standing three conditions. Scored surface clean; all commits
+research-only. Stop rule unchanged (STOP if 2σ contains zero; CONTINUE iff effect+2σ<0;
+expected ≈ −0.29%). Stage-3 preauthorization unchanged.
+
+**Defect A (student-side, fixed; convention noted, not numbered).** macOS ships GNU bash
+3.2.57: no associative arrays or bash-4 features in harness scripts (`declare -A` dies, then
+`set -u` unbound-variable). The retained `e165_abba.sh` already follows this convention.
+
+**HARNESS DEFECT 43 (raised by Alphonse, E193).** `research/e79_trace_leg.sh` points a single
+`MLX_QWEN_MTP_TRACE_PATH` at one file and BOTH decode legs write into it (observed kv512/m-mix:
+291 traced rounds = 256 serial d=0 rounds with no `pf` field + 35 drafting rounds carrying the
+instrument; round numbers restart at 1 in both legs). Consequences, both failing in the
+dangerous direction:
+1. `e165_prefetch.py witness` requires `pf` on every traced round → falsely reports "this build
+   predates the instrument" on a correct build, and computes hit_rate over all 291 rounds
+   (34/291 = 0.117 vs 0.75 threshold) when the true drafting-round rate is 34/35 = 0.971. The
+   gate fails a correct build twice over.
+2. `compare_rows` keys rows by bare token position in a dict; the two legs revisit the same
+   positions and silently overwrite each other — an exactness gate quietly discarding half its
+   evidence, with survivorship decided by write order.
+
+Remediation accepted: `research/e193_gates.py` preserves every original protection (still fails
+a build with no instrument anywhere) and strengthens the checks; the shared prior-art file
+`e165_prefetch.py` was left untouched mid-experiment — correct hygiene.
+
+**RULE 386.** Trace-based gates must: (a) use one trace path per decode leg, or tag every
+record with its leg; (b) scope hit-rate and instrument-presence checks to drafting rounds only;
+(c) key row comparisons by (leg, position), never bare position; (d) report per-leg round
+accounting so the gate evidence is auditable.
+
+**Open records question (recorded, NOT assigned).** The retained E165-era `witness`/`rows`
+conclusions may have been computed on a collided two-leg trace. No audit now: E193 remeasures
+the E165 prefetch effect directly, which supersedes the E165-era local evidence for the live
+decision. The audit gains decision value only if E193's measurement materially disagrees with
+the E165-era record.
+
+**Free observation from the surviving witness leg (not a timing claim).** The prefetch
+mechanism fires on essentially every drafting round with zero undos on this fixture: neither
+the non-drafting path nor the generic repair path fired. Mechanism live and well-behaved on the
+current tree.
+
+**Base-change dispositions (recorded on PRs 187/188/190).** Advisor base moved
+0416ea0b/e0c0dec7 → 80abd5ac across Entries 389–392. Inspected diffs: only senpai/ ledger +
+frontier-state, merged E188/E191 measurement files (Tests/ + research/), the DEFECT-42
+submit-script fix, and the wrapper SWIFT-GUARD. Zero submitted-surface bytes. No replay or
+rebase for E189/E190/E193; E193 instructed to run the FIXED `submit-official.sh` from the
+fetched advisor tip at Stage 3 (its branch base predates the fix); E189 reminded to apply
+RULE 384 manually (its branch predates the wrapper SWIFT-GUARD).
+
+Numbering next free: FINDING 498, Entry 394, RULE 387, HARNESS DEFECT 44.

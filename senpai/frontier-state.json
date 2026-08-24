@@ -946,7 +946,7 @@
   "E191 (Edward, assigned)": "DONE - merged Entry 392 (6c11b86c): decisive negative. M1 refuted (FINDING 496: census shows zero KV-sized copies on shipped path; two-append manufactures the copy, -1.903 ms/round regression, 16/16 rows). widthSixWall repriced (FINDING 497: dispatch count + extra SDPA call, +1.58..+3.04 ms/round = 2.8-5.4 MUE; split saves 1.14-2.31 ms/round vs composed fallback; FINDING 489 measured the wrong arm). Tests/+research/ only.",
   "gdnStateTrafficFusion (unassigned)": "Value-preserving GDN state traffic reduction (E187 follow-up 1): fuse state read+write into the recurrence kernel or keep state resident across the layer chunk. Ceiling <=2.087 ms/round GPU = 3.7 MUE; avoidable fraction unmeasured. HARD constraint: bit-identical values only (RULE 383); celllate detector available as the corruption gate (FINDING 491).",
   "E192 (Alphonse, assigned)": "RE-QUEUED UNASSIGNED (Entry 390): persistent in-place rollback slot (FINDING 495 lever). Stage 0 = 3.5-min barrier-timing discriminator (in-flight-reference vs allocator-free), then the slot only if in-flight-reference survives. Up to 0.27%/round local full-acceptance pricing = below single-mechanism MUE; composition material. Bit-identical state values mandatory. Goes to the next free student.",
-  "E193 (Alphonse, assigned)": "Build/confirm/freeze the adopted E165-prefetch retest (FINDING 486): port round-start recurrent-boundary prefetch ALONE from receipt D snapshot onto 0416ea0b, unconditional on submitted surface (RULE 198); screen ABBA vs fresh base (STOP if local -0.29% win vanished); 512-token confirmation on frozen SHA; preauthorized autonomous submission when E190 receipt terminal + frontier check passes (merge-base guard argument 770a3ff2). PR 190. Expected mechanism gain 0.38-0.73%, P(beat crown) 0.35-0.55.",
+  "E193 (Alphonse, assigned)": "E165-prefetch retest build: Stage 0 accepted (one-line default flip, machinery byte-identical to receipt D snapshot). First screen session aborted (bash 3.2 + HARNESS DEFECT 43); corrected session relaunched job bf8c107e (2 witness + 8 timed palindrome legs, 256 tokens, ungated, worker 091625e0). Witness observation: prefetch fires every drafting round, zero undos. Stop rule: STOP if 2sigma contains zero; CONTINUE iff effect+2sigma<0 (expected ~-0.29%). Stage 3 official submit preauthorized after E190 receipt, using FIXED submit-official.sh from fetched advisor tip.",
   "E194 (Edward, assigned)": "Remove or hide the m>=6 SDPA step (FINDING 497 lever, 2.8-5.4 MUE at 85.9% duty cycle; m=6 is every drafting round under cap-5): Stage 0 source-read chooses ONE route from the Entry 392 menu (stream overlap / concat removal / query-chunk fusion / single vector call), predeclares expected recovery from the census, posts for advisor ack before building. Bit-exactness contract: no per-row accumulation-order change."
  },
  "organizer": {
@@ -2247,8 +2247,8 @@
   "frozenNext": "E193 E165-prefetch retest (PR 190): Stage 1 palindrome screen running; freeze after 512-token confirmation; preauthorized autonomous submit behind the E190 receipt",
   "decision": "E180 A-replay fires next: organizer-pure 0863b06a byte-identical resubmission (Edward owns build, gates, note, submission, read-only watcher). Purpose pre-registered on PR 174: price the receipt channel with a direct same-tree draw; crown (3.72911) is byte-identical to A so a draw >= +0.573% promotes."
  },
- "lastAdvisorUpdate": "2026-08-24T16:20Z Entry 392: E191 merged (decisive negative: M1 refuted by dispatch census with positive control, two-append is a -1.903 ms/round regression, FINDING 496); widthSixWall REPRICED to dispatch count + extra SDPA call, split saves 1.14-2.31 ms/round vs composed fallback (FINDING 497); E194 assigned to Edward (remove or hide the m>=6 SDPA step, route chosen at Stage 0)",
- "ledgerEntry": 392,
+ "lastAdvisorUpdate": "2026-08-24T16:15Z Entry 393: HARNESS DEFECT 43 (e79_trace_leg.sh single trace path collides both decode legs; e165_prefetch.py witness fails correct builds and compare_rows silently overwrites cross-leg rows) + RULE 386 (per-leg trace paths, drafting-scoped hit rates, (leg,position) row keys, per-leg accounting); E193 session relaunched (job bf8c107e) with strengthened research/e193_gates.py; base moves through 80abd5ac dispositioned as no-replay for E189/E190/E193 (zero submitted-surface bytes)",
+ "ledgerEntry": 393,
  "threeReceiptFactorial": {
   "A": {
    "id": "5a9f130a",
@@ -2469,7 +2469,8 @@
   "380": "Validate every binary-assertion needle against both campaign-base and organizer-pure trees before build; declare expected count per arm; keep one positive-control require per worker.",
   "381": "No inert-delta circumvention of content dedup: semantically empty edits to force a rerun of existing content are rejected. Mechanism deltas are the only legitimate way to buy another ranked draw.",
   "382": "No host-side lever may be priced in host-us alone: multiply by a measured host->wall conversion factor for the target path before MUE comparison (current replica-decode factor 0.08, FINDING 472).",
-  "383": "GDN state numerics are frozen at bit-exactness (E187/FINDING 490): any change to GDN recurrent-state numerics at any precision - storage dtype, reassociation, fused updates, accumulation order - inherits the E187 verdict and is dead without re-gating. Only bit-identical value-preserving transformations are admissible on the GDN state path. Gate-arming corollary (FINDING 491): perturbation probes must fire after decode has started (celllate pattern); first-store probes are blind."
+  "383": "GDN state numerics are frozen at bit-exactness (E187/FINDING 490): any change to GDN recurrent-state numerics at any precision - storage dtype, reassociation, fused updates, accumulation order - inherits the E187 verdict and is dead without re-gating. Only bit-identical value-preserving transformations are admissible on the GDN state path. Gate-arming corollary (FINDING 491): perturbation probes must fire after decode has started (celllate pattern); first-store probes are blind.",
+  "386": "Trace-based gates must (a) use one trace path per decode leg or tag every record with its leg, (b) scope hit-rate and instrument-presence checks to drafting rounds only, (c) key row comparisons by (leg, position) never bare position, and (d) report per-leg round accounting. Raised by Alphonse (E193, HARNESS DEFECT 43): a single MLX_QWEN_MTP_TRACE_PATH receiving both legs made e165_prefetch.py witness fail a correct build twice (false \"predates the instrument\"; hit_rate 34/291=0.117 vs true drafting 34/35=0.971) and made compare_rows silently discard cross-leg row evidence. Convention: macOS bash 3.2.57 - no associative arrays or bash-4 features in harness scripts."
  },
  "crownAttempt": {
   "owner": "qwen-thorfinn, E171 r1, PR 171 (TERMINAL)",
@@ -2819,5 +2820,13 @@
   "mechanism": "depth-1 upstream fetch leaves upstream/main parentless; merge-base --is-ancestor always false; guard message reads as an organizer rewrite; fetch_remote applied --unshallow only for origin so retries never repaired it",
   "fix": "submit-official.sh fetch_remote deepens any remote while .git/shallow exists (Entry 391 commit)",
   "diagnosedBy": "qwen-thorfinn, E190 submission (PR 188)"
+ },
+ "traceGateCollisionDefect": {
+  "id": "HARNESS DEFECT 43",
+  "entry": 393,
+  "raisedBy": "qwen-alphonse (E193)",
+  "defect": "research/e79_trace_leg.sh points one MLX_QWEN_MTP_TRACE_PATH at a single file; both decode legs write into it (291 rounds = 256 serial no-pf + 35 drafting with pf; round numbers restart per leg). e165_prefetch.py witness requires pf on all rounds and computes hit_rate over all rounds; compare_rows keys rows by bare token position so the legs silently overwrite each other. Fails in the dangerous direction: rejects correct builds and discards exactness evidence.",
+  "remediation": "research/e193_gates.py preserves all original protections and strengthens them per RULE 386; shared prior-art e165_prefetch.py left untouched mid-experiment.",
+  "openRecordsQuestion": "E165-era witness/rows conclusions may have been computed on a collided two-leg trace. Not audited: E193 remeasures the effect directly. Audit only if E193 disagrees with the E165-era record."
  }
 }
