@@ -1695,7 +1695,7 @@ func qwen35QMVVariant(m: Int, cell: Qwen35QMVCell) -> Qwen35QMVKernelVariant {
 /// rather than from the environment, so the witness cannot desynchronise from
 /// the kernel the round actually launched. No hot-path state: the trace can
 /// prove which dispatch plan ran.
-func qwen35QMVWidthPlanWitness(for variant: Qwen35QMVKernelVariant) -> String {
+func qwen35QMVWidthPlanWitnessText(for variant: Qwen35QMVKernelVariant) -> String {
     let base =
         "selective-m6+ipg9-"
         + String(Qwen35CustomQMV.inputsPerGroup(9, variant: variant))
@@ -1708,7 +1708,7 @@ func qwen35QMVWidthPlanWitness(for variant: Qwen35QMVKernelVariant) -> String {
 }
 
 public let qwen35QMVWidthPlanWitness =
-    qwen35QMVWidthPlanWitness(for: qwen35E213StagedVariant)
+    qwen35QMVWidthPlanWitnessText(for: qwen35E213StagedVariant)
 
 /// Geometry and width switch shared by both QMV pipelines. `table` decides
 /// whether the chunk-sum table is a bound buffer at all: the four-input

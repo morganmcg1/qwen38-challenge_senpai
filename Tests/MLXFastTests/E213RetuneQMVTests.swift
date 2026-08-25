@@ -305,18 +305,18 @@ struct E213RetuneQMVTests {
 
         // The witness each leg emits, derived from its own table.
         #expect(
-            qwen35QMVWidthPlanWitness(for: .staged) == "selective-m6+ipg9-5")
+            qwen35QMVWidthPlanWitnessText(for: .staged) == "selective-m6+ipg9-5")
         #expect(
-            qwen35QMVWidthPlanWitness(for: .stagedRetuned)
+            qwen35QMVWidthPlanWitnessText(for: .stagedRetuned)
                 == "selective-m6+ipg9-5+e213-4-5-5-5")
         #expect(
-            qwen35QMVWidthPlanWitness(for: .stagedNA6)
+            qwen35QMVWidthPlanWitnessText(for: .stagedNA6)
                 == "selective-m6+ipg9-6+e213-3-4-4-6")
         // No arm selected means the shipped plan, so a stray environment cannot
         // publish a research table as the shipped one.
         #expect(
             qwen35QMVWidthPlanWitness
-                == qwen35QMVWidthPlanWitness(for: qwen35E213StagedVariant))
+                == qwen35QMVWidthPlanWitnessText(for: qwen35E213StagedVariant))
 
         // The arms may not disturb the m = 6 single-pass selection E195 shipped.
         // At m = 6 the staged table governs `mlp.down` alone.
