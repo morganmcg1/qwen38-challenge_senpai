@@ -252,13 +252,16 @@ The op-proportional reading is **excluded at both thermal arms**. The upper
 bound on the coefficient itself is:
 
 ```text
-<= 6.13e-08 us per removed instruction   (hot)
- = 0.0613 us per 1e9 removed instructions
+hot:   <= 6.1327e-08 us per removed instruction =  61.3 us per 1e9 instructions
+cold:  <= -4.5828e-08 us per removed instruction = -45.8 us per 1e9 instructions
 ```
 
-Cold is negative. For a self-test, E226 should treat any model that prices
-non-arithmetic instruction removal above about 0.06 us per 1e9 instructions in
-this cell family as falsified by E223.
+Cross-check: 0.747 ms/round upper bound / 1.2174e10 removed instructions per
+round = 6.13e-08 us/instruction = 61.3 us per 1e9. Cold is negative.
+
+For a self-test, E226 should treat any model that prices non-arithmetic
+instruction removal above about **61 us per 1e9 instructions** in this cell
+family as falsified by E223.
 
 Five of the six individual `NA=2, G=1` cell measurements overlap zero
 (gdn hot -0.292 +/- 5.507, gdn cold -7.032 +/- 7.592, mlp.down hot
@@ -270,11 +273,36 @@ weight stream at 183 to 217 GB/s, which is DRAM-class on an M4 Pro. The kernel
 is weight-stream bandwidth-bound there, which is why neither removing
 instructions nor adding cache-served bytes moves the time.
 
+### The regime boundary E226 must locate
+
+The two facts above describe two different limiters at two ends of the scored
+width set, in the same kernel:
+
+| width | limiter | evidence |
+|---|---|---|
+| narrow (NA=2) | weight-stream bandwidth | 183 to 217 GB/s, DRAM-class; instruction removal worth ~0 |
+| wide (NA=5, G=2) | occupancy and spill | 176 B spill, effective rate for extra bytes 206 GB/s, 54x collapse |
+
+A single coefficient set cannot describe both ends. E226 should locate this
+boundary explicitly rather than fitting one rate across the whole width set. It
+is also why the local ratio and the absolute candidate time disagree on this
+arm: the treatment moves which limiter binds.
+
 ## Transfer
 
 Local-to-ranked transfer is **blocked** for this arm. On `g17s` the same source
 spills nothing at NA 2..6, so the dominant local cost term is absent on the
 ranked part, and this host cannot price the arm for M5 in either direction.
+
+This blocker is general, not specific to E223: **this host cannot price any
+spill-driven arm for M5 in either direction.** `g16s` caps at 96 registers and
+`g17s` at 126, so an arm that grows register pressure spills locally and may not
+spill on the ranked part.
+
+One nuance worth recording, because it is close: `g17s` f32 at NA=6 sits at
+**exactly 126 registers**, the budget edge. It does not spill, but it has zero
+headroom, so any further register growth composed onto this form would spill on
+the ranked part too.
 
 That is not a reason to chase it on M5. The doubled activation bytes and the
 +8 to +12 register delta remain real on `g17s`, the shipped version would also
