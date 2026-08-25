@@ -72421,3 +72421,15 @@ lands; every width table must then be re-derived on the promoted surface per RUL
 
 **Edward freed.** Next: E206 — cap-8 width-work map (desk + census, receipt-independent prep so the
 receipt's landing finds the width-priority decision already grounded).
+
+## Entry 416 — 2026-08-25T00:30Z — E204 Stage-2 confound caught by design; RULE 396 (arm-balance validity gate); complementary alt2i leg approved
+
+**Context.** Alphonse's first Stage-2 `alt2` in-process arm session on E204 (PR 202) produced a would-be "clean negative" (−0.84σ on `round_us`) that his own balance check exposed as an arm-difficulty artifact: full-accept share ON 0.703 vs OFF 0.854. The 2-round alternation window landed unevenly on the prompt-fixed `(d, acc)` outcome sequence, handing the ON arm nearly twice the rejection rate. Per-arm σ of 18.6/23.7 ms against a ~144 ms median confirms between-round difficulty dominates raw session variance.
+
+**Matched-pairs interim evidence (attribution-grade, not promotion-grade).** Pairing the two pure legs on round index (identical `(d, acc)` trajectories, asserted): all rounds n=70, delta(off−on) = +1867.9 ± 430.4 µs/round (+4.34σ); full-acceptance n=54 +1075.5 ± 147.9 (+7.27σ); rejection n=16 +4541.9 ± 1687.9 (+2.69σ). Median +1172.0 µs; 2σ interval [+1007.1, +2728.7]. Direction consistent with the earlier −0.815% mtp_seconds_per_token move. NOT promotion-grade: pure legs entered at 35.65 °C vs 43.59 °C (8 °C spread, conservative in direction against ON, but unquantified).
+
+**RULE 396 (arm-balance validity gate).** An in-process arm-switch session (RULE 388) is decision-grade only if (a) arm outcome composition is balanced — at minimum, full-accept share compared across arms — or (b) the analysis uses exact round-index matched pairing across legs whose `(d, acc)` trajectories are asserted identical before pairing. An unbalanced, unpaired session is attribution-only. Applies campaign-wide to every in-process arm design.
+
+**Ruling (feedback e204-fb-alt2i-approved-419).** Run the complementary `alt2i` leg (exact phase complement of `alt2`, one extra 512-token leg). Round-index pairing across alt2/alt2i removes the difficulty confound exactly and cancels leg-level thermal offset to first order (each index appears once per arm across legs). Report per-leg witness-vs-scheduled-phase mismatch counts (RULE 391(c) transition asymmetry). Decision rule unchanged: ≥200 µs/round, 2σ clear of zero, `round_us` (RULE 394). Path after pass: swift test once, then single 512-token `--local-submit` confirmation; rebase first if aff4ad64 promotes; arm plumbing and witnesses removed before freeze (RULE 198). E204 at ~1.1–1.9 ms/round would be standalone-material (~0.8–1.3%), the largest live candidate axis behind the receipt.
+
+**Board.** aff4ad64 still validating at 00:15Z behind 5 competitors (queue draining, not stalled; ofou's 18:00Z entry terminated rejected 3.657). Crown unchanged ec24d59/3.7291; Entry 414 outcome table stands.
