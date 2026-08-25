@@ -152,14 +152,32 @@ def chain_slopes(blob: dict) -> dict:
         blocks = sorted({r["block"] for r in rows})
         per_block = {b: [r for r in rows if r["block"] == b] for b in blocks}
 
+        chains = sorted({r["chain"] for r in rows})
+
+        def robust_total(selected: list[int], chain: int) -> float:
+            """Lower-trimmed mean over blocks.
+
+            Interference (residency faults, co-tenant dispatch, throttle) only
+            ever adds time to a microbenchmark, so the achievable cost sits at
+            the bottom of the block distribution. A plain mean or median lets a
+            single contaminated block dominate the chain regression.
+            """
+            vals = sorted(
+                r["microseconds"] for b in selected for r in per_block[b]
+                if r["chain"] == chain)
+            if not vals:
+                return float("nan")
+            keep = max(1, (len(vals) + 1) // 2)
+            return float(np.mean(vals[:keep]))
+
         def fit(selected: list[int]) -> tuple[float, float]:
-            pts = [r for b in selected for r in per_block[b]]
-            x = np.array([r["chain"] for r in pts], float)
-            y = np.array([r["microseconds"] for r in pts], float)
-            if len(set(x.tolist())) < 2:
+            x = np.array(chains, float)
+            y = np.array([robust_total(selected, c) for c in chains], float)
+            ok = np.isfinite(y)
+            if ok.sum() < 2:
                 return float("nan"), float("nan")
-            design = np.column_stack([np.ones_like(x), x])
-            coef, *_ = np.linalg.lstsq(design, y, rcond=None)
+            design = np.column_stack([np.ones_like(x[ok]), x[ok]])
+            coef, *_ = np.linalg.lstsq(design, y[ok], rcond=None)
             return float(coef[1]), float(coef[0])
 
         slope, intercept = fit(blocks)
@@ -174,11 +192,8 @@ def chain_slopes(blob: dict) -> dict:
                   if k not in {"block", "ascending", "position", "chain",
                                "reps", "microseconds",
                                "microseconds_per_unit", "label"}}
-        # Per-unit medians at each chain length, for the residual audit.
-        by_chain = {}
-        for c in sorted({r["chain"] for r in rows}):
-            vals = [r["microseconds"] / c for r in rows if r["chain"] == c]
-            by_chain[c] = float(np.median(vals))
+        # Per-unit cost at each chain length, for the residual audit.
+        by_chain = {c: robust_total(blocks, c) / c for c in chains}
         out[label] = {
             "label": label,
             "slope_us": slope,
@@ -188,7 +203,7 @@ def chain_slopes(blob: dict) -> dict:
             "slope_sd": float(np.std(draws_a, ddof=1)) if len(draws_a) > 1
             else float("nan"),
             "blocks": len(blocks),
-            "median_us_per_unit_by_chain": by_chain,
+            "robust_us_per_unit_by_chain": by_chain,
             "fields": fields,
         }
     return out

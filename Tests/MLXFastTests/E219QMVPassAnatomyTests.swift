@@ -244,9 +244,10 @@ private func e219RotatedSet(_ base: E219WeightSet, shift: Int)
     return set
 }
 
-/// A cache-defeating replica set. `count` is the larger of 16 and whatever it
-/// takes to exceed `targetBytes`, so every timed dispatch streams weights the
-/// previous dispatch did not touch.
+/// A cache-defeating replica set sized just past `targetBytes`, so every timed
+/// dispatch streams weights the previous dispatch did not touch. The ring is
+/// deliberately small: one replica already exceeds any Apple GPU cache, and a
+/// large resident footprint reintroduces first-touch and residency noise.
 private struct E219Replicas {
     var sets: [E219WeightSet]
     var requestedCount: Int
@@ -255,7 +256,7 @@ private struct E219Replicas {
 
     init(k: Int, n: Int, seed: UInt64, targetBytes: Int, hardCapBytes: Int) {
         let perSet = E219WeightSet.bytes(k: k, n: n)
-        var wanted = max(16, (targetBytes + perSet - 1) / perSet)
+        var wanted = (targetBytes + perSet - 1) / perSet
         wanted = max(2, min(wanted, max(2, hardCapBytes / perSet)))
         requestedCount = wanted
         let base = e219RandomSet(k: k, n: n, seed: seed)
@@ -335,15 +336,19 @@ private struct E219Session {
     let blocks: Int
     let chains: [Int]
     let warmup: Int
+    let touch: Int
+    let minimumReps: Int
     let targetMicroseconds: Double
     var temperatures: [String: Double?] = [:]
     var samples: [[String: Any]] = []
 
     init() {
         blocks = e219Int("MLX_E219_BLOCKS", 6)
-        chains = e219IntList("MLX_E219_CHAINS", [1, 2, 4, 8])
+        chains = e219IntList("MLX_E219_CHAINS", [1, 2, 3, 4])
         warmup = e219Int("MLX_E219_WARMUP", 4)
-        targetMicroseconds = Double(e219Int("MLX_E219_TARGET_US", 3000))
+        touch = e219Int("MLX_E219_TOUCH", 24)
+        minimumReps = e219Int("MLX_E219_MIN_REPS", 8)
+        targetMicroseconds = Double(e219Int("MLX_E219_TARGET_US", 6000))
     }
 
     mutating func recordTemperature(_ label: String) {
@@ -367,7 +372,15 @@ private struct E219Session {
     private func calibrate(_ unit: E219Unit, chain: Int) -> Int {
         let pilot = time(unit, chain: chain, reps: 2)
         guard pilot > 0 else { return 64 }
-        return max(3, min(400, Int((targetMicroseconds / pilot).rounded())))
+        return max(
+            minimumReps, min(400, Int((targetMicroseconds / pilot).rounded())))
+    }
+
+    /// Cycles the unit's whole replica ring several times before it is timed.
+    /// Without this, a timed block pays first-touch residency cost for replicas
+    /// the short warmup never reached, which dominates the wide cells.
+    private func pretouch(_ unit: E219Unit) {
+        for _ in 0 ..< touch { eval(unit.enqueue()) }
     }
 
     mutating func run(_ units: [E219Unit], settle: () -> Void) {
@@ -388,6 +401,7 @@ private struct E219Session {
 
         var reps: [String: Int] = [:]
         for unit in units {
+            pretouch(unit)
             for chain in chains {
                 reps["\(unit.label)/\(chain)"] = calibrate(unit, chain: chain)
             }
@@ -401,6 +415,7 @@ private struct E219Session {
             for _ in 0 ..< 20 { settle() }
             for (position, index) in order.enumerated() {
                 let unit = units[index]
+                pretouch(unit)
                 for chain in ascending ? chains : chains.reversed() {
                     let n = reps["\(unit.label)/\(chain)"] ?? 16
                     let us = time(unit, chain: chain, reps: n)
@@ -445,6 +460,8 @@ private func e219Write(
         report["blocks"] = session.blocks
         report["chains"] = session.chains
         report["warmup"] = session.warmup
+        report["pretouch_dispatches"] = session.touch
+        report["minimum_reps"] = session.minimumReps
         report["target_microseconds"] = session.targetMicroseconds
         report["gpu_temperature_c"] = session.temperatures.mapValues {
             $0 ?? -1.0
@@ -578,10 +595,10 @@ struct E219InstrumentSanityTests {
 @Suite(.serialized)
 struct E219PassAnatomyTests {
     private static var replicaTarget: Int {
-        e219Int("MLX_E219_REPLICA_TARGET_MB", 512) * 1_048_576
+        e219Int("MLX_E219_REPLICA_TARGET_MB", 192) * 1_048_576
     }
     private static var replicaCap: Int {
-        e219Int("MLX_E219_REPLICA_CAP_MB", 3072) * 1_048_576
+        e219Int("MLX_E219_REPLICA_CAP_MB", 768) * 1_048_576
     }
 
     /// Shared driver: build one replica ring per cell shape, then time every
