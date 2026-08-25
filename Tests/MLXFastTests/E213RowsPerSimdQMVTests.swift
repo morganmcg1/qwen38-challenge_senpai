@@ -312,6 +312,11 @@ private func e213Samples(
     return samples
 }
 
+/// The instantiation E213 withdrew: `qwen_e120_qmv_wide<7, false, 2>`. No plan
+/// compiles it, and the plain-versus-table sweep keeps it as its own positive
+/// control.
+private let e213WithdrawnCase = "research_na7_rows2"
+
 private func e213Write(_ payload: [String: Any], to key: String) throws {
     let path = try #require(
         ProcessInfo.processInfo.environment[key],
@@ -580,7 +585,7 @@ struct E213RowsPerSimdQMVTests {
         // The withdrawn instantiation, kept reproducible outside every plan.
         pipelines.append(
             Case(
-                label: "research_na7_rows2", widths: [7], rows: { _ in 2 },
+                label: e213WithdrawnCase, widths: [7], rows: { _ in 2 },
                 pipeline: E213Pipeline(
                     variant: .singlePass, label: "pvt_na7_rows2",
                     nameSuffix: "_pvt", source: e213Rows2NA7Source(table:),
@@ -678,10 +683,26 @@ struct E213RowsPerSimdQMVTests {
         #expect(!scored.isEmpty)
         #expect(scored.allSatisfy { ($0["differing"] as? Int ?? 0) == 0 })
 
-        // The rest is reported, not asserted: this section exists to localize
-        // a known defect, so it must produce its whole table.
-        Issue.record(
-            "plain vs table: \(broken.count) of \(rows.count) instantiations differ")
+        // The withdrawn instantiation is this section's positive control: it is
+        // the one case that must still differ. A sweep that reports it clean
+        // has stopped being able to detect the defect it was written for.
+        let withdrawn = rows.filter { $0["variant"] as? String == e213WithdrawnCase }
+        #expect(withdrawn.count == e213Cells.count)
+        #expect(withdrawn.allSatisfy { ($0["differing"] as? Int ?? 0) > 0 })
+
+        // Anything else that differs is a research instantiation no plan
+        // compiles. It is a warning, not a gate.
+        let unexpected = broken.filter {
+            $0["variant"] as? String != e213WithdrawnCase
+        }
+        if !unexpected.isEmpty {
+            Issue.record(
+                """
+                plain vs table: \(unexpected.count) of \(rows.count) \
+                instantiations differ outside the scored, rows=4 and \
+                withdrawn sets
+                """)
+        }
     }
 
     @Test(.enabled(if: E213RowsPerSimdQMVTests.gateEnabled))
