@@ -155,7 +155,10 @@ def load(dirs: list[pathlib.Path]) -> dict:
             blob = json.loads(path.read_text())
             if blob.get("probe") != "e219-qmv-pass-anatomy":
                 continue
-            phases[blob["phase"]] = blob
+            # Sessions are keyed by directory as well as phase. Two sessions
+            # may both run `groups` over different NA arms, and keying by
+            # phase alone would silently drop one of them.
+            phases["%s/%s" % (d.name, blob["phase"])] = blob
     if not phases:
         raise SystemExit("no e219 phase reports found in %s" % dirs)
     return phases
@@ -642,6 +645,37 @@ def reconciliation(units: dict) -> dict:
         "pass": bool(scored_rows) and all(
             r["within_15pct"] for r in scored_rows),
     }
+
+    # Widths that share one (IPG, G) run the SAME QMV dispatch geometry, so the
+    # census must price them identically. Any difference FINDING 559 reports
+    # between them is therefore non-QMV work, and this is a natural experiment
+    # that separates the two without a new measurement.
+    shared: dict[tuple, list] = collections.defaultdict(list)
+    for row in scored_rows:
+        shared[(row["ipg"], row["groups"])].append(row)
+    same_geometry = []
+    for (ipg, g), rows in sorted(shared.items()):
+        if len(rows) < 2:
+            continue
+        rows = sorted(rows, key=lambda r: r["m"])
+        same_geometry.append({
+            "ipg": ipg, "groups": g,
+            "widths": [r["m"] for r in rows],
+            "census_ms_per_round": rows[0]["census_ms_per_round"],
+            "census_spread_ms_per_round": (
+                max(r["census_ms_per_round"] for r in rows)
+                - min(r["census_ms_per_round"] for r in rows)),
+            "finding_559_ms_per_round": [
+                r["finding_559_r_local_ms_per_round"] for r in rows],
+            "finding_559_spread_ms_per_round": (
+                max(r["finding_559_r_local_ms_per_round"] for r in rows)
+                - min(r["finding_559_r_local_ms_per_round"] for r in rows)),
+            "reading":
+                "these widths pad into one QMV dispatch shape, so the census "
+                "prices them identically by construction. The FINDING 559 "
+                "spread across them is non-QMV per-token work",
+        })
+    gate_a_prime["same_geometry_width_pairs"] = same_geometry
 
     # Layout headroom. No mechanism that keeps the same device bytes can go
     # below the host DRAM floor for those bytes, so the distance from the
@@ -1294,7 +1328,8 @@ def main() -> int:
                 blob.get("cool_gate_passed_real_gate"),
             "gate_qualified_for_timing": blob.get("gate_qualified_for_timing"),
         }
-        if name == "sanity":
+        phase_meta[name]["phase"] = blob["phase"]
+        if blob["phase"] == "sanity":
             phase_meta[name]["comparisons"] = blob.get("comparisons")
             continue
         for label, unit in chain_slopes(blob).items():

@@ -101,11 +101,82 @@ def census_spec(blob: dict) -> tuple[str, dict, dict]:
         "fit/identifiable": fit.get("identifiable"),
         "fit/weightedR2": fit.get("weighted_r2"),
         "fit/nUnits": fit.get("n_units"),
+        "fit/scaledConditionNumber": fit.get("scaled_condition_number"),
+        "gate/aPrimePass": recon.get("gate_a_prime_pass"),
         "gate/aPass": recon.get("gate_a_pass"),
         "gate/bPass": recon.get("gate_b_pass"),
+        "phi/identifiable": recon.get("phi_identifiable"),
         "phi/cacheServedFraction": recon.get("phi_cache_served_fraction"),
     }
+
+    gate_ap = recon.get("gate_a_prime") or {}
+    summary["gateAPrime/worstErrorPct"] = gate_ap.get("worst_error_pct")
+    summary["gateAPrime/widthsChecked"] = len(
+        gate_ap.get("widths_checked") or [])
+    summary["gateAPrime/widthsMissing"] = len(
+        gate_ap.get("widths_missing") or [])
+    for row in gate_ap.get("rows") or []:
+        stem = "gateAPrime/m%d" % row["m"]
+        summary["%s/finding559MsPerRound" % stem] = (
+            row["finding_559_r_local_ms_per_round"])
+        if row.get("census_ms_per_round") is None:
+            continue
+        summary["%s/censusMsPerRound" % stem] = row["census_ms_per_round"]
+        summary["%s/errorPct" % stem] = row["error_pct"]
+        summary["%s/within15pct" % stem] = row["within_15pct"]
+
+    for key, name in (
+        ("us_per_dispatch", "term/aUsPerDispatch"),
+        ("ms_per_round", "term/aMsPerRound"),
+    ):
+        block = (blob.get("term_interpretation") or {}).get("a_dispatch") or {}
+        if block.get(key) is not None:
+            summary[name] = block[key]
+    ti = blob.get("term_interpretation") or {}
+    b_term = ti.get("b_stream") or {}
+    summary["term/bMsPerPass"] = b_term.get("ms_per_pass_all_cells")
+    summary["term/bImpliedGBps"] = b_term.get("implied_stream_gb_per_s")
+    summary["term/bExceedsDramPeak"] = b_term.get("exceeds_dram_peak")
+    summary["term/bLaneCyclesPerWeightElement"] = b_term.get(
+        "nominal_lane_cycles_per_weight_element")
+    c_term = ti.get("c_activation_row") or {}
+    summary["term/cMsPerPassPerNa"] = c_term.get("ms_per_pass_per_na")
+    whole = ti.get("whole_pass_5_1") or {}
+    summary["term/pass51MsPerRound"] = whole.get("modelled_ms_per_round")
+    summary["term/pass51AchievedGBps"] = whole.get("achieved_gb_per_s")
+    summary["term/pass51FractionOfDramPeak"] = whole.get(
+        "fraction_of_dram_peak")
+
+    dec = recon.get("finding_543_decomposition") or {}
+    summary["decomp543/censusIpg3G3MsPerRound"] = dec.get(
+        "census_ipg3_g3_ms_per_round")
+    summary["decomp543/censusIpg5G2MsPerRound"] = dec.get(
+        "census_ipg5_g2_ms_per_round")
+    summary["decomp543/weightPassDeltaMsPerRound"] = dec.get(
+        "census_weight_pass_delta_ms_per_round")
+    summary["decomp543/weightPassShareOf543"] = dec.get(
+        "weight_pass_share_of_543")
+
+    lay = recon.get("layout_headroom") or {}
+    summary["layout/achievedGBps"] = lay.get("achieved_gb_per_s")
+    summary["layout/fractionOfPeak"] = lay.get("fraction_of_peak")
+    summary["layout/pooledCeilingMsPerRound"] = lay.get(
+        "pooled_ceiling_ms_per_round")
+
+    gate_b = recon.get("gate_b") or {}
+    summary["gateB/scoredWholeRoundRatio"] = gate_b.get("scored_ratio")
+    summary["gateB/coldG1MsPerRound"] = gate_b.get("cold_g1_ms_per_round")
+    summary["gateB/coldG2MsPerRound"] = gate_b.get("cold_g2_ms_per_round")
+    summary["gateB/hotWholeRoundRatio"] = gate_b.get("hot_whole_round_ratio")
+
     gate_a = recon.get("gate_a") or {}
+    for key, name in (
+        ("cold_minus_hot_ms_per_round", "gateA/coldMinusHotMsPerRound"),
+        ("cold_minus_hot_pct_of_cold", "gateA/coldMinusHotPctOfCold"),
+        ("bracket_noise_2sigma_ms_per_round", "gateA/noise2SigmaMsPerRound"),
+    ):
+        if gate_a.get(key) is not None:
+            summary[name] = gate_a[key]
     for key, name in (
         ("bracket_ms_per_round", "gateA/bracketMsPerRound"),
         ("contains_point_anchor", "gateA/containsPointAnchor"),
@@ -155,9 +226,10 @@ def census_spec(blob: dict) -> tuple[str, dict, dict]:
         summary["%s/publicMsPerRound" % stem] = entry["public_ms_per_round"]
         summary["%s/decisionMsPerRound" % stem] = entry["decision_ms_per_round"]
         summary["%s/clears1msBar" % stem] = entry["clears_1ms_bar"]
-        if entry.get("pooled_ms_per_round_residual") is not None:
-            summary["%s/pooledMsPerRoundResidual" % stem] = \
-                entry["pooled_ms_per_round_residual"]
+        summary["%s/pooledMsPerRoundCiUpper" % stem] = \
+            entry["pooled_ms_per_round_ci_upper"]
+        summary["%s/resolvedByCensus" % stem] = not entry.get(
+            "not_resolved_by_this_census", False)
 
     config = identity(blob, {
         "stage": "census",
