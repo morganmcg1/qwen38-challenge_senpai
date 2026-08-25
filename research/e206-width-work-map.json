@@ -453,6 +453,127 @@
     "source": "E199 W&B per_round tables (7y6ap5l8, exdb3vyt), 512 tokens, gate-qualified"
   },
   "experiment": "e206-cap8-width-work-map",
+  "g3_exposure_map": {
+    "band_split_e182_in_path_ms": {
+      "fa_mixer": 2.648,
+      "fa_mlp": 6.431,
+      "gdn_mixer": 8.359,
+      "gdn_mlp": 19.305,
+      "residual_lm_head_and_host": 3.637
+    },
+    "cap8_m9_round_share": 0.5526315789473685,
+    "cell_rank_by_third_pass_cost": [
+      "mlp.gate_up",
+      "mlp.down",
+      "gdn.in_proj",
+      "fa.qkv",
+      "gdn.out_proj",
+      "lm_head",
+      "fa.o_proj"
+    ],
+    "cell_split_e186_isolated": {
+      "fa.o_proj": {
+        "e186_step_m9_us_per_invocation": 47.198,
+        "invocations_per_round": 16,
+        "share_of_isolated_cell_sum": 0.01743983826451107,
+        "third_pass_ms_per_m9_round": 0.7551680000000001
+      },
+      "fa.qkv": {
+        "e186_step_m9_us_per_invocation": 189.796,
+        "invocations_per_round": 16,
+        "share_of_isolated_cell_sum": 0.0701303348288305,
+        "third_pass_ms_per_m9_round": 3.036736
+      },
+      "gdn.in_proj": {
+        "e186_step_m9_us_per_invocation": 180.254,
+        "invocations_per_round": 48,
+        "share_of_isolated_cell_sum": 0.19981358997401444,
+        "third_pass_ms_per_m9_round": 8.652192
+      },
+      "gdn.out_proj": {
+        "e186_step_m9_us_per_invocation": 45.933,
+        "invocations_per_round": 48,
+        "share_of_isolated_cell_sum": 0.050917248040411894,
+        "third_pass_ms_per_m9_round": 2.204784
+      },
+      "lm_head": {
+        "e186_step_m9_us_per_invocation": 1943.319,
+        "invocations_per_round": 1,
+        "share_of_isolated_cell_sum": 0.044878979321622985,
+        "third_pass_ms_per_m9_round": 1.943319
+      },
+      "mlp.down": {
+        "e186_step_m9_us_per_invocation": 142.635,
+        "invocations_per_round": 64,
+        "share_of_isolated_cell_sum": 0.2108166728131307,
+        "third_pass_ms_per_m9_round": 9.128639999999999
+      },
+      "mlp.gate_up": {
+        "e186_step_m9_us_per_invocation": 274.695,
+        "invocations_per_round": 64,
+        "share_of_isolated_cell_sum": 0.40600333675747846,
+        "third_pass_ms_per_m9_round": 17.580479999999998
+      }
+    },
+    "isolated_cell_sum_overexplains_layer_probe_by": 0.087,
+    "local_round_weighted_third_pass_ms": 22.133999999999997,
+    "local_second_pass_ms_per_round": 35.596,
+    "local_third_pass_ms_per_m9_round": 40.05199999999999,
+    "ranked_extrapolated_round_weighted_ms": {
+      "a_measured_f505_transfer": 4.725109579850999,
+      "b_e197_refit_transfer": [
+        4.191288475192217,
+        5.044345171151894
+      ],
+      "c_smooth_step_continuation": 0.34428947368421053
+    },
+    "ranked_extrapolated_third_pass_ms_per_m9_round": {
+      "a_measured_f505_transfer": 8.550198287349426,
+      "b_e197_refit_transfer": [
+        7.5842362884430585,
+        9.127862690655808
+      ],
+      "c_smooth_step_continuation": 0.623,
+      "ceiling_whole_measured_step": 10.146798681269674,
+      "status": "EXTRAPOLATED: ranked dR9 has never been measured; a cap-7 round verifies at most 8 rows"
+    },
+    "ranked_published_score_projection": {
+      "a_measured_f505_transfer": {
+        "cap8_with_third_pass": 3.6728634698162854,
+        "cap8_without_third_pass": 3.841687135,
+        "published_delta": 0.1688236651837145
+      },
+      "b_e197_refit_transfer_low": {
+        "cap8_with_third_pass": 3.6919363894846917,
+        "cap8_without_third_pass": 3.841687135,
+        "published_delta": 0.1497507455153082
+      },
+      "c_smooth_step_continuation": {
+        "cap8_with_third_pass": 3.829386,
+        "cap8_without_third_pass": 3.841687135,
+        "published_delta": 0.012301134999999963
+      },
+      "engine": {
+        "crown": 3.7291100105909,
+        "flat_cap8_chain_score": 3.829386,
+        "paid_cap7_receipt_a": 3.70784519415395,
+        "points_per_ms_of_transferred_dR9_excess": 0.019745
+      },
+      "status": "EXTRAPOLATED, harness=ranked, desk model only. The in-flight cap-8 receipt measures dR9 directly and supersedes this."
+    },
+    "third_pass_costs_more_than_second_by": 0.12518260478705456,
+    "top3_cell_share_of_isolated_sum": 0.8166335995446237,
+    "transfer": {
+      "naive_R1_scale_factor": 2.158442940773968,
+      "ratio_band": [
+        0.21049781538837242,
+        0.25334062422025555
+      ],
+      "ratio_measured_f505": 0.23730775152232655,
+      "realized_fraction_of_naive_scaled_step": 0.5122152410643086,
+      "stale_finding_484_claim": "two thirds of the local step hidden on M5; derived from the FINDING 456 quadratic that FINDING 504 falsified at 5.60 sigma"
+    }
+  },
   "harness": "local",
   "m9_dispatch_map": {
     "cells": {

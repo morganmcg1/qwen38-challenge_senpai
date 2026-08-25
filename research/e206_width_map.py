@@ -52,8 +52,63 @@ STAGED_IPG = {2: 2, 3: 3, 4: 4, 5: 5, 6: 3, 7: 4, 8: 4, 9: 3}
 # and not for mlp.down / unlisted.
 SINGLEPASS_IPG = {2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 3}
 
-# FINDING 485 / E197 local step law, harness=local, M4 Pro.
+# FINDING 484 local step law, harness=local, M4 Pro, E182 (research/e182-report.json).
 STEP_LAW = {"intercept_ms": 18.92, "per_row_ms": 6.51, "per_group_ms": 36.03}
+
+# E182 unperturbed legs, harness=local, pinned depth, full acceptance.
+E182_ROUND_MS = {1: 65.297, 4: 77.311, 5: 90.486, 6: 126.081, 7: 137.362,
+                 8: 145.774, 9: 185.826}
+
+# E182 band-instrumented legs: the m=8 -> m=9 step, i.e. the G=2 -> G=3 pass.
+E182_G3_STEP_BY_BAND_MS = {
+    "gdn_mlp": 19.305,
+    "gdn_mixer": 8.359,
+    "fa_mlp": 6.431,
+    "fa_mixer": 2.648,
+    "residual_lm_head_and_host": 3.637,
+}
+
+# E186 isolated probes (W&B fm5fnfmd, table e186/fits): step_m9_us per cell,
+# scaled by invocations per round. The isolated per-cell sum over-explains the
+# layer-probe reconstruction by 8.7%, so this ranks cells, it does not price
+# them.
+E186_STEP_M9_US = {
+    "mlp.gate_up": 274.695,
+    "mlp.down": 142.635,
+    "gdn.in_proj": 180.254,
+    "gdn.out_proj": 45.933,
+    "fa.qkv": 189.796,
+    "fa.o_proj": 47.198,
+    "lm_head": 1943.319,
+}
+E186_LAYER_PROBE_G3_STEP_MS = 39.827
+E186_CELL_SUM_OVEREXPLAIN = 0.087
+
+# Local -> ranked transfer of one weight-pass step. FINDING 484's "two thirds
+# hidden" came from the FINDING 456 quadratic that FINDING 504 falsified at
+# 5.60 sigma; FINDING 505 measured the ranked step directly.
+TRANSFER = {
+    # E186 local round shape, the denominator E197 uses for transfer_ratio.
+    "local_dR6_e186_ms": 37.6726,
+    "local_dR6_e182_ms": 35.596,
+    "ranked_dR6_measured_ms": 8.940,
+    "ranked_dR6_measured_1sigma_ms": [8.345, 9.544],
+    "ranked_dR6_e197_refit_ms": [7.93, 8.26],
+    "ranked_dR9_e197_smooth_step_total_ms": 1.962,
+    "ranked_row_term_ms": 1.339,
+    "local_R1_ms": 65.297,
+    "ranked_R1_ms": 30.2519,
+    "falsified_quadratic_d56_ms": 5.394,
+    "falsified_quadratic_d89_ms": 8.848,
+}
+
+# E201 / FINDING 523 linearized score engine on the cap-8 chain.
+SCORE_ENGINE = {
+    "points_per_ms_of_transferred_dR9_excess": 0.019745,
+    "flat_cap8_chain_score": 3.829386,
+    "paid_cap7_receipt_a": 3.70784519415395,
+    "crown": 3.7291100105909,
+}
 
 
 def groups(m: int, ipg: int) -> int:
@@ -177,6 +232,124 @@ def m9_plan_map():
     return cells, options
 
 
+def g3_exposure_map(cap8_census):
+    """Where the third weight pass lands, and what it is worth to remove it."""
+    local_step = E182_ROUND_MS[9] - E182_ROUND_MS[8]
+    cell_sum_us = sum(
+        E186_STEP_M9_US[name] * inv for name, _, _, inv in CELLS
+    )
+    per_cell = {}
+    for name, _, _, inv in CELLS:
+        ms = E186_STEP_M9_US[name] * inv / 1000.0
+        per_cell[name] = {
+            "invocations_per_round": inv,
+            "e186_step_m9_us_per_invocation": E186_STEP_M9_US[name],
+            "third_pass_ms_per_m9_round": ms,
+            "share_of_isolated_cell_sum": ms / (cell_sum_us / 1000.0),
+        }
+    ranked_cells = sorted(
+        per_cell.items(), key=lambda kv: -kv[1]["third_pass_ms_per_m9_round"]
+    )
+
+    rounds = sum(cap8_census.values())
+    m9_rounds = cap8_census.get(9, 0)
+    m9_share = m9_rounds / rounds if rounds else 0.0
+
+    # Local -> ranked transfer of one weight pass. Denominator is E186's local
+    # dR6, which is what E197 stores as transfer_ratio.
+    den = TRANSFER["local_dR6_e186_ms"]
+    ratio_measured = TRANSFER["ranked_dR6_measured_ms"] / den
+    ratio_lo = TRANSFER["ranked_dR6_e197_refit_ms"][0] / den
+    ratio_hi = TRANSFER["ranked_dR6_measured_1sigma_ms"][1] / den
+    naive_scale = TRANSFER["local_R1_ms"] / TRANSFER["ranked_R1_ms"]
+
+    pass_term = STEP_LAW["per_group_ms"]
+    # Scenario (c): the E197 smooth-step law's own dR9 leaves almost no pass
+    # component to remove.
+    pessimistic_pass_ms = (
+        TRANSFER["ranked_dR9_e197_smooth_step_total_ms"]
+        - TRANSFER["ranked_row_term_ms"]
+    )
+    scenarios = {
+        "a_measured_f505_transfer": pass_term * ratio_measured,
+        "b_e197_refit_transfer": [pass_term * ratio_lo, pass_term * ratio_hi],
+        "c_smooth_step_continuation": pessimistic_pass_ms,
+        "ceiling_whole_measured_step": local_step
+        * TRANSFER["ranked_dR6_measured_1sigma_ms"][1]
+        / den,
+    }
+    k = SCORE_ENGINE["points_per_ms_of_transferred_dR9_excess"]
+    flat = SCORE_ENGINE["flat_cap8_chain_score"]
+    row = TRANSFER["ranked_row_term_ms"]
+    dr9_model = TRANSFER["ranked_dR9_e197_smooth_step_total_ms"]
+
+    def scored(pass_ms):
+        base = flat - k * (row + pass_ms - dr9_model)
+        no_pass = flat + k * (dr9_model - row)
+        return {
+            "cap8_with_third_pass": base,
+            "cap8_without_third_pass": no_pass,
+            "published_delta": no_pass - base,
+        }
+
+    return {
+        "local_third_pass_ms_per_m9_round": local_step,
+        "local_second_pass_ms_per_round": TRANSFER["local_dR6_e182_ms"],
+        "third_pass_costs_more_than_second_by": local_step
+        / TRANSFER["local_dR6_e182_ms"]
+        - 1.0,
+        "band_split_e182_in_path_ms": E182_G3_STEP_BY_BAND_MS,
+        "cell_split_e186_isolated": per_cell,
+        "cell_rank_by_third_pass_cost": [name for name, _ in ranked_cells],
+        "top3_cell_share_of_isolated_sum": sum(
+            rec["share_of_isolated_cell_sum"] for _, rec in ranked_cells[:3]
+        ),
+        "isolated_cell_sum_overexplains_layer_probe_by": E186_CELL_SUM_OVEREXPLAIN,
+        "cap8_m9_round_share": m9_share,
+        "local_round_weighted_third_pass_ms": m9_share * local_step,
+        "transfer": {
+            "naive_R1_scale_factor": naive_scale,
+            "ratio_measured_f505": ratio_measured,
+            "ratio_band": [ratio_lo, ratio_hi],
+            "realized_fraction_of_naive_scaled_step": TRANSFER[
+                "ranked_dR6_measured_ms"
+            ]
+            / (TRANSFER["local_dR6_e186_ms"] / naive_scale),
+            "stale_finding_484_claim": "two thirds of the local step hidden on "
+            "M5; derived from the FINDING 456 quadratic that FINDING 504 "
+            "falsified at 5.60 sigma",
+        },
+        "ranked_extrapolated_third_pass_ms_per_m9_round": dict(
+            scenarios,
+            status="EXTRAPOLATED: ranked dR9 has never been measured; a cap-7 "
+            "round verifies at most 8 rows",
+        ),
+        "ranked_extrapolated_round_weighted_ms": {
+            "a_measured_f505_transfer": m9_share
+            * scenarios["a_measured_f505_transfer"],
+            "b_e197_refit_transfer": [
+                m9_share * v for v in scenarios["b_e197_refit_transfer"]
+            ],
+            "c_smooth_step_continuation": m9_share
+            * scenarios["c_smooth_step_continuation"],
+        },
+        "ranked_published_score_projection": {
+            "a_measured_f505_transfer": scored(
+                scenarios["a_measured_f505_transfer"]
+            ),
+            "b_e197_refit_transfer_low": scored(
+                scenarios["b_e197_refit_transfer"][0]
+            ),
+            "c_smooth_step_continuation": scored(
+                scenarios["c_smooth_step_continuation"]
+            ),
+            "engine": SCORE_ENGINE,
+            "status": "EXTRAPOLATED, harness=ranked, desk model only. The "
+            "in-flight cap-8 receipt measures dR9 directly and supersedes this.",
+        },
+    }
+
+
 def step_law_prediction(m, g):
     return (
         STEP_LAW["intercept_ms"]
@@ -254,6 +427,11 @@ def main():
         },
         "step_law": STEP_LAW,
         "step_law_consistency_check_within_7y6ap5l8": law_check,
+        "g3_exposure_map": g3_exposure_map(
+            {int(k): v for k, v in ref["census_by_served_width"].items()}
+            if ref
+            else {}
+        ),
     }
     OUT.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
     print(f"wrote {OUT}")
@@ -282,6 +460,44 @@ def main():
             f"law(G={rec['uniform_staged_G']})="
             f"{rec['step_law_ms_uniform_staged_G']:7.2f} ms"
         )
+    exp = doc["g3_exposure_map"]
+    print("\nG=3 exposure (harness=local unless marked):")
+    print(
+        f"  third pass at m=9: {exp['local_third_pass_ms_per_m9_round']:.3f} ms "
+        f"({100*exp['third_pass_costs_more_than_second_by']:.1f}% dearer than "
+        f"the second pass)"
+    )
+    print(
+        f"  cap-8 m=9 share {100*exp['cap8_m9_round_share']:.1f}% -> "
+        f"round-weighted {exp['local_round_weighted_third_pass_ms']:.2f} ms/round"
+    )
+    r = exp["ranked_extrapolated_round_weighted_ms"]
+    print(
+        f"  ranked EXTRAPOLATED round-weighted: "
+        f"(a) {r['a_measured_f505_transfer']:.3f}  "
+        f"(b) {r['b_e197_refit_transfer'][0]:.3f}-"
+        f"{r['b_e197_refit_transfer'][1]:.3f}  "
+        f"(c) {r['c_smooth_step_continuation']:.3f} ms/round"
+    )
+    for name, rec in exp["ranked_published_score_projection"].items():
+        if not isinstance(rec, dict) or "published_delta" not in rec:
+            continue
+        print(
+            f"    {name:32s} {rec['cap8_with_third_pass']:.4f} -> "
+            f"{rec['cap8_without_third_pass']:.4f}  "
+            f"(+{rec['published_delta']:.4f})"
+        )
+    print("  cell rank by third-pass cost:")
+    for name in exp["cell_rank_by_third_pass_cost"]:
+        rec = exp["cell_split_e186_isolated"][name]
+        print(
+            f"    {name:14s} {rec['third_pass_ms_per_m9_round']:6.3f} ms  "
+            f"{100*rec['share_of_isolated_cell_sum']:5.1f}%"
+        )
+    print(
+        f"  top-3 cells carry "
+        f"{100*exp['top3_cell_share_of_isolated_sum']:.1f}% of the third pass"
+    )
     return 0
 
 
