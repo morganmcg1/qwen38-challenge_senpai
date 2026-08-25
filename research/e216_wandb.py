@@ -122,8 +122,18 @@ def session_spec(session_dir: pathlib.Path) -> tuple[dict, dict, str]:
         "anchorMtpSecondsPerToken": ANCHOR_MTP_SPT,
         "offVersusAnchorPct":
             100.0 * (absolute["off_mean"] - ANCHOR_MTP_SPT) / ANCHOR_MTP_SPT,
+        # FINDING 564: pooled five-prompt census is the primary weighting for
+        # the promotion decision; the session's own public census is the
+        # sensitivity reading.
+        "pooledWeightedMsPerRound":
+            stats["pooled_weighted_ms_per_round_recovered"],
+        "publicWeightedMsPerRound":
+            stats["round_weighted_ms_per_round_recovered"],
         "roundWeightedMsPerRound":
             stats["round_weighted_ms_per_round_recovered"],
+        "pooledUncoveredMovedWidths":
+            ",".join(str(w) for w in stats["pooled_uncovered_moved_widths"])
+            or "none",
         "trajectoriesIdentical": blob["trajectories_identical"],
         "roundCount": blob["round_count"],
         "gpuTempEntrySpreadC": blob["gpu_temp_entry_spread_c"],
@@ -142,6 +152,16 @@ def session_spec(session_dir: pathlib.Path) -> tuple[dict, dict, str]:
         summary["perWidth/m%s/ci95Lo" % width] = cell["ci95_lo"]
         summary["perWidth/m%s/ci95Hi" % width] = cell["ci95_hi"]
         summary["perWidth/m%s/rounds" % width] = cell["n"]
+    warm = blob["thermal_robustness_warm_legs_only"]
+    summary["warm/legsKept"] = ",".join(str(n) for n in warm["legs_kept"])
+    for name in ("paired_moved_widths", "paired_control_band"):
+        cell = warm[arm]["%s_ms_per_round_recovered" % name]
+        summary["warm/%s/meanMsPerRound" % name] = cell["mean"]
+        summary["warm/%s/sem" % name] = cell["sem"]
+    for width, cell in warm[arm]["per_width"].items():
+        if cell["n"]:
+            summary["warm/perWidth/m%s/meanMsPerRound" % width] = cell["mean"]
+
     for phase, cell in blob["attribution_candidate_side"][arm].items():
         summary["attribution/%s/deltaUsMovedWidths" % phase] = \
             cell["delta_us_moved_widths"]

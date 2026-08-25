@@ -52,6 +52,12 @@ ARM_WIDTHS = {"coop": [6, 7, 8, 9]}
 # The flat band the promotion rule requires to stay inside the noise floor.
 CONTROL_WIDTHS = [1, 2, 3, 4, 5]
 
+# FINDING 564 (E215): the pooled five-prompt served-width census,
+# `research/e215-artifacts/width-census-stepq.json`, 637 rounds. The public
+# fixture overweights w9 by about 2x, so the promotion decision uses the pooled
+# census as primary and the session's own public census as sensitivity.
+POOLED_CENSUS = {2: 3, 3: 61, 4: 128, 5: 166, 6: 5, 7: 7, 8: 10, 9: 257}
+
 
 def parse_meta(path: pathlib.Path) -> dict:
     meta = {}
@@ -361,10 +367,24 @@ def main() -> int:
             entry["paired_control_band_ms_per_round_recovered"] = paired_delta(
                 off_legs, arm_legs, [w in CONTROL_WIDTHS for w in widths]
             )
+            moved_stats = {
+                w: s for w, s in per_width.items() if int(w) in moved
+            }
             entry["round_weighted_ms_per_round_recovered"] = round_weighted(
-                {w: s for w, s in per_width.items() if int(w) in moved},
-                census, len(widths),
+                moved_stats, census, len(widths),
             )
+            # FINDING 564. The pooled census reweights the SAME per-width means
+            # by the five-prompt served-width mass, so it needs no extra timing.
+            # A width the pooled census reaches but this session never served
+            # has no measured mean and is reported as uncovered rather than
+            # assumed zero.
+            entry["pooled_weighted_ms_per_round_recovered"] = round_weighted(
+                moved_stats, POOLED_CENSUS, sum(POOLED_CENSUS.values()),
+            )
+            entry["pooled_uncovered_moved_widths"] = [
+                w for w in moved
+                if POOLED_CENSUS.get(w) and not per_width[str(w)].get("n")
+            ]
         base_spt = [leg["mtp_seconds_per_token"] for leg in off_legs]
         arm_spt = [leg["mtp_seconds_per_token"] for leg in arm_legs]
         base_mean = statistics.fmean(base_spt)
@@ -397,6 +417,50 @@ def main() -> int:
             if len(arm_legs) == 2:
                 drift[arm] = paired_delta([arm_legs[0]], [arm_legs[1]], None)
         result["drift_controls_ms_per_round"] = drift
+
+    # Thermal robustness. The first leg of a session enters cold, which biases
+    # the arm that owns it. Repeating the comparison with only the legs whose
+    # entry temperature sits inside a narrow band removes that bias at the cost
+    # of dropping to one leg per arm, so it is a robustness check on the sign
+    # and rough size, not a replacement decision statistic.
+    if identical and not problems:
+        warmest = max(leg["gpu_temp_entry_c"] for leg in legs)
+        warm = [
+            leg for leg in legs if warmest - leg["gpu_temp_entry_c"] <= 2.0
+        ]
+        warm_by_arm: dict[str, list[dict]] = {}
+        for leg in warm:
+            warm_by_arm.setdefault(leg["arm"], []).append(leg)
+        robustness = {
+            "entry_band_c": 2.0,
+            "legs_kept": [leg["leg"] for leg in warm],
+            "entry_temps_kept": [leg["gpu_temp_entry_c"] for leg in warm],
+        }
+        if len(warm_by_arm) == len(by_arm):
+            for arm, arm_warm in warm_by_arm.items():
+                if arm == "off":
+                    continue
+                moved = ARM_WIDTHS.get(arm, [])
+                robustness[arm] = {
+                    "paired_moved_widths_ms_per_round_recovered": paired_delta(
+                        warm_by_arm["off"], arm_warm,
+                        [w in moved for w in widths],
+                    ),
+                    "paired_control_band_ms_per_round_recovered": paired_delta(
+                        warm_by_arm["off"], arm_warm,
+                        [w in CONTROL_WIDTHS for w in widths],
+                    ),
+                    "per_width": {
+                        str(width): paired_delta(
+                            warm_by_arm["off"], arm_warm,
+                            [w == width for w in widths],
+                        )
+                        for width in sorted(census)
+                    },
+                }
+        else:
+            robustness["note"] = "the entry band does not cover both arms"
+        result["thermal_robustness_warm_legs_only"] = robustness
 
     # Attribution only: candidate-side round_us and the round phase split, at
     # the widths each arm moves.
