@@ -76,7 +76,8 @@ def load_leg(directory: pathlib.Path) -> dict:
         "gpu_temp_exit_c": float(meta["gpu_temp_exit_c"]),
         "worker_sha256": meta["worker_sha256_before"],
         "worker_digest_stable": meta["worker_digest_stable"] == "true",
-        "base_sha": meta["base_sha"],
+        "candidate_sha": meta.get("candidate_sha", meta.get("base_sha")),
+        "campaign_base_sha": meta.get("campaign_base_sha", "unrecorded"),
         "dirty_candidate_paths": int(meta["dirty_candidate_paths"]),
         "host": meta["host"],
         "chip": meta["chip"],
@@ -113,11 +114,25 @@ def load_leg(directory: pathlib.Path) -> dict:
     }
 
 
+def mtp_trace(leg: dict) -> list[dict]:
+    """The trace covers the whole process, so it starts with the serial control
+    rounds. The candidate MTP rounds are the tail; the trusted report's
+    `effective_draft_lengths` identifies them exactly."""
+    rounds = leg["round_count"]
+    tail = leg["trace"][-rounds:] if leg["trace"] else []
+    if len(tail) != rounds:
+        return []
+    if [int(r["d"]) for r in tail] != leg["effective_draft_lengths"]:
+        return []
+    return tail
+
+
 def trajectory(leg: dict) -> list[tuple[int, int]]:
-    """`(d, acc)` per round. The trace carries both; the trusted report carries
-    `d` alone, so the trace is preferred and the report is the cross-check."""
-    if leg["trace"]:
-        return [(int(r["d"]), int(r["acc"])) for r in leg["trace"]]
+    """`(d, acc)` per round over the candidate MTP leg. The trace carries both;
+    the trusted report carries `d` alone and is the cross-check."""
+    tail = mtp_trace(leg)
+    if tail:
+        return [(int(r["d"]), int(r["acc"])) for r in tail]
     return [(d, -1) for d in leg["effective_draft_lengths"]]
 
 
@@ -202,6 +217,14 @@ def main() -> int:
         width_census[width] = width_census.get(width, 0) + 1
     is_nine = [width == 9 for width in widths]
 
+    # Without m = 9 rounds the arms execute identical code, so any paired delta
+    # is pure noise and must not be read as a null result for the mechanism.
+    if not any(is_nine):
+        problems.append(
+            "no m=9 rounds: the changed plan entry never ran, so this session "
+            "cannot measure the mechanism"
+        )
+
     result = {
         "experiment": "e208-qmv-9row-ipg5",
         "harness": "local",
@@ -210,7 +233,8 @@ def main() -> int:
         "official_or_ranked_score": legs[0]["official_or_ranked_score"],
         "timing_source": "trusted-parent block_request_seconds",
         "session_order": [leg["arm"] for leg in legs],
-        "base_sha": legs[0]["base_sha"],
+        "candidate_sha": legs[0]["candidate_sha"],
+        "campaign_base_sha": legs[0]["campaign_base_sha"],
         "worker_sha256": legs[0]["worker_sha256"],
         "host": legs[0]["host"],
         "chip": legs[0]["chip"],
@@ -286,7 +310,7 @@ def main() -> int:
     }
 
     # Attribution only: candidate-side round_us and the round phase split.
-    if all(leg["trace"] for leg in legs):
+    if all(mtp_trace(leg) for leg in legs):
         attribution = {}
         for field in (
             "round_us", "draft_build_us", "verify_build_us", "eval_wall_us",
@@ -297,7 +321,7 @@ def main() -> int:
                 values = [
                     float(r[field])
                     for leg in group
-                    for index, r in enumerate(leg["trace"])
+                    for index, r in enumerate(mtp_trace(leg))
                     if field in r and is_nine[index]
                 ]
                 per_arm[name] = summarize(values)

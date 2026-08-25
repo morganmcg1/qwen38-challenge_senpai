@@ -125,7 +125,8 @@ for arm in "${session[@]}"; do
     echo "worker_sha256_after=${after}"
     echo "worker_digest_stable=$([[ "${before}" == "${after}" ]] && echo true || echo false)"
     echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
-    echo "base_sha=$(git rev-parse HEAD)"
+    echo "candidate_sha=$(git rev-parse HEAD)"
+    echo "campaign_base_sha=846a2033e032faf45efe6cedd4be4b95da7d7cd7"
     echo "dirty_candidate_paths=$(
       git status --porcelain -- Sources Vendor Package.swift | wc -l | tr -d ' ')"
     echo "host=$(hostname)"
