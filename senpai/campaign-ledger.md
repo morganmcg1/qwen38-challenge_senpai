@@ -72655,3 +72655,31 @@ A `failed` receipt with no score is the fourth outcome branch: it discriminates 
 *Housekeeping:* the withdrawn r0 six-leg session aborted at 03:33Z when the redirect's rebase replaced source under the running job (1 of 6 legs done, no usable timing; artifacts deleted). The r0 numerics gate had passed on the withdrawn arms — 56 cells, 0 of 8,868,928 elements differing, control fired at 274–302 elements — a prior for the g1 gate: re-splitting output rows across simdgroups does not reorder any output's own reduction. The r1 gate decides.
 
 **E212 (Alphonse):** 20-leg census running, no news this cycle.
+
+## Entry 429 — 2026-08-25 — E213 defect localized to one new instantiation (base clean); E214 census delta matches desk prediction; cross-host census determinism
+
+### FINDING 552 — `qwen_e120_qmv_wide<NA=7, USE_TABLE=false, ROWS=2>` is miscompiled; the maintained base is clean (E213 r1, desk, harness=local)
+
+Edward's `plainAgreesWithTable` sweep (128 rows: plain vs table twin over the whole compiled `(NA, rows)` grid, 8 cells each including the n=4104 edge cell, bit-pattern comparison of real float output; artifact `research/out/e213/gate-g1-diag/plain-vs-table.json`, commit f770b35b) is decisive:
+
+- Every shipped-grid instantiation is bit-exact: staged m=2–9 at rows=4, singlePass m∈{6,7,8,9} at rows=4 (including plain NA=7 rows4), probe (9,5) rows2, g1 (8,8) and (9,9) rows1. **The defect does not predate E213; the base is affirmatively clean.**
+- Exactly one instantiation fails: the joint pair `<NA=7, false, ROWS=2>` — 2,000,388 differing elements, max_ulp 34,889, identical signature at all 8 cells (input row 0 bit-exact, input rows 1–6 entirely wrong). Its table twin `<7, true, 2>` is bit-exact with the same launch grid and inputs, so the geometry and row split are exonerated by the comparison itself; the two differ only in the chunk-sum accumulation.
+- Classification: Metal code-generation defect at one template instantiation, same class as the file header's precedent (K/N template args wrong at NA=5, K=5120). Not reduced further — a smaller reproducer changes no decision.
+
+**Disposition (avoidance, per precedent):** g1's m=7 entry moves to `(7,7, rows=1)` — same G=1, register proxy 94 (further under the 128 boundary), arm now uniform rows=1 across all moved widths (g1 max proxy 114). Witness `selective-m6+ipg9-9+e213-3x4-7x1-8x1-9x1`, commit 58413a4c, re-gate running (job 460a5fbe). Guards that stay: `plainAgreesWithTable` remains in the suite so any future plan reaching a miscompiled instantiation fails a desk test, not a timed session; the variant doc comment forbids any shipped or research plan from compiling `(NA=7, rows=2)`; the reproducer survives in `Tests/` (never packaged). Honest cost note on the record: rows=1 re-reads activations 4× as often as rows=4 (~71 KB block at m=7, expected cache-resident); it works against the removed weight pass; the paired session decides. No separate base-repair assignment is needed — the base was never wrong.
+
+### FINDING 553 — the schedule census is deterministic and host-independent across M4 Pro hosts (E214, harness=local)
+
+Askeladd's base leg (512 tokens, declared head dadbfb80, byte-identical submitted surface to e0c7a026, worker forbid-symbol asserted) reproduces FINDING 545's census EXACTLY on a different M4 Pro: 76 rounds, EDL 6.855263158, acceptance 0.836852207 — twice, in two sessions, identical to the printed precision. For a fixed build, head, and fixture, a schedule census does not need re-measurement per host; RULE 386's INFERRED cross-host label can be dropped for census quantities once anchored by this datum. (Timing remains host- and session-specific; this covers the deterministic schedule census only.)
+
+### RULE 402 — arm certificates across rebuilds
+
+Swift release links are not bit-reproducible (identical source rebuilt to a different worker digest: ff8fa213 vs c8a1fdd2). A binary digest therefore certifies an arm only within one build. Across rebuilds, certify arms by required/forbidden symbol assertions plus the binary's own printed arm witness; record digests as session provenance, not as identity.
+
+### E214 census delta (interim, harness=local, NOT-A-PRICE on all seconds)
+
+Same-host back-to-back pair, all provenance assertions passed: base 76 rounds / EDL 6.855263 / acc 0.836852; candidate (stepq) **73 rounds (−3.95%) / EDL 7.095890 (+3.51%) / acc 0.847490 (+1.06 pp)**; `all_tokens_matched=true`, 0 residual divergence, 1024 target rows both arms. Round counts confirmed independently by EDL denominators (521/76, 518/73). Ungated seconds quoted under RULE 79 discipline show the sign agrees with the desk (−1.03% candidate MTP time); the value claim remains the ranked desk projection (+2.252% LOO-honest) and only the official receipt settles it. The shape is as fitted: rounds fall faster than time because deeper drafts spend part of the saved round overhead on extra proposal/verify rows — the table is a depth PRICE, not a depth maximiser. Askeladd also self-caught and fixed two harness defects (index-side restore; dirty-checkout during a measured job → staged-arms design with digest manifests and printed-arm assertions). Next: Swift suite vs 41-issue floor (job 56bc5cc7), then the gated 512 confirm.
+
+### Queue state
+
+Receipt 5f508da validating (composed 9a91ba76). Behind-slot EMPTY; E214 is one gated confirm from freeze-ready; E213 g1 is one clean re-gate + palindrome from a verdict. E212 20-leg census running.
