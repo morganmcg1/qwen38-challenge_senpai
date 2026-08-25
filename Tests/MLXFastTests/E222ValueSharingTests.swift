@@ -175,41 +175,49 @@ private func e222Arm(_ name: String, m: Int) -> E222Arm? {
         return E222Arm(
             label: name, body: .rows, rows: 2, simdgroups: 4,
             role: "single pass at rows=2, ONE vec<float,m> accumulator")
+    // Both fused arms use the `both` schedule -- lazy packed load plus late
+    // scale/bias read. Stage 0 measured that schedule as strictly dominant, not
+    // a trade: at every `(m, rows)` it uses fewer registers AND fewer AIR
+    // instructions than the eager schedule, at identical results. The eager
+    // `_base` arms below stay only as controls that prove the knobs are free.
     case "fused_r4":
-        // PRIMARY. rows = 4 keeps the shipped activation amortization exactly:
+        // rows = 4 keeps the shipped activation amortisation exactly:
         // 36*NA0/4 + 36*NA1/4 issued activation bytes per output row per
-        // k-block is identical to 36*(NA0+NA1)/4, so the arm's whole issued-
-        // byte delta against the shipped staged pair is the deduped weight
-        // word, -12 B per output row per k-block. It spills on g16s, so its
-        // local time is a ranked-only lower bound (RULE 407).
+        // k-block equals 36*(NA0+NA1)/4, so this arm's whole issued-byte delta
+        // against the shipped staged pair is the deduped weight word. It is the
+        // larger prize per width and the smaller prize overall, because it is
+        // ranked-clean only up to m = 8 (g17s 100/111/121, then 126+32).
         return E222Arm(
             label: name,
-            body: .fused(lazyW: false, lateSB: false, seq: false), rows: 4,
+            body: .fused(lazyW: true, lateSB: true, seq: false), rows: 4,
             simdgroups: 2,
-            role: "primary: fused at the shipped rows and schedule")
-    case "fused_r4_seq":
-        return E222Arm(
-            label: name,
-            body: .fused(lazyW: false, lateSB: false, seq: true), rows: 4,
-            simdgroups: 2,
-            role: "primary with group-sequenced activation liveness")
-    case "fused_r4_lazyw":
-        return E222Arm(
-            label: name,
-            body: .fused(lazyW: true, lateSB: false, seq: false), rows: 4,
-            simdgroups: 2, role: "fused rows=4 with the lazy packed load")
+            role: "fused at the shipped rows; ranked-clean to m=8 only")
     case "fused_r2":
-        return E222Arm(
-            label: name,
-            body: .fused(lazyW: true, lateSB: false, seq: false), rows: 2,
-            simdgroups: 4,
-            role: "rows=2 fused: clean on both generations, pays +66% issued "
-                + "activation bytes")
-    case "fused_r2_both":
+        // THE CANDIDATE. Register-clean on BOTH generations at every G >= 2
+        // width (g16s 68/73/79/88, g17s 73/78/84/96 against budgets 96 and
+        // 126), so it is the only arm that reaches m = 9 and the 257 of 637
+        // pooled rounds that route there, and the only one whose local time is
+        // not one-sided. It pays a doubled activation slab for that reach.
         return E222Arm(
             label: name,
             body: .fused(lazyW: true, lateSB: true, seq: false), rows: 2,
-            simdgroups: 4, role: "rows=2 fused, register-minimal")
+            simdgroups: 4,
+            role: "candidate: fused at rows=2, clean on both generations")
+    case "fused_r4_base":
+        return E222Arm(
+            label: name,
+            body: .fused(lazyW: false, lateSB: false, seq: false), rows: 4,
+            simdgroups: 2, role: "fused rows=4 with the eager schedule")
+    case "fused_r2_base":
+        return E222Arm(
+            label: name,
+            body: .fused(lazyW: false, lateSB: false, seq: false), rows: 2,
+            simdgroups: 4, role: "fused rows=2 with the eager schedule")
+    case "fused_r2_lazyw":
+        return E222Arm(
+            label: name,
+            body: .fused(lazyW: true, lateSB: false, seq: false), rows: 2,
+            simdgroups: 4, role: "fused rows=2, lazy load only")
     default:
         return nil
     }
@@ -354,11 +362,18 @@ private func e222Write(
     }
     let json = try JSONSerialization.data(
         withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
-    if let path = ProcessInfo.processInfo.environment["MLX_E222_OUT"],
-        !path.isEmpty
+    // One directory per session, one file per report name, because a phase may
+    // emit more than one report: `exact` writes both the bit-exactness table
+    // and the RULE 408 write census.
+    if let dir = ProcessInfo.processInfo.environment["MLX_E222_OUT_DIR"],
+        !dir.isEmpty
     {
-        try json.write(to: URL(fileURLWithPath: path))
-        print("[e222] wrote \(path) (\(json.count) bytes)")
+        let path = URL(fileURLWithPath: dir)
+            .appendingPathComponent("\(phase).json")
+        try FileManager.default.createDirectory(
+            at: URL(fileURLWithPath: dir), withIntermediateDirectories: true)
+        try json.write(to: path)
+        print("[e222] wrote \(path.path) (\(json.count) bytes)")
     } else {
         print(String(decoding: json, as: UTF8.self))
     }
@@ -384,7 +399,7 @@ struct E222ExactnessTests {
             "MLX_E222_ARMS",
             [
                 "staged_r4", "single_r4", "single_r2", "fused_r4",
-                "fused_r4_seq", "fused_r4_lazyw", "fused_r2", "fused_r2_both",
+                "fused_r2", "fused_r4_base", "fused_r2_base", "fused_r2_lazyw",
             ])
         var cache = E222PipelineCache()
         var rows: [[String: Any]] = []
@@ -503,8 +518,8 @@ struct E222ExactnessTests {
         let armNames = e222Names(
             "MLX_E222_ARMS",
             [
-                "fused_r4", "fused_r4_seq", "fused_r4_lazyw", "fused_r2",
-                "fused_r2_both",
+                "fused_r4", "fused_r2", "fused_r4_base", "fused_r2_base",
+                "fused_r2_lazyw",
             ])
         var rows: [[String: Any]] = []
 
@@ -812,13 +827,14 @@ struct E222ValueSharingTests {
     /// fusion the shipped router cannot take, and it spills on both devices.
     ///
     /// `fused_r2` is the candidate. It is the only arm that is register-clean
-    /// on both `g16s` (local) and `g17s` (ranked) at every one of these widths,
-    /// which is what lets it reach `m = 9` and the 257 of 637 pooled rounds
-    /// that route there. Its local time is therefore fully comparable.
+    /// on both `g16s` (local, budget 96) and `g17s` (ranked, budget 126) at
+    /// every one of these widths -- 68/73/79/88 and 73/78/84/96 -- which is
+    /// what lets it reach `m = 9` and the 257 of 637 pooled rounds that route
+    /// there. Its local time is therefore fully comparable, not one-sided.
     ///
-    /// `fused_r4` is the geometry the advisor named primary. It spills on
-    /// `g16s` at every width and on `g17s` above `m = 7`, so its local time is
-    /// a one-sided lower bound only (RULE 407).
+    /// `fused_r4` is the geometry the advisor named primary. It is ranked-clean
+    /// only to `m = 8` and spills on `g16s` at every width above `m = 6`, so
+    /// its local time is a one-sided lower bound (RULE 407).
     @Test(.enabled(if: e222PhaseEnabled("screen")))
     func screen() throws {
         try sweep(
@@ -833,9 +849,11 @@ struct E222ValueSharingTests {
                 + "shipped router cannot reach")
     }
 
-    /// Whether the `SEQ` group-sequenced liveness variant buys enough registers
-    /// to run `rows = 4` where the plain fused body spills. Stage 0 prices the
-    /// register saving; this prices what the re-derived dequantisation costs.
+    /// Whether the register-minimal `both` schedule that Stage 0 selected costs
+    /// anything in time. Stage 0 measured it as strictly dominant on registers
+    /// AND on AIR instruction count, which predicts no penalty; a schedule that
+    /// wins on both counts and still loses on the clock would mean the register
+    /// screen is not measuring what the hardware does.
     @Test(.enabled(if: e222PhaseEnabled("widths")))
     func widths() throws {
         try sweep(
@@ -843,17 +861,20 @@ struct E222ValueSharingTests {
             widths: e219IntList("MLX_E222_WIDTHS", [8, 9]),
             armNames: e222Names(
                 "MLX_E222_ARMS",
-                ["staged_r4", "fused_r2", "fused_r4", "fused_r4_seq"]),
+                [
+                    "staged_r4", "fused_r2", "fused_r2_base", "fused_r2_lazyw",
+                    "fused_r4", "fused_r4_base",
+                ]),
             deliverable:
-                "whether group-sequenced activation liveness reaches rows = 4 "
-                + "inside the register budget, and what its re-derived "
-                + "dequantisation costs")
+                "what the lazy packed load and the late scale/bias read cost "
+                + "on the clock, against the registers they save")
     }
 
-    /// Accumulator-shape and load-schedule controls at the dominant width.
-    /// `single_r2` isolates what the split `VF0`/`VF1` accumulator buys over
-    /// one `vec<float, m>` at the same geometry; `fused_r2_both` isolates the
-    /// late scale/bias read on top of the lazy packed load.
+    /// Accumulator-shape control at the dominant width. `single_r2` is the same
+    /// geometry with ONE `vec<float, m>` accumulator instead of the split
+    /// `VF0`/`VF1` pair, so the delta is what the split alone buys. Stage 0
+    /// measured the split as worth 160 spill bytes on `g16s` at `m = 9`
+    /// (`rows2_na9` 96+192 against `m9_r2_base` 96+160), which this prices.
     @Test(.enabled(if: e222PhaseEnabled("shape")))
     func shape() throws {
         try sweep(
@@ -861,12 +882,9 @@ struct E222ValueSharingTests {
             widths: e219IntList("MLX_E222_WIDTHS", [9]),
             armNames: e222Names(
                 "MLX_E222_ARMS",
-                [
-                    "staged_r4", "fused_r2", "single_r2", "fused_r2_both",
-                    "fused_r4_lazyw",
-                ]),
+                ["staged_r4", "fused_r2", "single_r2", "single_r4"]),
             deliverable:
-                "accumulator-shape and load-schedule controls: what the split "
-                + "accumulator and the lazy packed load each buy")
+                "what the split VF0/VF1 accumulator buys over one vec<float,m> "
+                + "at the same geometry")
     }
 }

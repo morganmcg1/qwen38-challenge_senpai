@@ -4,13 +4,13 @@
   {
    "arm": "fused_r4",
    "legality": {
-    "g16s_clean": false,
-    "g16s_registers": 96,
-    "g16s_spill_bytes": 16,
+    "g16s_clean": true,
+    "g16s_registers": 95,
+    "g16s_spill_bytes": 0,
     "g17s_clean": true,
-    "g17s_registers": 107,
+    "g17s_registers": 100,
     "g17s_spill_bytes": 0,
-    "local_measurement_transferable": false,
+    "local_measurement_transferable": true,
     "ranked_clean": true
    },
    "m": 6,
@@ -113,7 +113,7 @@
     "g16s_registers": 96,
     "g16s_spill_bytes": 48,
     "g17s_clean": true,
-    "g17s_registers": 118,
+    "g17s_registers": 111,
     "g17s_spill_bytes": 0,
     "local_measurement_transferable": false,
     "ranked_clean": true
@@ -218,12 +218,12 @@
    "legality": {
     "g16s_clean": false,
     "g16s_registers": 96,
-    "g16s_spill_bytes": 96,
-    "g17s_clean": false,
-    "g17s_registers": 126,
-    "g17s_spill_bytes": 16,
+    "g16s_spill_bytes": 80,
+    "g17s_clean": true,
+    "g17s_registers": 121,
+    "g17s_spill_bytes": 0,
     "local_measurement_transferable": false,
-    "ranked_clean": false
+    "ranked_clean": true
    },
    "m": 8,
    "ms_per_round_at_this_width": [
@@ -325,10 +325,10 @@
    "legality": {
     "g16s_clean": false,
     "g16s_registers": 96,
-    "g16s_spill_bytes": 144,
+    "g16s_spill_bytes": 128,
     "g17s_clean": false,
     "g17s_registers": 126,
-    "g17s_spill_bytes": 64,
+    "g17s_spill_bytes": 32,
     "local_measurement_transferable": false,
     "ranked_clean": false
    },
@@ -434,7 +434,7 @@
     "g16s_registers": 68,
     "g16s_spill_bytes": 0,
     "g17s_clean": true,
-    "g17s_registers": 75,
+    "g17s_registers": 73,
     "g17s_spill_bytes": 0,
     "local_measurement_transferable": true,
     "ranked_clean": true
@@ -536,10 +536,10 @@
    "arm": "fused_r2",
    "legality": {
     "g16s_clean": true,
-    "g16s_registers": 75,
+    "g16s_registers": 73,
     "g16s_spill_bytes": 0,
     "g17s_clean": true,
-    "g17s_registers": 80,
+    "g17s_registers": 78,
     "g17s_spill_bytes": 0,
     "local_measurement_transferable": true,
     "ranked_clean": true
@@ -643,10 +643,10 @@
    "arm": "fused_r2",
    "legality": {
     "g16s_clean": true,
-    "g16s_registers": 83,
+    "g16s_registers": 79,
     "g16s_spill_bytes": 0,
     "g17s_clean": true,
-    "g17s_registers": 88,
+    "g17s_registers": 84,
     "g17s_spill_bytes": 0,
     "local_measurement_transferable": true,
     "ranked_clean": true
@@ -750,10 +750,10 @@
    "arm": "fused_r2",
    "legality": {
     "g16s_clean": true,
-    "g16s_registers": 90,
+    "g16s_registers": 88,
     "g16s_spill_bytes": 0,
     "g17s_clean": true,
-    "g17s_registers": 95,
+    "g17s_registers": 96,
     "g17s_spill_bytes": 0,
     "local_measurement_transferable": true,
     "ranked_clean": true
@@ -1128,13 +1128,33 @@
   },
   "fused_r4/ranked_clean_widths_only": {
    "pooled_ms_per_round": [
-    0.39841940477237675,
-    0.39841940477237675
+    0.868579563296888,
+    0.868579563296888
    ],
-   "round_mass": 12,
+   "round_mass": 22,
    "widths": [
     6,
-    7
+    7,
+    8
+   ]
+  },
+  "per_width_argmax_over_ranked_legal_arms": {
+   "plan": {
+    "6": "fused_r4",
+    "7": "fused_r4",
+    "8": "fused_r4",
+    "9": "fused_r2"
+   },
+   "pooled_ms_per_round": [
+    4.540219309653128,
+    9.563751552651375
+   ],
+   "round_mass": 279,
+   "widths": [
+    6,
+    7,
+    8,
+    9
    ]
   }
  },

@@ -224,15 +224,21 @@ def price_arm(cell: dict, m: int, rows: int, coeff: dict, rate: dict) -> dict:
 
 # Stage 0 measured peak registers and spill bytes for the fused body. Key is
 # `(m, rows)`; value is `(g16s_regs, g16s_spill, g17s_regs, g17s_spill)`.
+#
+# Read from `research/e222-artifacts/e222-geometry.json` at the `both` schedule
+# (lazy packed load plus late scale/bias read), which Stage 0 measured as
+# strictly dominant: at every `(m, rows)` it uses fewer registers AND fewer AIR
+# instructions than the eager schedule, at identical results. Both timed fused
+# arms therefore use it, so these are the numbers that decide legality.
 FUSED_REGISTERS = {
-    (6, 2): (68, 0, 75, 0),
-    (7, 2): (75, 0, 80, 0),
-    (8, 2): (83, 0, 88, 0),
-    (9, 2): (90, 0, 95, 0),
-    (6, 4): (96, 16, 107, 0),
-    (7, 4): (96, 48, 118, 0),
-    (8, 4): (96, 96, 126, 16),
-    (9, 4): (96, 144, 126, 64),
+    (6, 2): (68, 0, 73, 0),
+    (7, 2): (73, 0, 78, 0),
+    (8, 2): (79, 0, 84, 0),
+    (9, 2): (88, 0, 96, 0),
+    (6, 4): (95, 0, 100, 0),
+    (7, 4): (96, 48, 111, 0),
+    (8, 4): (96, 80, 121, 0),
+    (9, 4): (96, 128, 126, 32),
 }
 
 
@@ -319,6 +325,30 @@ def main() -> int:
                     sum(a["pooled_ms_per_round"][1] for a in chosen),
                 ],
             }
+
+    # Nothing forces one geometry at every width. `rows` is already a per-width
+    # decision in the shipped plan, so the deliverable is the per-width argmax
+    # over the ranked-legal arms: keep the whole fusion saving at `rows = 4`
+    # where the registers allow it, and buy `m = 9` with `rows = 2`.
+    best = []
+    for m in WIDTHS:
+        legal = [
+            a for a in arms
+            if a["m"] == m and a["legality"]["ranked_clean"]
+        ]
+        if not legal:
+            continue
+        pick = max(legal, key=lambda a: a["pooled_ms_per_round"][0])
+        best.append(pick)
+    pooled["per_width_argmax_over_ranked_legal_arms"] = {
+        "plan": {a["m"]: a["arm"] for a in best},
+        "widths": [a["m"] for a in best],
+        "round_mass": sum(a["rounds_at_this_width"] for a in best),
+        "pooled_ms_per_round": [
+            sum(a["pooled_ms_per_round"][0] for a in best),
+            sum(a["pooled_ms_per_round"][1] for a in best),
+        ],
+    }
 
     report = {
         "harness": "desk-arithmetic",

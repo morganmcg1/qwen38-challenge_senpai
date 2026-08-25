@@ -5,15 +5,17 @@
 #
 # Phases:
 #   exact    every arm must be bit-exact against
-#            Qwen35CustomQMV.matmulWithTable at every timed (cell, width),
-#            with write coverage. No timing. Must pass before any sweep is
+#            Qwen35CustomQMV.matmulWithTable at every timed (cell, width), and
+#            every fused instantiation must pass the RULE 408 write-coverage
+#            census with its two positive controls. Writes exact.json and
+#            write-coverage.json. No timing. Must pass before any sweep is
 #            believed.
-#   screen   m = 9 -- 257 of the 637 pooled FINDING 564 rounds and 92 % of all
-#            G >= 2 round mass. staged_r4 vs single_r4 vs fused_r2 vs
-#            fused_r2_both on the three top scored cells.
-#   widths   m in {6, 7, 8}, against each cell's own shipped baseline variant.
-#            Run only when the screen wins.
-#   shape    accumulator-shape and load-schedule controls at m = 9.
+#   screen   the decisive session: m in {6, 7, 8, 9} against
+#            {staged_r4, single_r4, fused_r2, fused_r4} on the three top scored
+#            cells. single_r4 at m = 6 calibrates the fusion saving at the one
+#            width where both geometries are register-legal.
+#   widths   what the lazy load and the late scale/bias read cost on the clock.
+#   shape    what the split VF0/VF1 accumulator buys, at m = 9.
 #
 # Each phase runs in its OWN process so the replica rings of one phase are
 # released before the next builds its own. Peak resident device memory is
@@ -40,7 +42,7 @@ for assignment in "$@"; do
 done
 
 export MLX_E222_PHASE="${phase}"
-export MLX_E222_OUT="${out_dir}/${phase}.json"
+export MLX_E222_OUT_DIR="${out_dir}"
 
 case "${phase}" in
     exact) filter="E222ExactnessTests" ;;
@@ -59,7 +61,7 @@ esac
     echo "swift=$(swift --version 2>&1 | head -1)"
     for name in MLX_E222_BLOCKS MLX_E222_CHAINS MLX_E222_WARMUP \
         MLX_E222_TARGET_US MLX_E222_REPLICA_TARGET_MB \
-        MLX_E222_REPLICA_CAP_MB MLX_E222_WIDTHS MLX_E222_ARMS; do
+        MLX_E222_REPLICA_CAP_MB MLX_E222_WIDTHS MLX_E222_ARMS MLX_E222_OUT_DIR; do
         echo "${name}=${!name-}"
     done
 } > "${out_dir}/${phase}.meta.txt"

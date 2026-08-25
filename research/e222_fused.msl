@@ -22,12 +22,18 @@
 //            row for a load on the critical path.
 //   LATE_SB  read `scales`/`biases` after the `i` loop instead of before it.
 //   SEQ      run the two token groups as two phases of each `i` step instead of
-//            interleaving them. Only one group's four activation vectors are
-//            live at a time, which cuts peak activation liveness from
-//            4*(NA0+NA1) floats to 4*max(NA0,NA1). The packed word and its
-//            nibbles are re-derived for the second phase, so SEQ trades part of
-//            the shared dequant work for registers. That trade is what the
-//            compile screen prices; it never changes a result.
+//            interleaving them. The intent was to cut peak activation liveness
+//            from 4*(NA0+NA1) floats to 4*max(NA0,NA1).
+//
+//            FALSIFIED by the Stage 0 compile screen, and kept only so the
+//            negative result stays reproducible. SEQ never saves a register and
+//            usually costs several. At rows = 4 on g17s it moves m6 107 -> 119,
+//            m7 118 -> 126+16, m8 124 -> 126+32 and m9 126+48 -> 126+96. It
+//            also RAISES the AIR floating-point op count at m = 6 and m = 8,
+//            52 -> 60, which is the re-derived dequantisation showing up
+//            directly. The compiler already schedules the activation loads to
+//            minimise liveness, so sequencing only forces the packed word and
+//            its nibbles to stay live across two phases. No timed arm uses it.
 
 //   CENSUS   replace the value store with one atomic increment at the SAME key
 //            the value store would have used, so the RULE 408 write-coverage
