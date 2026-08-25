@@ -10,9 +10,14 @@
 # 4-bit weights, real bfloat16 activations, compared as actual floating-point
 # values. The expectation is bit-exact.
 #
-# Two positive controls prove the comparison can fail under the paired
-# geometry: an arithmetic perturbation of one bfloat16 ULP of relative scale,
-# and the `coop` source launched on the `split` grid.
+# Two positive controls prove the comparison can fail. `numericalGate` perturbs
+# one input by one bfloat16 ULP of relative scale, which proves the
+# floating-point comparison can fail. `geometry` walks the write coverage of
+# both index mappings and of the coop indices on the split grid, which proves
+# the mapping check can fail. The mapping control is combinatorial, not a GPU
+# run: a mapping error leaves output unwritten rather than wrong, and MLX
+# recycles freed device buffers, so an unwritten region can silently return the
+# correct values of an earlier identical call.
 #
 # No timing. No thermal gate. No score.
 set -uo pipefail
