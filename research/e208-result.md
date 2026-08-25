@@ -211,6 +211,40 @@ effect for the M4 Pro to M5 move, giving `3.70785 x 0.056182 x 0.23731 = 0.0494`
 published points on receipt A. Both figures are desk models on a non-ranked
 host and neither is a measurement.
 
+## Swift tests
+
+`swift test --force-resolved-versions` on the candidate: 756 tests in 80
+suites, 41 issues. Every QMV suite passes:
+
+- `E208 width-9 staged QMV group partition` passed
+- `E195 cell-selective QMV width plan` passed
+- `QwenQMVCostCurveTests` passed
+- `QwenQMVParityTests` passed
+- `scoredShapesStayOnTheQMVFastPath()` passed
+
+The 41 issues are pre-existing. I ran the identical command on a detached
+worktree of the unchanged base `846a2033` and the failing set is identical,
+test for test and issue count for issue count:
+
+| failing test | issues, candidate | issues, base |
+| --- | --- | --- |
+| `contestantDocsCommandBlocksKeepTheDependencyGraphFrozen` | 1 | 1 |
+| `participantDocsExposeDefaultCLIInstallDirectory` | 2 | 2 |
+| `qwen36ConfigContractDigestMatchesTheReferenceManifest` | 2 | 2 |
+| `startupMemoryPolicyKeepsRanked128GiBProfile` | 2 | 2 |
+| `submissionStaticReviewPromptCoversMeasurementStructureExploitation` | 11 | 11 |
+| `theCheckedInDeclarationSelectsThePinnedHead` | 6 | 6 |
+| `theEvenMedianRuleIsTheMeanOfTheTwoCentralValues` | 3 | 3 |
+| `theQwenMTPTrackIsArmedOnQwen38` | 11 | 11 |
+| `theSeededCalibrationExpectationMatchesItsRecordedProvenance` | 2 | 2 |
+| `theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax` | 1 | 1 |
+
+The set difference in both directions is empty. These tests assert checked-in
+documents, fixture digests, the pinned head declaration, track naming, the
+startup memory profile and the wired residency slack. None of them reads the
+QMV plan table or the depth cap, and my branch does not touch any file they
+inspect. The failure lists are saved at `research/out/e208/`.
+
 ## Contract checks against `846a2033`
 
 - `senpai/verify-ranked-score-boundary.sh`: PASS
