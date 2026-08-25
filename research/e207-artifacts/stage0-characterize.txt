@@ -1,0 +1,35 @@
+E207 characterization (harness=local desk replay, cap 7)
+corpus: E168 p7 pinned-depth-7; walk port control 1955/0
+
+item 3 - which prompts pay (frozen minus live, %):
+  philosophy         +2.70%  live d=2.38  frozen d=2.92  disagree 52%
+  english            +1.49%  live d=2.33  frozen d=2.91  disagree 55%
+  technical          +1.11%  live d=2.50  frozen d=2.90  disagree 44%
+  travel             +1.07%  live d=2.41  frozen d=2.86  disagree 42%
+  narrative          +0.78%  live d=2.28  frozen d=2.77  disagree 50%
+  natural_history    +0.36%  live d=2.18  frozen d=2.81  disagree 53%
+  dramatic           -0.20%  live d=2.50  frozen d=2.99  disagree 52%
+  medicine           -2.46%  live d=2.52  frozen d=2.93  disagree 55%
+  benchfixture       -4.27%  live d=6.60  frozen d=3.83  disagree 96%
+
+item 1 - position 0 EMA travel from prior (0.850):
+  philosophy       final 0.5904  delta -0.2596  settles by round 214
+  english          final 0.8372  delta -0.0128  settles by round 214
+  technical        final 0.8228  delta -0.0272  settles by round 196
+  travel           final 0.7866  delta -0.0634  settles by round 205
+  narrative        final 0.5477  delta -0.3023  settles by round 214
+  natural_history  final 0.8254  delta -0.0246  settles by round 230
+  dramatic         final 0.7220  delta -0.1280  settles by round 190
+  medicine         final 0.6574  delta -0.1926  settles by round 198
+  benchfixture     final 0.9944  delta +0.1444  settles by round 65
+
+item 2 - depth disagreement:
+  philosophy       112/215 rounds, mean signed gap -0.54, first at round 2
+  english          118/215 rounds, mean signed gap -0.58, first at round 3
+  technical        87/197 rounds, mean signed gap -0.40, first at round 4
+  travel           87/206 rounds, mean signed gap -0.45, first at round 4
+  narrative        107/215 rounds, mean signed gap -0.48, first at round 5
+  natural_history  123/231 rounds, mean signed gap -0.63, first at round 3
+  dramatic         100/191 rounds, mean signed gap -0.49, first at round 7
+  medicine         110/199 rounds, mean signed gap -0.42, first at round 5
+  benchfixture     69/72 rounds, mean signed gap +2.76, first at round 1

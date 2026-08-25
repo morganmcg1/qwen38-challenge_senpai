@@ -152,11 +152,46 @@ def desk_payload():
     return json.loads((ARTIFACTS / "stage0-desk.json").read_text())
 
 
+def characterize_summary():
+    """Flatten the worse-branch characterization artifact for W&B."""
+    payload = json.loads((ARTIFACTS / "stage0-characterize.json").read_text())
+    out = {"harness": payload["harness"], "cap": payload["cap"]}
+    for prompt, row in payload["per_prompt"].items():
+        gap = row["depth_divergence"]
+        out["char_%s_frozenMinusLivePct" % prompt] = \
+            row["frozen_minus_live_pct"]
+        out["char_%s_meanSignedDepthGap" % prompt] = \
+            gap["mean_signed_depth_gap"]
+        out["char_%s_disagreementRate" % prompt] = gap["disagreement_rate"]
+        out["char_%s_position0FinalEMA" % prompt] = \
+            row["divergence_profile"][0]["final"]
+        out["char_%s_position0DeltaFromPrior" % prompt] = \
+            row["divergence_profile"][0]["delta_from_prior"]
+        out["char_%s_position0SettleRound" % prompt] = \
+            row["position0_settle_round"]
+    gaps = [row["depth_divergence"]["mean_signed_depth_gap"]
+            for row in payload["per_prompt"].values()]
+    prose = [p for p in payload["per_prompt"] if p != "benchfixture"]
+    out["char_proseMeanSignedDepthGap"] = statistics.fmean(
+        [payload["per_prompt"][p]["depth_divergence"]["mean_signed_depth_gap"]
+         for p in prose])
+    out["char_proseGapAllNegative"] = all(
+        payload["per_prompt"][p]["depth_divergence"]["mean_signed_depth_gap"]
+        < 0 for p in prose)
+    out["char_gapSignsDiffer"] = min(gaps) < 0 < max(gaps)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screen", default="e207-exact-1-frozen")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--only", choices=["screen", "desk", "characterize"],
+                    action="append",
+                    help="log only these runs; repeatable. Use it to add one "
+                         "run without duplicating runs already published.")
     args = ap.parse_args()
+    wanted = set(args.only or ["screen", "desk", "characterize"])
 
     head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
                           text=True).stdout.strip()
@@ -200,38 +235,54 @@ def main():
             result["frozen"]["mean_depth"]
 
     if args.dry_run:
-        print(json.dumps({"screen": screen, "desk": desk_summary}, indent=1))
+        print(json.dumps({"screen": screen, "desk": desk_summary,
+                          "characterize": characterize_summary()}, indent=1))
         return
 
     import wandb
 
-    run = wandb.init(project=PROJECT.split("/")[-1],
-                     entity=PROJECT.split("/")[0], group=GROUP,
-                     job_type="exactness-screen",
-                     name="e207-screen-frozen-64",
-                     config={**identity(args.screen, meta),
-                             "commitSha": head})
-    run.summary.update(screen)
-    screen_url, screen_id = run.url, run.id
-    run.finish()
+    char = characterize_summary()
+    specs = {
+        "screen": (
+            {"job_type": "exactness-screen", "name": "e207-screen-frozen-64",
+             "config": {**identity(args.screen, meta), "commitSha": head}},
+            screen),
+        "desk": (
+            {"job_type": "desk", "name": "e207-stage0-desk",
+             "config": {"experiment": "e207-ema-subtraction", "stage": "0",
+                        "commitSha": head,
+                        "assignmentBaseSha": ASSIGNMENT_BASE,
+                        "corpus": "e168 p7 pinned-depth-7, 9 prompts",
+                        "rankedInstrument": "FINDING 520 survival-pinned "
+                                            "latent-q via e201/e203",
+                        "localCostTable": "research/out/e168/"
+                                          "round_cost.json (DATED)",
+                        "receiptA": RECEIPT_A}},
+            desk_summary),
+        "characterize": (
+            {"job_type": "desk", "name": "e207-stage0-characterize",
+             "config": {"experiment": "e207-ema-subtraction", "stage": "0",
+                        "commitSha": head,
+                        "assignmentBaseSha": ASSIGNMENT_BASE,
+                        "deliverable": "assignment worse-branch "
+                                       "characterization",
+                        "cap": char.pop("cap"),
+                        "corpus": "e168 p7 pinned-depth-7, 9 prompts"}},
+            char),
+    }
 
-    run = wandb.init(project=PROJECT.split("/")[-1],
-                     entity=PROJECT.split("/")[0], group=GROUP,
-                     job_type="desk", name="e207-stage0-desk",
-                     config={"experiment": "e207-ema-subtraction",
-                             "stage": "0",
-                             "commitSha": head,
-                             "assignmentBaseSha": ASSIGNMENT_BASE,
-                             "corpus": "e168 p7 pinned-depth-7, 9 prompts",
-                             "rankedInstrument": "FINDING 520 survival-pinned "
-                                                 "latent-q via e201/e203",
-                             "localCostTable": "research/out/e168/"
-                                               "round_cost.json (DATED)",
-                             "receiptA": RECEIPT_A})
-    run.summary.update(desk_summary)
-    print(json.dumps({"screen_run": screen_id, "screen_url": screen_url,
-                      "desk_run": run.id, "desk_url": run.url}, indent=1))
-    run.finish()
+    published = {}
+    for key in ("screen", "desk", "characterize"):
+        if key not in wanted:
+            continue
+        spec, summary = specs[key]
+        run = wandb.init(project=PROJECT.split("/")[-1],
+                         entity=PROJECT.split("/")[0], group=GROUP, **spec)
+        run.summary.update(summary)
+        published[key] = {"run": run.id, "url": run.url}
+        run.finish()
+
+    print(json.dumps(published, indent=1))
 
 
 if __name__ == "__main__":
