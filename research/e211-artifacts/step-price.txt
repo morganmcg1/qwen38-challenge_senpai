@@ -1,0 +1,152 @@
+==============================================================================
+E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
+==============================================================================
+  instrument: FINDING 520 survival-pinned latent-q, imported from
+              e201_online_cap without modification
+  receipt A 3.70784519 (cap 7)   crown 3.72911001
+  MUE = 0.39 % of the published median = 0.0145 score points
+
+  REPRODUCTION GATE (grid form vs merged O.cap_grid)
+   max relative error 2.318e-14   PASS
+  INSTRUMENT VALIDATION GATE (FINDING 520 bar)
+   cap 7 in-sample     3.70784519 vs paid 3.70784519  (-0.000000%)
+   cap 4 out-of-sample 3.531905 vs paid 3.547429  (-0.44%)
+   cap 5 out-of-sample 3.532206 vs paid 3.523636  (+0.24%)
+   receipt channel 1-sigma 0.689%   PASS
+
+  9-ROW CELL, THE THREE LIVE READINGS
+   transfer ratio (FINDING 505 over E186) 0.23731
+   local dR9 39.827 ms; E208 (9,5) removes 20.774 ms; residual 19.053 ms [INFERRED transfer]
+   smooth     ranked dR9  +1.962 ms
+   step       ranked dR9  +9.451 ms
+   step_e208  ranked dR9  +4.521 ms
+
+------------------------------------------------------------------------------
+  LAW SMOOTH
+   R(1..9) ms  30.26  31.67  33.28  35.68  40.44  48.36  55.23  58.80  60.76
+   shipped uniform price h=0.18, cap 8   3.829386
+   OPTIMAL price table                   3.962218  (+3.469% in-sample)
+   LOO-honest median (decision statistic) 3.956374  (+3.316%)
+   round-level oracle_q ceiling           3.963760  (+3.509%)
+   optimal marginal price by row d (shipped = 0.18 on every row)
+     d           0       1       2       3       4       5       6       7
+     price   0.121   0.031   0.024   0.095   0.127   0.102   0.082   0.066
+     Q_(d+1)0.1215  0.1800  0.3097  0.6633  0.8048  0.8048  0.8048  0.8048
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+   per-prompt raw: shipped -> optimum (edl shipped -> optimum)
+     plutarch  1.2607 -> 1.2670 ( +0.50%)   edl 0.16 -> 0.54
+     drama     2.1222 -> 2.1194 ( -0.13%)   edl 2.30 -> 3.27
+     travel    2.4277 -> 2.4249 ( -0.12%)   edl 2.65 -> 3.76
+     beagle    3.6472 -> 3.7627 ( +3.17%)   edl 4.61 -> 5.56
+     republic  4.0439 -> 4.2215 ( +4.39%)   edl 5.28 -> 6.32
+     essays    4.0116 -> 4.1617 ( +3.74%)   edl 5.43 -> 6.38
+     medicine  4.0589 -> 4.1735 ( +2.82%)   edl 5.64 -> 6.44
+     botany    4.1134 -> 4.1726 ( +1.44%)   edl 6.70 -> 7.50
+   LOO robustness of the fitted table (drop one prompt)
+     drop plutarch  shipped 4.011573  optimum 4.161736  +3.743%
+     drop drama     shipped 4.011573  optimum 4.161736  +3.743%
+     drop travel    shipped 4.011573  optimum 4.161736  +3.743%
+     drop beagle    shipped 4.011573  optimum 4.161736  +3.743%
+     drop republic  shipped 3.647199  optimum 3.762700  +3.167%
+     drop essays    shipped 3.647199  optimum 3.762700  +3.167%
+     drop medicine  shipped 3.647199  optimum 3.762700  +3.167%
+     drop botany    shipped 3.647199  optimum 3.762700  +3.167%
+   worst LOO prompt republic at +3.167%
+   LOO-honest held-out raws
+     plutarch  honest 1.2399  shipped 1.2607  ( -1.65%)
+     drama     honest 2.1057  shipped 2.1222  ( -0.78%)
+     travel    honest 2.4009  shipped 2.4277  ( -1.10%)
+     beagle    honest 3.7528  shipped 3.6472  ( +2.90%)
+     republic  honest 4.2184  shipped 4.0439  ( +4.32%)
+     essays    honest 4.1599  shipped 4.0116  ( +3.70%)
+     medicine  honest 4.1731  shipped 4.0589  ( +2.81%)
+     botany    honest 4.1732  shipped 4.1134  ( +1.45%)
+
+------------------------------------------------------------------------------
+  LAW STEP
+   R(1..9) ms  30.26  31.67  33.28  35.68  40.44  48.36  55.23  58.80  68.25
+   shipped uniform price h=0.18, cap 8   3.681378
+   OPTIMAL price table                   3.780430  (+2.691% in-sample)
+   LOO-honest median (decision statistic) 3.778111  (+2.628%)
+   round-level oracle_q ceiling           3.781543  (+2.721%)
+   optimal marginal price by row d (shipped = 0.18 on every row)
+     d           0       1       2       3       4       5       6       7
+     price   0.121   0.031   0.021   0.086   0.145   0.122   0.102   0.204
+     Q_(d+1)0.1215  0.1800  0.2952  0.6416  0.8400  0.8400  0.8400  1.0000
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+   per-prompt raw: shipped -> optimum (edl shipped -> optimum)
+     plutarch  1.2607 -> 1.2666 ( +0.47%)   edl 0.16 -> 0.54
+     drama     2.1222 -> 2.1114 ( -0.51%)   edl 2.30 -> 3.35
+     travel    2.4277 -> 2.4227 ( -0.21%)   edl 2.65 -> 3.56
+     beagle    3.5273 -> 3.6135 ( +2.44%)   edl 4.61 -> 4.94
+     republic  3.8886 -> 4.0089 ( +3.09%)   edl 5.28 -> 5.44
+     essays    3.8355 -> 3.9474 ( +2.92%)   edl 5.43 -> 5.52
+     medicine  3.8628 -> 3.9623 ( +2.57%)   edl 5.64 -> 5.63
+     botany    3.8607 -> 3.9558 ( +2.46%)   edl 6.70 -> 6.39
+   LOO robustness of the fitted table (drop one prompt)
+     drop plutarch  shipped 3.835456  optimum 3.947386  +2.918%
+     drop drama     shipped 3.835456  optimum 3.947386  +2.918%
+     drop travel    shipped 3.835456  optimum 3.947386  +2.918%
+     drop beagle    shipped 3.835456  optimum 3.947386  +2.918%
+     drop republic  shipped 3.527299  optimum 3.613474  +2.443%
+     drop essays    shipped 3.527299  optimum 3.613474  +2.443%
+     drop medicine  shipped 3.527299  optimum 3.613474  +2.443%
+     drop botany    shipped 3.527299  optimum 3.613474  +2.443%
+   worst LOO prompt republic at +2.443%
+   LOO-honest held-out raws
+     plutarch  honest 1.2333  shipped 1.2607  ( -2.17%)
+     drama     honest 2.0898  shipped 2.1222  ( -1.52%)
+     travel    honest 2.4078  shipped 2.4277  ( -0.82%)
+     beagle    honest 3.6112  shipped 3.5273  ( +2.38%)
+     republic  honest 4.0067  shipped 3.8886  ( +3.04%)
+     essays    honest 3.9450  shipped 3.8355  ( +2.86%)
+     medicine  honest 3.9615  shipped 3.8628  ( +2.56%)
+     botany    honest 3.9552  shipped 3.8607  ( +2.45%)
+
+------------------------------------------------------------------------------
+  LAW STEP_E208
+   R(1..9) ms  30.26  31.67  33.28  35.68  40.44  48.36  55.23  58.80  63.32
+   shipped uniform price h=0.18, cap 8   3.777460
+   OPTIMAL price table                   3.867975  (+2.396% in-sample)
+   LOO-honest median (decision statistic) 3.865410  (+2.328%)
+   round-level oracle_q ceiling           3.869460  (+2.436%)
+   optimal marginal price by row d (shipped = 0.18 on every row)
+     d           0       1       2       3       4       5       6       7
+     price   0.121   0.031   0.023   0.090   0.144   0.121   0.101   0.084
+     Q_(d+1)0.1215  0.1800  0.3024  0.6513  0.8373  0.8373  0.8373  0.8373
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+   per-prompt raw: shipped -> optimum (edl shipped -> optimum)
+     plutarch  1.2607 -> 1.2669 ( +0.50%)   edl 0.16 -> 0.54
+     drama     2.1222 -> 2.1154 ( -0.32%)   edl 2.30 -> 3.31
+     travel    2.4277 -> 2.4247 ( -0.13%)   edl 2.65 -> 3.57
+     beagle    3.6053 -> 3.6875 ( +2.28%)   edl 4.61 -> 5.34
+     republic  3.9894 -> 4.1051 ( +2.90%)   edl 5.28 -> 5.99
+     essays    3.9496 -> 4.0484 ( +2.50%)   edl 5.43 -> 6.11
+     medicine  3.9897 -> 4.0634 ( +1.85%)   edl 5.64 -> 6.23
+     botany    4.0234 -> 4.0508 ( +0.68%)   edl 6.70 -> 7.24
+   LOO robustness of the fitted table (drop one prompt)
+     drop plutarch  shipped 3.949599  optimum 4.048403  +2.502%
+     drop drama     shipped 3.949599  optimum 4.048403  +2.502%
+     drop travel    shipped 3.949599  optimum 4.048403  +2.502%
+     drop beagle    shipped 3.949599  optimum 4.048403  +2.502%
+     drop republic  shipped 3.605320  optimum 3.687546  +2.281%
+     drop essays    shipped 3.605320  optimum 3.687546  +2.281%
+     drop medicine  shipped 3.605320  optimum 3.687546  +2.281%
+     drop botany    shipped 3.605320  optimum 3.687546  +2.281%
+   worst LOO prompt republic at +2.281%
+   LOO-honest held-out raws
+     plutarch  honest 1.2547  shipped 1.2607  ( -0.47%)
+     drama     honest 2.0975  shipped 2.1222  ( -1.16%)
+     travel    honest 2.4114  shipped 2.4277  ( -0.67%)
+     beagle    honest 3.6856  shipped 3.6053  ( +2.23%)
+     republic  honest 4.0998  shipped 3.9894  ( +2.77%)
+     essays    honest 4.0452  shipped 3.9496  ( +2.42%)
+     medicine  honest 4.0630  shipped 3.9897  ( +1.84%)
+     botany    honest 4.0520  shipped 4.0234  ( +0.71%)
+
+==============================================================================
+  DECISION (LOO-honest delta is the statistic)
+   smooth     in-sample  +3.469%   LOO-honest  +3.316%   IMPLEMENT (>=1%)
+   step       in-sample  +2.691%   LOO-honest  +2.628%   IMPLEMENT (>=1%)
+   step_e208  in-sample  +2.396%   LOO-honest  +2.328%   IMPLEMENT (>=1%)
+   Best law smooth at +3.316% LOO-honest; the receipt selects the branch.

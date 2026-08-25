@@ -240,6 +240,47 @@ def verify_price(cuts, price):
     return float(np.mean(got == want)), int(np.sum(got != want))
 
 
+def uniform_price(h):
+    return {"marginal": [h] * MAXD,
+            "cumulative": [1.0 + d * h for d in range(MAXD + 1)]}
+
+
+def _walk_terms():
+    """`reach` and `1 + expected` at every row, for the whole q grid."""
+    q = grid_q()
+    powers = np.array([q ** k for k in range(1, MAXD + 1)])
+    before = np.vstack([np.zeros((1, QGRID)), np.cumsum(powers, axis=0)[:-1]])
+    return powers, 1.0 + before
+
+
+_REACH, _BAR = _walk_terms()
+
+
+def price_cuts(marginal):
+    """Cut points of `costModelDepth` under an explicit marginal price table.
+
+    The whole grid is walked at once. `reach` at row d is q**(d+1) and the
+    walk's `expected` at that moment is sum_{k=1..d} q**k, so the shipped
+    comparison becomes a matrix and the depth is the first row whose
+    comparison fails.
+    """
+    cumulative, ok = 1.0, np.empty((MAXD, QGRID), dtype=bool)
+    for d in range(MAXD):
+        ok[d] = _REACH[d] > marginal[d] * _BAR[d] / cumulative
+        cumulative += marginal[d]
+    depth = np.where(ok.all(axis=0), MAXD, np.argmin(ok, axis=0))
+    cuts = [0]
+    for k in range(1, MAXD + 1):
+        hit = np.flatnonzero(depth >= k)
+        cuts.append(int(hit[0]) if hit.size else QGRID)
+    return cuts_of(cuts[1:])
+
+
+def level_of(marginal):
+    """E200's price level: total marginal price over the reachable rows."""
+    return float(sum(marginal))
+
+
 # ------------------------------------------------------------- optimiser
 
 def objective(tables, names, cuts):
@@ -307,6 +348,94 @@ def optimise(tables, names, rng):
         if score > best_score:
             best_cuts, best_score = cuts, score
     return best_cuts
+
+
+# ------------------------------------------- level / structure decomposition
+
+def _uniform_ladder(grid=6001):
+    """Every distinct depth map the uniform price can produce.
+
+    `costModelDepth` reads a step function of h, so the sweep collapses to the
+    handful of distinct cut vectors on the grid and the LOO folds reuse them.
+    """
+    seen, ladder = set(), []
+    for i in range(1, grid):
+        h = 0.60 * i / grid
+        cuts = price_cuts([h] * MAXD)
+        key = tuple(cuts)
+        if key not in seen:
+            seen.add(key)
+            ladder.append((h, cuts))
+    return ladder
+
+
+_UNIFORM = _uniform_ladder()
+
+
+def optimise_uniform(tables, names):
+    """Best UNIFORM price: the shipped shape with only its level free.
+
+    This arm is the control the headline number has to be read against. It
+    changes how deep the scheduler drafts and nothing about how the rows are
+    priced relative to each other, so it carries no step awareness at all.
+    """
+    best = max(_UNIFORM, key=lambda hc: objective(tables, names, hc[1]))
+    return {"h": best[0], "cuts": best[1], "marginal": [best[0]] * MAXD}
+
+
+def measured_shape(law):
+    """The honest ranked marginal cost of each row, in shipped price units."""
+    R = [E.R_of(law, m) for m in range(1, MAXD + 2)]
+    return [(R[d + 1] - R[d]) / R[0] for d in range(MAXD)]
+
+
+def optimise_shape(tables, names, rng, level, law, rounds=12):
+    """Best price SHAPE at a held level: E200's axis with a free shape.
+
+    Coordinate descent in price space with a rescale to the held level after
+    every move, restarted from the uniform shape, from the measured ranked
+    cost shape and from random shapes. The level constraint is what separates
+    a step-aware price from a cheaper price.
+    """
+    def rescale(vec):
+        vec = [max(v, 1e-9) for v in vec]
+        s = level / sum(vec)
+        return [v * s for v in vec]
+
+    def score_of(vec):
+        return objective(tables, names, price_cuts(vec))
+
+    seeds = [[level / MAXD] * MAXD, rescale(measured_shape(law))]
+    for _ in range(16):
+        seeds.append(rescale(list(rng.random(MAXD) + 0.05)))
+
+    best_vec, best_score = None, -1e18
+    for seed in seeds:
+        vec, score = rescale(seed), None
+        score = score_of(vec)
+        for _ in range(rounds):
+            moved = False
+            for d in range(MAXD):
+                for factor in (1.6, 1.25, 1.08, 1.02, 0.98, 0.93, 0.8, 0.625):
+                    trial = list(vec)
+                    trial[d] *= factor
+                    trial = rescale(trial)
+                    value = score_of(trial)
+                    if value > score + 1e-15:
+                        vec, score, moved = trial, value, True
+            if not moved:
+                break
+        if score > best_score:
+            best_vec, best_score = vec, score
+    return {"marginal": best_vec, "cuts": price_cuts(best_vec)}
+
+
+def arm(tables, names, marginal, cuts):
+    raws = evaluate(tables, cuts)
+    return {"marginal": list(marginal), "level": level_of(marginal),
+            "cuts": cuts[1:MAXD + 1], "per_prompt_raw": raws,
+            "published_median": median_of([raws[n] for n in names]),
+            "edl": edl_of(tables, cuts)}
 
 
 # ------------------------------------------------------------------- gate
@@ -380,6 +509,24 @@ def oracle_ceiling(inst, law):
                       for name in ORDER])
 
 
+def anchor_distance(tables, ship, cuts):
+    """How far the arm moves the round population from the paid anchor.
+
+    The instrument walks receipt A's measured round cost to a new schedule, so
+    the arm's credibility falls with the round mass it relocates and with the
+    depth it reaches beyond the deepest paid cell. Both are reported rather
+    than folded into the score.
+    """
+    ship_mass, arm_mass = depth_mass(tables, ship), depth_mass(tables, cuts)
+    moved, deep = {}, {}
+    for name in tables:
+        moved[name] = 0.5 * sum(abs(a - b) for a, b in zip(arm_mass[name],
+                                                           ship_mass[name]))
+        deep[name] = arm_mass[name][MAXD]
+    return {"round_mass_relocated": moved, "mass_at_depth_8": deep,
+            "worst_round_mass_relocated": max(moved.values())}
+
+
 def run_law(inst, law, key, rng):
     tables = prompt_tables(inst, law)
     ship = ship_cuts(8)
@@ -393,6 +540,18 @@ def run_law(inst, law, key, rng):
     price = price_of_cuts(best)
     agree, mismatches = verify_price(best, price)
 
+    # The control the headline number must be read against: the shipped shape
+    # with only its level free carries no step awareness whatsoever.
+    level_arm = optimise_uniform(tables, ORDER)
+    level_only = arm(tables, ORDER, level_arm["marginal"], level_arm["cuts"])
+    shape_ship = optimise_shape(tables, ORDER, rng,
+                                level_of(D.ship_price()["marginal"]), law)
+    shape_at_ship_level = arm(tables, ORDER, shape_ship["marginal"],
+                              shape_ship["cuts"])
+    shape_best = optimise_shape(tables, ORDER, rng, level_arm["h"] * MAXD, law)
+    shape_at_best_level = arm(tables, ORDER, shape_best["marginal"],
+                              shape_best["cuts"])
+
     # LOO robustness: the fitted table, scored on each 7-prompt subpool.
     loo_robust = {}
     for held in ORDER:
@@ -402,15 +561,20 @@ def run_law(inst, law, key, rng):
         loo_robust[held] = {"shipped": s, "optimum": b,
                             "delta_pct": 100.0 * (b - s) / s}
 
-    # LOO-honest: the held-out prompt is scored by a table it never saw.
-    honest_raw, honest_tables = {}, {}
+    # LOO-honest: the held-out prompt is scored by a table it never saw. The
+    # one-parameter level control is refitted on the same folds, so the
+    # structure premium compares two honestly fitted arms.
+    honest_raw, honest_tables, honest_level_raw = {}, {}, {}
     for held in ORDER:
         pool = [n for n in ORDER if n != held]
         fold = optimise(tables, pool, rng)
         honest_tables[held] = {"cuts": fold[1:MAXD + 1],
                                "price": price_of_cuts(fold)["marginal"]}
         honest_raw[held] = evaluate(tables, fold)[held]
+        fold_h = optimise_uniform(tables, pool)
+        honest_level_raw[held] = evaluate(tables, fold_h["cuts"])[held]
     honest_median = median_of([honest_raw[n] for n in ORDER])
+    honest_level_median = median_of([honest_level_raw[n] for n in ORDER])
 
     return {
         "law": key,
@@ -444,7 +608,51 @@ def run_law(inst, law, key, rng):
         "loo_honest_delta_pct":
             100.0 * (honest_median - ship_median) / ship_median,
         "oracle_q_median": oracle_ceiling(inst, law),
+        "decomposition": {
+            "shipped_level": level_of(D.ship_price()["marginal"]),
+            "level_only": level_only,
+            "shape_at_shipped_level": shape_at_ship_level,
+            "shape_at_best_level": shape_at_best_level,
+            "level_pct": pct(level_only["published_median"], ship_median),
+            "structure_at_shipped_level_pct":
+                pct(shape_at_ship_level["published_median"], ship_median),
+            "structure_premium_pct":
+                pct(best_median, level_only["published_median"]),
+            "loo_honest_level_median": honest_level_median,
+            "loo_honest_level_pct": pct(honest_level_median, ship_median),
+            "loo_honest_structure_premium_pct":
+                pct(honest_median, honest_level_median),
+        },
+        "anchor_distance": {
+            "optimum": anchor_distance(tables, ship, best),
+            "level_only": anchor_distance(tables, ship, level_arm["cuts"]),
+        },
     }
+
+
+def cross_law(inst, laws, results):
+    """A table fitted under one 9-row reading, paid under another.
+
+    The `aff4ad64` receipt selects the true reading after the fact, so the
+    only safe table is one that still pays under the reading it was not fitted
+    on. This matrix is the transfer risk, priced.
+    """
+    out = {}
+    for paid in LAW_KEYS:
+        tables = prompt_tables(inst, laws[paid])
+        ship = median_of([evaluate(tables, ship_cuts(8))[n] for n in ORDER])
+        row = {}
+        for fitted in LAW_KEYS:
+            cuts = cuts_of(results[fitted]["optimum"]["cuts"])
+            raws = evaluate(tables, cuts)
+            value = median_of([raws[n] for n in ORDER])
+            row[fitted] = {"published_median": value,
+                           "delta_pct": pct(value, ship)}
+        out[paid] = {"shipped": ship, "fitted": row}
+    worst = min(out[paid]["fitted"][fit]["delta_pct"]
+                for paid in LAW_KEYS for fit in LAW_KEYS)
+    out["worst_transfer_delta_pct"] = worst
+    return out
 
 
 # ---------------------------------------------------------------- report
@@ -530,6 +738,44 @@ def report(out):
                         pct(opt["per_prompt_raw"][name],
                             ship["per_prompt_raw"][name]),
                         ship["edl"][name], opt["edl"][name]))
+        dec = r["decomposition"]
+        L.append("   LEVEL / STRUCTURE DECOMPOSITION. The price has a level "
+                 "(how deep the")
+        L.append("   scheduler drafts) and a shape (how the rows are priced "
+                 "against each")
+        L.append("   other). Only the shape carries step awareness.")
+        L.append("     shipped uniform, level %.2f            %12.6f"
+                 % (dec["shipped_level"], ship["published_median"]))
+        L.append("     best SHAPE at the shipped level        %12.6f  "
+                 "%+7.3f%%"
+                 % (dec["shape_at_shipped_level"]["published_median"],
+                    dec["structure_at_shipped_level_pct"]))
+        L.append("     best uniform LEVEL h=%.4f (level %.2f) %12.6f  "
+                 "%+7.3f%%"
+                 % (dec["level_only"]["marginal"][0],
+                    dec["level_only"]["level"],
+                    dec["level_only"]["published_median"], dec["level_pct"]))
+        L.append("     best SHAPE at that best level          %12.6f  "
+                 "%+7.3f%%"
+                 % (dec["shape_at_best_level"]["published_median"],
+                    pct(dec["shape_at_best_level"]["published_median"],
+                        ship["published_median"])))
+        L.append("     free table (level + structure)         %12.6f  "
+                 "%+7.3f%%"
+                 % (opt["published_median"], r["in_sample_delta_pct"]))
+        L.append("     STRUCTURE PREMIUM over the level control %+7.3f%% "
+                 "in-sample, %+7.3f%% LOO-honest"
+                 % (dec["structure_premium_pct"],
+                    dec["loo_honest_structure_premium_pct"]))
+        L.append("     LOO-honest level control alone           %+7.3f%%"
+                 % dec["loo_honest_level_pct"])
+        ad = r["anchor_distance"]["optimum"]
+        L.append("   ANCHOR DISTANCE of the free table (round mass moved off "
+                 "the paid schedule)")
+        L.append("     worst prompt %.3f; mass at depth 8: %s"
+                 % (ad["worst_round_mass_relocated"],
+                    " ".join("%s %.2f" % (n[:4], ad["mass_at_depth_8"][n])
+                             for n in ORDER)))
         L.append("   LOO robustness of the fitted table (drop one prompt)")
         for name in ORDER:
             row = r["loo_robust"][name]
@@ -547,19 +793,50 @@ def report(out):
                             ship["per_prompt_raw"][name])))
         L.append("")
 
+    x = out["cross_law"]
+    L.append("=" * 78)
+    L.append("  CROSS-LAW TRANSFER. A table fitted under one 9-row reading, "
+             "paid under")
+    L.append("  another. The receipt picks the paid row after the table is "
+             "chosen.")
+    L.append("   %-12s %10s | %s" % ("paid law", "shipped",
+                                     "  ".join("fit %-10s" % k
+                                               for k in LAW_KEYS)))
+    for paid in LAW_KEYS:
+        row = x[paid]
+        L.append("   %-12s %10.6f | %s"
+                 % (paid, row["shipped"],
+                    "  ".join("%+8.3f%%     " % row["fitted"][f]["delta_pct"]
+                              for f in LAW_KEYS)))
+    L.append("   worst transfer %+.3f%%" % x["worst_transfer_delta_pct"])
+
     d = out["decision"]
     L.append("=" * 78)
-    L.append("  DECISION (LOO-honest delta is the statistic)")
+    L.append("  DECISION")
+    L.append("   %-10s %12s %12s %12s %12s"
+             % ("law", "in-sample", "LOO-honest", "level-only", "structure"))
     for key in LAW_KEYS:
-        L.append("   %-10s in-sample %+7.3f%%   LOO-honest %+7.3f%%   %s"
-                 % (key, out["laws"][key]["in_sample_delta_pct"],
-                    out["laws"][key]["loo_honest_delta_pct"],
+        r = out["laws"][key]
+        L.append("   %-10s %+11.3f%% %+11.3f%% %+11.3f%% %+11.3f%%  %s"
+                 % (key, r["in_sample_delta_pct"], r["loo_honest_delta_pct"],
+                    r["decomposition"]["loo_honest_level_pct"],
+                    r["decomposition"]["loo_honest_structure_premium_pct"],
                     d["per_law_verdict"][key]))
-    L.append("   %s" % d["verdict"])
+    L.append("")
+    for line in d["verdict"]:
+        L.append("   %s" % line)
     return "\n".join(L)
 
 
-def decide(laws_out):
+def decide(laws_out, cross):
+    """The assigned stop rule, plus the reading the decomposition forces.
+
+    The assignment's statistic is the LOO-honest published-median improvement
+    of the step-aware price over the shipped uniform price. That number does
+    not separate the two things the free table changes at once, so the
+    structure premium over an honestly refitted level control is reported
+    beside it and both readings are stated.
+    """
     verdicts = {}
     for key in LAW_KEYS:
         x = laws_out[key]["loo_honest_delta_pct"]
@@ -570,16 +847,38 @@ def decide(laws_out):
         else:
             verdicts[key] = "CLOSE (<0.5%)"
     best = max(LAW_KEYS, key=lambda k: laws_out[k]["loo_honest_delta_pct"])
-    worst_is_close = all(laws_out[k]["loo_honest_delta_pct"] < 0.5
-                         for k in LAW_KEYS)
-    if worst_is_close:
-        verdict = ("STOP RULE FIRED: LOO-honest improvement < 0.5 % under "
-                   "EVERY law. The depth-schedule family closes.")
+    struct = {k: laws_out[k]["decomposition"]
+              ["loo_honest_structure_premium_pct"] for k in LAW_KEYS}
+    lines = []
+    if all(laws_out[k]["loo_honest_delta_pct"] < 0.5 for k in LAW_KEYS):
+        lines.append("ASSIGNED RULE: STOP. LOO-honest improvement < 0.5 % "
+                     "under every law; the depth-schedule family closes.")
+    elif all(laws_out[k]["loo_honest_delta_pct"] >= 1.0 for k in LAW_KEYS):
+        lines.append("ASSIGNED RULE: IMPLEMENT under every law. Weakest law "
+                     "%s at %+.3f%% LOO-honest."
+                     % (min(LAW_KEYS, key=lambda k:
+                            laws_out[k]["loo_honest_delta_pct"]),
+                        min(laws_out[k]["loo_honest_delta_pct"]
+                            for k in LAW_KEYS)))
     else:
-        verdict = ("Best law %s at %+.3f%% LOO-honest; the receipt selects "
-                   "the branch." % (best,
-                                    laws_out[best]["loo_honest_delta_pct"]))
-    return {"per_law_verdict": verdicts, "best_law": best, "verdict": verdict}
+        lines.append("ASSIGNED RULE: mixed; the receipt selects the branch. "
+                     "Best law %s at %+.3f%% LOO-honest."
+                     % (best, laws_out[best]["loo_honest_delta_pct"]))
+    if max(struct.values()) < 0.5:
+        lines.append("STRUCTURE READING: the step-aware SHAPE is worth "
+                     "%+.3f%% at most (LOO-honest, over a refitted level "
+                     "control). The price-STRUCTURE question is closed; the "
+                     "whole gain is the price LEVEL, which is the depth "
+                     "lever the cap-8 receipt already prices."
+                     % max(struct.values()))
+    else:
+        lines.append("STRUCTURE READING: the step-aware SHAPE is worth "
+                     "%+.3f%% LOO-honest over a refitted level control."
+                     % max(struct.values()))
+    lines.append("TRANSFER: worst cross-law transfer of a fitted table is "
+                 "%+.3f%%." % cross["worst_transfer_delta_pct"])
+    return {"per_law_verdict": verdicts, "best_law": best,
+            "structure_premium_pct": struct, "verdict": lines}
 
 
 def main():
@@ -603,7 +902,8 @@ def main():
                          "optimum")
     for key in LAW_KEYS:
         out["laws"][key] = run_law(inst, laws[key], key, rng)
-    out["decision"] = decide(out["laws"])
+    out["cross_law"] = cross_law(inst, laws, out["laws"])
+    out["decision"] = decide(out["laws"], out["cross_law"])
 
     text = report(out)
     print(text)
