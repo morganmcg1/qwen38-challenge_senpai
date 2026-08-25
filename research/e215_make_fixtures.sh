@@ -19,7 +19,8 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 steps="${1:-64}"
-prompts=(e215-eos-short e215-code e215-story)
+prompts=("${@:2}")
+[[ ${#prompts[@]} -gt 0 ]] || prompts=(e215-eos-short e215-eos-para e215-code e215-story)
 prompt_dir="research/e215-artifacts/prompts"
 out_dir="research/e215-artifacts/fixtures"
 cli=".build/release/mlxfast-swift"

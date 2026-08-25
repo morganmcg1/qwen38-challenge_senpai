@@ -65,6 +65,17 @@ PROMPTS = {
         ),
         "question": "What is the capital city of France?",
     },
+    "e215-eos-para": {
+        "system": (
+            "You are a precise assistant. Answer in three or four sentences of "
+            "plain prose. Do not add a preface, a list, or a closing note. "
+            "Stop as soon as the answer is complete."
+        ),
+        "question": (
+            "Why does a lighthouse use a rotating lens instead of a brighter "
+            "lamp?"
+        ),
+    },
     "e215-code": {
         "system": (
             "You are a careful Python engineer. Write plain, readable code. "

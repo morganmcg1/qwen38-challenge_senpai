@@ -14,6 +14,21 @@
     "prompt_tokens": 512,
     "question": "Write a Python function `merge_sorted(a, b)` that merges two sorted lists of integers into one sorted list without using `sorted`. Include a short docstring and simple type hints."
   },
+  "e215-eos-para": {
+    "last_ids": [
+      198,
+      248045,
+      74455,
+      198,
+      248068,
+      271,
+      248069,
+      271
+    ],
+    "path": "research/e215-artifacts/prompts/e215-eos-para.txt",
+    "prompt_tokens": 512,
+    "question": "Why does a lighthouse use a rotating lens instead of a brighter lamp?"
+  },
   "e215-eos-short": {
     "last_ids": [
       198,
