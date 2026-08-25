@@ -72705,3 +72705,44 @@ Evidence chain (Askeladd, head 02e7dc42; confirm-to-head binding verified — sc
 - **E213 consequence (material base move):** Edward's in-flight palindrome on e0c7a026 remains valid causal evidence; per-width paired deltas stay valid; the round-weighted total must be recomputed with the composed base's served-width census (stepq shifts rounds deeper, likely increasing g1's m∈{7,8,9} weight); ship-form requires rebase onto the composed base + cheap kernel re-gate + gated confirm there.
 - **E212 consequence (benign):** the width census pins widths explicitly, so R_local(m) is schedule-independent; only the shipped-share weighting must use the composed stepq census. Desk re-weighting, no re-timing.
 - Follow-ups recorded from the result: pin test for `depthPriceArm`+thresholds digest (base brief's `QwenMTPDepthPriceTests` name was stale — no such test exists); EOS-in-window exactness fixture; second-prompt census. These become E215.
+
+## Entry 431 — 2026-08-25T05:0xZ (advisor): E215 premise correction (post-EOS path WAS exercised at the E214 confirm) + E212 headline census (R_local(m) measured, weight-pass model refuted, m=5 local minimum desk-subsumed)
+
+**Context.** Receipt `5f508da5` (composed 9a91ba76) still in flight; frozen `3f1065cb` behind it. Two material student interims arrived: Askeladd corrected the E214 honest-limit premise, and Alphonse delivered the complete 20-leg pinned-width census table.
+
+**FINDING 555 — the public fixture DOES cross a stop token in-window; the E214 confirm already exercised full-window post-EOS continuation (corrects Entry 430 / FINDING 554 honest limit).**
+Askeladd re-read the captured reference rows of the E214 gated confirm (`research/out/e214-confirm/reports/02-mtp-verify-output.json`, 513 rows, the leg behind W&B `00k2cht2`, https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/00k2cht2): stop token **248044** is committed at emitted index **300** of the 512-token window. The resolved stop set is `{248044, 248046}` (`weights/generation_config.json` declares `eos_token_id: [248046, 248044]`, `pad_token_id: 248044`; `resolveQwenMTPStopTokens` unions with tokenizer EOS). Both E214 legs therefore decoded **211 tokens strictly after a committed stop token** on the shipped surface with `all_tokens_matched=true`, `residual_divergence_count=0`, row ledger 591=439+79+73 closed, `target_cache_offset_final=1024` (stepq gated confirm) and 597/597 rows (ship census leg). Consequences:
+- Entry 430's honest limit ("public fixture has no in-window EOS -> post-EOS path unexercised locally") was WRONG as stated. The post-EOS full-window continuation path IS locally demonstrated for stop 248044. This STRENGTHENS frozen candidate `3f1065cb`.
+- The remaining honest gap narrows to: the public window crosses a stop token once, late, and never crosses **248046** (`<|im_end|>`), the token that ends a real assistant turn. E215 Q1 continues as assigned with two research EOS-stress fixtures (`e215-eos-short`: first stop at index 1, ~510/512 post-EOS; `e215-eos-para`: first stop at 79, 433/512 post-EOS) plus `e215-code`/`e215-story` acceptance-extreme prompts. Blocker-class rule unchanged and extended: a failure on a research fixture is still blocker-class because hidden prompts may cross 248046.
+- Feedback `e215-fb-premise-corrected-431` accepted his fixture design (512-id prompts, self-referential goldens, research-only paths) and the one-line ship control (`depthPriceArm: .stepq -> .ship`, inert table identical across arms).
+
+**FINDING 556 — E212 headline census: R_local(m) measured at all nine widths; the weight-pass cost model is refuted; the dated vintage table is confirmed except at exactly the two scored-change widths (cross-host confirmation of FINDING 543).**
+harness=local, NOT gate-qualified (`MLXFAST_LOCAL_COOL_GATE=0`, counterbalanced two-sweep palindrome, entry temps 48.0-59.9 C recorded, flags verbatim). Session s1 on base `523da3be` (pre-stepq), M4 Pro, 512-token legs, public fixture, declared head. All 20 legs `all_tokens_matched=true`, zero residual divergence. Largest leg spread 0.194 ms/round (m=8) vs FINDING 503 floor 0.24 — no tie-breaker needed.
+
+| m | R_local ms/round | ms/token | accept | leg s/token |
+|---|---|---|---|---|
+| 1 | 64.832 | 64.83 | — | 0.073260 |
+| 2 | 67.724 | 34.26 | 0.981 | 0.042317 |
+| 3 | 69.545 | 23.91 | 0.954 | 0.031985 |
+| 4 | 76.202 | 19.79 | 0.951 | 0.027921 |
+| 5 | 89.468 | **19.05** | 0.923 | **0.026996** |
+| 6 | 117.989 | 21.89 | 0.866 | 0.029934 |
+| 7 | 136.846 | 21.65 | 0.873 | 0.029820 |
+| 8 | 145.346 | 20.44 | 0.864 | 0.028464 |
+| 9 | 164.459 | 21.20 | 0.826 | 0.029262 |
+| shipped adaptive | — | — | — | 0.029317 |
+
+- **Instrument check passed:** m=1 leg 0.073260 vs same-session serial 0.073140 (+0.16%) — the zero-draft MTP round costs one serial round; R_local(m) carries no fixed session overhead a slope could absorb.
+- **Vintage table audit (5a/5b):** measured minus E182-era vintage: −0.47/−1.11/−1.02/**−8.09**/−0.52/−0.43/**−21.37** ms/round at m=1/4/5/6/7/8/9. Valid within ~1 ms at every untouched width; wrong by close to the claimed amount at exactly the two scored-change widths (E195 claimed −7.31 at m=6, FINDING 516; staged (9,5) bracketed −20.774 paired on Edward's host, FINDING 543). Two hosts and two instruments agree at m=9 within 0.6 ms: **cross-host confirmation of FINDING 543**, not a new claim.
+- **Width-cost law (5c):** adjacent steps from m=2 upward: 2.89, 1.82, 6.66, 13.27, **28.52**, 18.86, 8.50, 19.11 ms/round. The weight-pass model predicts flat plateaus inside m=2..5 and m=7..9; measured plateau-interior growth is +21.7 and +27.6 ms/round, each ~100x the noise floor. **The weight-pass model is refuted:** per-width cost has a large component the weight-pass count does not see. Band-attribution legs at m=5/6/7 are running to name the family that owns the 5->6 and 6->7 steps; terminal report after that.
+- **Local per-token minimum at m=5** (pinned leg 0.026996 vs shipped adaptive 0.029317 on 523da3be). Alphonse correctly flagged this as a RULE 399 nomination only and did not implement.
+
+**Desk disposition of the m=5 nomination — SUBSUMED by E211's exact search; no new schedule experiment now.**
+E211 (`research/e211_step_price.py`) computed the FREE optimum over the entire monotone-depth-map family on the FINDING 520 ranked instrument; that family contains every hard cap, including cap-5 (thresholds at d>=6 set unreachable). The stepq table IS that optimum under all three priced ranked cost laws. A local per-token minimum on one public fixture cannot overturn it: local acceptance is a property of the public prompt, and the ranked instrument already prices survival on the hidden prompts. The nomination can change the desk answer only by changing the cost-law INPUTS. Both such inputs are already queued:
+1. Receipt `5f508da5` gives the first paid ranked observation of the 9-row cell (cap-8 in flight), discriminating smooth/step/step_e208 — the queued FINDING 520 revalidation and E205 Stage-B reading.
+2. FINDING 556's measured local curve replaces the E182 vintage as the local side of every step transfer (FINDING 505 ratio), including the plateau-interior growth the vintage missed.
+Re-derivation of the free optimum with both updates runs at receipt terminal. If the re-derived table differs from shippedDepthThresholds by more than the LOO-honest noise, that becomes a new scored assignment (E216 candidate) on the composed base. Ship mode is binding: none of this touches frozen `3f1065cb`.
+
+**Cross-links.** FINDING 556's R_local(m) is also the pricing input for Edward's per-cell IPG backlog (FINDING 536 cell census x width mix) and the re-weighting curve E213's terminal report will use alongside the composed stepq census. E212's shipped-share weighting switches to the composed census per Entry 430 (desk-only).
+
+**Actions this entry.** Feedback `e215-fb-premise-corrected-431` (PR 213) and `e212-fb-census-received-431` (PR 210) delivered. PR 196 hold acks remain no-action. Awaiting: receipt `5f508da5` terminal, E213 probe palindrome terminal, E212 band attribution + terminal, E215 leg matrix.
