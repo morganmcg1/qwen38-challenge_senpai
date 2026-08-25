@@ -47,11 +47,25 @@ gpu_temp() {
   echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "${out}/meta.txt"
 
-MLXFAST_RUN_E208_GATE=1 \
-MLXFAST_E208_GATE_OUT="${PWD}/${out}/gate.json" \
-  swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
-    --filter E208Wide9QMVTests 2>&1 | tee "${out}/gate.log"
+# SwiftPM copies `mlx.metallib` beside the debug test executable but not beside
+# the release one, and MLX resolves the default metallib from the executable's
+# own directory. Build first, place the metallib, then run without rebuilding.
+swift build -c release --force-resolved-versions -Xswiftc -enable-testing \
+  --build-tests 2>&1 | tee "${out}/build.log"
 status=${PIPESTATUS[0]}
+
+bundle=".build/arm64-apple-macosx/release/mlxfast-challenge-devPackageTests.xctest/Contents/MacOS"
+if [[ "${status}" -eq 0 ]]; then
+  cp .build/arm64-apple-macosx/release/mlx.metallib "${bundle}/" || status=1
+fi
+
+if [[ "${status}" -eq 0 ]]; then
+  MLXFAST_RUN_E208_GATE=1 \
+  MLXFAST_E208_GATE_OUT="${PWD}/${out}/gate.json" \
+    swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
+      --skip-build --filter E208Wide9QMVTests 2>&1 | tee "${out}/gate.log"
+  status=${PIPESTATUS[0]}
+fi
 
 {
   echo "gpu_temp_exit_c=$(gpu_temp)"
