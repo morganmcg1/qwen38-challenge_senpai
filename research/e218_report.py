@@ -342,10 +342,14 @@ def family_census(w_table: dict, b_table: dict) -> dict:
         w = w_table[str(m)]
         bands = {name: b["phase_ms"][name]["value"] for name in BANDS
                  if name in b["phase_ms"]}
-        # In a band-sync leg every band drains, so the forward's device time is
-        # the band sum plus whatever the final blocking eval still holds.
-        post = b["phase_ms"]["eval_wall_us"]["value"]
-        forward_b = sum(bands.values()) + post
+        # Every band drains inside the graph build, so the band-arm forward is
+        # verify_build + eval_wall and whatever it holds beyond the band sum is
+        # the final norm, the lm_head projection and the top-2 readout graph,
+        # which no `Qwen35BandTimer` lap covers. The serial body (m=1) reports
+        # the whole round as eval_wall with verify_build=0, so this residual
+        # form is the only definition that reads both round shapes.
+        forward_b = sum(b["phase_ms"][p]["value"] for p in FORWARD_PHASES)
+        post = forward_b - sum(bands.values())
         shares = {name: value / forward_b for name, value in bands.items()}
         shares["lm_head_readout"] = post / forward_b
         w_forward = sum(w["phase_ms"][p]["value"] for p in FORWARD_PHASES)
