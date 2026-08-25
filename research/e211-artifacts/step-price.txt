@@ -188,6 +188,17 @@ E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
    step           3.681378 |   -0.529%         +2.699%         +0.303%     
    step_e208      3.777460 |   +2.115%         +0.086%         +2.369%     
    worst transfer -1.271%
+
+  RECEIPT-PROOF TABLE (maximises the WORST per-law delta)
+     d           0       1       2       3       4       5       6       7
+     price   0.000   0.000   0.023   0.086   0.135   0.115   0.098   0.118
+     Q_(d+1)0.0000  0.0000  0.3184  0.6733  0.8535  0.8535  0.8535  0.9123
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+     paid under smooth         3.893649   +1.678% in-sample    +1.902% LOO-honest
+     paid under step           3.743157   +1.678% in-sample    +1.249% LOO-honest
+     paid under step_e208      3.843387   +1.745% in-sample    +1.829% LOO-honest
+     worst reading +1.678% in-sample, +1.249% LOO-honest
+     worst-prompt round mass relocated 0.926
 ==============================================================================
   DECISION
    law           in-sample   LOO-honest   level-only    structure
@@ -197,4 +208,5 @@ E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
 
    ASSIGNED RULE: IMPLEMENT under every law. Weakest law step_e208 at +2.312% LOO-honest.
    STRUCTURE READING: the step-aware SHAPE is worth +2.544% LOO-honest over a refitted level control.
-   TRANSFER: worst cross-law transfer of a fitted table is -1.271%.
+   TRANSFER: worst cross-law transfer of a per-law fitted table is -1.271%. A table fitted under a guessed reading can lose.
+   RECOMMENDED TABLE: the receipt-proof minimax table, +1.678% under its WORST reading (+1.249% LOO-honest). It needs no branch and does not wait for the receipt.

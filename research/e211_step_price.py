@@ -315,7 +315,7 @@ def _median_curve(tables, names, cuts, k, ts):
     n = len(names)
     med = (ordered[n // 2] if n % 2
            else 0.5 * (ordered[n // 2 - 1] + ordered[n // 2]))
-    return med, rows.mean(axis=0)
+    return med, rows.mean(axis=0), rows
 
 
 def _sweep_axis(tables, names, cuts, k):
@@ -324,7 +324,7 @@ def _sweep_axis(tables, names, cuts, k):
     if hi <= lo:
         return cuts[k], None
     ts = np.arange(lo, hi + 1)
-    med, mean = _median_curve(tables, names, cuts, k, ts)
+    med, mean, _rows = _median_curve(tables, names, cuts, k, ts)
     score = med + TIEBREAK * mean
     best = int(np.argmax(score))
     return int(ts[best]), float(score[best])
@@ -346,24 +346,35 @@ def ascend(tables, names, start, passes=60):
 
 # ------------------------------------------------- receipt-proof (minimax)
 
-def minimax_objective(law_tables, ship_medians, names, cuts):
-    rel = []
+GUARD = 100.0     # weight on a per-prompt regression, relative to the delta
+
+
+def minimax_objective(law_tables, ship_medians, names, cuts, floors=None):
+    rel, penalty = [], 0.0
     for key, tables in law_tables.items():
         raws = evaluate(tables, cuts)
         med = median_of([raws[n] for n in names])
         rel.append((med - ship_medians[key]) / ship_medians[key])
-    return min(rel) + TIEBREAK * (sum(rel) / len(rel))
+        if floors is not None:
+            for n in names:
+                penalty += max(0.0, floors[key][n] - raws[n]) / floors[key][n]
+    return (min(rel) + TIEBREAK * (sum(rel) / len(rel))
+            - GUARD * penalty / len(law_tables))
 
 
-def ascend_minimax(law_tables, ship_medians, names, start, passes=60):
-    """Maximise the WORST per-law delta.
+def ascend_minimax(law_tables, ship_medians, names, start, floors=None,
+                   passes=60):
+    """Maximise the WORST per-law delta, optionally with no prompt regressing.
 
     The `aff4ad64` receipt names the true 9-row cell only after a table has to
     be chosen, so the table that may be implemented is the one whose weakest
-    reading still pays, not the one that wins under a guessed reading.
+    reading still pays, not the one that wins under a guessed reading. The
+    optional floor forbids paying for the published median with a loss on any
+    single prompt, because the hidden pool is not the proxy pool and a prompt
+    that does not set the proxy median may set the hidden one.
     """
     cuts = list(start)
-    best = minimax_objective(law_tables, ship_medians, names, cuts)
+    best = minimax_objective(law_tables, ship_medians, names, cuts, floors)
     for _ in range(passes):
         moved = False
         for k in range(1, MAXD + 1):
@@ -372,12 +383,18 @@ def ascend_minimax(law_tables, ship_medians, names, start, passes=60):
                 continue
             ts = np.arange(lo, hi + 1)
             worst = total = None
+            penalty = np.zeros(ts.size)
             for key, tables in law_tables.items():
-                med, _mean = _median_curve(tables, names, cuts, k, ts)
+                med, _mean, rows = _median_curve(tables, names, cuts, k, ts)
                 rel = (med - ship_medians[key]) / ship_medians[key]
                 worst = rel if worst is None else np.minimum(worst, rel)
                 total = rel if total is None else total + rel
-            score = worst + TIEBREAK * total / len(law_tables)
+                if floors is not None:
+                    floor = np.array([floors[key][n] for n in names])[:, None]
+                    penalty += (np.maximum(0.0, floor - rows)
+                                / floor).sum(axis=0)
+            score = (worst + TIEBREAK * total / len(law_tables)
+                     - GUARD * penalty / len(law_tables))
             pick = int(np.argmax(score))
             if float(score[pick]) > best + 1e-15:
                 cuts[k], best, moved = int(ts[pick]), float(score[pick]), True
@@ -386,10 +403,11 @@ def ascend_minimax(law_tables, ship_medians, names, start, passes=60):
     return cuts, best
 
 
-def optimise_minimax(law_tables, ship_medians, names, rng):
+def optimise_minimax(law_tables, ship_medians, names, rng, floors=None):
     best_cuts, best_score = None, -1e18
     for seed in starts(rng):
-        cuts, score = ascend_minimax(law_tables, ship_medians, names, seed)
+        cuts, score = ascend_minimax(law_tables, ship_medians, names, seed,
+                                     floors)
         if score > best_score:
             best_cuts, best_score = cuts, score
     return best_cuts
@@ -589,6 +607,30 @@ def anchor_distance(tables, ship, cuts):
             "worst_round_mass_relocated": max(moved.values())}
 
 
+def validated_envelope(inst, law, arms):
+    """How far outside the PAID extrapolation range each arm sits.
+
+    Receipt A paid cap 7. Caps 4 and 5 are the only other schedules the
+    instrument was validated against a paid receipt on, so the round mass they
+    relocate away from cap 7 is the largest relocation the instrument is known
+    to survive. An arm that relocates far more mass than that is extrapolating
+    beyond the validated envelope, whatever its fitted median says.
+    """
+    tables = prompt_tables(inst, law)
+    anchor = ship_cuts(7)
+    ref = {"cap4": ship_cuts(4), "cap5": ship_cuts(5), "cap8": ship_cuts(8)}
+    validated = {k: anchor_distance(tables, anchor, c)
+                 ["worst_round_mass_relocated"] for k, c in ref.items()}
+    bar = max(validated["cap4"], validated["cap5"])
+    out = {"validated_relocation": validated, "validated_bar": bar, "arms": {}}
+    for name, cuts in arms.items():
+        d = anchor_distance(tables, anchor, cuts)["worst_round_mass_relocated"]
+        out["arms"][name] = {"relocation_vs_cap7": d,
+                             "envelope_ratio": d / bar,
+                             "inside_validated_envelope": bool(d <= bar)}
+    return out
+
+
 def run_law(inst, law, key, rng):
     tables = prompt_tables(inst, law)
     ship = ship_cuts(8)
@@ -717,27 +759,29 @@ def cross_law(inst, laws, results):
     return out
 
 
-def receipt_proof(inst, laws, rng):
-    """One table that must pay under EVERY live reading of the 9-row cell."""
-    law_tables = {key: prompt_tables(inst, laws[key]) for key in LAW_KEYS}
-    ship = {key: median_of([evaluate(law_tables[key], ship_cuts(8))[n]
-                            for n in ORDER]) for key in LAW_KEYS}
-    cuts = optimise_minimax(law_tables, ship, ORDER, rng)
+def _minimax_arm(law_tables, ship, floors, rng):
+    cuts = optimise_minimax(law_tables, ship, ORDER, rng, floors)
     price = price_of_cuts(cuts)
     agree, mismatches = verify_price(cuts, price)
 
-    per_law = {}
+    per_law, worst_prompt = {}, {}
     for key in LAW_KEYS:
         raws = evaluate(law_tables[key], cuts)
         value = median_of([raws[n] for n in ORDER])
+        ship_raw = evaluate(law_tables[key], ship_cuts(8))
+        prompt_pct = {n: pct(raws[n], ship_raw[n]) for n in ORDER}
+        worst_prompt[key] = min(prompt_pct, key=lambda n: prompt_pct[n])
         per_law[key] = {"published_median": value,
                         "delta_pct": pct(value, ship[key]),
-                        "per_prompt_raw": raws}
+                        "per_prompt_raw": raws,
+                        "per_prompt_delta_pct": prompt_pct,
+                        "worst_prompt_delta_pct":
+                            min(prompt_pct.values())}
 
     honest = {key: {} for key in LAW_KEYS}
     for held in ORDER:
         pool = [n for n in ORDER if n != held]
-        fold = optimise_minimax(law_tables, ship, pool, rng)
+        fold = optimise_minimax(law_tables, ship, pool, rng, floors)
         for key in LAW_KEYS:
             honest[key][held] = evaluate(law_tables[key], fold)[held]
     honest_out = {}
@@ -752,13 +796,39 @@ def receipt_proof(inst, laws, rng):
             "price_marginal": price["marginal"],
             "price_cumulative": price["cumulative"],
             "greedy_agreement": agree, "greedy_mismatches": mismatches,
-            "shipped": ship, "per_law": per_law, "loo_honest": honest_out,
+            "per_law": per_law, "loo_honest": honest_out,
             "worst_delta_pct": min(per_law[k]["delta_pct"] for k in LAW_KEYS),
             "worst_loo_honest_delta_pct":
                 min(honest_out[k]["delta_pct"] for k in LAW_KEYS),
+            "worst_prompt_delta_pct":
+                min(per_law[k]["worst_prompt_delta_pct"] for k in LAW_KEYS),
+            "worst_prompt": worst_prompt,
             "edl": edl_of(law_tables["step_e208"], cuts),
             "anchor_distance": anchor_distance(law_tables["step_e208"],
                                                ship_cuts(8), cuts)}
+
+
+def receipt_proof(inst, laws, rng):
+    """One table that must pay under EVERY live reading of the 9-row cell.
+
+    Two arms are reported. The free arm maximises the weakest per-law
+    published median. The guarded arm adds a floor that forbids any single
+    prompt falling below its shipped raw ratio, because the hidden pool is
+    not the proxy pool: a prompt that does not set the proxy median may set
+    the hidden one.
+    """
+    law_tables = {key: prompt_tables(inst, laws[key]) for key in LAW_KEYS}
+    ship = {key: median_of([evaluate(law_tables[key], ship_cuts(8))[n]
+                            for n in ORDER]) for key in LAW_KEYS}
+    floors = {key: evaluate(law_tables[key], ship_cuts(8))
+              for key in LAW_KEYS}
+
+    free = _minimax_arm(law_tables, ship, None, rng)
+    guarded = _minimax_arm(law_tables, ship, floors, rng)
+    out = dict(free)
+    out["shipped"] = ship
+    out["guarded"] = guarded
+    return out
 
 
 # ---------------------------------------------------------------- report
@@ -936,6 +1006,59 @@ def report(out):
              % (rp["worst_delta_pct"], rp["worst_loo_honest_delta_pct"]))
     L.append("     worst-prompt round mass relocated %.3f"
              % rp["anchor_distance"]["worst_round_mass_relocated"])
+    L.append("     WORST SINGLE PROMPT %+.3f%% (%s under %s). The published "
+             "median does not"
+             % (rp["worst_prompt_delta_pct"],
+                rp["worst_prompt"][min(LAW_KEYS, key=lambda k:
+                                       rp["per_law"][k]
+                                       ["worst_prompt_delta_pct"])],
+                min(LAW_KEYS, key=lambda k:
+                    rp["per_law"][k]["worst_prompt_delta_pct"])))
+    L.append("     see a prompt that loses, but the hidden pool is not the "
+             "proxy pool.")
+
+    gp = rp["guarded"]
+    L.append("")
+    L.append("  NO-REGRESSION GUARDED MINIMAX TABLE (no prompt may fall "
+             "below its shipped raw)")
+    L.append("     d      %s" % "  ".join("%6d" % d for d in range(MAXD)))
+    L.append("     price  %s"
+             % "  ".join("%6.3f" % v for v in gp["price_marginal"]))
+    L.append("     Q_(d+1)%s"
+             % "  ".join("%6.4f" % v for v in gp["thresholds"]))
+    L.append("     greedy-table agreement %.4f (%d mismatching grid points)"
+             % (gp["greedy_agreement"], gp["greedy_mismatches"]))
+    for key in LAW_KEYS:
+        L.append("     paid under %-10s %12.6f  %+7.3f%% in-sample   "
+                 "%+7.3f%% LOO-honest   worst prompt %+7.3f%%"
+                 % (key, gp["per_law"][key]["published_median"],
+                    gp["per_law"][key]["delta_pct"],
+                    gp["loo_honest"][key]["delta_pct"],
+                    gp["per_law"][key]["worst_prompt_delta_pct"]))
+    L.append("     worst reading %+.3f%% in-sample, %+.3f%% LOO-honest; "
+             "worst single prompt %+.3f%%"
+             % (gp["worst_delta_pct"], gp["worst_loo_honest_delta_pct"],
+                gp["worst_prompt_delta_pct"]))
+
+    ve = out["validated_envelope"]
+    L.append("")
+    L.append("  VALIDATED EXTRAPOLATION ENVELOPE (round mass moved away from "
+             "the PAID cap-7 anchor)")
+    L.append("   the instrument was checked against a paid receipt at caps 4 "
+             "and 5 only, so")
+    L.append("   their relocation is the largest the instrument is known to "
+             "survive.")
+    for name, value in sorted(ve["validated_relocation"].items()):
+        L.append("     %-16s %.3f%s" % (name, value,
+                                        "  <- validated" if name in
+                                        ("cap4", "cap5") else ""))
+    L.append("     validated bar    %.3f" % ve["validated_bar"])
+    for name in sorted(ve["arms"]):
+        a = ve["arms"][name]
+        L.append("     %-16s %.3f   %.2fx the bar   %s"
+                 % (name, a["relocation_vs_cap7"], a["envelope_ratio"],
+                    "inside" if a["inside_validated_envelope"]
+                    else "OUTSIDE the validated envelope"))
 
     d = out["decision"]
     L.append("=" * 78)
@@ -955,7 +1078,7 @@ def report(out):
     return "\n".join(L)
 
 
-def decide(laws_out, cross, proof):
+def decide(laws_out, cross, proof, envelope):
     """The assigned stop rule, plus the reading the decomposition forces.
 
     The assignment's statistic is the LOO-honest published-median improvement
@@ -1005,16 +1128,35 @@ def decide(laws_out, cross, proof):
     lines.append("TRANSFER: worst cross-law transfer of a per-law fitted "
                  "table is %+.3f%%. A table fitted under a guessed reading "
                  "can lose." % cross["worst_transfer_delta_pct"])
-    lines.append("RECOMMENDED TABLE: the receipt-proof minimax table, "
-                 "%+.3f%% under its WORST reading (%+.3f%% LOO-honest). It "
-                 "needs no branch and does not wait for the receipt."
-                 % (proof["worst_delta_pct"],
-                    proof["worst_loo_honest_delta_pct"]))
+    guarded = proof["guarded"]
+    lines.append("RECOMMENDED TABLE: the no-regression guarded minimax "
+                 "table, %+.3f%% under its WORST reading (%+.3f%% "
+                 "LOO-honest) with no prompt below %+.3f%%. The unguarded "
+                 "minimax table pays %+.3f%% but costs one prompt %+.3f%%, "
+                 "and the hidden pool is not the proxy pool."
+                 % (guarded["worst_delta_pct"],
+                    guarded["worst_loo_honest_delta_pct"],
+                    guarded["worst_prompt_delta_pct"],
+                    proof["worst_delta_pct"],
+                    proof["worst_prompt_delta_pct"]))
+    outside = [n for n, a in envelope["arms"].items()
+               if not a["inside_validated_envelope"]]
+    lines.append("ENVELOPE: %s sit outside the paid cap-4/cap-5 "
+                 "extrapolation envelope (bar %.3f). The predicted gain is a "
+                 "desk prediction that a paid receipt has not yet covered; "
+                 "an implementation must measure it."
+                 % (", ".join(sorted(outside)) if outside
+                    else "no arm", envelope["validated_bar"]))
     return {"per_law_verdict": verdicts, "best_law": best,
             "structure_premium_pct": struct,
             "receipt_proof_worst_pct": proof["worst_delta_pct"],
             "receipt_proof_worst_loo_honest_pct":
                 proof["worst_loo_honest_delta_pct"],
+            "guarded_worst_pct": guarded["worst_delta_pct"],
+            "guarded_worst_loo_honest_pct":
+                guarded["worst_loo_honest_delta_pct"],
+            "guarded_worst_prompt_pct": guarded["worst_prompt_delta_pct"],
+            "arms_outside_validated_envelope": sorted(outside),
             "verdict": lines}
 
 
@@ -1041,8 +1183,14 @@ def main():
         out["laws"][key] = run_law(inst, laws[key], key, rng)
     out["cross_law"] = cross_law(inst, laws, out["laws"])
     out["receipt_proof"] = receipt_proof(inst, laws, rng)
+    out["validated_envelope"] = validated_envelope(
+        inst, laws["step_e208"],
+        {"free_step_e208": cuts_of(out["laws"]["step_e208"]["optimum"]
+                                   ["cuts"]),
+         "minimax": cuts_of(out["receipt_proof"]["cuts"]),
+         "minimax_guarded": cuts_of(out["receipt_proof"]["guarded"]["cuts"])})
     out["decision"] = decide(out["laws"], out["cross_law"],
-                             out["receipt_proof"])
+                             out["receipt_proof"], out["validated_envelope"])
 
     text = report(out)
     print(text)
