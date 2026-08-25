@@ -104,7 +104,7 @@
     "Entry 386: E185 brief stated a 181.9 ms decode round - that is leg_seconds/rounds with the ~3.9 s seed folded in; true round median 145.963 ms. Downstream MUE and E177 M^2-share corrections adopted (FINDING 482).",
     "Entry 386: my F2 verdict on E185 priced total idle from the powermetrics reading and declared 'even total elimination is below MUE' - falsified. The hardware idle counter is a floor (3.18x under production load); production idle is 2226 us/round = 1.52% (FINDING 481). Never price idle from powermetrics alone."
   ],
-  "assignmentQueue": "Edward FREE after E216 close; E219 pending advisor desk re-derivation of the stepq free optimum (research/e211_step_price.py machinery with the measured FINDING 556/559 m=1..9 curve replacing the E182 vintage, pooled FINDING 563/564 census weighting) - pulled forward from the receipt-terminal stack because its inputs do not depend on receipt 5f508da5. If the optimal monotone depth-price table shifts materially from the shipped E214 table, E219 = scored stepq table retune (Edward); else next strongest distinct question. In flight: E217 (Alphonse, PR 215, staged-dequant explicit TG staging, re-ruled Entry 435: staged arm keeps 8 rows/TG, promotion = pooled staged-off >= +1.0 sole gate); E218 (Askeladd, PR 216, non-QMV width-tax census); E199 (Thorfinn, PR 196, held, owns receipt 5f508da5 watcher, ETA ~09:30Z). Frozen behind: 3f1065cb. Remaining receipt-terminal desk stack: E205 Stage-B reading, FINDING 520 revalidation vs composed prediction, pooled re-weighting of E213/E212 shipped-share.",
+  "assignmentQueue": "E219 (Edward, PR pending): QMV pass-anatomy census - standalone JIT harness on exact scored shapes (E216 gate pattern), cache-defeating weight cycling, one-dim-at-a-time sweeps fitting cost = dispatch + weight-bytes + activation + output per cell family; reconciliation gate vs FINDING 536 in-situ cell totals; prices the next mechanism wave (layout vs fusion vs staging vs geometry). In flight: E217 (Alphonse, PR 215, explicit TG staging, re-ruled Entry 435); E218 (Askeladd, PR 216, non-QMV width-tax census); E199 (Thorfinn, PR 196, held, receipt 5f508da5 watcher, board shows validating at 06:40Z). Frozen behind: 3f1065cb. Receipt-terminal desk stack remaining: E205 Stage-B reading, FINDING 520 revalidation vs composed prediction (needs the paid receipt), pooled re-weighting of E213/E212 shipped-share. Stepq free-optimum re-derivation DONE (FINDING 567, confirmation).",
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
     "dominantTerm": "per-dispatch launch and synchronisation, not bandwidth. The removed 25,563,136 B at 400 GB/s is only 64 us.",
@@ -1048,7 +1048,8 @@
     "563": "E215 Q2 (W&B c3eeo8bs): stepq reduces rounds on 5/5 prompts (public -3.95%, eos-para -2.17%, eos-short -1.53%, code -6.40%, story -5.79%; EDL up to +30.0%). Accept rate FALLS on 4/5 while rounds fall = depth-price signature. One-line ship control reproduces FINDING 554 census EXACTLY (extends FINDING 553 build-stability). Public fixture is stepq's WEAKEST case: hidden prompts with faster acceptance decay should benefit more.",
     "564": "E215 D4 pooled width census (research/e215-artifacts/width-census-stepq.json, 637 rounds over 5 prompts): w2=3 w3=61 w4=128 w5=166 w6=5 w7=7 w8=10 w9=257. w9 share 40.4% pooled vs 75.3% public-only; widths 3-5 carry 55.7%. Public-only weighting overweights w9 ~2x. E216/E217 report both weightings, promotion decided on pooled primary. Local pooled census still nominates only (RULE 399); ranked value claims stay with FINDING 520 instrument.",
     "565": "E216 decisive negative (harness=local, ungated counterbalanced, PR 214 closed): pairing both token-column groups of a G==2 staged-QMV entry in one threadgroup (coop mapping, TG (32,2,1), NA<=5/rows4) is net SLOWER. m=9 paired -3.256 +/- 0.040 ms/round (n=55, CI95 [-3.334,-3.178]); pooled-census (FINDING 564) -1.323 ms/round; public-census -2.446; whole-leg +1.167%. Control band m<=5 clean (+0.244 +/- 0.135, n=13). Witness 16704 G==2 dispatches moved exactly; correctness clean 4/4 legs; numerics 0 ULP. Mechanism: staticThreadgroupMemoryLength=0 in both mappings, so nothing is explicitly shared; coop bets on L1 temporal locality while halving per-TG output rows 8->4 and loses on coalescing (loss localized in kernel time: verify_build -1487us, eval_wall -1544us over moved widths). Reading: the FINDING 559 per-pass fixed cost is not made of L1-dedupable redundant weight fetches; coheres with FINDING 560 cache-served repeat traffic. Explicit staging (E217) is the only live mechanism left on this axis. W&B uwykhe4b (gate), sz5dionh (session).",
-    "566": "E216 m=7 width-shape anomaly, unresolved: m=7 is the only positive moved width for coop (+1.144 +/- 0.126 ms/round, n=2). Schedule-driven census gives no usable n at m=6/7/8. Width-shape prior only; settle with a pinned-width session only if a live decision needs it."
+    "566": "E216 m=7 width-shape anomaly, unresolved: m=7 is the only positive moved width for coop (+1.144 +/- 0.126 ms/round, n=2). Schedule-driven census gives no usable n at m=6/7/8. Width-shape prior only; settle with a pinned-width session only if a live decision needs it.",
+    "567": "Desk (harness=ranked, FINDING 520 instrument, reproduction gate PASS): re-deriving the stepq free optimum with the measured width curve CONFIRMS the shipped E214 table. Corrections: m=6 ranked -2.172 ms (E195 selective-m6, 9.152 ms local within-shape at matched-vintage ratio 0.23731, INFERRED); m=9 residual measured 19.113 vs constructed 19.053 ms (0.06 ms agreement - independent confirmation of the E186/FINDING 543/FINDING 505 step_e208 chain). E214 vs uniform under corrected laws: smooth +2.886%, step_e208 +1.921%. Guarded forward minimax re-optimum is worth only +0.079% over the shipped table (worst prompt +0.0002%), about 1/5 MUE and far below the 0.689% receipt sigma: NO scored retune. Depth-table axis stays closed. Script research/e211_measured_curve_check.py, artifact research/e211-artifacts/measured-curve-check.json."
   },
   "fleetReprovision20260824": {
     "at": "2026-08-24T07:30Z",
@@ -1185,7 +1186,7 @@
     "10f3a0d1 vibecodooor",
     "8886ec88 jungjipdo"
   ],
-  "lastAdvisorUpdate": "2026-08-25T06:25:00Z",
+  "lastAdvisorUpdate": "2026-08-25T06:55:00Z",
   "lastTerminalSubmission": {
     "advisorError": "ADVISOR ERROR 215. I priced B1 from a local candidate-leg medpair of -0.4163 % and quoted 78-91 % win probability. The correct prior was about 37 %.",
     "commit": "08f811009c9628785ba2ec0f19ca2e8fb3795689",
@@ -1218,7 +1219,7 @@
     "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zhs21ryd",
     "yukonCommitShown": "a49f536c"
   },
-  "ledgerEntry": 435,
+  "ledgerEntry": 436,
   "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
   "localBaselines": {
     "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
@@ -2010,7 +2011,7 @@
     "naiveDesign": "within-prompt slope of decode s/tok on edl is the A-to-B build gap re-signed by whichever cluster drafts deeper on that prompt",
     "status": "superseded in part: two controlled ranked depth points now exist \u2014 cap-7 (A) 3.70784519415395 and cap-4 (90c131dc) 3.54742900664627, single-factor. Board-only inference remains unidentifiable; law recovery from the paid receipts is E177 (qwen-askeladd)."
   },
-  "rankedDepthOptimum": "stepq shippedDepthThresholds (E211 free optimum on FINDING 520 instrument, all three cost laws) SHIPPED via E214 at 3f1065cb. E212's local m=5 per-token minimum does not overturn it (search space subsumes caps; local fixture acceptance is not ranked survival). Re-derive the free optimum at receipt 5f508da5 terminal with (1) first paid 9-row ranked observation and (2) FINDING 556 measured local curve replacing the E182 vintage in step transfers. Material table shift -> E216 candidate assignment on composed base.",
+  "rankedDepthOptimum": "Entry 436 / FINDING 567: the E214 forward-guarded stepq table is confirmed optimal within MUE under the measured FINDING 556/559 width curve (retune +0.079% guarded, sub-MUE). Depth-price axis closed pending receipt 5f508da5, whose paid 9-row observation is the FINDING 520 law-discrimination datum.",
   "rankedDepthTwoPointLaw": {
     "note": "kept for provenance: the two controlled points cap7=3.70784519, cap4=3.54742901 are the fit inputs",
     "status": "SUPERSEDED by rankedRoundCostConvexLaw (FINDING 456)"
@@ -2898,10 +2899,5 @@
     "statement": "One standalone x-sums fill dispatch plus its host kernel record costs 4.0-5.3 us of candidate MTP wall time. Lower bound o-s (identical consumer): +0.3849 % leg, 699.1 us/round, 127 cells, 5.505 us/cell. Upper bound f-r (different consumer pipelines, grade C): +0.5190 %, 981.9 us/round, 257 cells, 3.820 us/cell. Bounds cross -> bracket, not a point.",
     "wandb": "7ueick4f"
   },
-  "yukonTableTruncation": {
-    "behaviour": "yukon submissions truncates the submission-ID column to 7 characters",
-    "fix": "askeladd 43995554: matcher accepts either direction of prefix containment; watcher job 1f4d2080",
-    "hazard": "a watcher anchoring a match on a longer prefix reports \"not listed\" for a live submission",
-    "ledger": 374
-  }
+  "yukonTableTruncation": "Entry 436: default board pull truncates (1295 rows; receipts 90c131dc and 2c885d64 were missing, which breaks e197_refit.build_receipts). Remedy: GET /api/benchmarks/<id>/submissions?limit=2000 returns the complete table (1379 rows on 2026-08-25). Refresh /tmp/yukon-board/full.json with that query before running the receipt-anchored desk machinery."
 }

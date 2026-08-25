@@ -72832,3 +72832,27 @@ With `MLXFAST_SWIFT_BIN=research/capture-cli.sh`, `swift_build_required` (benchm
 **E217 re-ruled (feedback to Alphonse, PR 215):** the staged arm must NOT inherit coop geometry — keep 8 output rows per threadgroup and stage weights explicitly in threadgroup memory (bit-exact, group-64 granularity, RULE 400/403/HD-46 unchanged). The coop middle arm stays as specified and becomes a cross-host replication of FINDING 565 (expect about -1.3 pooled; material disagreement is itself a finding). Promotion re-ruled: pooled-census-weighted staged-off >= +1.0 ms/round is the sole gate; staged-coop is interpretive decomposition only (it now includes recovering coop's coalescing loss, so it overstates the dequant share).
 
 **Edward next (E219, pending desk work):** the stepq free-optimum re-derivation (receipt-terminal desk stack item) does not actually depend on receipt 5f508da5 — its inputs are the measured width curve (FINDING 556/559) and the multi-prompt census (FINDINGs 563/564), both in hand. Pulling it forward now: advisor re-runs the `research/e211_step_price.py` free-optimum machinery with the measured m=1..9 curve replacing the E182 vintage and pooled-census weighting. If the optimal monotone depth-price table shifts materially from the shipped E214 table, E219 = scored stepq table retune for Edward; otherwise Edward gets the strongest remaining distinct question. Receipt 5f508da5 remains in flight (ETA ~09:30Z); frozen 3f1065cb unchanged behind it.
+
+## Entry 436 — 2026-08-25T06:55Z — Desk: measured width curve CONFIRMS the shipped E214 stepq table; retune is sub-MUE; E219 assigned
+
+**Desk item closed (pulled forward from the receipt-terminal stack): the stepq free-optimum re-derivation under the measured width curve.** harness=ranked (FINDING 520 instrument, reproduction gate PASS). Script `research/e211_measured_curve_check.py`, artifact `research/e211-artifacts/measured-curve-check.json`.
+
+**FINDING 567 — the shipped E214 depth-price table is optimal within MUE under the measured width curve; the depth-table axis stays closed.**
+
+Inputs corrected against the E211 vintage forward laws, from the FINDING 556/559 census compared within-shape to the E186 receipt-vintage curve:
+
+- m=6 cell: the current tree is 9.152 ms/round cheaper locally than the receipt-vintage tree (E195 selective-m6; corroborated internally by the -9.152/+9.380 adjacent-step pair). Transferred at the matched-vintage 6-row ratio 0.23731 = ranked -2.172 ms. INFERRED (cross-vintage within-shape; levels are session-specific per FINDING 553, steps are level-free).
+- m=9 cell: measured post-E208 residual 19.113 ms replaces the constructed residual 19.053 ms (vintage dR9 39.827 minus FINDING 543's 20.774). Agreement to 0.06 ms — this independently CONFIRMS the step_e208 construction chain (E186 shape, FINDING 543 subtraction, FINDING 505 transfer).
+- m=7/m=8: unchanged within noise (+0.23/+2.09 ms, no causal mechanism, not transferred).
+
+Results (baseline and per-prompt floors = the SHIPPED E214 table, not the old uniform rule):
+
+- E214 vs uniform under corrected laws: smooth +2.886%, step_e208 +1.921% (vintage: +3.196%/+2.242%). The m=6 correction shaves the priced advantage but never threatens it.
+- Guarded forward minimax re-optimum over {smooth_meas, step_e208_meas}: worth only **+0.079% published median over the shipped table** (worst law, worst prompt +0.0002%, greedy agreement 1.0). That is about one fifth of the 0.39% MUE and far below the 0.689% receipt-channel sigma. LOO honesty can only shrink it. **No scored retune is justified.**
+- The re-optimum's cuts differ mainly at the cheap shallow end (q1 0.120 -> 0.058, q3 0.526 -> 0.479), exactly where the corrected m=6 price is felt — the structure of the shipped table is right and its residual misprice is worth nothing after guarding.
+
+FINDING 520 receipt revalidation (the paid 9-row observation discriminating smooth/step/step_e208) still requires receipt 5f508da5 and stays on the receipt-terminal stack.
+
+**Operational: Yukon board truncation remedy.** The default board pull now truncates (full.json had 1295 rows and had lost receipts C `90c131dc` and D `2c885d64`, breaking `e197_refit.build_receipts`). Remedy: `GET /api/benchmarks/<id>/submissions?limit=2000` returns the complete table (1379 rows, all campaign receipts present). Receipt 5f508da5 confirmed `validating` on this pull; crown unchanged (`ec24d591` 3.7291 promoted).
+
+**E219 assigned (Edward): QMV pass-anatomy census.** The per-pass fixed cost is the largest measured unattacked term (FINDING 559: second pass 0.80-0.91 of first; token columns cheap). E216 (FINDING 565) eliminated L1-dedupable redundant fetch as its composition; E217 is testing explicit staging as a mechanism. E219 measures the composition directly: standalone JIT harness on the exact scored shapes (E216 gate pattern), cache-defeating weight cycling, one-dimension-at-a-time sweeps to fit cost = dispatch + weight-bytes + activation + output terms per cell family, reconciliation gate against the in-situ FINDING 536 cell totals. Research-only. Decision map: weight-stream-dominated -> transform-layout experiments (scales/biases interleave, stream ordering); dispatch-dominated -> QMV dispatch fusion; activation/output-dominated -> staging; occupancy-limited -> geometry within FINDING 549 register limits.
