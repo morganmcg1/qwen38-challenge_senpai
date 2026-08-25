@@ -2010,6 +2010,11 @@ public final class Qwen36MTPBlockSession {
                 // Fixed build witness for the compiled QMV width plan. No
                 // runtime state, no hot-path counter.
                 + "qmv_plan=\(qwen35QMVWidthPlanWitness) "
+                // Weight-stream mapping census: routed wide-QMV launches that
+                // took the E216 paired grid, and the ones that took the
+                // shipped grid.
+                + "qmv_coop=\(qwen35QMVCoopLaunches) "
+                + "qmv_split=\(qwen35QMVSplitLaunches) "
                 // E174 step 1. `xs_uniq` counts DISTINCT activations among
                 // those fills, so `xs_fill - xs_uniq` per round is the number
                 // of fills that rebuilt a table an earlier cell in the same

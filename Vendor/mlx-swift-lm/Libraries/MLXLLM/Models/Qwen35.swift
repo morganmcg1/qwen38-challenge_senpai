@@ -1658,24 +1658,47 @@ func qwen35QMVVariant(m: Int, cell: Qwen35QMVCell) -> Qwen35QMVKernelVariant {
 public let qwen35QMVWidthPlanWitness =
     "selective-m6+ipg9-"
     + String(Qwen35CustomQMV.inputsPerGroup(9, variant: .staged))
+    + Qwen35CustomQMV.weightStream.witnessSuffix
 
 /// Geometry and width switch shared by both QMV pipelines. `table` decides
 /// whether the chunk-sum table is a bound buffer at all: the four-input
 /// pipeline has no such buffer and passes a null pointer that `USE_TABLE =
 /// false` never reads.
+///
+/// `paired` selects the E216 cooperative weight stream at every width whose
+/// plan entry needs exactly two input groups. The split mapping gives one
+/// threadgroup the eight output rows of one token-column group, so the two
+/// groups of a row slice sit in different threadgroups and each streams the
+/// same weight rows from device memory. The paired mapping gives one
+/// threadgroup the four output rows of BOTH token-column groups: simdgroup 0
+/// takes group 0, simdgroup 1 takes group 1, and both issue the same weight
+/// loads from one core with tight temporal locality.
+///
+/// The per-simdgroup call is identical in both mappings — same `NA`, same
+/// `rows_per_simd`, same `(first_m, out_row)` set across the whole grid — so
+/// the mapping cannot reorder any row's own reduction and the two forms are
+/// bit-exact against each other.
 func qwen35E120QMVSource(
-    table: Bool, variant: Qwen35QMVKernelVariant = .staged
+    table: Bool, variant: Qwen35QMVKernelVariant = .staged,
+    paired: Bool = false
 ) -> String {
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
     let cases = variant.pairs
         .map { m, ipg in
-            """
+            let coop =
+                paired && Qwen35CustomQMV.cooperativeWeightStream(m: m, ipg: ipg)
+            let group = coop ? "int(qmv_sgid)" : "int(qmv_tid.x)"
+            let row =
+                coop
+                ? "int(qmv_tid.y) * 4"
+                : "int(qmv_tid.y) * 8 + int(qmv_sgid) * 4"
+            return """
                     case \(m):
                         qwen_e120_qmv_m<\(m), \(ipg), \(flag)>(
                             w, scales, biases, x, \(sums), y,
                             qmv_k, qmv_n, qmv_stride,
-                            qmv_gx, qmv_out_row, qmv_lid);
+                            \(group), \(row), qmv_lid);
                         break;
             """
         }
@@ -1688,9 +1711,7 @@ func qwen35E120QMVSource(
             const int qmv_stride = qmv_m <= 8 ? 8 : 16;
             const uint3 qmv_tid = threadgroup_position_in_grid;
             const uint qmv_lid = thread_index_in_simdgroup;
-            const uint qmv_sgid = simdgroup_index_in_threadgroup;
-            const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
-            const int qmv_gx = int(qmv_tid.x);\(nullDecl)
+            const uint qmv_sgid = simdgroup_index_in_threadgroup;\(nullDecl)
             switch (qmv_m) {
         \(cases)
                 default:
@@ -1880,14 +1901,36 @@ private let qwen35CachedAffine4QMVTableKernelSinglePass = Qwen35CachedKernel(
     header: qwen35E120QMVHeader
 )
 
+private let qwen35CachedAffine4QMVKernelCoop = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_cw",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false, variant: .staged, paired: true),
+    header: qwen35E120QMVHeader
+)
+
+private let qwen35CachedAffine4QMVTableKernelCoop = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_cw",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true, variant: .staged, paired: true),
+    header: qwen35E120QMVHeader
+)
+
+/// The paired mapping exists for the `staged` plan only: `singlePass` has no
+/// two-group entry, so a paired `singlePass` source would be the split source
+/// under a second kernel name.
 private func qwen35CachedQMVKernel(
-    table: Bool, variant: Qwen35QMVKernelVariant
+    table: Bool, variant: Qwen35QMVKernelVariant,
+    stream: Qwen35CustomQMV.WeightStream
 ) -> Qwen35CachedKernel {
-    switch (table, variant) {
-    case (false, .staged): return qwen35CachedAffine4QMVKernel
-    case (true, .staged): return qwen35CachedAffine4QMVTableKernel
-    case (false, .singlePass): return qwen35CachedAffine4QMVKernelSinglePass
-    case (true, .singlePass): return qwen35CachedAffine4QMVTableKernelSinglePass
+    switch (table, variant, stream) {
+    case (false, .staged, .split): return qwen35CachedAffine4QMVKernel
+    case (true, .staged, .split): return qwen35CachedAffine4QMVTableKernel
+    case (false, .staged, .coop): return qwen35CachedAffine4QMVKernelCoop
+    case (true, .staged, .coop): return qwen35CachedAffine4QMVTableKernelCoop
+    case (false, .singlePass, _): return qwen35CachedAffine4QMVKernelSinglePass
+    case (true, .singlePass, _): return qwen35CachedAffine4QMVTableKernelSinglePass
     }
 }
 
@@ -1927,14 +1970,35 @@ private let qwen35CustomAffine4QMVTableKernelSinglePass = MLXFast.metalKernel(
     ensureRowContiguous: true
 )
 
+private let qwen35CustomAffine4QMVKernelCoop = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_cw",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false, variant: .staged, paired: true),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVTableKernelCoop = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_cw",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true, variant: .staged, paired: true),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
 private func qwen35UncachedQMVKernel(
-    table: Bool, variant: Qwen35QMVKernelVariant
+    table: Bool, variant: Qwen35QMVKernelVariant,
+    stream: Qwen35CustomQMV.WeightStream
 ) -> MLXFast.MLXFastKernel {
-    switch (table, variant) {
-    case (false, .staged): return qwen35CustomAffine4QMVKernel
-    case (true, .staged): return qwen35CustomAffine4QMVTableKernel
-    case (false, .singlePass): return qwen35CustomAffine4QMVKernelSinglePass
-    case (true, .singlePass): return qwen35CustomAffine4QMVTableKernelSinglePass
+    switch (table, variant, stream) {
+    case (false, .staged, .split): return qwen35CustomAffine4QMVKernel
+    case (true, .staged, .split): return qwen35CustomAffine4QMVTableKernel
+    case (false, .staged, .coop): return qwen35CustomAffine4QMVKernelCoop
+    case (true, .staged, .coop): return qwen35CustomAffine4QMVTableKernelCoop
+    case (false, .singlePass, _): return qwen35CustomAffine4QMVKernelSinglePass
+    case (true, .singlePass, _): return qwen35CustomAffine4QMVTableKernelSinglePass
     }
 }
 
@@ -2029,6 +2093,71 @@ public enum Qwen35CustomQMV {
         guard let raw, !raw.isEmpty else { return .sumTable }
         return Arm(rawValue: raw) ?? .sumTable
     }()
+
+    /// How the grid maps the two token-column groups of a two-pass width onto
+    /// threadgroups.
+    ///
+    /// `split` is the shipped mapping: threadgroup `(g, y)` runs token group
+    /// `g` over output rows `8y ..< 8y+8`, so the two groups of one row slice
+    /// land in different threadgroups and each streams the same weight rows
+    /// from device memory. E208 (FINDING 543) priced that second stream at
+    /// +20.774 ms per m = 9 round; FINDING 556 confirmed −21.37 cross-host.
+    ///
+    /// `coop` is the E216 mechanism: threadgroup `y` runs BOTH token groups
+    /// over output rows `4y ..< 4y+4`, one per simdgroup. The same threadgroup
+    /// count, the same per-simdgroup geometry (`NA <= 5`, `rows_per_simd = 4`),
+    /// and the same set of `(first_m, out_row)` calls — only the weight rows
+    /// are now read twice from one core instead of once from each of two.
+    public enum WeightStream: String, Sendable {
+        case split
+        case coop
+
+        var kernelNameSuffix: String { self == .split ? "" : "_cw" }
+        var witnessSuffix: String { self == .split ? "" : "+e216-coop-g2" }
+    }
+
+    /// The shipped weight-stream mapping. `DARKBLOOM_E216_QMV_ARM=coop` selects
+    /// the paired mapping so the research instrument can time both forms in one
+    /// binary. It is read once at process start and never varies with the
+    /// request, the prompt or the benchmark phase.
+    ///
+    /// The `DARKBLOOM_` prefix is required: `sanitizedRuntimeWorkerEnvironment`
+    /// forwards only `DARKBLOOM_` and `MLX_` names to the runtime worker, so an
+    /// `MLXFAST_`-prefixed override would silently time `split` on every arm.
+    /// The name is 22 UTF-8 bytes, well past the 15-byte inline-string limit, so
+    /// `strings` can witness the switch inside the built worker.
+    public static let weightStream: WeightStream = {
+        let raw = ProcessInfo.processInfo.environment["DARKBLOOM_E216_QMV_ARM"]
+        guard let raw, !raw.isEmpty else { return .split }
+        return WeightStream(rawValue: raw) ?? .split
+    }()
+
+    /// True when this plan entry streams the weights exactly twice, which is
+    /// the only case the paired mapping can deduplicate. A one-group width has
+    /// nothing to pair and would leave the second simdgroup idle; a three-group
+    /// width does not fit two simdgroups.
+    static func cooperativeWeightStream(m: Int, ipg: Int) -> Bool {
+        (m + ipg - 1) / ipg == 2
+    }
+
+    /// Launch geometry for one routed cell. The paired mapping keeps the
+    /// threadgroup count and the threadgroup shape of the split mapping: it
+    /// trades the `x` extent (one threadgroup per token group) for twice the
+    /// `y` extent (one threadgroup per four output rows instead of eight).
+    /// The grid is counted in threads.
+    static func launchGeometry(
+        m: Int, n: Int, variant: Qwen35QMVKernelVariant, stream: WeightStream
+    ) -> (grid: (Int, Int, Int), threadGroup: (Int, Int, Int), coop: Bool) {
+        let ipg = inputsPerGroup(m, variant: variant)
+        if stream == .coop, cooperativeWeightStream(m: m, ipg: ipg) {
+            return (grid: (32, (n / 4) * 2, 1), threadGroup: (32, 2, 1), coop: true)
+        }
+        return (
+            grid: (activeInputGroups(m, variant: variant) * 32, (n / 8) * 2, 1),
+            threadGroup: (32, 2, 1),
+            coop: false
+        )
+    }
 
     /// Widths the candidate-owned dispatch may take. M=1 stays on MLX
     /// (serial and the candidate share it, so speeding it does not move the
@@ -2178,22 +2307,31 @@ public enum Qwen35CustomQMV {
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
         let variant = Self.kernelVariant(cell)
-        let groups = Self.activeInputGroups(cell.m, variant: variant)
+        let stream = Self.weightStream
+        let geometry = Self.launchGeometry(
+            m: cell.m, n: cell.n, variant: variant, stream: stream)
+        if geometry.coop {
+            qwen35QMVCoopLaunches &+= 1
+        } else {
+            qwen35QMVSplitLaunches &+= 1
+        }
         if Qwen35KernelConfigCache.enabled {
-            return qwen35CachedQMVKernel(table: true, variant: variant)(
+            return qwen35CachedQMVKernel(
+                table: true, variant: variant, stream: stream)(
                 [w, scales, biases, x, xsums],
                 Qwen35KernelLaunch(
-                    grid: (groups * 32, (cell.n / 8) * 2, 1),
-                    threadGroup: (32, 2, 1),
+                    grid: geometry.grid,
+                    threadGroup: geometry.threadGroup,
                     outputShape: outShape.map(Int32.init),
                     outputDType: .bfloat16,
                     useTable: consume))
         }
-        return qwen35UncachedQMVKernel(table: true, variant: variant)(
+        return qwen35UncachedQMVKernel(
+            table: true, variant: variant, stream: stream)(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
-            grid: (groups * 32, (cell.n / 8) * 2, 1),
-            threadGroup: (32, 2, 1),
+            grid: geometry.grid,
+            threadGroup: geometry.threadGroup,
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]
         )[0]
@@ -2243,20 +2381,29 @@ public enum Qwen35CustomQMV {
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
         let variant = Self.kernelVariant(cell)
-        let groups = Self.activeInputGroups(cell.m, variant: variant)
+        let stream = Self.weightStream
+        let geometry = Self.launchGeometry(
+            m: cell.m, n: cell.n, variant: variant, stream: stream)
+        if geometry.coop {
+            qwen35QMVCoopLaunches &+= 1
+        } else {
+            qwen35QMVSplitLaunches &+= 1
+        }
         if Qwen35KernelConfigCache.enabled {
-            return qwen35CachedQMVKernel(table: false, variant: variant)(
+            return qwen35CachedQMVKernel(
+                table: false, variant: variant, stream: stream)(
                 [w, scales, biases, x],
                 Qwen35KernelLaunch(
-                    grid: (groups * 32, (cell.n / 8) * 2, 1),
-                    threadGroup: (32, 2, 1),
+                    grid: geometry.grid,
+                    threadGroup: geometry.threadGroup,
                     outputShape: outShape.map(Int32.init),
                     outputDType: .bfloat16))
         }
-        return qwen35UncachedQMVKernel(table: false, variant: variant)(
+        return qwen35UncachedQMVKernel(
+            table: false, variant: variant, stream: stream)(
             [w, scales, biases, x],
-            grid: (groups * 32, (cell.n / 8) * 2, 1),
-            threadGroup: (32, 2, 1),
+            grid: geometry.grid,
+            threadGroup: geometry.threadGroup,
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]
         )[0]
@@ -4919,6 +5066,14 @@ public nonisolated(unsafe) var qwen35RowTop32ArgPartitionDrafts: Int = 0
 /// much of the 257-site fill surface the inherited fusion actually covers.
 public nonisolated(unsafe) var qwen35XSumsSidecarHits: Int = 0
 public nonisolated(unsafe) var qwen35XSumsStandaloneFills: Int = 0
+
+/// Weight-stream mapping census. `Coop` counts routed launches that took the
+/// E216 paired grid, `Split` counts the ones that took the shipped grid. Their
+/// sum is the routed wide-QMV launch count, so the pair witnesses at run time
+/// which mapping the scored round actually executed, rather than which arm the
+/// environment requested.
+public nonisolated(unsafe) var qwen35QMVCoopLaunches: Int = 0
+public nonisolated(unsafe) var qwen35QMVSplitLaunches: Int = 0
 
 /// Distinct activations among those standalone fills, summed over rounds, so a
 /// per-round delta against `qwen35XSumsStandaloneFills` gives the round's
