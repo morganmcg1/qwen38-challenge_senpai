@@ -1,26 +1,27 @@
 #!/usr/bin/env bash
-# E213 Stage-1: decisive local timing of the staged QMV rows-per-group retune
-# and of the register-boundary control.
+# E213 Stage-1: decisive local timing of the single-pass QMV plan that a lower
+# rows_per_simd makes reachable.
 #
 #   research/e213_session.sh TAG_PREFIX [TOKENS]
 #
-# ONE binary, THREE arms selected at process start by DARKBLOOM_E213_QMV_ARM:
+# ONE binary, arms selected at process start by DARKBLOOM_E213_QMV_ARM:
 #
-#   off      shipped staged plan: (6,3) (7,4) (8,4) (9,5)
-#   retuned  the assigned family: (6,4) (7,5) (8,5) (9,5)
-#            (6,5) is not buildable, because 6 % 5 == 1 makes a one-input tail
-#            group, so m = 6 takes the widest legal first group, 4
-#   na6      the register-boundary control: (6,3) (7,4) (8,4) (9,6)
+#   off    shipped staged plan: (6,3) (7,4) (8,4) (9,5), all at rows_per_simd 4
+#   g1     (7,7) at rows 2, (8,8) at rows 1, (9,9) at rows 1; m <= 6 unchanged
+#   probe  (9,5) at rows 2: the attribution control, run only after a loss
 #
-# G(m) = ceil(m / IPG) is 2 at m = 6, 7, 8 and 9 in ALL THREE arms, so no arm
-# changes the number of weight passes. `retuned` therefore tests the row split
-# alone and is predicted null. `na6` holds the pass count and takes the widest
-# compiled body from NA = 5 (125 lane-weighted live values) to NA = 6 (144),
-# across the Apple 128-register boundary, so it can fail and it prices the
-# register term that FINDING 500 named.
+# G(m) = ceil(m / IPG) is 2 at m = 7, 8 and 9 in `off` and 1 in `g1`, so `g1`
+# removes the second weight pass at the widths that carry 76 % of cap-8 rounds.
+# It buys that pass by holding the live accumulator set under the Apple
+# 128-register boundary the AIR proxy located between NA = 5 at rows 4 (125
+# lane-weighted live values) and NA = 6 at rows 4 (144): (rows 2, NA 7) is 117,
+# (rows 1, NA 8) is 104 and (rows 1, NA 9) is 114. The cost side is real: a
+# lower rows_per_simd launches more threadgroups and re-reads the activation
+# rows more often, so the paired session decides.
 #
-# SIX legs in the palindrome off retuned na6 na6 retuned off, so monotone
-# session drift cancels to first order in the two orientations.
+# FOUR legs in the palindrome off g1 g1 off, so monotone session drift cancels
+# to first order in the two orientations. E213_ORDER overrides the sequence; the
+# `probe` arm runs in its own palindrome only if the g1 family loses.
 #
 # The arms run the identical cap-8 depth schedule. The contrast is kernel
 # dispatch only, so the round `(d, acc)` trajectory is a function of the head
@@ -50,7 +51,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 prefix="${1:?usage: research/e213_session.sh TAG_PREFIX [TOKENS]}"
 tokens="${2:-512}"
-order="${E213_ORDER:-off retuned na6 na6 retuned off}"
+order="${E213_ORDER:-off g1 g1 off}"
 
 out_root="research/out/${prefix}"
 worker="${PWD}/.build-worker/release/mlxfast-runtime-worker"
@@ -92,12 +93,12 @@ for arm in "${session[@]}"; do
     off)
       unset DARKBLOOM_E213_QMV_ARM
       expect_plan="selective-m6+ipg9-5" ;;
-    retuned)
-      export DARKBLOOM_E213_QMV_ARM=retuned
-      expect_plan="selective-m6+ipg9-5+e213-4-5-5-5" ;;
-    na6)
-      export DARKBLOOM_E213_QMV_ARM=na6
-      expect_plan="selective-m6+ipg9-6+e213-3-4-4-6" ;;
+    g1)
+      export DARKBLOOM_E213_QMV_ARM=g1
+      expect_plan="selective-m6+ipg9-9+e213-3x4-7x2-8x1-9x1" ;;
+    probe)
+      export DARKBLOOM_E213_QMV_ARM=probe
+      expect_plan="selective-m6+ipg9-5+e213-3x4-4x4-4x4-5x2" ;;
     *) echo "e213: unknown arm ${arm}" >&2; status=2; break ;;
   esac
 
@@ -129,7 +130,7 @@ for arm in "${session[@]}"; do
     2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')"
   {
     echo "tag=${prefix}"
-    echo "experiment=e213-ipg5-retune-m678"
+    echo "experiment=e213-rows-per-simd-g1"
     echo "harness=local"
     echo "e213_arm=${arm}"
     echo "e213_leg=${leg}"
@@ -144,7 +145,7 @@ for arm in "${session[@]}"; do
     echo "worker_digest_stable=$([[ "${before}" == "${after}" ]] && echo true || echo false)"
     echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | cut -d' ' -f1)"
     echo "candidate_sha=$(git rev-parse HEAD)"
-    echo "campaign_base_sha=523da3be9474973b99fc3bbada550f78ab862406"
+    echo "campaign_base_sha=e0c7a026aebc9dbdd579577964ad413a11ede6fc"
     echo "dirty_candidate_paths=$(
       git status --porcelain -- Sources Vendor Package.swift | wc -l | tr -d ' ')"
     echo "host=$(hostname)"

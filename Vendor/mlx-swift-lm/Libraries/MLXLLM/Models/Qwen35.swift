@@ -1424,7 +1424,7 @@ private let qwen35CompiledFusedSwiGLU:
 /// accumulation of the same BF16 expression tree, in the same `i` order, so the
 /// two paths agree bit for bit.
 let qwen35E120QMVHeader = """
-    template <int NA, bool USE_TABLE>
+    template <int NA, bool USE_TABLE, int ROWS>
     inline void qwen_e120_qmv_wide(
         const device uint32_t* w,
         const device bfloat16_t* scales,
@@ -1440,7 +1440,7 @@ let qwen35E120QMVHeader = """
         uint simd_lid
     ) {
         typedef vec<float, NA> VF;
-        constexpr int rows_per_simd = 4;
+        constexpr int rows_per_simd = ROWS;
         constexpr int values_per_thread = 16;
         constexpr int block_size = values_per_thread * 32;
         constexpr int bytes_per_lane = 8;
@@ -1525,7 +1525,7 @@ let qwen35E120QMVHeader = """
         }
     }
 
-    template <int M, int IPG, bool USE_TABLE>
+    template <int M, int IPG, bool USE_TABLE, int ROWS = 4>
     inline void qwen_e120_qmv_m(
         const device uint32_t* w,
         const device bfloat16_t* scales,
@@ -1547,11 +1547,11 @@ let qwen35E120QMVHeader = """
             return;
         }
         if (TAIL == 0 || M - first_m >= IPG) {
-            qwen_e120_qmv_wide<IPG, USE_TABLE>(
+            qwen_e120_qmv_wide<IPG, USE_TABLE, ROWS>(
                 w, scales, biases, x, xsums, y, in_vec_size, out_vec_size,
                 sums_stride, first_m, out_row, simd_lid);
         } else {
-            qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), USE_TABLE>(
+            qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), USE_TABLE, ROWS>(
                 w, scales, biases, x, xsums, y, in_vec_size, out_vec_size,
                 sums_stride, first_m, out_row, simd_lid);
         }
@@ -1579,33 +1579,53 @@ let qwen35E120QMVHeader = """
 /// cannot reorder any row's own reduction and the two partitions are
 /// bit-exact against each other.
 ///
-/// `stagedRetuned` and `stagedNA6` are E213 research arms, not shipped plans.
-/// `stagedRetuned` raises rows per group at m = 6, 7 and 8 as far as the
-/// template allows; `(6,5)` is not a legal partition, because `6 % 5 == 1`
-/// builds a one-input tail group, so m = 6 takes `(6,4)`. Every one of those
-/// widths already pays `G = 2`, so the arm changes the row split and nothing
-/// else. `stagedNA6` moves the m = 9 entry to `IPG = 6`, which keeps `G = 2`
-/// but takes the widest compiled body past the register budget that `IPG = 5`
-/// fits inside, so it isolates the register term at fixed weight traffic.
+/// `rows` is `rows_per_simd`, the output rows one simdgroup accumulates. A
+/// threadgroup runs two simdgroups, so it covers `2 * rows` output rows and the
+/// launcher scales the y extent by the same factor. Every shipped entry uses 4,
+/// the value E120 hard coded.
+///
+/// `stagedG1` and `probeRows2` are E213 research arms, not shipped plans.
+/// The kernel holds `rows * NA` live float accumulators, and the AIR
+/// register-pressure proxy puts the Apple 128-register boundary between
+/// `rows = 4, NA = 5` (125 lane-weighted live values) and `rows = 4, NA = 6`
+/// (144). That boundary, not the group count, is what stopped E195's
+/// single-pass form at m = 7 and m = 8. `stagedG1` lowers `rows` far enough to
+/// hold `IPG = m` under the boundary at m = 7, 8 and 9, so those widths stream
+/// the weights once instead of twice: `(7, 7, 2)` is 117 live values, `(8, 8, 1)`
+/// is 104 and `(9, 9, 1)` is 114. `probeRows2` is the attribution control for a
+/// loss: it holds `G = 2` at m = 9 and lowers `rows` alone, so it prices low
+/// `rows_per_simd` without the weight pass it is meant to buy.
 enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
     case staged
     case singlePass = "singlepass"
-    case stagedRetuned = "stagedretuned"
-    case stagedNA6 = "stagedna6"
+    case stagedG1 = "stagedg1"
+    case probeRows2 = "proberows2"
 
-    /// `(width, inputs per group)`. The Metal body maps group `g` to
-    /// `first_m = g * IPG`, so the pair fixes both the template instantiation
-    /// and the launched x-extent.
-    var pairs: [(m: Int, ipg: Int)] {
+    /// `(width, inputs per group, rows per simdgroup)`. The Metal body maps
+    /// group `g` to `first_m = g * IPG`, so the entry fixes the template
+    /// instantiation, the launched x extent and the launched y extent.
+    var pairs: [(m: Int, ipg: Int, rows: Int)] {
         switch self {
         case .staged:
-            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 5)]
+            return [
+                (2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4),
+                (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 5, 4),
+            ]
         case .singlePass:
-            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 3)]
-        case .stagedRetuned:
-            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 4), (7, 5), (8, 5), (9, 5)]
-        case .stagedNA6:
-            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 6)]
+            return [
+                (2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4),
+                (6, 6, 4), (7, 7, 4), (8, 8, 4), (9, 3, 4),
+            ]
+        case .stagedG1:
+            return [
+                (2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4),
+                (6, 3, 4), (7, 7, 2), (8, 8, 1), (9, 9, 1),
+            ]
+        case .probeRows2:
+            return [
+                (2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4),
+                (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 5, 2),
+            ]
         }
     }
 
@@ -1613,23 +1633,23 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
         switch self {
         case .staged: return ""
         case .singlePass: return "_sp"
-        case .stagedRetuned: return "_rt"
-        case .stagedNA6: return "_n6"
+        case .stagedG1: return "_g1"
+        case .probeRows2: return "_p2"
         }
     }
 }
 
 /// E213 arm. `DARKBLOOM_E213_QMV_ARM` selects the staged plan a leg serves:
-/// `retuned` and `na6` name the two research tables, and anything else keeps
-/// the shipped plan. One build carries all three, and each compiles under its
-/// own JIT kernel name, so a leg cannot serve another arm's compiled source.
+/// `g1` and `probe` name the two research tables, and anything else keeps the
+/// shipped plan. One build carries all three, and each compiles under its own
+/// JIT kernel name, so a leg cannot serve another arm's compiled source.
 ///
 /// Read once at first use, never on the hot path: `qwen35QMVVariant` resolves
 /// the same global in every arm, so the arms pay identical selection cost.
 let qwen35E213StagedVariant: Qwen35QMVKernelVariant = {
     switch ProcessInfo.processInfo.environment["DARKBLOOM_E213_QMV_ARM"] {
-    case "retuned": return .stagedRetuned
-    case "na6": return .stagedNA6
+    case "g1": return .stagedG1
+    case "probe": return .probeRows2
     default: return .staged
     }
 }()
@@ -1702,7 +1722,7 @@ func qwen35QMVWidthPlanWitnessText(for variant: Qwen35QMVKernelVariant) -> Strin
     guard variant != .staged else { return base }
     let staged = variant.pairs
         .filter { $0.m >= 6 }
-        .map { String($0.ipg) }
+        .map { "\($0.ipg)x\($0.rows)" }
         .joined(separator: "-")
     return base + "+e213-" + staged
 }
@@ -1720,13 +1740,24 @@ func qwen35E120QMVSource(
     let sums = table ? "xsums" : "qmv_null_sums"
     let flag = table ? "USE_TABLE" : "false"
     let cases = variant.pairs
-        .map { m, ipg in
-            """
-                    case \(m):
-                        qwen_e120_qmv_m<\(m), \(ipg), \(flag)>(
+        .map { entry in
+            // `rows_per_simd` defaults to 4, and a width that keeps it emits
+            // the E120 text unchanged, so an untouched width cannot drift.
+            let arguments =
+                entry.rows == 4
+                ? "\(entry.m), \(entry.ipg), \(flag)"
+                : "\(entry.m), \(entry.ipg), \(flag), \(entry.rows)"
+            let outRow =
+                entry.rows == 4
+                ? "qmv_out_row"
+                : "int(qmv_tid.y) * \(2 * entry.rows) "
+                    + "+ int(qmv_sgid) * \(entry.rows)"
+            return """
+                    case \(entry.m):
+                        qwen_e120_qmv_m<\(arguments)>(
                             w, scales, biases, x, \(sums), y,
                             qmv_k, qmv_n, qmv_stride,
-                            qmv_gx, qmv_out_row, qmv_lid);
+                            qmv_gx, \(outRow), qmv_lid);
                         break;
             """
         }
@@ -1931,35 +1962,35 @@ private let qwen35CachedAffine4QMVTableKernelSinglePass = Qwen35CachedKernel(
     header: qwen35E120QMVHeader
 )
 
-private let qwen35CachedAffine4QMVKernelRetuned = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_rt",
+private let qwen35CachedAffine4QMVKernelG1 = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_g1",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false, variant: .stagedRetuned),
+    source: qwen35E120QMVSource(table: false, variant: .stagedG1),
     header: qwen35E120QMVHeader
 )
 
-private let qwen35CachedAffine4QMVTableKernelRetuned = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_rt",
+private let qwen35CachedAffine4QMVTableKernelG1 = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_g1",
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true, variant: .stagedRetuned),
+    source: qwen35E120QMVSource(table: true, variant: .stagedG1),
     header: qwen35E120QMVHeader
 )
 
-private let qwen35CachedAffine4QMVKernelNA6 = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_n6",
+private let qwen35CachedAffine4QMVKernelRows2 = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_p2",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false, variant: .stagedNA6),
+    source: qwen35E120QMVSource(table: false, variant: .probeRows2),
     header: qwen35E120QMVHeader
 )
 
-private let qwen35CachedAffine4QMVTableKernelNA6 = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_n6",
+private let qwen35CachedAffine4QMVTableKernelRows2 = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_p2",
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true, variant: .stagedNA6),
+    source: qwen35E120QMVSource(table: true, variant: .probeRows2),
     header: qwen35E120QMVHeader
 )
 
@@ -1971,10 +2002,10 @@ private func qwen35CachedQMVKernel(
     case (true, .staged): return qwen35CachedAffine4QMVTableKernel
     case (false, .singlePass): return qwen35CachedAffine4QMVKernelSinglePass
     case (true, .singlePass): return qwen35CachedAffine4QMVTableKernelSinglePass
-    case (false, .stagedRetuned): return qwen35CachedAffine4QMVKernelRetuned
-    case (true, .stagedRetuned): return qwen35CachedAffine4QMVTableKernelRetuned
-    case (false, .stagedNA6): return qwen35CachedAffine4QMVKernelNA6
-    case (true, .stagedNA6): return qwen35CachedAffine4QMVTableKernelNA6
+    case (false, .stagedG1): return qwen35CachedAffine4QMVKernelG1
+    case (true, .stagedG1): return qwen35CachedAffine4QMVTableKernelG1
+    case (false, .probeRows2): return qwen35CachedAffine4QMVKernelRows2
+    case (true, .probeRows2): return qwen35CachedAffine4QMVTableKernelRows2
     }
 }
 
@@ -2014,38 +2045,38 @@ private let qwen35CustomAffine4QMVTableKernelSinglePass = MLXFast.metalKernel(
     ensureRowContiguous: true
 )
 
-private let qwen35CustomAffine4QMVKernelRetuned = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_rt",
+private let qwen35CustomAffine4QMVKernelG1 = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_g1",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false, variant: .stagedRetuned),
+    source: qwen35E120QMVSource(table: false, variant: .stagedG1),
     header: qwen35E120QMVHeader,
     ensureRowContiguous: true
 )
 
-private let qwen35CustomAffine4QMVTableKernelRetuned = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_rt",
+private let qwen35CustomAffine4QMVTableKernelG1 = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_g1",
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true, variant: .stagedRetuned),
+    source: qwen35E120QMVSource(table: true, variant: .stagedG1),
     header: qwen35E120QMVHeader,
     ensureRowContiguous: true
 )
 
-private let qwen35CustomAffine4QMVKernelNA6 = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_n6",
+private let qwen35CustomAffine4QMVKernelRows2 = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_p2",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false, variant: .stagedNA6),
+    source: qwen35E120QMVSource(table: false, variant: .probeRows2),
     header: qwen35E120QMVHeader,
     ensureRowContiguous: true
 )
 
-private let qwen35CustomAffine4QMVTableKernelNA6 = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_n6",
+private let qwen35CustomAffine4QMVTableKernelRows2 = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_p2",
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true, variant: .stagedNA6),
+    source: qwen35E120QMVSource(table: true, variant: .probeRows2),
     header: qwen35E120QMVHeader,
     ensureRowContiguous: true
 )
@@ -2058,10 +2089,10 @@ private func qwen35UncachedQMVKernel(
     case (true, .staged): return qwen35CustomAffine4QMVTableKernel
     case (false, .singlePass): return qwen35CustomAffine4QMVKernelSinglePass
     case (true, .singlePass): return qwen35CustomAffine4QMVTableKernelSinglePass
-    case (false, .stagedRetuned): return qwen35CustomAffine4QMVKernelRetuned
-    case (true, .stagedRetuned): return qwen35CustomAffine4QMVTableKernelRetuned
-    case (false, .stagedNA6): return qwen35CustomAffine4QMVKernelNA6
-    case (true, .stagedNA6): return qwen35CustomAffine4QMVTableKernelNA6
+    case (false, .stagedG1): return qwen35CustomAffine4QMVKernelG1
+    case (true, .stagedG1): return qwen35CustomAffine4QMVTableKernelG1
+    case (false, .probeRows2): return qwen35CustomAffine4QMVKernelRows2
+    case (true, .probeRows2): return qwen35CustomAffine4QMVTableKernelRows2
     }
 }
 
@@ -2186,6 +2217,30 @@ public enum Qwen35CustomQMV {
         return (m + ipg - 1) / ipg
     }
 
+    /// Output rows one simdgroup accumulates at this width, read from the same
+    /// table the kernel source compiles.
+    static func rowsPerSimd(_ m: Int, variant: Qwen35QMVKernelVariant) -> Int {
+        guard let entry = variant.pairs.first(where: { $0.m == m }) else {
+            preconditionFailure("Qwen wide QMV has no width plan for \(m)")
+        }
+        return entry.rows
+    }
+
+    /// The launched thread extents of one wide QMV call. `dispatch_threads`
+    /// counts threads, and the threadgroup is `(32, 2, 1)`: two simdgroups, each
+    /// covering `rows` output rows. `routable` admits only `n % 8 == 0`, and
+    /// every plan entry uses `rows` in {1, 2, 4}, so `2 * rows` divides `n` and
+    /// the y extent covers each output row exactly once.
+    static func launchGrid(m: Int, n: Int, variant: Qwen35QMVKernelVariant)
+        -> (Int, Int, Int)
+    {
+        let rows = rowsPerSimd(m, variant: variant)
+        return (
+            activeInputGroups(m, variant: variant) * 32,
+            (n / (2 * rows)) * 2, 1
+        )
+    }
+
     /// The compiled kernel form this `(cell, width)` uses under the shipped
     /// width plan.
     static func kernelVariant(_ cell: (m: Int, k: Int, n: Int))
@@ -2305,12 +2360,12 @@ public enum Qwen35CustomQMV {
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
         let variant = Self.kernelVariant(cell)
-        let groups = Self.activeInputGroups(cell.m, variant: variant)
+        let grid = Self.launchGrid(m: cell.m, n: cell.n, variant: variant)
         if Qwen35KernelConfigCache.enabled {
             return qwen35CachedQMVKernel(table: true, variant: variant)(
                 [w, scales, biases, x, xsums],
                 Qwen35KernelLaunch(
-                    grid: (groups * 32, (cell.n / 8) * 2, 1),
+                    grid: grid,
                     threadGroup: (32, 2, 1),
                     outputShape: outShape.map(Int32.init),
                     outputDType: .bfloat16,
@@ -2319,7 +2374,7 @@ public enum Qwen35CustomQMV {
         return qwen35UncachedQMVKernel(table: true, variant: variant)(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
-            grid: (groups * 32, (cell.n / 8) * 2, 1),
+            grid: grid,
             threadGroup: (32, 2, 1),
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]
@@ -2370,19 +2425,19 @@ public enum Qwen35CustomQMV {
         var outShape = x.shape
         outShape[outShape.count - 1] = cell.n
         let variant = Self.kernelVariant(cell)
-        let groups = Self.activeInputGroups(cell.m, variant: variant)
+        let grid = Self.launchGrid(m: cell.m, n: cell.n, variant: variant)
         if Qwen35KernelConfigCache.enabled {
             return qwen35CachedQMVKernel(table: false, variant: variant)(
                 [w, scales, biases, x],
                 Qwen35KernelLaunch(
-                    grid: (groups * 32, (cell.n / 8) * 2, 1),
+                    grid: grid,
                     threadGroup: (32, 2, 1),
                     outputShape: outShape.map(Int32.init),
                     outputDType: .bfloat16))
         }
         return qwen35UncachedQMVKernel(table: false, variant: variant)(
             [w, scales, biases, x],
-            grid: (groups * 32, (cell.n / 8) * 2, 1),
+            grid: grid,
             threadGroup: (32, 2, 1),
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]

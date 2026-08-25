@@ -4,12 +4,19 @@
 #   research/e213_gate.sh TAG
 #
 # Compares each E213 arm against the shipped plan, at every width that arm
-# moves and at all seven fused decode cells, on real packed 4-bit weights and
-# real bfloat16 activations, as actual floating-point values. The expectation is
-# bit-exact; a positive control proves the comparison can fail.
+# moves, at all seven fused decode cells and at one n = 4104 edge cell, on real
+# packed 4-bit weights and real bfloat16 activations, as actual floating-point
+# values. The expectation is bit-exact; a positive control under both geometries
+# proves the comparison can fail.
 #
-#   retuned  (6,3)->(6,4), (7,4)->(7,5), (8,4)->(8,5). (6,5) is not buildable.
-#   na6      (9,5)->(9,6), the register-boundary control at fixed G = 2.
+#   g1     (7,4,rows4)->(7,7,rows2), (8,4,rows4)->(8,8,rows1),
+#          (9,5,rows4)->(9,9,rows1): G = 1 at the three widths, held under the
+#          128-register boundary by a lower rows_per_simd.
+#   probe  (9,5,rows4)->(9,5,rows2): the attribution control at fixed G = 2.
+#
+# It also compares the shipped rows = 4 path against the pre-E213 header at
+# every width, so the ROWS parameterization cannot have moved untouched code,
+# and it asserts that the launched y extent covers every output row once.
 #
 # No timing. No thermal gate. No score.
 set -uo pipefail
@@ -29,7 +36,7 @@ gpu_temp() {
 {
   echo "tag=${tag}"
   echo "section=stage0-numerics-gate"
-  echo "experiment=e213-ipg5-retune-m678"
+  echo "experiment=e213-rows-per-simd-g1"
   echo "harness=local"
   echo "cool_gate_passed_real_gate=false"
   echo "gate_qualified_for_timing=false"
@@ -66,7 +73,7 @@ if [[ "${status}" -eq 0 ]]; then
   MLXFAST_RUN_E213_GATE=1 \
   MLXFAST_E213_GATE_OUT="${PWD}/${out}/gate.json" \
     swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
-      --skip-build --filter E213RetuneQMVTests 2>&1 | tee "${out}/gate.log"
+      --skip-build --filter E213RowsPerSimdQMVTests 2>&1 | tee "${out}/gate.log"
   status=${PIPESTATUS[0]}
 fi
 

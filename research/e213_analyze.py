@@ -3,10 +3,10 @@
 
     usage: research/e213_analyze.py SESSION_DIR [OUT_JSON]
 
-Three arms: `off` (shipped plan), `retuned` (the assigned rows-per-group family
-with (6,4) in place of the impossible (6,5)) and `na6` (the register-boundary
-control at m = 9). Every arm keeps G = 2 at m = 6, 7, 8 and 9, so no arm changes
-the weight-pass count.
+Arms: `off` (shipped plan, rows_per_simd 4 everywhere), `g1` (single pass at
+m = 7, 8 and 9, bought by rows_per_simd 2, 1 and 1) and `probe` (the attribution
+control that lowers rows_per_simd at m = 9 while holding G = 2). `g1` is the
+only arm that changes a weight-pass count.
 
 Decision statistics (RULE 394 -- round endpoint or leg absolute only):
 
@@ -41,7 +41,7 @@ TRACE_ROUND = re.compile(r"^mtp-trace: round=(\d+) ")
 
 # Widths each arm moves. An arm changes nothing at any other width, so these are
 # the only rounds where its mechanism can act.
-ARM_WIDTHS = {"retuned": [6, 7, 8], "na6": [9]}
+ARM_WIDTHS = {"g1": [7, 8, 9], "probe": [9]}
 
 
 def parse_meta(path: pathlib.Path) -> dict:
@@ -251,7 +251,7 @@ def main() -> int:
             )
 
     result = {
-        "experiment": "e213-ipg5-retune-m678",
+        "experiment": "e213-rows-per-simd-g1",
         "harness": "local",
         "cool_gate_passed_real_gate": legs[0]["cool_gate_passed_real_gate"],
         "gate_qualified_for_timing": legs[0]["gate_qualified_for_timing"],
