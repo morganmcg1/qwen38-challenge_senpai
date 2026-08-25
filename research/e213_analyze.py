@@ -4,9 +4,10 @@
     usage: research/e213_analyze.py SESSION_DIR [OUT_JSON]
 
 Arms: `off` (shipped plan, rows_per_simd 4 everywhere), `g1` (single pass at
-m = 7, 8 and 9, bought by rows_per_simd 2, 1 and 1) and `probe` (the attribution
-control that lowers rows_per_simd at m = 9 while holding G = 2). `g1` is the
-only arm that changes a weight-pass count.
+m = 7, 8 and 9, bought by rows_per_simd 1) and `probe` (the attribution control
+that applies the same rows_per_simd 1 dose at m = 9 while holding G = 2). `g1`
+is the only arm that changes a weight-pass count, so the g1-minus-probe
+difference at m = 9 is the value of G = 1 alone.
 
 Decision statistics (RULE 394 -- round endpoint or leg absolute only):
 

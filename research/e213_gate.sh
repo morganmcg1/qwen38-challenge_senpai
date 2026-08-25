@@ -12,7 +12,7 @@
 #   g1     (7,4,rows4)->(7,7,rows1), (8,4,rows4)->(8,8,rows1),
 #          (9,5,rows4)->(9,9,rows1): G = 1 at the three widths, held under the
 #          128-register boundary by a lower rows_per_simd.
-#   probe  (9,5,rows4)->(9,5,rows2): the attribution control at fixed G = 2.
+#   probe  (9,5,rows4)->(9,5,rows1): the attribution control at fixed G = 2.
 #
 # It also compares the shipped rows = 4 path against the pre-E213 header at
 # every width, so the ROWS parameterization cannot have moved untouched code,

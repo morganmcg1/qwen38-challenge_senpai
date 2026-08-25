@@ -33,12 +33,12 @@ import Testing
 // `(rows 1, NA 7)` = 94, `(rows 1, NA 8)` = 104 and `(rows 1, NA 9)` = 114 all
 // sit under today's shipped 125 while giving `G = 1`. That is the `g1` arm: it
 // removes the second weight pass at the three widths that carry 76 % of cap-8
-// rounds. `probeRows2` is the attribution control for a loss: `(9, 5, rows 2)`
+// rounds. `probeRows1` is the attribution control for a loss: `(9, 5, rows 1)`
 // holds `G = 2` and lowers `rows` alone.
 //
 // m = 7 uses `rows = 1` rather than the cheaper-looking `rows = 2`: the first
 // `g1` gate found `<NA = 7, USE_TABLE = false, ROWS = 2>` numerically wrong at
-// every cell, while `<NA = 7, ROWS = 4>` and `<NA = 5, ROWS = 2>` are both bit
+// every cell, while `<NA = 7, ROWS = 4>` and `<NA = 5, ROWS = 2>` were both bit
 // exact. Only that pair is wrong, and no plan may compile it.
 //
 // Four sections:
@@ -336,7 +336,7 @@ struct E213RowsPerSimdQMVTests {
     /// every other width.
     static let armWidths: [(variant: Qwen35QMVKernelVariant, moved: [Int])] = [
         (.stagedG1, [7, 8, 9]),
-        (.probeRows2, [9]),
+        (.probeRows1, [9]),
     ]
 
     /// Lane-weighted peak live values that `research/e213_regs.py` counts in
@@ -344,7 +344,7 @@ struct E213RowsPerSimdQMVTests {
     /// them next to the plan, so the register claim travels with the evidence.
     static let registerProxy: [String: Int] = [
         "4x5": 125, "4x6": 144, "4x7": 155, "4x8": 175, "4x9": 195,
-        "1x7": 94, "1x8": 104, "1x9": 114, "2x5": 91, "2x7": 117,
+        "1x7": 94, "1x8": 104, "1x9": 114, "1x5": 74, "2x7": 117,
     ]
 
     // MARK: - plan table
@@ -379,7 +379,7 @@ struct E213RowsPerSimdQMVTests {
         }
 
         // What the arms claim about weight passes. `g1` removes the second pass
-        // at m = 7, 8 and 9; `probeRows2` holds every group count, which is what
+        // at m = 7, 8 and 9; `probeRows1` holds every group count, which is what
         // makes it an attribution control rather than a second mechanism.
         for m in Qwen35CustomQMV.widths {
             let expected =
@@ -390,7 +390,7 @@ struct E213RowsPerSimdQMVTests {
                     == expected,
                 "g1 group count at m = \(m)")
             #expect(
-                Qwen35CustomQMV.activeInputGroups(m, variant: .probeRows2)
+                Qwen35CustomQMV.activeInputGroups(m, variant: .probeRows1)
                     == Qwen35CustomQMV.activeInputGroups(m, variant: .staged),
                 "probe must not move a group count at m = \(m)")
         }
@@ -462,8 +462,8 @@ struct E213RowsPerSimdQMVTests {
             qwen35QMVWidthPlanWitnessText(for: .stagedG1)
                 == "selective-m6+ipg9-9+e213-3x4-7x1-8x1-9x1")
         #expect(
-            qwen35QMVWidthPlanWitnessText(for: .probeRows2)
-                == "selective-m6+ipg9-5+e213-3x4-4x4-4x4-5x2")
+            qwen35QMVWidthPlanWitnessText(for: .probeRows1)
+                == "selective-m6+ipg9-5+e213-3x4-4x4-4x4-5x1")
         // No arm selected means the shipped plan, so a stray environment cannot
         // publish a research table as the shipped one.
         #expect(
@@ -547,8 +547,8 @@ struct E213RowsPerSimdQMVTests {
     ///
     /// The sweep separates the candidate causes over the `(NA, ROWS)` grid:
     /// `singlePass` at m = 7 is `NA = 7` at the shipped `ROWS = 4`, and
-    /// `probeRows2` at m = 9 is `ROWS = 2` at `NA = 5`. Both agree, so neither
-    /// `NA = 7` nor `ROWS = 2` is wrong on its own and only the pair is.
+    /// `probeRows1` at m = 9 is `ROWS = 1` at `NA = 5`. Both agree, so neither
+    /// `NA = 7` nor a low `ROWS` is wrong alone, and only that pair is.
     ///
     /// Two claims this section asserts rather than reports:
     ///
@@ -571,7 +571,7 @@ struct E213RowsPerSimdQMVTests {
             (.staged, Array(Qwen35CustomQMV.widths)),
             (.singlePass, [6, 7, 8, 9]),
             (.stagedG1, [7, 8, 9]),
-            (.probeRows2, [9]),
+            (.probeRows1, [9]),
         ]
         var pipelines = sweep.map { entry in
             Case(

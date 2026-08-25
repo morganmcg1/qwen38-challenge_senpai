@@ -1584,7 +1584,7 @@ let qwen35E120QMVHeader = """
 /// launcher scales the y extent by the same factor. Every shipped entry uses 4,
 /// the value E120 hard coded.
 ///
-/// `stagedG1` and `probeRows2` are E213 research arms, not shipped plans.
+/// `stagedG1` and `probeRows1` are E213 research arms, not shipped plans.
 /// The kernel holds `rows * NA` live float accumulators, and the AIR
 /// register-pressure proxy puts the Apple 128-register boundary between
 /// `rows = 4, NA = 5` (125 lane-weighted live values) and `rows = 4, NA = 6`
@@ -1592,9 +1592,11 @@ let qwen35E120QMVHeader = """
 /// single-pass form at m = 7 and m = 8. `stagedG1` lowers `rows` far enough to
 /// hold `IPG = m` under the boundary at m = 7, 8 and 9, so those widths stream
 /// the weights once instead of twice: `(7, 7, 1)` is 94 live values, `(8, 8, 1)`
-/// is 104 and `(9, 9, 1)` is 114. `probeRows2` is the attribution control for a
-/// loss: it holds `G = 2` at m = 9 and lowers `rows` alone, so it prices low
-/// `rows_per_simd` without the weight pass it is meant to buy.
+/// is 104 and `(9, 9, 1)` is 114. `probeRows1` is the attribution control for
+/// the loss the g1 session measured: `(9, 5, 1)` applies the same `rows = 1`
+/// dose at m = 9 while holding `G = 2`, so it prices low `rows_per_simd`
+/// without the weight pass it is meant to buy. The difference between the two
+/// arms at m = 9 is the value of `G = 1` alone.
 ///
 /// `(NA = 7, rows = 2)` is excluded on evidence, not on cost: the E213 gate
 /// found that instantiation numerically wrong on the plain (`USE_TABLE=false`)
@@ -1604,7 +1606,7 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
     case staged
     case singlePass = "singlepass"
     case stagedG1 = "stagedg1"
-    case probeRows2 = "proberows2"
+    case probeRows1 = "proberows1"
 
     /// `(width, inputs per group, rows per simdgroup)`. The Metal body maps
     /// group `g` to `first_m = g * IPG`, so the entry fixes the template
@@ -1626,10 +1628,10 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
                 (2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4),
                 (6, 3, 4), (7, 7, 1), (8, 8, 1), (9, 9, 1),
             ]
-        case .probeRows2:
+        case .probeRows1:
             return [
                 (2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4),
-                (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 5, 2),
+                (6, 3, 4), (7, 4, 4), (8, 4, 4), (9, 5, 1),
             ]
         }
     }
@@ -1639,7 +1641,7 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
         case .staged: return ""
         case .singlePass: return "_sp"
         case .stagedG1: return "_g1"
-        case .probeRows2: return "_p2"
+        case .probeRows1: return "_p1"
         }
     }
 }
@@ -1654,7 +1656,7 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
 let qwen35E213StagedVariant: Qwen35QMVKernelVariant = {
     switch ProcessInfo.processInfo.environment["DARKBLOOM_E213_QMV_ARM"] {
     case "g1": return .stagedG1
-    case "probe": return .probeRows2
+    case "probe": return .probeRows1
     default: return .staged
     }
 }()
@@ -1983,19 +1985,19 @@ private let qwen35CachedAffine4QMVTableKernelG1 = Qwen35CachedKernel(
     header: qwen35E120QMVHeader
 )
 
-private let qwen35CachedAffine4QMVKernelRows2 = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_p2",
+private let qwen35CachedAffine4QMVKernelRows1 = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_p1",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false, variant: .probeRows2),
+    source: qwen35E120QMVSource(table: false, variant: .probeRows1),
     header: qwen35E120QMVHeader
 )
 
-private let qwen35CachedAffine4QMVTableKernelRows2 = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_p2",
+private let qwen35CachedAffine4QMVTableKernelRows1 = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_p1",
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true, variant: .probeRows2),
+    source: qwen35E120QMVSource(table: true, variant: .probeRows1),
     header: qwen35E120QMVHeader
 )
 
@@ -2009,8 +2011,8 @@ private func qwen35CachedQMVKernel(
     case (true, .singlePass): return qwen35CachedAffine4QMVTableKernelSinglePass
     case (false, .stagedG1): return qwen35CachedAffine4QMVKernelG1
     case (true, .stagedG1): return qwen35CachedAffine4QMVTableKernelG1
-    case (false, .probeRows2): return qwen35CachedAffine4QMVKernelRows2
-    case (true, .probeRows2): return qwen35CachedAffine4QMVTableKernelRows2
+    case (false, .probeRows1): return qwen35CachedAffine4QMVKernelRows1
+    case (true, .probeRows1): return qwen35CachedAffine4QMVTableKernelRows1
     }
 }
 
@@ -2068,20 +2070,20 @@ private let qwen35CustomAffine4QMVTableKernelG1 = MLXFast.metalKernel(
     ensureRowContiguous: true
 )
 
-private let qwen35CustomAffine4QMVKernelRows2 = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_p2",
+private let qwen35CustomAffine4QMVKernelRows1 = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_p1",
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false, variant: .probeRows2),
+    source: qwen35E120QMVSource(table: false, variant: .probeRows1),
     header: qwen35E120QMVHeader,
     ensureRowContiguous: true
 )
 
-private let qwen35CustomAffine4QMVTableKernelRows2 = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_p2",
+private let qwen35CustomAffine4QMVTableKernelRows1 = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_p1",
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true, variant: .probeRows2),
+    source: qwen35E120QMVSource(table: true, variant: .probeRows1),
     header: qwen35E120QMVHeader,
     ensureRowContiguous: true
 )
@@ -2096,8 +2098,8 @@ private func qwen35UncachedQMVKernel(
     case (true, .singlePass): return qwen35CustomAffine4QMVTableKernelSinglePass
     case (false, .stagedG1): return qwen35CustomAffine4QMVKernelG1
     case (true, .stagedG1): return qwen35CustomAffine4QMVTableKernelG1
-    case (false, .probeRows2): return qwen35CustomAffine4QMVKernelRows2
-    case (true, .probeRows2): return qwen35CustomAffine4QMVTableKernelRows2
+    case (false, .probeRows1): return qwen35CustomAffine4QMVKernelRows1
+    case (true, .probeRows1): return qwen35CustomAffine4QMVTableKernelRows1
     }
 }
 

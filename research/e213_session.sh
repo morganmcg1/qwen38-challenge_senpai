@@ -2,13 +2,13 @@
 # E213 Stage-1: decisive local timing of the single-pass QMV plan that a lower
 # rows_per_simd makes reachable.
 #
-#   research/e213_session.sh TAG_PREFIX [TOKENS]
+#   research/e213_session.sh TAG_PREFIX [TOKENS] [ORDER]
 #
 # ONE binary, arms selected at process start by DARKBLOOM_E213_QMV_ARM:
 #
 #   off    shipped staged plan: (6,3) (7,4) (8,4) (9,5), all at rows_per_simd 4
 #   g1     (7,7) at rows 1, (8,8) at rows 1, (9,9) at rows 1; m <= 6 unchanged
-#   probe  (9,5) at rows 2: the attribution control, run only after a loss
+#   probe  (9,5) at rows 1: the attribution control, run only after a loss
 #
 # G(m) = ceil(m / IPG) is 2 at m = 7, 8 and 9 in `off` and 1 in `g1`, so `g1`
 # removes the second weight pass at the widths that carry 76 % of cap-8 rounds.
@@ -51,7 +51,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 prefix="${1:?usage: research/e213_session.sh TAG_PREFIX [TOKENS]}"
 tokens="${2:-512}"
-order="${E213_ORDER:-off g1 g1 off}"
+order="${3:-${E213_ORDER:-off g1 g1 off}}"
 
 out_root="research/out/${prefix}"
 worker="${PWD}/.build-worker/release/mlxfast-runtime-worker"
@@ -98,7 +98,7 @@ for arm in "${session[@]}"; do
       expect_plan="selective-m6+ipg9-9+e213-3x4-7x1-8x1-9x1" ;;
     probe)
       export DARKBLOOM_E213_QMV_ARM=probe
-      expect_plan="selective-m6+ipg9-5+e213-3x4-4x4-4x4-5x2" ;;
+      expect_plan="selective-m6+ipg9-5+e213-3x4-4x4-4x4-5x1" ;;
     *) echo "e213: unknown arm ${arm}" >&2; status=2; break ;;
   esac
 
