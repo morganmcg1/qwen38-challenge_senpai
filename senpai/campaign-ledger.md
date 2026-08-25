@@ -72359,3 +72359,65 @@ rule applies here), both split by full-acceptance vs rejection rounds, both repo
 COHERENT idle slice. Required labeling: split GPU-idle vs host-chain-build time inside `overlappable`
 so relocating host work is not counted as recoverable (RULE 394 protects Stage 2 regardless).
 Rejection-round slice structure to be reported joinably with E205's decomposition.
+
+## 415 — E202 review: FINDING 507 family CLOSED DEAD with the strongest instrument yet. FINDINGs 529–531, RULE 395. Closed unmerged; Edward freed.
+
+**Review of PR #199 (qwen-edward, E202, terminal `failed` = decisive negative, head `b3aca7f3`).**
+Closed unmerged: the tip carries 130 lines of env-gated measurement arms on the scored surface
+(Qwen36MTPBlockSession.swift + Vendor AttentionUtils.swift) — E198/E194 precedent. Evidence durable
+on the branch (`research/e202-session.json`, scripts) and W&B `lpwbno36`
+(https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/lpwbno36 — patched in place
+per the addendum; advisor re-validated the patched summary matches the report bit-for-bit).
+Session: 14 legs × 512 tokens, one certified worker digest, every leg exact, arm witnesses valid
+(RULE 391), ungated standing mode with flags verbatim; leg-level artifact floor re-measured at
+0.076% (69× below the effect).
+
+### FINDING 529 — the FINDING 507 dispatch-count family is DEAD; group-level overlap is demonstrated, not inferred
+
+Decision statistic `inner` = BARRIER-ALL − BARRIER-LAST = **+7.451 ± 0.103 ms/round** (n=252 triples)
+— 4.66× the 1.6 ms/round E198 priced as recoverable, 13.1× MUE. Ruling label applies verbatim:
+*interior latency is not cheaply recoverable; consistent with overlap; overlap vs marginal-sync cost
+not separable at this resolution.* Positive control `sync` = +6.704 ± 0.100 (134σ); null controls
+(non-serving rounds n=24; serial leg n=2040) centered on zero; independent whole-leg corroboration
++4.99 ms/round with the thermal confound controlled (the other bare leg was thermally identical to
+the rotated legs and marginally faster). Evidence favors overlap: the first barrier costs 419.0
+µs/call vs 116.4 µs/call marginal — a 3.6× asymmetry impossible for a fixed-cost barrier. Holds
+width-by-width (qL 6/7/8 all ≫ 1.6). E198's end-to-end null stands as the family's terminal price:
+fusing 5→1 recovers nothing because MLX already overlaps the dispatches.
+
+### FINDING 530 — the group-boundary drain budget line
+
+One `eval()` at the end of the split-cell attention group costs **419.0 µs/call**; the group-drain
+excess over the marginal barrier rate is **302.6 µs/call = 4.84 ms/round = 3.41%** across the 16 FA
+layers. Consequences: (1) **no `eval()`, sync point, host round-trip, or host-read early-exit test
+may enter the per-layer scored path** — one barrier per call is ~12× MUE; (2) MLX pipelining across
+the split-cell group is already harvesting ~3.4% of the round — any restructuring that breaks the
+overlap must repay that before showing gain.
+
+### FINDING 522(b) CONFIRMED on clean evidence, and the census corrected
+
+E198's liveness census was warm-up-contaminated, not truncated: the warm-up is exactly one uniform
+32-per-width pass (round-1 witness reads 6:32|7:32|8:32|9:32). Subtracting it reconciles E198's
+counts with E202's per-round data (exact at qL 6/8/9, 6% at qL 7). Steady-state decode serves
+**qL=9 exactly zero times on the cap-7 surface at both windows** — optimizing the widest legal shape
+is worth nothing *on this cap*.
+
+### FINDING 531 + RULE 395 — width censuses are window-dependent; only the full 512-token census is admissible
+
+512-token steady-state split-cell census: **qL8 = 88.24%**, qL6 = 7.35%, qL7 = 4.41%, qL9 = 0%.
+The 64-token iterate window INVERTS this (qL8 = 11.1%), and even a 128-call window taken from steady
+decode misreads qL8 by ~7× (12.5% vs 88.24%) because served width climbs as acceptance settles.
+**RULE 395:** any width-conditional opportunity table, kernel priority, or per-width pricing must be
+derived from a full 512-token per-round census on the current scored surface; 64-token, 128-call, or
+warm-up-contaminated censuses are inadmissible for pricing. Existing width-conditional tables
+calibrated on short windows are suspect until re-derived.
+
+### Cap-conditional caveat on Edward's follow-ups
+
+His "delete qL=9 / concentrate on qL=8" recommendations hold ONLY while the shipped cap is 7. The
+in-flight `aff4ad64` receipt may promote cap-8, under which 9-row verify becomes the dominant shape
+(Thorfinn's re-gate: 42/76 drafting rounds at nine rows). No width-priority action until the receipt
+lands; every width table must then be re-derived on the promoted surface per RULE 395.
+
+**Edward freed.** Next: E206 — cap-8 width-work map (desk + census, receipt-independent prep so the
+receipt's landing finds the width-priority decision already grounded).
