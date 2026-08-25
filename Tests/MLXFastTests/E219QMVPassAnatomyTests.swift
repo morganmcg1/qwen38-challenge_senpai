@@ -177,23 +177,23 @@ func e221RowsParameterizedHeader() -> String {
 /// The shipped gather, verbatim. The E223 transform replaces this exact text,
 /// so a base move breaks this arm loudly instead of timing the wrong kernel.
 private let e223ShippedGather = """
-            for (int i = 0; i < 4; i++) {
-                VF a0, a1, a2, a3;
-                for (int m = 0; m < NA; m++) {
-                    const device bfloat16_t* xm =
-                        x + (first_m + m) * in_vec_size + k +
-                        simd_lid * values_per_thread + 4 * i;
-                    const vec<bfloat16_t, 4> xv =
-                        *reinterpret_cast<const device vec<bfloat16_t, 4>*>(
-                            xm);
-                    a0[m] = static_cast<float>(xv[0]);
-                    a1[m] = static_cast<float>(xv[1]);
-                    a2[m] = static_cast<float>(xv[2]);
-                    a3[m] = static_cast<float>(xv[3]);
-                    if (!USE_TABLE) {
-                        sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
-                    }
+        for (int i = 0; i < 4; i++) {
+            VF a0, a1, a2, a3;
+            for (int m = 0; m < NA; m++) {
+                const device bfloat16_t* xm =
+                    x + (first_m + m) * in_vec_size + k +
+                    simd_lid * values_per_thread + 4 * i;
+                const vec<bfloat16_t, 4> xv =
+                    *reinterpret_cast<const device vec<bfloat16_t, 4>*>(
+                        xm);
+                a0[m] = static_cast<float>(xv[0]);
+                a1[m] = static_cast<float>(xv[1]);
+                a2[m] = static_cast<float>(xv[2]);
+                a3[m] = static_cast<float>(xv[3]);
+                if (!USE_TABLE) {
+                    sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
                 }
+            }
 """
 
 /// Activations already float32, in the SHIPPED `[m, k]` layout.
@@ -215,25 +215,24 @@ private let e223ShippedGather = """
 /// the replacement drops.
 func e223ActivationF32Header() -> String {
     let gather = """
-            for (int i = 0; i < 4; i++) {
-                VF a0, a1, a2, a3;
-                for (int m = 0; m < NA; m++) {
-                    const device float* xm =
-                        x + (first_m + m) * in_vec_size + k +
-                        simd_lid * values_per_thread + 4 * i;
-                    const vec<float, 4> xv =
-                        *reinterpret_cast<const device vec<float, 4>*>(xm);
-                    a0[m] = xv[0];
-                    a1[m] = xv[1];
-                    a2[m] = xv[2];
-                    a3[m] = xv[3];
-                }
+        for (int i = 0; i < 4; i++) {
+            VF a0, a1, a2, a3;
+            for (int m = 0; m < NA; m++) {
+                const device float* xm =
+                    x + (first_m + m) * in_vec_size + k +
+                    simd_lid * values_per_thread + 4 * i;
+                const vec<float, 4> xv =
+                    *reinterpret_cast<const device vec<float, 4>*>(xm);
+                a0[m] = xv[0];
+                a1[m] = xv[1];
+                a2[m] = xv[2];
+                a3[m] = xv[3];
+            }
 """
     // Both `qwen_e120_qmv_wide` and the `qwen_e120_qmv_m` wrapper declare the
     // activation pointer, and the wrapper forwards it, so both must move.
     let substitutions = [
-        ("        const device bfloat16_t* x,\n",
-         "        const device float* x,\n", 2),
+        ("const device bfloat16_t* x,\n", "const device float* x,\n", 2),
         (e223ShippedGather, gather, 1),
     ]
     var text = qwen35E120QMVHeader
