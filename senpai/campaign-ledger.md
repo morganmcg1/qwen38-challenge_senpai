@@ -73058,3 +73058,22 @@ All four queued receipt-contingent desk items are now read against the 5f508da5 
 **Also this cycle:** four `research_base_changed` volleys (E218/E222/E223/E224 → `23d8c376`) verified records-only (scored-surface diff empty across `1963bb56..23d8c376`); no assignment action needed. E224 proceeds from assignment base `26cc5fb1` — the Entry 444 move is ledger/frontier only and does not affect its one-line scored diff or the trusted-anchor guard argument.
 
 **State.** In flight: E218 (Askeladd, s2, cap-7 re-weighting delivered), E222 (Alphonse, SEQ screen then timed screen under cap-7 pooling, rows=2 primary), E223 (Edward, stage 0), E224 (Thorfinn, cap-7 revert ship chain; official slot free behind it). Crown ec24d591 3.7291. Next free: FINDING 586, RULE 410, Entry 446, E225, HARNESS DEFECT 47.
+---
+
+## Entry 446 — 2026-08-25T10:58Z — E222 stage-2 gates PASS; SEQ falsified; `both` schedule makes m8_r4 g17s-legal (124 regs) — Entry 445's "r4 dead unless SEQ" superseded; timed screen running with BOTH arms live at cap 7
+
+**E222 stage-2 gates (Alphonse, PR 220) ACCEPTED.** Bit-exactness: 96/96 comparisons (8 arms × 3 cells × 4 widths, 13,539,840 elements, 0 differing, 0 non-finite) against the shipped `Qwen35CustomQMV`, exact by identical reduction order, not tolerance. RULE 408 write coverage: 60/60 instantiations (`keys_written == keys_expected`, `min==max==1` writes, full key range) via an atomic-increment census at the SAME key expression, with BOTH positive controls tripping on the correct axes (`shortGrid` halves keys; `doubledGrid` doubles writes). Artifacts: `research/out/e222/s1/exact.json`, `write-coverage.json`.
+
+**SEQ falsified (zero GPU).** The sequential-accumulate knob never saves a register at rows=4 and raises AIR `fp_ops` (52→60 at m6/m8). g17s registers SEQ off→on: m6 107→119, m7 118→126+16, m8 124→126+32, m9 126+48→126+96. Removed from all timed arms; knob and documentation kept so the negative is reproducible.
+
+**Decisive schedule fact — Entry 445's fused_r4 verdict is SUPERSEDED.** Under Alphonse's adopted `both` schedule (lazy packed weight load + late scale/bias read; strictly dominant in registers AND AIR instructions at every (m, arm) point), SEQ-off g17s registers are 107/118/**124**/126+48 at m6/7/8/9. **m8_r4 = 124 ≤ 126 is g17s-LEGAL without SEQ.** The stage-1 table (m8_r4=142) that drove both Alphonse's "r4 desk-dead at +0.398" and my `e222-fb-arm-reversal-cap7-repool-444` ruling is obsolete. With the cap-7 m9→m8 mass migration (m8 mass ≈ 267/637), the corrected desk picture:
+- fused_r4 cap-7 pooled ceiling ≈ 0.398 + (267/637) × ~29.9 ≈ **+13.0 ms/round** (desk, if the ~30 at-width value holds at m8) — potentially the largest open number on the board;
+- fused_r2 cap-7 pooled ≈ [+4.90, +9.71].
+
+Correction posted as feedback `e222-fb-r4-m8-legal-under-both-445` with report requirements: (1) price both arms on cap-7 pooling, m9 as mechanism knowledge only; (2) m8_r4 is 2 registers under budget — pin the RULE 407 agx_crossarch probe for the EXACT timed binary next to the timing; (3) fused_r4 m7/8/9 local times stay one-sided per RULE 407 (g16s spills — a local loss at a spilling width is a reconciliation flag, not a ranked kill); (4) register-confound-free calibration reported first. Decision rule: bar +1.0 pooled on cap-7 weighting, stop <+0.3; if both arms clear, larger cap-7 number wins, other becomes reconciliation control.
+
+**Timed screen RUNNING:** 3 cells × m{6,7,8,9} × arms {staged_r4, single_r4, fused_r2, fused_r4}, ABBA-counterbalanced, 6 blocks, entry/exit temps per block, flags verbatim (`cool_gate_passed_real_gate=false`, `gate_qualified_for_timing=false`). Not interrupted — it already contains exactly the arms and widths the corrected decision needs.
+
+**Also:** four `research_base_changed` volleys (E218/E222/E223/E224 → `078504df`, Entry 445 publish) records-only; no action.
+
+**State.** In flight: E218 (Askeladd, s2), E222 (Alphonse, timed screen, BOTH arms live), E223 (Edward, stage 0), E224 (Thorfinn, cap-7 revert ship chain; slot free behind it). Crown ec24d591 3.7291. Next free: FINDING 586, RULE 410, Entry 447, E225, HARNESS DEFECT 47.
