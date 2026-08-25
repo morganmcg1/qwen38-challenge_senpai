@@ -1578,9 +1578,20 @@ let qwen35E120QMVHeader = """
 /// arithmetic of `qwen_e120_qmv_wide` is lane-independent, so regrouping rows
 /// cannot reorder any row's own reduction and the two partitions are
 /// bit-exact against each other.
+///
+/// `stagedRetuned` and `stagedNA6` are E213 research arms, not shipped plans.
+/// `stagedRetuned` raises rows per group at m = 6, 7 and 8 as far as the
+/// template allows; `(6,5)` is not a legal partition, because `6 % 5 == 1`
+/// builds a one-input tail group, so m = 6 takes `(6,4)`. Every one of those
+/// widths already pays `G = 2`, so the arm changes the row split and nothing
+/// else. `stagedNA6` moves the m = 9 entry to `IPG = 6`, which keeps `G = 2`
+/// but takes the widest compiled body past the register budget that `IPG = 5`
+/// fits inside, so it isolates the register term at fixed weight traffic.
 enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
     case staged
     case singlePass = "singlepass"
+    case stagedRetuned = "stagedretuned"
+    case stagedNA6 = "stagedna6"
 
     /// `(width, inputs per group)`. The Metal body maps group `g` to
     /// `first_m = g * IPG`, so the pair fixes both the template instantiation
@@ -1591,11 +1602,37 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
             return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 5)]
         case .singlePass:
             return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 3)]
+        case .stagedRetuned:
+            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 4), (7, 5), (8, 5), (9, 5)]
+        case .stagedNA6:
+            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 6)]
         }
     }
 
-    var kernelNameSuffix: String { self == .staged ? "" : "_sp" }
+    var kernelNameSuffix: String {
+        switch self {
+        case .staged: return ""
+        case .singlePass: return "_sp"
+        case .stagedRetuned: return "_rt"
+        case .stagedNA6: return "_n6"
+        }
+    }
 }
+
+/// E213 arm. `DARKBLOOM_E213_QMV_ARM` selects the staged plan a leg serves:
+/// `retuned` and `na6` name the two research tables, and anything else keeps
+/// the shipped plan. One build carries all three, and each compiles under its
+/// own JIT kernel name, so a leg cannot serve another arm's compiled source.
+///
+/// Read once at first use, never on the hot path: `qwen35QMVVariant` resolves
+/// the same global in every arm, so the arms pay identical selection cost.
+let qwen35E213StagedVariant: Qwen35QMVKernelVariant = {
+    switch ProcessInfo.processInfo.environment["DARKBLOOM_E213_QMV_ARM"] {
+    case "retuned": return .stagedRetuned
+    case "na6": return .stagedNA6
+    default: return .staged
+    }
+}()
 
 /// The distinct wide affine-4/group-64 shapes a decode round routes here.
 /// Identity is `(k, n)` only: the model geometry is fixed, so the map is a
@@ -1647,17 +1684,31 @@ enum Qwen35QMVCell: String, Sendable {
 /// depend on the request, the prompt or the benchmark phase.
 @inline(__always)
 func qwen35QMVVariant(m: Int, cell: Qwen35QMVCell) -> Qwen35QMVKernelVariant {
-    guard m == 6, cell != .mlpDown, cell != .unlisted else { return .staged }
+    guard m == 6, cell != .mlpDown, cell != .unlisted else {
+        return qwen35E213StagedVariant
+    }
     return .singlePass
 }
 
-/// Witness that a build carries the plan above, including the staged m = 9
-/// group partition. The IPG figure is read from the table itself, so the
-/// witness cannot desynchronise from the kernel the round actually launched.
-/// No runtime state: the trace can prove which dispatch plan shipped.
+/// Witness that a leg carries the plan above, including the staged m = 9 group
+/// partition and any E213 arm. Every IPG figure is read from the selected table
+/// rather than from the environment, so the witness cannot desynchronise from
+/// the kernel the round actually launched. No hot-path state: the trace can
+/// prove which dispatch plan ran.
+func qwen35QMVWidthPlanWitness(for variant: Qwen35QMVKernelVariant) -> String {
+    let base =
+        "selective-m6+ipg9-"
+        + String(Qwen35CustomQMV.inputsPerGroup(9, variant: variant))
+    guard variant != .staged else { return base }
+    let staged = variant.pairs
+        .filter { $0.m >= 6 }
+        .map { String($0.ipg) }
+        .joined(separator: "-")
+    return base + "+e213-" + staged
+}
+
 public let qwen35QMVWidthPlanWitness =
-    "selective-m6+ipg9-"
-    + String(Qwen35CustomQMV.inputsPerGroup(9, variant: .staged))
+    qwen35QMVWidthPlanWitness(for: qwen35E213StagedVariant)
 
 /// Geometry and width switch shared by both QMV pipelines. `table` decides
 /// whether the chunk-sum table is a bound buffer at all: the four-input
@@ -1880,6 +1931,38 @@ private let qwen35CachedAffine4QMVTableKernelSinglePass = Qwen35CachedKernel(
     header: qwen35E120QMVHeader
 )
 
+private let qwen35CachedAffine4QMVKernelRetuned = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_rt",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false, variant: .stagedRetuned),
+    header: qwen35E120QMVHeader
+)
+
+private let qwen35CachedAffine4QMVTableKernelRetuned = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_rt",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true, variant: .stagedRetuned),
+    header: qwen35E120QMVHeader
+)
+
+private let qwen35CachedAffine4QMVKernelNA6 = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_n6",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false, variant: .stagedNA6),
+    header: qwen35E120QMVHeader
+)
+
+private let qwen35CachedAffine4QMVTableKernelNA6 = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_n6",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true, variant: .stagedNA6),
+    header: qwen35E120QMVHeader
+)
+
 private func qwen35CachedQMVKernel(
     table: Bool, variant: Qwen35QMVKernelVariant
 ) -> Qwen35CachedKernel {
@@ -1888,6 +1971,10 @@ private func qwen35CachedQMVKernel(
     case (true, .staged): return qwen35CachedAffine4QMVTableKernel
     case (false, .singlePass): return qwen35CachedAffine4QMVKernelSinglePass
     case (true, .singlePass): return qwen35CachedAffine4QMVTableKernelSinglePass
+    case (false, .stagedRetuned): return qwen35CachedAffine4QMVKernelRetuned
+    case (true, .stagedRetuned): return qwen35CachedAffine4QMVTableKernelRetuned
+    case (false, .stagedNA6): return qwen35CachedAffine4QMVKernelNA6
+    case (true, .stagedNA6): return qwen35CachedAffine4QMVTableKernelNA6
     }
 }
 
@@ -1927,6 +2014,42 @@ private let qwen35CustomAffine4QMVTableKernelSinglePass = MLXFast.metalKernel(
     ensureRowContiguous: true
 )
 
+private let qwen35CustomAffine4QMVKernelRetuned = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_rt",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false, variant: .stagedRetuned),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVTableKernelRetuned = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_rt",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true, variant: .stagedRetuned),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVKernelNA6 = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_n6",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: false, variant: .stagedNA6),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVTableKernelNA6 = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_n6",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E120QMVSource(table: true, variant: .stagedNA6),
+    header: qwen35E120QMVHeader,
+    ensureRowContiguous: true
+)
+
 private func qwen35UncachedQMVKernel(
     table: Bool, variant: Qwen35QMVKernelVariant
 ) -> MLXFast.MLXFastKernel {
@@ -1935,6 +2058,10 @@ private func qwen35UncachedQMVKernel(
     case (true, .staged): return qwen35CustomAffine4QMVTableKernel
     case (false, .singlePass): return qwen35CustomAffine4QMVKernelSinglePass
     case (true, .singlePass): return qwen35CustomAffine4QMVTableKernelSinglePass
+    case (false, .stagedRetuned): return qwen35CustomAffine4QMVKernelRetuned
+    case (true, .stagedRetuned): return qwen35CustomAffine4QMVTableKernelRetuned
+    case (false, .stagedNA6): return qwen35CustomAffine4QMVKernelNA6
+    case (true, .stagedNA6): return qwen35CustomAffine4QMVTableKernelNA6
     }
 }
 
