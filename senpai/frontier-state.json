@@ -108,7 +108,7 @@
     "Entry 441: FINDING 574's register-legality leg was adopted into closure reasoning from an AIR-proxy fit without a real-backend witness; falsified within a day by E221 step-0 and E222 stage-0 real g17s translation (rows=2 legal through NA=9). Lesson -> RULE 407: proxy models never decide legality.",
     "Entry 441: advisor feedback on PR 220 cited a nonexistent W&B run id (xh34mnaq) for the E213 r1 sessions; corrected on-PR the same hour (correct: t1wk79aj, zas4ggr8, gate 6tebpzvg). Run ids are copied from the ledger, never recalled from memory."
   ],
-  "assignmentQueue": "In flight: E218 (Askeladd, PR 216) s2 band palindrome -> per-cell curves -> reconciliation (RULE 405 v2 + 406) -> FINDING 571 residual attribution -> priced shortlist, priced pooled AND cap-7-weighted (feedback e218-fb-cap7-reweighting-443). E222 (Alphonse, PR 220) BOTH ARMS LIVE (Entry 446 supersedes 445): stage-2 gates PASS (96/96 bit-exact, 60/60 RULE 408); SEQ falsified; 'both' schedule makes m8_r4 g17s-legal at 124 regs (2 under budget - probe pinned to exact timed binary required); cap-7 desk ceilings r4 ~+13.0, r2 [+4.90,+9.71] ms/round; timed screen RUNNING (3 cells x m6..9 x 4 arms, ABBA 6 blocks); bar +1.0 / stop <+0.3 on cap-7 pooling; r4 m7/8/9 local times one-sided per RULE 407. E223 (Edward, PR 221) stage 0 desk day: per-(i-step,column) opcode census NA 2..9, xsums sidecar source-map, desk-price three access paths; kill <+0.3; scored stage 2 only >=+1.0 pooled. E224 (Thorfinn, PR 222) cap-7 revert ship chain: one-line revert, one 512-token gate, freeze, submit (slot free), watcher; desk mean 3.7144, P(beat crown)~0.28.",
+  "assignmentQueue": "In flight: E223 (Edward, PR 221) stage 0 desk day: per-(i-step,column) opcode census NA 2..9, xsums sidecar source-map, desk-price three access paths under RULE 410 regime tags (flip within b in [0.6b,b] -> escalate); kill <+0.3; scored stage 2 only >=+1.0 pooled. E224 (Thorfinn, PR 222) cap-7 revert ship chain: candidate 389fe7c0, 512-token gate running; freeze, submit, watcher; on terminal receipt review + merge regardless of outcome. E222 (Alphonse, PR 220) ACCEPTED decisive negative, wip+needs-rebase for one-file append conflict; merge on push, then assign E225 (occupancy direction: MORE group splitting / smaller per-pass NA at m=8/9 per FINDING 558+586; secondary arm mlp.down cell-specific rows/group policy - only tall-thin cell k=17408 n=5120, 6.8x fewer simdgroups). E226 (Askeladd, assigning): access-regime pricing refit - a-terms from true dispatch boundaries, b split first-touch vs cache-served/concurrent, c_mac confirmation; RULE 409 self-test against E221/E222/E218 published numbers; repriced shortlist incl. parked dispatch-fusion 2.926 (REPRICE-REQUIRED, a-term boundary may not exist per FINDING 586).",
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
     "dominantTerm": "per-dispatch launch and synchronisation, not bandwidth. The removed 25,563,136 B at 400 GB/s is only 64 us.",
@@ -369,7 +369,15 @@
       "reason": "E220/FINDING 575: compiler already emits minimal integer sequence (6 ops/4 nibbles); bfe/vecload byte-identical to base; alternatives spill; oracle ceiling 0.39-0.72 ms/round below bar and unreachable at MSL",
       "reopenIf": "a sub-MSL path (AIR/metallib or handwritten AGX) is separately priced and its integration risk accepted, or the scored kernel source form changes the emitted sequence"
     },
+    "qmv_group_pass_fusion": {
+      "closedAt": "2026-08-25T12:05:00Z",
+      "reason": "E222 (FINDING 586, W&B xsd6dx4q): staged plan is one dispatch; redundant group pass is concurrent and cache-served; every fusion arm loses (pooled cap-7 fused_r2 -34.34 ms/round); best-router ceiling +0.074 = 13.5x below bar; occupancy term dominates with opposite sign. Reopen only if the occupancy balance changes materially (much smaller per-thread NA or a register budget far above g17s 126). The occupancy-favored direction (MORE splitting, smaller NA per pass) is E225, a different axis."
+    },
     "qmv_rows_per_group_retune_rows4": "Entry 426 / FINDING 548: at fixed rows_per_simd=4, every legal rows-per-group retune below m=9 keeps G=2 and removes zero weight passes; shipped table already at max legal IPG under the 128-register boundary per width. Reopen only if the kernel register footprint or the static_assert changes.",
+    "qmv_rows_reduction_shipped_kernel": {
+      "closedAt": "2026-08-25T09:12:00Z",
+      "reason": "E221 r0 measured rows_per_simd 4->2 negative in every cell at NA{4,5} x G{1,2}, cold and hot (24/24 slower, disjoint CI95 in 20; FINDING 580). By FINDING 557 dose, 4->1 also negative. Reopen only if the per-column inner-loop cost is first removed (E223), which changes the overhead balance the route pays."
+    },
     "qmv_single_pass_g1_via_rows": "CLOSED (FINDING 558; reason RESTATED Entry 441). Two measured legs carry the closure: the FINDING 557 rows-amortization dose (-118.856 ms/round rows 4->1 at (9,5); rows=2 interpolates ~ -39.6 at m=9) and FINDING 558's negative G-value for the NA-widened single chain (-43.248 ms/round at m=9). The former register-wall leg is removed: rows=2 IS register-legal through NA=9 on g17s (FINDING 578). Scope: covers the one-chain NA-widened form and naive rows-reduction of the shipped single-group kernel; E222's fused two-chain geometry is NOT inside this axis. Reopen only if the amortization structure of the kernel family changes.",
     "qmv_weight_sharing_family": {
       "closedAt": "2026-08-25T07:45:00Z",
@@ -384,6 +392,10 @@
       "closedAt": "2026-08-24T03:10:00Z",
       "evidence": "FINDING 375. Officially submitted twice: c47b45be 3.649616, 24fb4012 3.692476 (declared parent 684821e 3.719597 promoted). RULE 372 Pge6 slope +0.395/+0.362/+0.563, t=+3.68/+4.27/+5.00; two negative controls null. Related board arms 0adf695f (M=8 IPG 4->8, 3.574 vs 3.720), eff9348d (M=8 4+4 -> 3+3+2, Pge6 +4.295 t=+8.04) and 0e849bfc (single-pass width 5, 3.323 vs 3.350) all lost.",
       "verdict": "closed by ranked evidence, do not resubmit"
+    },
+    "ranked_depth_cap_retune": {
+      "closedAt": "2026-08-25T09:55:00Z",
+      "reason": "Three-point ranked curve (FINDING 581): cap5 -4.97%, cap7 0, cap8 -1.90% depth-attributable; quadratic optimum ~6.85 => cap 7 optimal under stepq. Cap-6 desk-rejected (-1.06% to -2.5%). Closed in BOTH directions. Reopen only with receipt-grade evidence that a materially changed schedule or proposal head moves the optimum."
     },
     "same_solver_replay_channel": {
       "closedAt": "2026-08-24T11:58Z",
@@ -409,14 +421,10 @@
       "reason": "refuted on the ranked host by three independent board arms; c47b45be 3.649616 and 24fb4012 3.692476 shipped the exact table entry and lost",
       "reopenIf": "the ranked host generation changes"
     },
-    "width_table": "CLOSED by proof, ledger 350.8, LAW 354. G_min(M) = ceil(M/5). The shipped activeInputGroups table at Qwen35.swift:1715-1729 is exactly LAW-354-optimal at every width 2-8, and among G_min configurations it also takes the lowest NA. At width 6, G = 1 needs IPG >= 6 hence NA >= 6, which crosses the register occupancy cliff between NA = 5 and NA = 6, and M = 6 / IPG = 5 is illegal under static_assert(M % IPG != 1) at Qwen35.swift:1542. Reopen only if the cliff itself moves or a kernel change removes the register pressure.",
-    "qmv_rows_reduction_shipped_kernel": {
-      "closedAt": "2026-08-25T09:12:00Z",
-      "reason": "E221 r0 measured rows_per_simd 4->2 negative in every cell at NA{4,5} x G{1,2}, cold and hot (24/24 slower, disjoint CI95 in 20; FINDING 580). By FINDING 557 dose, 4->1 also negative. Reopen only if the per-column inner-loop cost is first removed (E223), which changes the overhead balance the route pays."
-    },
-    "ranked_depth_cap_retune": {
-      "closedAt": "2026-08-25T09:55:00Z",
-      "reason": "Three-point ranked curve (FINDING 581): cap5 -4.97%, cap7 0, cap8 -1.90% depth-attributable; quadratic optimum ~6.85 => cap 7 optimal under stepq. Cap-6 desk-rejected (-1.06% to -2.5%). Closed in BOTH directions. Reopen only with receipt-grade evidence that a materially changed schedule or proposal head moves the optimum."
+    "width_table": {
+      "closedAt": "pre-447 (string form)",
+      "reason": "CLOSED by proof, ledger 350.8, LAW 354. G_min(M) = ceil(M/5). The shipped activeInputGroups table at Qwen35.swift:1715-1729 is exactly LAW-354-optimal at every width 2-8, and among G_min configurations it also takes the lowest NA. At width 6, G = 1 needs IPG >= 6 hence NA >= 6, which crosses the register occupancy cliff between NA = 5 and NA = 6, and M = 6 / IPG = 5 is illegal under static_assert(M % IPG != 1) at Qwen35.swift:1542. Reopen only if the cliff itself moves or a kernel change removes the register pressure.",
+      "reopenEligibility": "Entry 447: closure proof leaned on byte-priced reasoning shown regime-conflating by FINDING 587. Named reopen test = E225 (more group splitting / smaller per-pass NA at m=8/9). Do not treat LAW 354 as closing occupancy-side pass-plan changes."
     }
   },
   "commitPhaseCommonModeGrowth": {
@@ -860,6 +868,7 @@
   },
   "e219QmvPassAnatomy": {
     "coefficients": "a 45.72 us/dispatch; b 1.9292 us/MiB (dequant arithmetic); c 365.39 us/GMAC; d/e confounded",
+    "entry441Note": "FINDING 574 register-model leg refuted by real backends (FINDING 578); ladder numbers demoted to proxy data per RULE 407.",
     "passComposition_na5": "a 11.751 / b 26.517 / c 46.81 ms/round; 169 GB/s = 62% peak; COMPUTE bound",
     "repro": "python3 research/e219_analyze.py research/out/e219/{s0,s3,s4}",
     "shortlist_pooled": {
@@ -878,8 +887,7 @@
       "v8o95ibw",
       "vgmukqp8",
       "d78dx4xb"
-    ],
-    "entry441Note": "FINDING 574 register-model leg refuted by real backends (FINDING 578); ladder numbers demoted to proxy data per RULE 407."
+    ]
   },
   "e220DequantIntegerPath": {
     "status": "MERGED as decisive NOT-USEFUL (Entry 439, PR 218); zero GPU seconds",
@@ -1136,7 +1144,11 @@
     "582": "Median order-statistic fragility (receipt 5f508da5 vs A): largest regression -0.1464 hit 192fb621 (was A's best prompt, rank 8->5, dragged into central pair). Central pairs: A = 919318e1 3.5453 + a2ea8b60 3.8704; new = 919318e1 3.4861 + 192fb621 3.7868. 919318e1 is the 4th order statistic in BOTH receipts = single highest-leverage prompt. Mechanisms lifting only fast prompts cannot move the median; weight FINDING 455 exposure by distance from the central pair; a mechanism helping slow low-ratio prompts buys median directly. harness=ranked.",
     "583": "Ranked serial numerator empirically stable across receipts: baseline serial mean 0.03791070 s/token, spread 0.00011230 (~0.30%) across the 5f508da5/A pair. Measured reconfirmation of the ranked causal boundary (candidate edits cannot move the numerator). harness=ranked.",
     "584": "FINDING 520 survival-pinned latent-q instrument: validity domain bounded to interpolation within measured depth support (d <= 7). Track record: receipt A exact in-sample; cap-4 -0.44% / cap-5 +0.24% out-of-sample (inside 0.689% channel); composed cap-8 prediction 3.7153 vs realized 3.6365 = -2.12% = 3.08 sigma OUTSIDE the channel. Root cause: acceptance streams from open-loop corpora with depth <= 7 support; latent-q survival extrapolation overestimates ranked 8th-row acceptance value (realized ~1 accepted per 29 rejected drafts). Any d > 7 claim requires a paid receipt; <= 7 pricing (E211/E213) remains validated. Quantifies the RULE 399 boundary. harness=ranked desk.",
-    "585": "Shortlist exposure re-weighting under the cap-7 schedule + FINDING 582 order-statistic lens: expected central pair reverts to 919318e1 (dlen 4.38, rounds ~5.4) + a2ea8b60 (5.09, ~6.1). E223 NA-relief (23.066): full median exposure at every width - stays top. Dispatch fusion (2.926): per-round a-term, full exposure - relatively upgraded. E222 fused value-sharing (11.614 incl. excluded m9): m6 component carries median exposure, m7/m8 mostly top-cluster - weight m6 up at review, m9 = zero ranked exposure. E218/FINDING 571 residual (~15.5 at m=9 G-boundary): zero ranked exposure at cap 7 - mechanism-understanding value only; census band m2..m9 kept, shortlist priced pooled AND cap-7-weighted (feedback e218-fb-cap7-reweighting-443). E205 Stage-B corollary ('closer to step -> larger (9,5) upside') VOID; Entry 418 rejected-branch pre-registration OVERTURNED by FINDING 581 control-group attribution. harness=ranked desk."
+    "585": "Shortlist exposure re-weighting under the cap-7 schedule + FINDING 582 order-statistic lens: expected central pair reverts to 919318e1 (dlen 4.38, rounds ~5.4) + a2ea8b60 (5.09, ~6.1). E223 NA-relief (23.066): full median exposure at every width - stays top. Dispatch fusion (2.926): per-round a-term, full exposure - relatively upgraded. E222 fused value-sharing (11.614 incl. excluded m9): m6 component carries median exposure, m7/m8 mostly top-cluster - weight m6 up at review, m9 = zero ranked exposure. E218/FINDING 571 residual (~15.5 at m=9 G-boundary): zero ranked exposure at cap 7 - mechanism-understanding value only; census band m2..m9 kept, shortlist priced pooled AND cap-7-weighted (feedback e218-fb-cap7-reweighting-443). E205 Stage-B corollary ('closer to step -> larger (9,5) upside') VOID; Entry 418 rejected-branch pre-registration OVERTURNED by FINDING 581 control-group attribution. harness=ranked desk.",
+    "586": "E222 r0 (PR 220, W&B xsd6dx4q, decisive negative): the shipped staged QMV plan is ONE dispatch (Qwen35.swift:2185, grid (groups*32,(n/8)*2,1); qwen35E120QMVSource reads the group index off grid x). Group-pass fusion removes no dispatch boundary; the redundant group pass runs CONCURRENTLY and is cache-served. Marginal value of removing one concurrent group pass (register-confound-free, m=6, staged_r4->single_r4): gdn.in_proj +0.612 us/MiB (31.7% of b), mlp.gate_up +0.698 (36.2%), mlp.down -2.416 (-125.2%); the loss is the occupancy price of the doubled per-thread NA (fewer resident simdgroups). Measured pooled cap-7 vs shipped: fused_r2 -34.34 ms/round [-43.19,-25.49], fused_r4 -70.76, single_r4 -62.62; 28/36 triples slower at every chain 1..4; best-router ceiling +0.074 ms/round = 13.5x below bar. Axis qmv_group_pass_fusion CLOSED. harness=local-microbench, ungated.",
+    "587": "E222 addendum (desk, zero GPU): (a) c_mac is G-invariant - MACs = n*k*m regardless of group split, so the c-term (365.39 us/GMAC, majority share above m=6) is unreachable by pass-plan surgery. (b) The stage-1 byte model was exact (24/24 vs E221 census); the COEFFICIENTS were wrong: E219 b_stream=1.9292 us/MiB prices first-touch DRAM streams only; concurrent/cache-served redundant reads are worth <=36% of b and can be negative; full-b ceiling reproduces the stage-1 desk within 0.3%. (c) FINDING 570 (compute-bound) predicted E221 and E222 outcomes. Every price computed off b alone inherits >=3x magnitude and possible sign error until re-fitted with an access-regime term (E226).",
+    "588": "E218 census terminal (PR 216 MERGED, W&B 9vnamyu4): R_local(m) at all nine widths (m=1 65.104 -> m=9 164.431 ms/round, 18/18 token-exact) reproduces FINDING 559 within 0.3 ms. SDPA two-call split localized to AttentionUtils.swift:125 ('let split = 5'): isolated GQA attention 0.221->0.392 ms at exactly m=6, FLAT to m=9; x16 layers = 2.74 ms/round = 112% of in-situ fa_mixer 5->6 step (2.45). GDN recurrence is NOT a width-tax target: 0.00366 ms/row/layer = 0.176 ms/round/row = 1.3% of the mean width step. FINDING 560 37% share confirmed at 35.2%, attributed to SDPA split + f(IPG) convexity in gdn projections. Closure: isolated model at 0.968-0.993 of every band level, slope closure +-1.6 at 7/8 boundaries, one named exceedance 5->6 +2.607 (isolated parts overstate; split second call + IPG=6 single-pass overlap other work in situ). harness=local, ungated, attribution only.",
+    "589": "E218: FINDING 571's 15.521 ms/round non-QMV-plan residual is INSIDE the QMV kernels - the whole pass-plan-invariant inventory at m=9 totals 12.952 ms/round (2.57 smaller), every term a function of m and KV only. Plan-level cache-service corroboration: at 6->7, six cells add a weight pass for 14.734 ms/round vs ~66 ms/round nominal first-touch cost (11.204 GB extra at 169 GB/s). Cap-7 re-weighted shortlist STABLE: top four unchanged - fused MLP QMV 22.174 cap7-median (29.689 pooled), GDN mixer projections 8.748 (11.104), SDPA split 0.934 (1.200); one swap rank 6/7 (other_round over lm_head_readout). NOT-A-PRICE for ranked value per RULE 79."
   },
   "fleetReprovision20260824": {
     "at": "2026-08-24T07:30Z",
@@ -1273,7 +1285,7 @@
     "10f3a0d1 vibecodooor",
     "8886ec88 jungjipdo"
   ],
-  "lastAdvisorUpdate": "2026-08-25T10:58:00Z",
+  "lastAdvisorUpdate": "2026-08-25T12:05:00Z",
   "lastTerminalSubmission": {
     "advisorError": "ADVISOR ERROR 215. I priced B1 from a local candidate-leg medpair of -0.4163 % and quoted 78-91 % win probability. The correct prior was about 37 %.",
     "commit": "08f811009c9628785ba2ec0f19ca2e8fb3795689",
@@ -1292,20 +1304,20 @@
     "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance."
   },
   "latestOfficialReceipt": {
-    "submissionId": "5f508da5-2d0c-43ee-b0c3-8f9f83367d49",
     "candidateSurfaceCommit": "9a91ba76",
-    "submissionCommitShaYukon": "8441f0a1",
-    "tree": "cap-8 + (9,5) staging + stepq composed on campaign base (= frozen 3f1065cb scored tree)",
-    "officialScore": 3.63645107265355,
-    "status": "rejected",
-    "rejectionReason": "score did not improve current best",
-    "parityAllOk": true,
-    "terminalAt": "2026-08-25T08:55:22Z",
-    "queueDuration": "5h19m",
     "keyResult": "FINDING 581: dR9 < 0 decisive (+1.90% depth-attributable, 5/5 deepened slower); depth axis closed both directions at cap 7; FINDING 582 median order statistics; FINDING 583 serial numerator stable",
+    "officialScore": 3.63645107265355,
+    "parityAllOk": true,
+    "queueDuration": "5h19m",
+    "rejectionReason": "score did not improve current best",
+    "status": "rejected",
+    "submissionCommitShaYukon": "8441f0a1",
+    "submissionId": "5f508da5-2d0c-43ee-b0c3-8f9f83367d49",
+    "terminalAt": "2026-08-25T08:55:22Z",
+    "tree": "cap-8 + (9,5) staging + stepq composed on campaign base (= frozen 3f1065cb scored tree)",
     "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tash1qcu"
   },
-  "ledgerEntry": 446,
+  "ledgerEntry": 447,
   "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
   "localBaselines": {
     "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
@@ -2636,7 +2648,8 @@
     "406": "Replica-ring microbenches must warm EVERY replica before timing (first-touch residency: E219's first groups session warmed only 4/16 replicas and was invalid; disclosed and repaired). Physically impossible slope signatures - cost falling with chain length, a smaller shape costing more than a larger one - are mandatory validity checks that invalidate the session; they are not noise.",
     "407": "Ranked register legality is judged on applegpu_g17s via agx_crossarch.translate; g16s decides only local-timing fidelity. A g17s-clean/g16s-spilling arm is ranked-only: its local timing is not transferable and must be labelled; one-sided screens allowed (a local win despite local spills bounds the ranked result from below). Proxy register models (AIR lane-weighted, fitted grids) may generate hypotheses but may not decide legality or enter closure reasoning without a real-backend witness.",
     "408": "Write-coverage controls must check the written key SET against 0..<n (count, minimum, maximum, one write each) with a positive control that trips; count-only coverage is invalid. Origin: E221 step-1 gate - a stale simdgroup stride at rows=2 wrote n distinct rows as the sparse set {0,1,4,5,...,2n-3} and passed a count-only check while half the output was never written. Amends RULE 403.",
-    "409": "A desk pricing model used to decide an experiment arm must include an in-report selftest that exactly reproduces independent, already-published measured data covering the model's operative terms, and the selftest must pass before any price from the model is acted on. (E222 stage 1: 24/24 exact reproduction of E221 issued-byte deltas; cautionary precedent: the Entry 441 rows=2 desk-kill that E221 overturned.)"
+    "409": "A desk pricing model used to decide an experiment arm must include an in-report selftest that exactly reproduces independent, already-published measured data covering the model's operative terms, and the selftest must pass before any price from the model is acted on. (E222 stage 1: 24/24 exact reproduction of E221 issued-byte deltas; cautionary precedent: the Entry 441 rows=2 desk-kill that E221 overturned.)",
+    "410": "Access-regime pricing: before pricing removal of redundant work, prove from launch geometry whether it is SERIAL (own dispatch: a-term applies) or CONCURRENT inside one dispatch (cache-served: no a-term; the fitted stream coefficient does not transfer). A stream coefficient prices only the regime it was fitted on; first-touch vs cache-served differ >=3x and can differ in sign via occupancy. Every desk price must carry BOTH a harness label (RULE 79) and an access-regime label; unlabeled b-term prices are invalid for arm decisions. Basis: FINDING 586/587 (E222)."
   },
   "schemaVersion": 1,
   "serialDriftHeadwind": {
