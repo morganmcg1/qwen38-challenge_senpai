@@ -1,0 +1,759 @@
+{
+  "campaign_base": "40be5063a136725f0ce73ed81b2f8deac5ce184d",
+  "cap7_census": {
+    "per_leg": {
+      "leg01-off-": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg02-off0": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg03-off1": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg04-off2": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg05-off2": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg06-off1": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg07-off0": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg08-off1": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg09-off0": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg10-off2": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg11-off2": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg12-off0": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg13-off1": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      },
+      "leg14-off-": {
+        "census_by_served_width": {
+          "2": 1,
+          "4": 4,
+          "5": 5,
+          "6": 5,
+          "7": 3,
+          "8": 60
+        },
+        "drafts_accepted_by_width": {
+          "2": 1,
+          "4": 10,
+          "5": 17,
+          "6": 21,
+          "7": 18,
+          "8": 368
+        },
+        "drafts_proposed_by_width": {
+          "2": 1,
+          "4": 12,
+          "5": 20,
+          "6": 25,
+          "7": 18,
+          "8": 420
+        },
+        "rounds": 78
+      }
+    },
+    "source": "E202 raw traces, W&B lpwbno36, 14 legs x 512 tokens",
+    "total_by_served_width": {
+      "2": 14,
+      "4": 56,
+      "5": 70,
+      "6": 70,
+      "7": 42,
+      "8": 840
+    }
+  },
+  "cap8_census": {
+    "runs": {
+      "7y6ap5l8": {
+        "block_request_ms_mean_by_width": {
+          "4": 77.44797070821126,
+          "5": 109.85628196171352,
+          "6": 118.2633638381958,
+          "7": 136.31272315979004,
+          "8": 145.20661036173502,
+          "9": 186.01222265334354
+        },
+        "block_request_ms_total": 12047.688364982605,
+        "census_by_served_width": {
+          "4": 3,
+          "5": 7,
+          "6": 8,
+          "7": 4,
+          "8": 12,
+          "9": 42
+        },
+        "drafts_proposed_by_width": {
+          "4": 9,
+          "5": 28,
+          "6": 40,
+          "7": 24,
+          "8": 84,
+          "9": 336
+        },
+        "rounds": 76
+      },
+      "exdb3vyt": {
+        "block_request_ms_mean_by_width": {
+          "4": 78.00070444742839,
+          "5": 95.27100835527692,
+          "6": 139.4243985414505,
+          "7": 136.80973649024963,
+          "8": 145.6181804339091,
+          "9": 186.47657405762448
+        },
+        "block_request_ms_total": 12142.967581748962,
+        "census_by_served_width": {
+          "4": 3,
+          "5": 7,
+          "6": 8,
+          "7": 4,
+          "8": 12,
+          "9": 42
+        },
+        "drafts_proposed_by_width": {
+          "4": 9,
+          "5": 28,
+          "6": 40,
+          "7": 24,
+          "8": 84,
+          "9": 336
+        },
+        "rounds": 76
+      }
+    },
+    "source": "E199 W&B per_round tables (7y6ap5l8, exdb3vyt), 512 tokens, gate-qualified"
+  },
+  "experiment": "e206-cap8-width-work-map",
+  "harness": "local",
+  "m9_dispatch_map": {
+    "cells": {
+      "fa.o_proj": {
+        "cell_key_k_n": [
+          6144,
+          5120
+        ],
+        "covered_by_e195_selective_plan_at_m9": false,
+        "groups_at_m6_shipped": 1,
+        "groups_at_m8_shipped": 2,
+        "invocations_per_round": 16,
+        "shipped_groups_at_m9": 3,
+        "shipped_ipg_at_m9": 3,
+        "shipped_variant_at_m9": "staged"
+      },
+      "fa.qkv": {
+        "cell_key_k_n": [
+          5120,
+          14336
+        ],
+        "covered_by_e195_selective_plan_at_m9": false,
+        "groups_at_m6_shipped": 1,
+        "groups_at_m8_shipped": 2,
+        "invocations_per_round": 16,
+        "shipped_groups_at_m9": 3,
+        "shipped_ipg_at_m9": 3,
+        "shipped_variant_at_m9": "staged"
+      },
+      "gdn.in_proj": {
+        "cell_key_k_n": [
+          5120,
+          16480
+        ],
+        "covered_by_e195_selective_plan_at_m9": false,
+        "groups_at_m6_shipped": 1,
+        "groups_at_m8_shipped": 2,
+        "invocations_per_round": 48,
+        "shipped_groups_at_m9": 3,
+        "shipped_ipg_at_m9": 3,
+        "shipped_variant_at_m9": "staged"
+      },
+      "gdn.out_proj": {
+        "cell_key_k_n": [
+          6144,
+          5120
+        ],
+        "covered_by_e195_selective_plan_at_m9": false,
+        "groups_at_m6_shipped": 1,
+        "groups_at_m8_shipped": 2,
+        "invocations_per_round": 48,
+        "shipped_groups_at_m9": 3,
+        "shipped_ipg_at_m9": 3,
+        "shipped_variant_at_m9": "staged"
+      },
+      "lm_head": {
+        "cell_key_k_n": [
+          5120,
+          248320
+        ],
+        "covered_by_e195_selective_plan_at_m9": false,
+        "groups_at_m6_shipped": 1,
+        "groups_at_m8_shipped": 2,
+        "invocations_per_round": 1,
+        "shipped_groups_at_m9": 3,
+        "shipped_ipg_at_m9": 3,
+        "shipped_variant_at_m9": "staged"
+      },
+      "mlp.down": {
+        "cell_key_k_n": [
+          17408,
+          5120
+        ],
+        "covered_by_e195_selective_plan_at_m9": false,
+        "groups_at_m6_shipped": 2,
+        "groups_at_m8_shipped": 2,
+        "invocations_per_round": 64,
+        "shipped_groups_at_m9": 3,
+        "shipped_ipg_at_m9": 3,
+        "shipped_variant_at_m9": "staged"
+      },
+      "mlp.gate_up": {
+        "cell_key_k_n": [
+          5120,
+          34816
+        ],
+        "covered_by_e195_selective_plan_at_m9": false,
+        "groups_at_m6_shipped": 1,
+        "groups_at_m8_shipped": 2,
+        "invocations_per_round": 64,
+        "shipped_groups_at_m9": 3,
+        "shipped_ipg_at_m9": 3,
+        "shipped_variant_at_m9": "staged"
+      }
+    },
+    "e195_selective_predicate": "m == 6 && cell != .mlpDown (Qwen35.swift:1641)",
+    "ipg_options_at_m9": [
+      {
+        "groups": 5,
+        "ipg": 2,
+        "legal_under_static_assert": false,
+        "max_ipg_proven_in_shipped_plan": true,
+        "tail_rows": 1
+      },
+      {
+        "groups": 3,
+        "ipg": 3,
+        "legal_under_static_assert": true,
+        "max_ipg_proven_in_shipped_plan": true,
+        "tail_rows": 0
+      },
+      {
+        "groups": 3,
+        "ipg": 4,
+        "legal_under_static_assert": false,
+        "max_ipg_proven_in_shipped_plan": true,
+        "tail_rows": 1
+      },
+      {
+        "groups": 2,
+        "ipg": 5,
+        "legal_under_static_assert": true,
+        "max_ipg_proven_in_shipped_plan": true,
+        "tail_rows": 4
+      },
+      {
+        "groups": 2,
+        "ipg": 6,
+        "legal_under_static_assert": true,
+        "max_ipg_proven_in_shipped_plan": true,
+        "tail_rows": 3
+      },
+      {
+        "groups": 2,
+        "ipg": 7,
+        "legal_under_static_assert": true,
+        "max_ipg_proven_in_shipped_plan": false,
+        "tail_rows": 2
+      },
+      {
+        "groups": 2,
+        "ipg": 8,
+        "legal_under_static_assert": false,
+        "max_ipg_proven_in_shipped_plan": false,
+        "tail_rows": 1
+      },
+      {
+        "groups": 1,
+        "ipg": 9,
+        "legal_under_static_assert": true,
+        "max_ipg_proven_in_shipped_plan": false,
+        "tail_rows": 0
+      }
+    ],
+    "shipped_singlepass_ipg_table": {
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 6,
+      "7": 7,
+      "8": 8,
+      "9": 3
+    },
+    "shipped_staged_ipg_table": {
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 3,
+      "7": 4,
+      "8": 4,
+      "9": 3
+    }
+  },
+  "notes": [
+    "Counts and desk arithmetic only. No cap-8 vs cap-7 timing contrast.",
+    "Cap-7 census surface: 7f10e147 (E202). Cap-8 census surface: c47c7284 = b9ee228c + segmentedVerifyDepthCap=8; b9ee228c has a zero-byte scored diff against the campaign base 40be5063."
+  ],
+  "step_law": {
+    "intercept_ms": 18.92,
+    "per_group_ms": 36.03,
+    "per_row_ms": 6.51
+  },
+  "step_law_consistency_check_within_7y6ap5l8": [
+    {
+      "measured_block_request_ms_mean": 77.44797070821126,
+      "rounds": 3,
+      "served_width": 4,
+      "step_law_ms_uniform_staged_G": 80.99000000000001,
+      "uniform_staged_G": 1
+    },
+    {
+      "measured_block_request_ms_mean": 109.85628196171352,
+      "rounds": 7,
+      "served_width": 5,
+      "step_law_ms_uniform_staged_G": 87.5,
+      "uniform_staged_G": 1
+    },
+    {
+      "measured_block_request_ms_mean": 118.2633638381958,
+      "rounds": 8,
+      "served_width": 6,
+      "step_law_ms_uniform_staged_G": 130.04000000000002,
+      "uniform_staged_G": 2
+    },
+    {
+      "measured_block_request_ms_mean": 136.31272315979004,
+      "rounds": 4,
+      "served_width": 7,
+      "step_law_ms_uniform_staged_G": 136.55,
+      "uniform_staged_G": 2
+    },
+    {
+      "measured_block_request_ms_mean": 145.20661036173502,
+      "rounds": 12,
+      "served_width": 8,
+      "step_law_ms_uniform_staged_G": 143.06,
+      "uniform_staged_G": 2
+    },
+    {
+      "measured_block_request_ms_mean": 186.01222265334354,
+      "rounds": 42,
+      "served_width": 9,
+      "step_law_ms_uniform_staged_G": 185.6,
+      "uniform_staged_G": 3
+    }
+  ],
+  "weight_byte_model": {
+    "bytes_per_element_affine4_g64": 0.5625,
+    "family_share_of_pass": {
+      "fa": 0.06547984448536934,
+      "gdn": 0.21700429711479435,
+      "lm_head": 0.04962144464906896,
+      "mlp": 0.6678944137507674
+    },
+    "per_cell": {
+      "fa.o_proj": {
+        "family": "fa",
+        "invocations_per_round": 16,
+        "k": 6144,
+        "n": 5120,
+        "share_of_pass": 0.019643953345610803,
+        "weight_bytes_per_invocation": 17694720.0,
+        "weight_bytes_per_round_per_pass": 283115520.0
+      },
+      "fa.qkv": {
+        "family": "fa",
+        "invocations_per_round": 16,
+        "k": 5120,
+        "n": 14336,
+        "share_of_pass": 0.04583589113975854,
+        "weight_bytes_per_invocation": 41287680.0,
+        "weight_bytes_per_round_per_pass": 660602880.0
+      },
+      "gdn.in_proj": {
+        "family": "gdn",
+        "invocations_per_round": 48,
+        "k": 5120,
+        "n": 16480,
+        "share_of_pass": 0.15807243707796195,
+        "weight_bytes_per_invocation": 47462400.0,
+        "weight_bytes_per_round_per_pass": 2278195200.0
+      },
+      "gdn.out_proj": {
+        "family": "gdn",
+        "invocations_per_round": 48,
+        "k": 6144,
+        "n": 5120,
+        "share_of_pass": 0.058931860036832415,
+        "weight_bytes_per_invocation": 17694720.0,
+        "weight_bytes_per_round_per_pass": 849346560.0
+      },
+      "lm_head": {
+        "family": "lm_head",
+        "invocations_per_round": 1,
+        "k": 5120,
+        "n": 248320,
+        "share_of_pass": 0.04962144464906896,
+        "weight_bytes_per_invocation": 715161600.0,
+        "weight_bytes_per_round_per_pass": 715161600.0
+      },
+      "mlp.down": {
+        "family": "mlp",
+        "invocations_per_round": 64,
+        "k": 17408,
+        "n": 5120,
+        "share_of_pass": 0.22263147125025579,
+        "weight_bytes_per_invocation": 50135040.0,
+        "weight_bytes_per_round_per_pass": 3208642560.0
+      },
+      "mlp.gate_up": {
+        "family": "mlp",
+        "invocations_per_round": 64,
+        "k": 5120,
+        "n": 34816,
+        "share_of_pass": 0.44526294250051157,
+        "weight_bytes_per_invocation": 100270080.0,
+        "weight_bytes_per_round_per_pass": 6417285120.0
+      }
+    },
+    "weight_bytes_per_round_per_pass": 14412349440.0
+  }
+}
