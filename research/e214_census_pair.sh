@@ -3,29 +3,35 @@
 # pair the advisor asked for.
 #
 #   usage: research/e214_census_pair.sh [TOKENS]      # default 512
+#          research/e214_stage_arms.sh must have run first.
 #
 # WHY. This experiment's headline IS the schedule delta. FINDING 545's base
 # census (76 rounds, EDL 6.855263, acc 0.836852) was measured on another M4
 # Pro, so on this host it is INFERRED (RULE 386). Both arms are measured here,
 # back to back, in one session, so the delta carries no cross-host label.
 #
-# WHAT EACH ARM IS. The only submitted file this candidate changes is
-# `Qwen36MTPBlockSession.swift`. Arm `base` checks that one file out at
-# BASE_SHA, which makes the whole submitted surface byte-identical to the base,
-# and rebuilds. Arm `cand` restores the branch file and rebuilds. The script
-# asserts the surface, the built symbol, and the arm the binary PRINTS in each
-# leg, so a leg can never be labelled as an arm it did not run.
+# WHAT EACH ARM IS. `e214_stage_arms.sh` built one binary from the branch tree
+# and one from a tree whose submitted surface is byte-identical to BASE_SHA.
+# This script only INSTALLS a staged binary and runs a leg, so the worktree
+# stays clean from start to finish. Three assertions stop a leg from being
+# labelled as an arm it did not run:
+#
+#   1. the installed worker digest must equal the staged manifest digest;
+#   2. the binary must PRINT the price arm the leg claims;
+#   3. the worker digest must be unchanged after the leg, so a rebuild inside
+#      the wrapper cannot silently swap the arm mid-leg.
 #
 # NOT A PRICE (RULE 79). Both legs run traced, unsandboxed and ungated, so
-# every second in them is discarded. The legs exist to count rounds, depth and
+# every second in them is discarded. The legs count rounds, depth and
 # acceptance. Timing evidence comes from the separate gated confirmation.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 tokens="${1:-512}"
-base_sha="e0c7a026aebc9dbdd579577964ad413a11ede6fc"
-session="Sources/MLXFastModel/Qwen36MTPBlockSession.swift"
-surface=(Sources Vendor Package.swift mtp-head.manifest.json)
+stage="${MLXFAST_E214_WORKERS:-$(cd ../.. && pwd)/e214-workers}"
+worker=".build-worker/release/mlxfast-runtime-worker"
+metallib=".build-worker/release/mlx.metallib"
+cli=".build/release/mlxfast-swift"
 out_root="research/out"
 
 head_dir="${E214_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-declared-run}"
@@ -33,25 +39,33 @@ head_dir="${E214_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-de
   echo "e214_census_pair.sh: no head at ${head_dir}" >&2; exit 2; }
 export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
 
-# A patched arm is only the arm it claims if the tree was clean before it.
 [[ -z "$(git status --porcelain)" ]] || {
   echo "e214_census_pair.sh: worktree is dirty; commit or discard first" >&2
   exit 2; }
 
-changed="$(git diff --name-only "${base_sha}" -- "${surface[@]}")"
-[[ "${changed}" == "${session}" ]] || {
-  echo "e214_census_pair.sh: submitted surface differs from ${base_sha} in more" >&2
-  echo "  than the session file, so the base arm cannot be made by one checkout:" >&2
-  echo "${changed}" >&2
-  exit 2; }
+for arm in base cand; do
+  [[ -s "${stage}/${arm}/manifest.txt" ]] || {
+    echo "e214_census_pair.sh: no staged ${arm} arm; run e214_stage_arms.sh" >&2
+    exit 2; }
+done
 
-restore() {
-  # From HEAD, not from the index: staging the base arm also wrote the base
-  # blob into the index, so an index-side restore would reinstate the base file
-  # and leave the branch file lost.
-  git checkout HEAD -- "${session}" 2>/dev/null || true
+digest() { shasum -a 256 "$1" | awk '{print $1}'; }
+manifest_field() { grep "^$2=" "${stage}/$1/manifest.txt" | tail -1 | cut -d= -f2; }
+
+install_arm() {
+  local arm="$1" want got
+  cp "${stage}/${arm}/mlxfast-runtime-worker" "${worker}"
+  cp "${stage}/${arm}/mlx.metallib" "${metallib}"
+  cp "${stage}/${arm}/mlxfast-swift" "${cli}"
+  want="$(manifest_field "${arm}" worker_sha256)"
+  got="$(digest "${worker}")"
+  [[ "${want}" == "${got}" ]] || {
+    echo "e214_census_pair.sh: installed ${arm} worker ${got} != staged ${want}" >&2
+    return 3; }
 }
-trap restore EXIT
+
+# The candidate binaries must be back in place however this script ends.
+trap 'install_arm cand >/dev/null 2>&1 || true' EXIT
 
 gpu_temp() {
   local macmon
@@ -97,18 +111,15 @@ run_leg() {
       echo "official_or_ranked_score=false"
       echo "seconds_per_token_is_a_price=false"
       echo "branch_sha=$(git rev-parse HEAD)"
-      echo "base_sha=${base_sha}"
-      echo "session_blob_sha=$(git hash-object "${session}")"
-      echo "surface_equals_base=$(
-        git diff --quiet "${base_sha}" -- "${surface[@]}" && echo true || echo false)"
+      echo "arm_session_blob=$(manifest_field "${arm}" session_blob)"
+      echo "arm_surface_equals_base=$(manifest_field "${arm}" surface_equals_base)"
       echo "host=$(hostname)"
       echo "chip=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)"
       echo "memory_bytes=$(sysctl -n hw.memsize)"
       echo "head_dir=${MLXFAST_QWEN_MTP_HEAD_DIR}"
-      echo "metallib_source_fingerprint=$(tools/build-mlx-metallib.sh --print-fingerprint)"
-      echo "worker_sha256=$(
-        shasum -a 256 .build-worker/release/mlxfast-runtime-worker | awk '{print $1}')"
-      echo "cli_sha256=$(shasum -a 256 .build/release/mlxfast-swift | awk '{print $1}')"
+      echo "worker_sha256=$(digest "${worker}")"
+      echo "metallib_sha256=$(digest "${metallib}")"
+      echo "cli_sha256=$(digest "${cli}")"
       echo "gpu_temp_entry_c=$(gpu_temp)"
       echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     } > "${out}/meta.txt"
@@ -118,46 +129,35 @@ run_leg() {
     echo $? > "${out}/exit"
   )
 
-  local status
+  local status printed post
   status="$(cat "${out}/exit")"
+  printed="$(grep -m1 -o 'mtp-price: arm=[a-z0-9]*' "${trace_path}" \
+             | sed 's/.*arm=//' || true)"
+  post="$(digest "${worker}")"
   {
     echo "gpu_temp_exit_c=$(gpu_temp)"
     echo "trace_rounds=$(grep -c '^mtp-trace: round=' "${trace_path}" || true)"
-    echo "printed_price_arm=$(
-      grep -m1 -o 'mtp-price: arm=[a-z0-9]*' "${trace_path}" \
-        | sed 's/.*arm=//' || true)"
+    echo "printed_price_arm=${printed}"
+    echo "post_run_worker_sha256=${post}"
     echo "exit=${status}"
     echo "finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } >> "${out}/meta.txt"
 
-  local got
-  got="$(grep '^printed_price_arm=' "${out}/meta.txt" | tail -1 | cut -d= -f2)"
-  if [[ "${got}" != "${want_arm}" ]]; then
-    echo "e214_census_pair.sh: arm ${arm} printed '${got}', expected '${want_arm}'" >&2
-    return 3
-  fi
+  [[ "${printed}" == "${want_arm}" ]] || {
+    echo "e214_census_pair.sh: arm ${arm} printed '${printed}', want '${want_arm}'" >&2
+    return 3; }
+  [[ "${post}" == "$(manifest_field "${arm}" worker_sha256)" ]] || {
+    echo "e214_census_pair.sh: the ${arm} worker changed during the leg" >&2
+    return 3; }
   return "${status}"
 }
 
-echo "=== arm base: checking out ${session} at ${base_sha}"
-git checkout "${base_sha}" -- "${session}"
-git diff --quiet "${base_sha}" -- "${surface[@]}" || {
-  echo "e214_census_pair.sh: base arm surface is not byte-identical to base" >&2
-  exit 3; }
-senpai/rebuild-and-assert-worker.sh \
-  --forbid-symbol makeThresholdDepthPrice > "${out_root}/e214-base-build.log" 2>&1 || {
-  echo "e214_census_pair.sh: base arm build failed; see ${out_root}/e214-base-build.log" >&2
-  exit 3; }
+echo "=== arm base"
+install_arm base || exit $?
 run_leg base ship || exit $?
 
-echo "=== arm cand: restoring the branch file"
-restore
-[[ -z "$(git status --porcelain)" ]] || {
-  echo "e214_census_pair.sh: tree not restored after the base arm" >&2; exit 3; }
-senpai/rebuild-and-assert-worker.sh \
-  --require-symbol makeThresholdDepthPrice > "${out_root}/e214-cand-build.log" 2>&1 || {
-  echo "e214_census_pair.sh: candidate arm build failed" >&2
-  exit 3; }
+echo "=== arm cand"
+install_arm cand || exit $?
 run_leg cand stepq || exit $?
 
 echo "=== done"
