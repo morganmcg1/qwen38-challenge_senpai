@@ -1,0 +1,38 @@
+<|im_start|>system
+You are a careful Python engineer. Write plain, readable code. Answer with one code block and no commentary around it.<|im_end|>
+<|im_start|>user
+Reference notes:
+The notes below are background material for the operator, not part of the question.
+The machine that runs this prompt is an Apple Silicon laptop with unified memory.
+The decode window is fixed in length and is counted by the trusted parent process.
+A stop token inside that window is ordinary data and does not end the window.
+The reference trajectory is greedy, so every run of the same build repeats it.
+The proposal head suggests tokens and the target model checks each of them.
+Rejected tokens are discarded and the accepted prefix is committed in order.
+Recurrent layers keep a small state that has to be repaired after a rejection.
+Full attention layers keep a key and value cache that grows with the window.
+The operator reads the counters after the run and never during the run.
+Temperature is recorded before and after each leg for the thermal record.
+The numbers in this block are illustrative and carry no measured meaning.
+Nothing in this block asks for an answer or changes the question asked below.
+The passage exists only to make the seed long enough for the fixed prompt width.
+Ordinary English keeps the tokenization stable across small edits to this file.
+The last line of the block is followed by the actual question for this turn.
+The notes below are background material for the operator, not part of the question.
+The machine that runs this prompt is an Apple Silicon laptop with unified memory.
+The decode window is fixed in length and is counted by the trusted parent process.
+A stop token inside that window is ordinary data and does not end the window.
+The reference trajectory is greedy, so every run of the same build repeats it.
+The proposal head suggests tokens and the target model checks each of them.
+Rejected tokens are discarded and the accepted prefix is committed in order.
+Recurrent layers keep a small state that has to be repaired after a rejection.
+Full attention layers keep a key and value cache that grows with the window.
+The operator reads the counters after the run and never during the run.
+context context context context context context context context context context
+
+Question: Write a Python function `merge_sorted(a, b)` that merges two sorted lists of integers into one sorted list without using `sorted`. Include a short docstring and simple type hints.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+

@@ -1,0 +1,139 @@
+{
+  "direction_holds_on_every_prompt": true,
+  "harness": "local",
+  "prompt_count": 5,
+  "prompts": {
+    "e215-code": {
+      "delta": {
+        "accepted_rate_pp": -3.42284833810258,
+        "edl_pct": 15.178748899679132,
+        "rounds_abs": -8,
+        "rounds_pct": -6.4,
+        "rows_abs": 39
+      },
+      "fixture": "research/e215-artifacts/fixtures/e215-code_512_64.json",
+      "ship": {
+        "accepted_draft_rate": 0.6428571428571429,
+        "accepted_draft_total": 387,
+        "declared_rows_total": 727,
+        "effective_mean_draft_len": 4.816,
+        "rejected_draft_total": 215,
+        "rounds": 125
+      },
+      "stepq": {
+        "accepted_draft_rate": 0.6086286594761171,
+        "accepted_draft_total": 395,
+        "declared_rows_total": 766,
+        "effective_mean_draft_len": 5.547008547008547,
+        "rejected_draft_total": 254,
+        "rounds": 117
+      }
+    },
+    "e215-eos-para": {
+      "delta": {
+        "accepted_rate_pp": -2.340125509951463,
+        "edl_pct": 5.767501605651897,
+        "rounds_abs": -2,
+        "rounds_pct": -2.1739130434782608,
+        "rows_abs": 16
+      },
+      "fixture": "research/e215-artifacts/fixtures/e215-eos-para_512_192.json",
+      "ship": {
+        "accepted_draft_rate": 0.8092485549132948,
+        "accepted_draft_total": 420,
+        "declared_rows_total": 611,
+        "effective_mean_draft_len": 5.641304347826087,
+        "rejected_draft_total": 99,
+        "rounds": 92
+      },
+      "stepq": {
+        "accepted_draft_rate": 0.7858472998137802,
+        "accepted_draft_total": 422,
+        "declared_rows_total": 627,
+        "effective_mean_draft_len": 5.966666666666667,
+        "rejected_draft_total": 115,
+        "rounds": 90
+      }
+    },
+    "e215-eos-short": {
+      "delta": {
+        "accepted_rate_pp": -2.5220791325202607,
+        "edl_pct": 8.604052887532799,
+        "rounds_abs": -2,
+        "rounds_pct": -1.5267175572519085,
+        "rows_abs": 61
+      },
+      "fixture": "research/e215-artifacts/fixtures/e215-eos-short_512_64.json",
+      "ship": {
+        "accepted_draft_rate": 0.42006615214994486,
+        "accepted_draft_total": 381,
+        "declared_rows_total": 1038,
+        "effective_mean_draft_len": 6.923664122137405,
+        "rejected_draft_total": 526,
+        "rounds": 131
+      },
+      "stepq": {
+        "accepted_draft_rate": 0.39484536082474225,
+        "accepted_draft_total": 383,
+        "declared_rows_total": 1099,
+        "effective_mean_draft_len": 7.51937984496124,
+        "rejected_draft_total": 587,
+        "rounds": 129
+      }
+    },
+    "e215-story": {
+      "delta": {
+        "accepted_rate_pp": -6.747148191723362,
+        "edl_pct": 29.998447446048747,
+        "rounds_abs": -14,
+        "rounds_pct": -5.785123966942149,
+        "rows_abs": 113
+      },
+      "fixture": "research/e215-artifacts/fixtures/e215-story_512_64.json",
+      "ship": {
+        "accepted_draft_rate": 0.4778761061946903,
+        "accepted_draft_total": 270,
+        "declared_rows_total": 807,
+        "effective_mean_draft_len": 2.334710743801653,
+        "rejected_draft_total": 295,
+        "rounds": 242
+      },
+      "stepq": {
+        "accepted_draft_rate": 0.41040462427745666,
+        "accepted_draft_total": 284,
+        "declared_rows_total": 920,
+        "effective_mean_draft_len": 3.0350877192982457,
+        "rejected_draft_total": 408,
+        "rounds": 228
+      }
+    },
+    "public": {
+      "delta": {
+        "accepted_rate_pp": 1.0638140196681412,
+        "edl_pct": 3.510109641627002,
+        "rounds_abs": -3,
+        "rounds_pct": -3.9473684210526314,
+        "rows_abs": -6
+      },
+      "fixture": "correctness_prompts/public_longcopy_gate_english_512_256.json",
+      "ship": {
+        "accepted_draft_rate": 0.836852207293666,
+        "accepted_draft_total": 436,
+        "declared_rows_total": 597,
+        "effective_mean_draft_len": 6.855263157894737,
+        "rejected_draft_total": 85,
+        "rounds": 76
+      },
+      "stepq": {
+        "accepted_draft_rate": 0.8474903474903475,
+        "accepted_draft_total": 439,
+        "declared_rows_total": 591,
+        "effective_mean_draft_len": 7.095890410958904,
+        "rejected_draft_total": 79,
+        "rounds": 73
+      }
+    }
+  },
+  "prompts_with_direction": 5,
+  "seconds_are_a_price": false
+}

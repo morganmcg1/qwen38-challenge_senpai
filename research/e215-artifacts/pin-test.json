@@ -1,0 +1,39 @@
+{
+  "failing_name_diff_empty": true,
+  "failing_names_added": [],
+  "failing_names_removed": [],
+  "harness": "local",
+  "issue_count_matches_base": true,
+  "pin_test_count": 4,
+  "pin_test_names": [
+    "the pin can fail: one ulp moves both the table and the price",
+    "the shipped arm is stepq",
+    "the shipped threshold table is bit-identical to the fitted table",
+    "the walk reads the shipped table and nothing else"
+  ],
+  "pin_tests_absent_from_base": [
+    "the pin can fail: one ulp moves both the table and the price",
+    "the shipped arm is stepq",
+    "the shipped threshold table is bit-identical to the fitted table",
+    "the walk reads the shipped table and nothing else"
+  ],
+  "pin_tests_failing": [],
+  "pin_tests_missing": [],
+  "pin_tests_passed": true,
+  "pinned_arm": "stepq",
+  "pinned_thresholds_hex": [
+    "0x1.eb65abab49018p-4",
+    "0x1.3cd94a284f571p-3",
+    "0x1.0d1de16a67c83p-1",
+    "0x1.4d3a8b9cf3e83p-1",
+    "0x1.a836c532de064p-1",
+    "0x1.a836c532de064p-1",
+    "0x1.a836c532de064p-1",
+    "0x1.a836c532de064p-1"
+  ],
+  "suite": "E215 shipped depth-price table pin",
+  "suite_issues_base": 41,
+  "suite_issues_branch": 41,
+  "suite_tests_base": 756,
+  "suite_tests_branch": 760
+}

@@ -1,0 +1,62 @@
+{
+  "e215-code": {
+    "last_ids": [
+      198,
+      248045,
+      74455,
+      198,
+      248068,
+      271,
+      248069,
+      271
+    ],
+    "path": "research/e215-artifacts/prompts/e215-code.txt",
+    "prompt_tokens": 512,
+    "question": "Write a Python function `merge_sorted(a, b)` that merges two sorted lists of integers into one sorted list without using `sorted`. Include a short docstring and simple type hints."
+  },
+  "e215-eos-para": {
+    "last_ids": [
+      198,
+      248045,
+      74455,
+      198,
+      248068,
+      271,
+      248069,
+      271
+    ],
+    "path": "research/e215-artifacts/prompts/e215-eos-para.txt",
+    "prompt_tokens": 512,
+    "question": "Why does a lighthouse use a rotating lens instead of a brighter lamp?"
+  },
+  "e215-eos-short": {
+    "last_ids": [
+      198,
+      248045,
+      74455,
+      198,
+      248068,
+      271,
+      248069,
+      271
+    ],
+    "path": "research/e215-artifacts/prompts/e215-eos-short.txt",
+    "prompt_tokens": 512,
+    "question": "What is the capital city of France?"
+  },
+  "e215-story": {
+    "last_ids": [
+      198,
+      248045,
+      74455,
+      198,
+      248068,
+      271,
+      248069,
+      271
+    ],
+    "path": "research/e215-artifacts/prompts/e215-story.txt",
+    "prompt_tokens": 512,
+    "question": "Continue this opening for as long as you like: the lighthouse keeper found a sealed brass tube in the shallows the morning after the storm."
+  }
+}
