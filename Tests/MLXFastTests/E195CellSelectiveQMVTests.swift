@@ -265,11 +265,12 @@ struct E195CellSelectiveQMVTests {
             Qwen35CustomQMV.kernelVariant((m: 6, k: 5120, n: 248_320))
                 == .singlePass)
         #expect(
-            Qwen35CustomQMV.kernelVariant((m: 6, k: 17408, n: 5120)) == .staged)
+            Qwen35CustomQMV.kernelVariant((m: 6, k: 17408, n: 5120))
+                == .staged)
         #expect(
             Qwen35CustomQMV.kernelVariant((m: 7, k: 5120, n: 248_320))
                 == .staged)
-        #expect(qwen35QMVWidthPlanWitness == "selective-m6")
+        #expect(qwen35QMVWidthPlanWitness == "selective-m6+ipg9-5")
 
         // The launch witness must follow the compiled variant, not the width
         // alone.
