@@ -250,21 +250,31 @@ def paired_contrast(legs: list[dict], a: str, b: str, phase: str) -> dict:
     }
 
 
-def weighted(contrast: dict, shares: dict[int, float]) -> dict:
+def weighted(contrast: dict, shares: dict[int, float], min_n: int = 2) -> dict:
     """Round-weight per-width savings by a served-width census.
 
-    A width the census serves but the session never observed contributes 0 and
-    is reported, because an unobserved width is not a zero-saving width.
+    Only widths this session measured with at least `min_n` paired rounds carry
+    an interval, so they alone set the primary number. Every excluded width is
+    reported with its census share and its reason, because an excluded width is
+    not a zero-saving width. A width the census serves that no `G == 2` mapping
+    can move does have a true saving of zero, and that is stated per width
+    rather than assumed.
     """
     total = 0.0
     variance = 0.0
     covered = 0.0
-    missing = {}
+    excluded = {}
     for width, share in sorted(shares.items()):
         entry = contrast["by_width"].get(width)
-        if entry is None or entry["n_rounds"] < 2:
+        if entry is None or entry["n_rounds"] < min_n:
             if share > 0:
-                missing[str(width)] = share
+                excluded[str(width)] = {
+                    "census_share": share,
+                    "n_rounds": 0 if entry is None else entry["n_rounds"],
+                    "point_estimate_ms": None if entry is None
+                                         else entry["saving_ms"],
+                    "moved_width": width in MOVED_WIDTHS,
+                }
             continue
         total += share * entry["saving_ms"]
         variance += (share * entry["sem_ms"]) ** 2
@@ -275,8 +285,9 @@ def weighted(contrast: dict, shares: dict[int, float]) -> dict:
         "sem_ms": sem,
         "ci95_ms": [total - 1.96 * sem, total + 1.96 * sem],
         "excludes_zero": bool(abs(total) > 2.0 * sem),
+        "min_paired_rounds_per_width": min_n,
         "census_share_covered": covered,
-        "census_share_unobserved": missing,
+        "census_share_excluded": excluded,
     }
 
 
@@ -348,17 +359,46 @@ def main() -> int:
                 for other in WITNESSES if other != expected[arm])
         for arm in ARMS if arm in witness)
 
+    # Thermal record and the bound it puts on the confound. The two legs of one
+    # arm sit at opposite ends of the palindrome, so the spread of their
+    # whole-leg seconds per token bounds how much entry temperature could have
+    # moved that arm.
+    entries = [float(leg["gpu_temp_entry_c"]) for leg in legs
+               if leg["gpu_temp_entry_c"]]
+    thermal = {
+        "entry_temp_c": [float(leg["gpu_temp_entry_c"]) for leg in legs],
+        "exit_temp_c": [float(leg["gpu_temp_exit_c"]) for leg in legs],
+        "entry_temp_spread_c": max(entries) - min(entries) if entries else None,
+        "arm_leg_spread_mtp_spt": {},
+    }
+    for arm in ARMS:
+        values = [leg["mtp_seconds_per_token"] for leg in legs
+                  if leg["arm"] == arm and leg["mtp_seconds_per_token"]]
+        if len(values) == 2:
+            thermal["arm_leg_spread_mtp_spt"][arm] = {
+                "values": values,
+                "abs_spread": abs(values[0] - values[1]),
+                "relative_spread": abs(values[0] - values[1])
+                                   / statistics.fmean(values),
+            }
+
     shares_public = public_census(legs)
     shares_pooled = pooled_census()
 
     contrasts = {}
     for a, b in [("staged", "off"), ("coop", "off"), ("staged", "coop")]:
         block = {}
-        for phase in ["round_us", "eval_wall_us", "verify_build_us"]:
+        for phase in PHASES:
             c = paired_contrast(legs, a, b, phase)
+            if not c["by_width"]:
+                continue
             if phase == "round_us":
                 c["weighted_public_census"] = weighted(c, shares_public)
                 c["weighted_pooled_census"] = weighted(c, shares_pooled)
+                # Supplementary only. It folds in the single-round widths, which
+                # carry a point estimate and no interval.
+                c["weighted_pooled_census_all_widths"] = weighted(
+                    c, shares_pooled, min_n=1)
                 c["moved_widths"] = {
                     str(w): c["by_width"].get(w) for w in MOVED_WIDTHS}
                 c["control_band"] = {
@@ -388,6 +428,7 @@ def main() -> int:
             "predeclared_agreement_band_ms": 0.5,
         },
         "integrity": integrity,
+        "thermal": thermal,
         "mapping_dispatch_witness": witness,
         "census_public": {str(k): v for k, v in shares_public.items()},
         "census_pooled": {str(k): v for k, v in shares_pooled.items()},
@@ -417,10 +458,15 @@ def main() -> int:
         if "weighted_pooled_census" in c:
             pub = c["weighted_public_census"]
             pool = c["weighted_pooled_census"]
+            allw = c["weighted_pooled_census_all_widths"]
             print(f"  public census  {pub['saving_ms_per_round']:+8.3f} "
-                  f"+/- {1.96 * pub['sem_ms']:.3f} (ci95)")
+                  f"+/- {1.96 * pub['sem_ms']:.3f} (ci95), "
+                  f"share {pub['census_share_covered']:.3f}")
             print(f"  pooled census  {pool['saving_ms_per_round']:+8.3f} "
-                  f"+/- {1.96 * pool['sem_ms']:.3f} (ci95)")
+                  f"+/- {1.96 * pool['sem_ms']:.3f} (ci95), "
+                  f"share {pool['census_share_covered']:.3f}")
+            print(f"  pooled n>=1    {allw['saving_ms_per_round']:+8.3f} "
+                  f"(supplementary, share {allw['census_share_covered']:.3f})")
     print(f"\ne217: promotion gate {report['promotion_gate']}")
     print(f"e217: wrote {out}")
     return 0

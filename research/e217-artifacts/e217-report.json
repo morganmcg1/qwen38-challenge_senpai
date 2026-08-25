@@ -1,0 +1,4334 @@
+{
+  "census_pooled": {
+    "2": 0.004709576138147566,
+    "3": 0.09576138147566719,
+    "4": 0.20094191522762953,
+    "5": 0.260596546310832,
+    "6": 0.007849293563579277,
+    "7": 0.01098901098901099,
+    "8": 0.015698587127158554,
+    "9": 0.40345368916797486
+  },
+  "census_public": {
+    "2": 0.014084507042253521,
+    "5": 0.15492957746478872,
+    "6": 0.014084507042253521,
+    "7": 0.028169014084507043,
+    "8": 0.014084507042253521,
+    "9": 0.7746478873239436
+  },
+  "contrasts": {
+    "coop_minus_off": {
+      "commit_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.3544999999999998,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.5848696226952333,
+              0.9521303773047664
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.7684999999999998,
+            "sem_ms": 0.09368896801263599,
+            "stdev_ms": 0.31073115389352257,
+            "two_sigma_ms": 0.18737793602527197
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.016999999999999904,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.0869600000000004,
+              0.014960000000000112
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.03600000000000014,
+            "sem_ms": 0.02600000000000013,
+            "stdev_ms": 0.03676955262170066,
+            "two_sigma_ms": 0.05200000000000026
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.0665,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.468538813898718,
+              0.7296975497376458
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.5991181818181819,
+            "sem_ms": 0.06662212648952238,
+            "stdev_ms": 0.4940829136786918,
+            "two_sigma_ms": 0.13324425297904477
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "commit_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_chain_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.22159780016596511,
+              0.3384021998340349
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.28,
+            "sem_ms": 0.029797040731650463,
+            "stdev_ms": 0.09882560396982153,
+            "two_sigma_ms": 0.059594081463300926
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.17900000000000005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.04086000000000001,
+              0.021859999999999935
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.009500000000000036,
+            "sem_ms": 0.015999999999999986,
+            "stdev_ms": 0.022627416997969503,
+            "two_sigma_ms": 0.03199999999999997
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.033499999999999974,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.23038447280934823,
+              0.3390337090088336
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.2847090909090909,
+            "sem_ms": 0.02771664188762382,
+            "stdev_ms": 0.20555211763436804,
+            "two_sigma_ms": 0.05543328377524764
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "d_chain_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_flush_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 55,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "d_flush_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_head1_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0003008501057422235,
+              0.0008809680760759585
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.0005909090909090909,
+            "sem_ms": 0.00014798927814636096,
+            "stdev_ms": 0.0004908249086070214,
+            "two_sigma_ms": 0.0002959785562927219
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.0005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0001356091835962984,
+              0.00037348172549461073
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.00025454545454545456,
+            "sem_ms": 6.0681770892426626e-05,
+            "stdev_ms": 0.00045002805748669997,
+            "two_sigma_ms": 0.00012136354178485325
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "d_head1_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_pre_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.010999999999999996,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.022168161208349205,
+              0.033740929700741704
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.027954545454545454,
+            "sem_ms": 0.0029522368603042085,
+            "stdev_ms": 0.00979146195788593,
+            "two_sigma_ms": 0.005904473720608417
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.009500000000000008,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.0064200000000000056,
+              0.0014200000000000011
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.0025000000000000022,
+            "sem_ms": 0.0020000000000000018,
+            "stdev_ms": 0.0028284271247461927,
+            "two_sigma_ms": 0.0040000000000000036
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0015000000000000013,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.01521683506820059,
+              0.02783771038634486
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.021527272727272725,
+            "sem_ms": 0.0032196110505470074,
+            "stdev_ms": 0.023877274602103194,
+            "two_sigma_ms": 0.006439222101094015
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "d_pre_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_submit1_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 55,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "d_submit1_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_submit2_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0015000000000000005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.30254219669680527,
+              0.37409416693955844
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.33831818181818185,
+            "sem_ms": 0.018253053633355398,
+            "stdev_ms": 0.06053853018007321,
+            "two_sigma_ms": 0.036506107266710795
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.05499999999999994,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.08402,
+              0.11048000000000012
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": 0.09725000000000006,
+            "sem_ms": 0.006750000000000033,
+            "stdev_ms": 0.00954594154601844,
+            "two_sigma_ms": 0.013500000000000066
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0625,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -0.3480713709802955,
+              -0.22781953811061362
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -0.28794545454545456,
+            "sem_ms": 0.03067648797695966,
+            "stdev_ms": 0.22750292372413652,
+            "two_sigma_ms": 0.06135297595391932
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "d_submit2_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "draft_build_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.013500000000000005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.5703158467952649,
+              0.7236841532047351
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.647,
+            "sem_ms": 0.03912456796159951,
+            "stdev_ms": 0.12976151201338557,
+            "two_sigma_ms": 0.07824913592319901
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.24499999999999966,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.03649999999999998,
+              0.13450000000000006
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": 0.08550000000000002,
+            "sem_ms": 0.025000000000000022,
+            "stdev_ms": 0.03535533905932741,
+            "two_sigma_ms": 0.050000000000000044
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.09850000000000048,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.031854713149992386,
+              0.06941834951362844
+            ],
+            "excludes_zero": false,
+            "n_rounds": 55,
+            "saving_ms": 0.018781818181818028,
+            "sem_ms": 0.025834964965209394,
+            "stdev_ms": 0.19159722808915536,
+            "two_sigma_ms": 0.05166992993041879
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "draft_build_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "eval_wall_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.6180000000000021,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -0.7759994975778665,
+              -0.6343641387857747
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": -0.7051818181818206,
+            "sem_ms": 0.03613146907961524,
+            "stdev_ms": 0.1198345260614115,
+            "two_sigma_ms": 0.07226293815923047
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.056999999999995055,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.48075999999999797,
+              0.8982399999999998
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": 0.6894999999999989,
+            "sem_ms": 0.10650000000000048,
+            "stdev_ms": 0.1506137443927353,
+            "two_sigma_ms": 0.21300000000000097
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.7419999999999902,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -2.4104160241958072,
+              -2.1495112485314682
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -2.2799636363636377,
+            "sem_ms": 0.06655734073069876,
+            "stdev_ms": 0.4936024496321187,
+            "two_sigma_ms": 0.13311468146139752
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "eval_wall_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "readout_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.009500000000000001,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.01083294309556825,
+              0.01316705690443175
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.012,
+            "sem_ms": 0.0005954371961386478,
+            "stdev_ms": 0.00197484176581315,
+            "two_sigma_ms": 0.0011908743922772957
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0005000000000000004,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.006699999999999998,
+              0.022699999999999998
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.008,
+            "sem_ms": 0.007499999999999999,
+            "stdev_ms": 0.010606601717798212,
+            "two_sigma_ms": 0.014999999999999998
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0025000000000000022,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0098731009632494,
+              0.016090535400386963
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.012981818181818181,
+            "sem_ms": 0.0015860802135555007,
+            "stdev_ms": 0.01176268568018267,
+            "two_sigma_ms": 0.0031721604271110013
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "readout_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "round_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.24100000000001387,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.011300494835467106,
+              0.36902776756274003
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.17886363636363647,
+            "sem_ms": 0.09702251591790999,
+            "stdev_ms": 0.3217872815159917,
+            "two_sigma_ms": 0.19404503183581998
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.14399999999999125,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              1.1861399999999924,
+              1.7878599999999687
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": 1.4869999999999806,
+            "sem_ms": 0.15349999999999397,
+            "stdev_ms": 0.21708178182426158,
+            "two_sigma_ms": 0.30699999999998795
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -1.5250000000000057,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -3.9639767004338156,
+              -2.4276778450207326
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -3.195827272727274,
+            "sem_ms": 0.3919129733196641,
+            "stdev_ms": 2.906504399806456,
+            "two_sigma_ms": 0.7838259466393283
+          }
+        },
+        "contrast": "coop - off",
+        "control_band": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.24100000000001387,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "3": null,
+          "4": null,
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.011300494835467106,
+              0.36902776756274003
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.17886363636363647,
+            "sem_ms": 0.09702251591790999,
+            "stdev_ms": 0.3217872815159917,
+            "two_sigma_ms": 0.19404503183581998
+          }
+        },
+        "moved_widths": {
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.14399999999999125,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              1.1861399999999924,
+              1.7878599999999687
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": 1.4869999999999806,
+            "sem_ms": 0.15349999999999397,
+            "stdev_ms": 0.21708178182426158,
+            "two_sigma_ms": 0.30699999999998795
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -1.5250000000000057,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -3.9639767004338156,
+              -2.4276778450207326
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -3.195827272727274,
+            "sem_ms": 0.3919129733196641,
+            "stdev_ms": 2.906504399806456,
+            "two_sigma_ms": 0.7838259466393283
+          }
+        },
+        "paired_rounds": 71,
+        "phase": "round_us",
+        "sign": "positive means the first arm is faster",
+        "weighted_pooled_census": {
+          "census_share_covered": 0.6750392464678179,
+          "census_share_excluded": {
+            "2": {
+              "census_share": 0.004709576138147566,
+              "moved_width": false,
+              "n_rounds": 1,
+              "point_estimate_ms": -0.24100000000001387
+            },
+            "3": {
+              "census_share": 0.09576138147566719,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "4": {
+              "census_share": 0.20094191522762953,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "6": {
+              "census_share": 0.007849293563579277,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -0.14399999999999125
+            },
+            "8": {
+              "census_share": 0.015698587127158554,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -1.5250000000000057
+            }
+          },
+          "ci95_ms": [
+            -1.5402836207058535,
+            -0.9125491750698007
+          ],
+          "excludes_zero": true,
+          "min_paired_rounds_per_width": 2,
+          "saving_ms_per_round": -1.226416397887827,
+          "sem_ms": 0.16013633817246242
+        },
+        "weighted_pooled_census_all_widths": {
+          "census_share_covered": 0.7032967032967032,
+          "census_share_excluded": {
+            "3": {
+              "census_share": 0.09576138147566719,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "4": {
+              "census_share": 0.20094191522762953,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            }
+          },
+          "ci95_ms": [
+            NaN,
+            NaN
+          ],
+          "excludes_zero": false,
+          "min_paired_rounds_per_width": 1,
+          "saving_ms_per_round": -1.2526220493791929,
+          "sem_ms": NaN
+        },
+        "weighted_public_census": {
+          "census_share_covered": 0.9577464788732394,
+          "census_share_excluded": {
+            "2": {
+              "census_share": 0.014084507042253521,
+              "moved_width": false,
+              "n_rounds": 1,
+              "point_estimate_ms": -0.24100000000001387
+            },
+            "6": {
+              "census_share": 0.014084507042253521,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -0.14399999999999125
+            },
+            "8": {
+              "census_share": 0.014084507042253521,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -1.5250000000000057
+            }
+          },
+          "ci95_ms": [
+            -3.0018767800979065,
+            -1.8102077269443493
+          ],
+          "excludes_zero": true,
+          "min_paired_rounds_per_width": 2,
+          "saving_ms_per_round": -2.406042253521128,
+          "sem_ms": 0.30399720743713193
+        },
+        "width_mismatched_rounds": 0
+      },
+      "upkeep_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0485,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.04444367641253273,
+              0.06719268722383093
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.05581818181818183,
+            "sem_ms": 0.005803319084514844,
+            "stdev_ms": 0.019247431942044535,
+            "two_sigma_ms": 0.011606638169029689
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.013000000000000012,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.001340000000000001,
+              0.01016000000000001
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": 0.005750000000000005,
+            "sem_ms": 0.002250000000000002,
+            "stdev_ms": 0.003181980515339467,
+            "two_sigma_ms": 0.004500000000000004
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0030000000000000027,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.07536185249596625,
+              0.11461996568585192
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.09499090909090908,
+            "sem_ms": 0.010014824793338178,
+            "stdev_ms": 0.07427192848088274,
+            "two_sigma_ms": 0.020029649586676357
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "upkeep_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "verify_build_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.049000000000006594,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -0.6967606944336406,
+              -0.5016938510209055
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": -0.599227272727273,
+            "sem_ms": 0.049761949850187545,
+            "stdev_ms": 0.16504171648955418,
+            "two_sigma_ms": 0.09952389970037509
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.15350000000000108,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.5529599999999937,
+              0.9165400000000028
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": 0.7347499999999982,
+            "sem_ms": 0.09275000000000233,
+            "stdev_ms": 0.13116830791010786,
+            "two_sigma_ms": 0.18550000000000466
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.819500000000005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -2.4453811998498165,
+              -0.8382006183320012
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -1.6417909090909089,
+            "sem_ms": 0.40999504630556516,
+            "stdev_ms": 3.0406046421280486,
+            "two_sigma_ms": 0.8199900926111303
+          }
+        },
+        "contrast": "coop - off",
+        "paired_rounds": 71,
+        "phase": "verify_build_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      }
+    },
+    "staged_minus_coop": {
+      "commit_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.3910000000000001,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.6433027038768651,
+              1.0291518415776806
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.8362272727272728,
+            "sem_ms": 0.09843090247469781,
+            "stdev_ms": 0.32645837128463745,
+            "two_sigma_ms": 0.19686180494939562
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.06199999999999983,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.15874000000000013,
+              0.2587400000000004
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.050000000000000155,
+            "sem_ms": 0.10650000000000015,
+            "stdev_ms": 0.15061374439273484,
+            "two_sigma_ms": 0.2130000000000003
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0475000000000001,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.691128645245618,
+              0.9604531729362003
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.8257909090909091,
+            "sem_ms": 0.06870523665576075,
+            "stdev_ms": 0.5095316721420023,
+            "two_sigma_ms": 0.1374104733115215
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "commit_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_chain_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.23197760867616182,
+              0.3132042095056564
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.2725909090909091,
+            "sem_ms": 0.02072107164017719,
+            "stdev_ms": 0.0687240198845419,
+            "two_sigma_ms": 0.04144214328035438
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.278,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.14742000000000005,
+              0.08092000000000003
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.03325,
+            "sem_ms": 0.05825000000000002,
+            "stdev_ms": 0.08237794000823281,
+            "two_sigma_ms": 0.11650000000000003
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.045499999999999985,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.398203595778763,
+              0.511996404221237
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.4551,
+            "sem_ms": 0.029028777663896433,
+            "stdev_ms": 0.2152831769932251,
+            "two_sigma_ms": 0.058057555327792866
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "d_chain_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_flush_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 55,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "d_flush_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_head1_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.00017255765111148485,
+              0.0005547150761612425
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.00036363636363636367,
+            "sem_ms": 9.748913904330553e-05,
+            "stdev_ms": 0.00032333489534143163,
+            "two_sigma_ms": 0.00019497827808661106
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.0005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              9.609041457487378e-05,
+              0.0002675459490614899
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.00018181818181818183,
+            "sem_ms": 4.373865675678983e-05,
+            "stdev_ms": 0.00032437456006730123,
+            "two_sigma_ms": 8.747731351357966e-05
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "d_head1_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_pre_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0155,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.02538744850345316,
+              0.03533982422381957
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.030363636363636367,
+            "sem_ms": 0.0025388713572363298,
+            "stdev_ms": 0.008420483682933272,
+            "two_sigma_ms": 0.0050777427144726595
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.010000000000000009,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.005860000000000004,
+              0.007860000000000006
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0010000000000000009,
+            "sem_ms": 0.0035000000000000027,
+            "stdev_ms": 0.004949747468305837,
+            "two_sigma_ms": 0.007000000000000005
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.028702040135423282,
+              0.04095250531912217
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.03482727272727273,
+            "sem_ms": 0.003125118669310941,
+            "stdev_ms": 0.023176500347338213,
+            "two_sigma_ms": 0.006250237338621882
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "d_pre_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_submit1_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 55,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "d_submit1_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_submit2_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.002,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.270966873617315,
+              0.3013058536554123
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.28613636363636363,
+            "sem_ms": 0.007739535724004409,
+            "stdev_ms": 0.02566913604807425,
+            "two_sigma_ms": 0.015479071448008818
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.09050000000000002,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.24868,
+              0.10117999999999994
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.07375000000000004,
+            "sem_ms": 0.08924999999999998,
+            "stdev_ms": 0.12621856044179872,
+            "two_sigma_ms": 0.17849999999999996
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.0405000000000002,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -0.4918959184440072,
+              -0.3907768088287202
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -0.4413363636363637,
+            "sem_ms": 0.025795691228389542,
+            "stdev_ms": 0.1913059662615694,
+            "two_sigma_ms": 0.051591382456779085
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "d_submit2_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "draft_build_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.017999999999999995,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.5369000151972106,
+              0.6430090757118802
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.5899545454545454,
+            "sem_ms": 0.027068637886395273,
+            "stdev_ms": 0.08977651545517196,
+            "two_sigma_ms": 0.054137275772790545
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.3794999999999997,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.40417999999999965,
+              0.19068000000000007
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.10674999999999979,
+            "sem_ms": 0.15174999999999994,
+            "stdev_ms": 0.2146069080901171,
+            "two_sigma_ms": 0.3034999999999999
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.08750000000000036,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.004386268950091025,
+              0.09348645832263641
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.04893636363636372,
+            "sem_ms": 0.0227296401460575,
+            "stdev_ms": 0.16856752286342047,
+            "two_sigma_ms": 0.045459280292115
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "draft_build_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "eval_wall_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.4614999999999938,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -0.878723671253019,
+              -0.7439126923833411
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": -0.81131818181818,
+            "sem_ms": 0.0343905558341015,
+            "stdev_ms": 0.11406057003348256,
+            "two_sigma_ms": 0.068781111668203
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -1.7520000000000024,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -7.955020000000006,
+              -7.491479999999994
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -7.72325,
+            "sem_ms": 0.1182500000000033,
+            "stdev_ms": 0.16723075375062316,
+            "two_sigma_ms": 0.2365000000000066
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -5.817000000000007,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -7.138059491734921,
+              -6.950049599174166
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -7.044054545454544,
+            "sem_ms": 0.047961707285906784,
+            "stdev_ms": 0.3556935410122669,
+            "two_sigma_ms": 0.09592341457181357
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "eval_wall_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "readout_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.008,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.013654129280745364,
+              0.01752768890107282
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.015590909090909093,
+            "sem_ms": 0.0009881529643692496,
+            "stdev_ms": 0.0032773326182902293,
+            "two_sigma_ms": 0.001976305928738499
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.0024999999999999953,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.003220000000000003,
+              -0.0002800000000000003
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -0.0017500000000000016,
+            "sem_ms": 0.0007500000000000007,
+            "stdev_ms": 0.0010606601717798223,
+            "two_sigma_ms": 0.0015000000000000013
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.0015000000000000013,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.019509285123893414,
+              0.025745260330652036
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.022627272727272725,
+            "sem_ms": 0.0015908100017241384,
+            "stdev_ms": 0.011797762728043204,
+            "two_sigma_ms": 0.003181620003448277
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "readout_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "round_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.30049999999999955,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.273270385464213,
+              0.185270385464214
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": -0.04399999999999951,
+            "sem_ms": 0.11697468646133344,
+            "stdev_ms": 0.38796114496170864,
+            "two_sigma_ms": 0.23394937292266688
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -2.972500000000011,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -15.387779999999987,
+              -14.998719999999997
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -15.193249999999992,
+            "sem_ms": 0.09924999999999783,
+            "stdev_ms": 0.14036069606552662,
+            "two_sigma_ms": 0.19849999999999565
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -11.039999999999992,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -11.730945930962543,
+              -10.382581341764736
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -11.05676363636364,
+            "sem_ms": 0.3439705584688286,
+            "stdev_ms": 2.550953935321977,
+            "two_sigma_ms": 0.6879411169376572
+          }
+        },
+        "contrast": "staged - coop",
+        "control_band": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.30049999999999955,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "3": null,
+          "4": null,
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.273270385464213,
+              0.185270385464214
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": -0.04399999999999951,
+            "sem_ms": 0.11697468646133344,
+            "stdev_ms": 0.38796114496170864,
+            "two_sigma_ms": 0.23394937292266688
+          }
+        },
+        "moved_widths": {
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -2.972500000000011,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -15.387779999999987,
+              -14.998719999999997
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -15.193249999999992,
+            "sem_ms": 0.09924999999999783,
+            "stdev_ms": 0.14036069606552662,
+            "two_sigma_ms": 0.19849999999999565
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -11.039999999999992,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -11.730945930962543,
+              -10.382581341764736
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -11.05676363636364,
+            "sem_ms": 0.3439705584688286,
+            "stdev_ms": 2.550953935321977,
+            "two_sigma_ms": 0.6879411169376572
+          }
+        },
+        "paired_rounds": 71,
+        "phase": "round_us",
+        "sign": "positive means the first arm is faster",
+        "weighted_pooled_census": {
+          "census_share_covered": 0.6750392464678179,
+          "census_share_excluded": {
+            "2": {
+              "census_share": 0.004709576138147566,
+              "moved_width": false,
+              "n_rounds": 1,
+              "point_estimate_ms": 0.30049999999999955
+            },
+            "3": {
+              "census_share": 0.09576138147566719,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "4": {
+              "census_share": 0.20094191522762953,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "6": {
+              "census_share": 0.007849293563579277,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -2.972500000000011
+            },
+            "8": {
+              "census_share": 0.015698587127158554,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -11.039999999999992
+            }
+          },
+          "ci95_ms": [
+            -4.917811297771659,
+            -4.360822939419722
+          ],
+          "excludes_zero": true,
+          "min_paired_rounds_per_width": 2,
+          "saving_ms_per_round": -4.639317118595691,
+          "sem_ms": 0.14208886692651476
+        },
+        "weighted_pooled_census_all_widths": {
+          "census_share_covered": 0.7032967032967032,
+          "census_share_excluded": {
+            "3": {
+              "census_share": 0.09576138147566719,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "4": {
+              "census_share": 0.20094191522762953,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            }
+          },
+          "ci95_ms": [
+            NaN,
+            NaN
+          ],
+          "excludes_zero": false,
+          "min_paired_rounds_per_width": 1,
+          "saving_ms_per_round": -4.834546317967748,
+          "sem_ms": NaN
+        },
+        "weighted_public_census": {
+          "census_share_covered": 0.9577464788732394,
+          "census_share_excluded": {
+            "2": {
+              "census_share": 0.014084507042253521,
+              "moved_width": false,
+              "n_rounds": 1,
+              "point_estimate_ms": 0.30049999999999955
+            },
+            "6": {
+              "census_share": 0.014084507042253521,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -2.972500000000011
+            },
+            "8": {
+              "census_share": 0.014084507042253521,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -11.039999999999992
+            }
+          },
+          "ci95_ms": [
+            -9.523383504379149,
+            -8.476405228015219
+          ],
+          "excludes_zero": true,
+          "min_paired_rounds_per_width": 2,
+          "saving_ms_per_round": -8.999894366197184,
+          "sem_ms": 0.26708629499079845
+        },
+        "width_mismatched_rounds": 0
+      },
+      "upkeep_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0435,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.05017291585347654,
+              0.07628162960106892
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.06322727272727273,
+            "sem_ms": 0.006660386160100097,
+            "stdev_ms": 0.02209000185192799,
+            "two_sigma_ms": 0.013320772320200194
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0025000000000000022,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.04159999999999995,
+              -0.002400000000000034
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -0.021999999999999992,
+            "sem_ms": 0.00999999999999998,
+            "stdev_ms": 0.014142135623730923,
+            "two_sigma_ms": 0.01999999999999996
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.003500000000000003,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.11154147071922399,
+              0.16096762018986693
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.13625454545454546,
+            "sem_ms": 0.01260871159965381,
+            "stdev_ms": 0.09350870788957813,
+            "two_sigma_ms": 0.02521742319930762
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "upkeep_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "verify_build_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.30100000000000193,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -0.8437688987811374,
+              -0.6310492830370469
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": -0.7374090909090921,
+            "sem_ms": 0.05426520809798228,
+            "stdev_ms": 0.1799773344315626,
+            "two_sigma_ms": 0.10853041619596455
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -1.5389999999999944,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -7.488239999999975,
+              -7.291260000000009
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -7.389749999999992,
+            "sem_ms": 0.05024999999999124,
+            "stdev_ms": 0.07106423150923565,
+            "two_sigma_ms": 0.10049999999998248
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -5.184999999999988,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -5.687656362765043,
+              -4.405107273598595
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -5.046381818181819,
+            "sem_ms": 0.3271808900934818,
+            "stdev_ms": 2.426438422117892,
+            "two_sigma_ms": 0.6543617801869636
+          }
+        },
+        "contrast": "staged - coop",
+        "paired_rounds": 71,
+        "phase": "verify_build_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      }
+    },
+    "staged_minus_off": {
+      "commit_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.7454999999999999,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              1.2315890103380573,
+              1.9778655351164882
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 1.6047272727272728,
+            "sem_ms": 0.19037666448429358,
+            "stdev_ms": 0.6314079649337805,
+            "two_sigma_ms": 0.38075332896858716
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.04499999999999993,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.14378000000000002,
+              0.17178000000000004
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.014000000000000012,
+            "sem_ms": 0.08050000000000002,
+            "stdev_ms": 0.11384419177103418,
+            "two_sigma_ms": 0.16100000000000003
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.018999999999999906,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              1.2210284550199058,
+              1.628789726798276
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 1.424909090909091,
+            "sem_ms": 0.10402073259652307,
+            "stdev_ms": 0.7714383997089169,
+            "two_sigma_ms": 0.20804146519304614
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "commit_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_chain_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.4577349517103707,
+              0.6474468664714476
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.5525909090909091,
+            "sem_ms": 0.04839589662272367,
+            "stdev_ms": 0.1605110304904025,
+            "two_sigma_ms": 0.09679179324544734
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.09899999999999998,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.12556000000000012,
+              0.040060000000000026
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.04275000000000004,
+            "sem_ms": 0.04225000000000003,
+            "stdev_ms": 0.05975052301026332,
+            "two_sigma_ms": 0.08450000000000006
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.01200000000000001,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.6711666068007902,
+              0.8084515750173915
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.7398090909090909,
+            "sem_ms": 0.03502167556545953,
+            "stdev_ms": 0.2597276973441161,
+            "two_sigma_ms": 0.07004335113091906
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "d_chain_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_flush_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 55,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "d_flush_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_head1_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0005703167003674387,
+              0.0013387742087234704
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.0009545454545454546,
+            "sem_ms": 0.00019603507866225298,
+            "stdev_ms": 0.0006501748016704991,
+            "two_sigma_ms": 0.00039207015732450597
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.0005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.0005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.00026566417326138287,
+              0.0006070630994658899
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.00043636363636363637,
+            "sem_ms": 8.70915628072722e-05,
+            "stdev_ms": 0.000645888316330089,
+            "two_sigma_ms": 0.0001741831256145444
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "d_head1_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_pre_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.026499999999999996,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.04955850194931911,
+              0.06707786168704453
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.058318181818181825,
+            "sem_ms": 0.00446922442288914,
+            "stdev_ms": 0.014822740514615929,
+            "two_sigma_ms": 0.00893844884577828
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0005000000000000004,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.004440000000000004,
+              0.0014400000000000012
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.0015000000000000013,
+            "sem_ms": 0.0015000000000000013,
+            "stdev_ms": 0.0021213203435596446,
+            "two_sigma_ms": 0.0030000000000000027
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0015000000000000013,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.047088607394123426,
+              0.06562048351496749
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.056354545454545456,
+            "sem_ms": 0.004727519418582668,
+            "stdev_ms": 0.03506022235980815,
+            "two_sigma_ms": 0.009455038837165336
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "d_pre_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_submit1_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.0,
+              0.0
+            ],
+            "excludes_zero": false,
+            "n_rounds": 55,
+            "saving_ms": 0.0,
+            "sem_ms": 0.0,
+            "stdev_ms": 0.0,
+            "two_sigma_ms": 0.0
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "d_submit1_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "d_submit2_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0035000000000000005,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              0.5829169086886055,
+              0.6659921822204855
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.6244545454545455,
+            "sem_ms": 0.02119267181935717,
+            "stdev_ms": 0.07028814072994626,
+            "two_sigma_ms": 0.04238534363871434
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.03550000000000009,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.1381999999999999,
+              0.18519999999999995
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.02350000000000002,
+            "sem_ms": 0.08249999999999996,
+            "stdev_ms": 0.11667261889578029,
+            "two_sigma_ms": 0.16499999999999992
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.021999999999999797,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -0.7943649991223989,
+              -0.6641986372412376
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -0.7292818181818183,
+            "sem_ms": 0.03320570456152071,
+            "stdev_ms": 0.2462600959320954,
+            "two_sigma_ms": 0.06641140912304141
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "d_submit2_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "draft_build_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0315,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              1.114028543963223,
+              1.359880546945868
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 1.2369545454545454,
+            "sem_ms": 0.06271734769965435,
+            "stdev_ms": 0.20800991016601286,
+            "two_sigma_ms": 0.1254346953993087
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.13450000000000006,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.2696799999999996,
+              0.22718000000000008
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": -0.02124999999999977,
+            "sem_ms": 0.12674999999999992,
+            "stdev_ms": 0.17925156903078968,
+            "two_sigma_ms": 0.25349999999999984
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.01100000000000012,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.022207205863054996,
+              0.1132291577733085
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.06771818181818175,
+            "sem_ms": 0.0232198856913912,
+            "stdev_ms": 0.17220328113502964,
+            "two_sigma_ms": 0.0464397713827824
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "draft_build_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "eval_wall_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -1.079499999999996,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -1.6037309104514088,
+              -1.4292690895485924
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": -1.5165000000000006,
+            "sem_ms": 0.044505566556840945,
+            "stdev_ms": 0.1476082653512309,
+            "two_sigma_ms": 0.08901113311368189
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -1.8089999999999975,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -7.056780000000007,
+              -7.010719999999996
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -7.033750000000001,
+            "sem_ms": 0.011750000000002814,
+            "stdev_ms": 0.016617009357887846,
+            "two_sigma_ms": 0.023500000000005627
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -6.5589999999999975,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -9.446807987549628,
+              -9.201228376086734
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -9.32401818181818,
+            "sem_ms": 0.06264786006706509,
+            "stdev_ms": 0.4646089650491489,
+            "two_sigma_ms": 0.12529572013413018
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "eval_wall_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "readout_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0175,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.025843727558902435,
+              0.029338090622915744
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.02759090909090909,
+            "sem_ms": 0.0008914191489829875,
+            "stdev_ms": 0.00295650284811449,
+            "two_sigma_ms": 0.001782838297965975
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.001999999999999995,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.00698,
+              0.019479999999999997
+            ],
+            "excludes_zero": false,
+            "n_rounds": 2,
+            "saving_ms": 0.006249999999999999,
+            "sem_ms": 0.006749999999999999,
+            "stdev_ms": 0.00954594154601839,
+            "two_sigma_ms": 0.013499999999999998
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.0010000000000000009,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.032128977714882184,
+              0.039089204103299635
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.03560909090909091,
+            "sem_ms": 0.001775567956228942,
+            "stdev_ms": 0.013167964390720618,
+            "two_sigma_ms": 0.003551135912457884
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "readout_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "round_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.059499999999985675,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.2524163325972509,
+              0.5221436053245248
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.13486363636363696,
+            "sem_ms": 0.19759182089841218,
+            "stdev_ms": 0.655337931563138,
+            "two_sigma_ms": 0.39518364179682436
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -3.116500000000002,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -14.201639999999996,
+              -13.210860000000027
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -13.706250000000011,
+            "sem_ms": 0.2527499999999918,
+            "stdev_ms": 0.3574424778897882,
+            "two_sigma_ms": 0.5054999999999836
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -12.564999999999998,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -14.837261691338105,
+              -13.667920126843724
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -14.252590909090914,
+            "sem_ms": 0.29830141951387235,
+            "stdev_ms": 2.2122625360972688,
+            "two_sigma_ms": 0.5966028390277447
+          }
+        },
+        "contrast": "staged - off",
+        "control_band": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.059499999999985675,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "3": null,
+          "4": null,
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.2524163325972509,
+              0.5221436053245248
+            ],
+            "excludes_zero": false,
+            "n_rounds": 11,
+            "saving_ms": 0.13486363636363696,
+            "sem_ms": 0.19759182089841218,
+            "stdev_ms": 0.655337931563138,
+            "two_sigma_ms": 0.39518364179682436
+          }
+        },
+        "moved_widths": {
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -3.116500000000002,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -14.201639999999996,
+              -13.210860000000027
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -13.706250000000011,
+            "sem_ms": 0.2527499999999918,
+            "stdev_ms": 0.3574424778897882,
+            "two_sigma_ms": 0.5054999999999836
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -12.564999999999998,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -14.837261691338105,
+              -13.667920126843724
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -14.252590909090914,
+            "sem_ms": 0.29830141951387235,
+            "stdev_ms": 2.2122625360972688,
+            "two_sigma_ms": 0.5966028390277447
+          }
+        },
+        "paired_rounds": 71,
+        "phase": "round_us",
+        "sign": "positive means the first arm is faster",
+        "weighted_pooled_census": {
+          "census_share_covered": 0.6750392464678179,
+          "census_share_excluded": {
+            "2": {
+              "census_share": 0.004709576138147566,
+              "moved_width": false,
+              "n_rounds": 1,
+              "point_estimate_ms": 0.059499999999985675
+            },
+            "3": {
+              "census_share": 0.09576138147566719,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "4": {
+              "census_share": 0.20094191522762953,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "6": {
+              "census_share": 0.007849293563579277,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -3.116500000000002
+            },
+            "8": {
+              "census_share": 0.015698587127158554,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -12.564999999999998
+            }
+          },
+          "ci95_ms": [
+            -6.122362052872697,
+            -5.609104980094338
+          ],
+          "excludes_zero": true,
+          "min_paired_rounds_per_width": 2,
+          "saving_ms_per_round": -5.865733516483518,
+          "sem_ms": 0.13093292672917314
+        },
+        "weighted_pooled_census_all_widths": {
+          "census_share_covered": 0.7032967032967032,
+          "census_share_excluded": {
+            "3": {
+              "census_share": 0.09576138147566719,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            },
+            "4": {
+              "census_share": 0.20094191522762953,
+              "moved_width": false,
+              "n_rounds": 0,
+              "point_estimate_ms": null
+            }
+          },
+          "ci95_ms": [
+            NaN,
+            NaN
+          ],
+          "excludes_zero": false,
+          "min_paired_rounds_per_width": 1,
+          "saving_ms_per_round": -6.087168367346941,
+          "sem_ms": NaN
+        },
+        "weighted_public_census": {
+          "census_share_covered": 0.9577464788732394,
+          "census_share_excluded": {
+            "2": {
+              "census_share": 0.014084507042253521,
+              "moved_width": false,
+              "n_rounds": 1,
+              "point_estimate_ms": 0.059499999999985675
+            },
+            "6": {
+              "census_share": 0.014084507042253521,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -3.116500000000002
+            },
+            "8": {
+              "census_share": 0.014084507042253521,
+              "moved_width": true,
+              "n_rounds": 1,
+              "point_estimate_ms": -12.564999999999998
+            }
+          },
+          "ci95_ms": [
+            -11.863020797711837,
+            -10.948852441724792
+          ],
+          "excludes_zero": true,
+          "min_paired_rounds_per_width": 2,
+          "saving_ms_per_round": -11.405936619718315,
+          "sem_ms": 0.233206213262001
+        },
+        "width_mismatched_rounds": 0
+      },
+      "upkeep_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.092,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.10053057161529927,
+              0.13756033747560983
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": 0.11904545454545455,
+            "sem_ms": 0.00944636884191596,
+            "stdev_ms": 0.031330061079939305,
+            "two_sigma_ms": 0.01889273768383192
+          },
+          "6": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -0.01050000000000001,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              -0.03143999999999994,
+              -0.0010600000000000297
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -0.016249999999999987,
+            "sem_ms": 0.007749999999999978,
+            "stdev_ms": 0.010960155108391456,
+            "two_sigma_ms": 0.015499999999999957
+          },
+          "8": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.006500000000000006,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": false,
+            "ci95_ms": [
+              0.20677280590333874,
+              0.2557181031875704
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": 0.23124545454545456,
+            "sem_ms": 0.012486045225569295,
+            "stdev_ms": 0.09259898971167503,
+            "two_sigma_ms": 0.02497209045113859
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "upkeep_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      },
+      "verify_build_us": {
+        "by_width": {
+          "2": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": 0.25199999999999534,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "5": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -1.4811422246379247,
+              -1.1921305026348057
+            ],
+            "excludes_zero": true,
+            "n_rounds": 11,
+            "saving_ms": -1.3366363636363652,
+            "sem_ms": 0.07372748010283652,
+            "stdev_ms": 0.24452638823950207,
+            "two_sigma_ms": 0.14745496020567303
+          },
+          "6": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -1.3854999999999933,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "7": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -6.738300000000016,
+              -6.571699999999972
+            ],
+            "excludes_zero": true,
+            "n_rounds": 2,
+            "saving_ms": -6.654999999999994,
+            "sem_ms": 0.042500000000011084,
+            "stdev_ms": 0.06010407640087222,
+            "two_sigma_ms": 0.08500000000002217
+          },
+          "8": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              NaN,
+              NaN
+            ],
+            "excludes_zero": false,
+            "n_rounds": 1,
+            "saving_ms": -6.004499999999993,
+            "sem_ms": NaN,
+            "stdev_ms": NaN,
+            "two_sigma_ms": NaN
+          },
+          "9": {
+            "above_noise_floor": true,
+            "ci95_ms": [
+              -7.29831726575297,
+              -6.078028188792486
+            ],
+            "excludes_zero": true,
+            "n_rounds": 55,
+            "saving_ms": -6.688172727272728,
+            "sem_ms": 0.3112982339184906,
+            "stdev_ms": 2.308649491421862,
+            "two_sigma_ms": 0.6225964678369812
+          }
+        },
+        "contrast": "staged - off",
+        "paired_rounds": 71,
+        "phase": "verify_build_us",
+        "sign": "positive means the first arm is faster",
+        "width_mismatched_rounds": 0
+      }
+    }
+  },
+  "cool_gate_passed_real_gate": false,
+  "coop_replication": {
+    "agrees_with_finding_565": true,
+    "finding_565_pooled_ms": -1.323,
+    "measured_pooled_ms": -1.226416397887827,
+    "predeclared_agreement_band_ms": 0.5
+  },
+  "experiment": "e217-staged-dequant",
+  "gate_qualified_for_timing": false,
+  "harness": "local",
+  "integrity": {
+    "all_tokens_matched": true,
+    "arms_present": [
+      "coop",
+      "off",
+      "staged"
+    ],
+    "legs": 6,
+    "legs_per_arm": {
+      "coop": 2,
+      "off": 2,
+      "staged": 2
+    },
+    "mapping_witness_clean": true,
+    "residual_divergence_total": 0,
+    "single_base_sha": true,
+    "single_worker_binary": true,
+    "worker_digest_stable": true
+  },
+  "legs": [
+    {
+      "accepted_draft_rate": 0.8474903474903475,
+      "all_tokens_matched": true,
+      "arm": "off",
+      "base_sha": "8cef1b9070f13fdd646d5ac8f6b16805b11480de",
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "effective_mean_draft_len": 7.095890410958904,
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "32.472171783447266",
+      "gpu_temp_exit_c": "56.387081146240234",
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg": "leg01-off",
+      "leg_index": 1,
+      "mapping": "split",
+      "mapping_dispatch_witness": {
+        "qmv_coop": 0.0,
+        "qmv_coop_final": 0.0,
+        "qmv_split_g2": 14713.0,
+        "qmv_split_g2_final": 16704.0,
+        "qmv_staged": 0.0,
+        "qmv_staged_final": 0.0
+      },
+      "mtp_seconds_per_token": 0.029080701293423772,
+      "residual_divergence_count": 0,
+      "rounds_traced": 71,
+      "serial_seconds_per_token": 0.07346678315661848,
+      "served_width_histogram": {
+        "2": 1,
+        "5": 11,
+        "6": 1,
+        "7": 2,
+        "8": 1,
+        "9": 55
+      },
+      "session": "p1",
+      "session_order": "off coop staged staged coop off",
+      "worker_digest_stable": "true",
+      "worker_sha256_after": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe",
+      "worker_sha256_before": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe"
+    },
+    {
+      "accepted_draft_rate": 0.8474903474903475,
+      "all_tokens_matched": true,
+      "arm": "coop",
+      "base_sha": "8cef1b9070f13fdd646d5ac8f6b16805b11480de",
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "effective_mean_draft_len": 7.095890410958904,
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "53.609493255615234",
+      "gpu_temp_exit_c": "57.634761810302734",
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg": "leg02-coop",
+      "leg_index": 2,
+      "mapping": "coop",
+      "mapping_dispatch_witness": {
+        "qmv_coop": 14713.0,
+        "qmv_coop_final": 16704.0,
+        "qmv_split_g2": 0.0,
+        "qmv_split_g2_final": 0.0,
+        "qmv_staged": 0.0,
+        "qmv_staged_final": 0.0
+      },
+      "mtp_seconds_per_token": 0.029327345546334982,
+      "residual_divergence_count": 0,
+      "rounds_traced": 71,
+      "serial_seconds_per_token": 0.07344702142290771,
+      "served_width_histogram": {
+        "2": 1,
+        "5": 11,
+        "6": 1,
+        "7": 2,
+        "8": 1,
+        "9": 55
+      },
+      "session": "p1",
+      "session_order": "off coop staged staged coop off",
+      "worker_digest_stable": "true",
+      "worker_sha256_after": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe",
+      "worker_sha256_before": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe"
+    },
+    {
+      "accepted_draft_rate": 0.8474903474903475,
+      "all_tokens_matched": true,
+      "arm": "staged",
+      "base_sha": "8cef1b9070f13fdd646d5ac8f6b16805b11480de",
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "effective_mean_draft_len": 7.095890410958904,
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "54.16676330566406",
+      "gpu_temp_exit_c": "57.97944259643555",
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg": "leg03-staged",
+      "leg_index": 3,
+      "mapping": "staged",
+      "mapping_dispatch_witness": {
+        "qmv_coop": 0.0,
+        "qmv_coop_final": 0.0,
+        "qmv_split_g2": 0.0,
+        "qmv_split_g2_final": 0.0,
+        "qmv_staged": 14713.0,
+        "qmv_staged_final": 16704.0
+      },
+      "mtp_seconds_per_token": 0.030658656265586615,
+      "residual_divergence_count": 0,
+      "rounds_traced": 71,
+      "serial_seconds_per_token": 0.07356036128476262,
+      "served_width_histogram": {
+        "2": 1,
+        "5": 11,
+        "6": 1,
+        "7": 2,
+        "8": 1,
+        "9": 55
+      },
+      "session": "p1",
+      "session_order": "off coop staged staged coop off",
+      "worker_digest_stable": "true",
+      "worker_sha256_after": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe",
+      "worker_sha256_before": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe"
+    },
+    {
+      "accepted_draft_rate": 0.8474903474903475,
+      "all_tokens_matched": true,
+      "arm": "staged",
+      "base_sha": "8cef1b9070f13fdd646d5ac8f6b16805b11480de",
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "effective_mean_draft_len": 7.095890410958904,
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "54.51833724975586",
+      "gpu_temp_exit_c": "57.417667388916016",
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg": "leg04-staged",
+      "leg_index": 4,
+      "mapping": "staged",
+      "mapping_dispatch_witness": {
+        "qmv_coop": 0.0,
+        "qmv_coop_final": 0.0,
+        "qmv_split_g2": 0.0,
+        "qmv_split_g2_final": 0.0,
+        "qmv_staged": 14713.0,
+        "qmv_staged_final": 16704.0
+      },
+      "mtp_seconds_per_token": 0.03065393166616559,
+      "residual_divergence_count": 0,
+      "rounds_traced": 71,
+      "serial_seconds_per_token": 0.07350794714875519,
+      "served_width_histogram": {
+        "2": 1,
+        "5": 11,
+        "6": 1,
+        "7": 2,
+        "8": 1,
+        "9": 55
+      },
+      "session": "p1",
+      "session_order": "off coop staged staged coop off",
+      "worker_digest_stable": "true",
+      "worker_sha256_after": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe",
+      "worker_sha256_before": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe"
+    },
+    {
+      "accepted_draft_rate": 0.8474903474903475,
+      "all_tokens_matched": true,
+      "arm": "coop",
+      "base_sha": "8cef1b9070f13fdd646d5ac8f6b16805b11480de",
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "effective_mean_draft_len": 7.095890410958904,
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "54.24110412597656",
+      "gpu_temp_exit_c": "58.66050720214844",
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg": "leg05-coop",
+      "leg_index": 5,
+      "mapping": "coop",
+      "mapping_dispatch_witness": {
+        "qmv_coop": 14713.0,
+        "qmv_coop_final": 16704.0,
+        "qmv_split_g2": 0.0,
+        "qmv_split_g2_final": 0.0,
+        "qmv_staged": 0.0,
+        "qmv_staged_final": 0.0
+      },
+      "mtp_seconds_per_token": 0.029517439426854253,
+      "residual_divergence_count": 0,
+      "rounds_traced": 71,
+      "serial_seconds_per_token": 0.07342359586618841,
+      "served_width_histogram": {
+        "2": 1,
+        "5": 11,
+        "6": 1,
+        "7": 2,
+        "8": 1,
+        "9": 55
+      },
+      "session": "p1",
+      "session_order": "off coop staged staged coop off",
+      "worker_digest_stable": "true",
+      "worker_sha256_after": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe",
+      "worker_sha256_before": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe"
+    },
+    {
+      "accepted_draft_rate": 0.8474903474903475,
+      "all_tokens_matched": true,
+      "arm": "off",
+      "base_sha": "8cef1b9070f13fdd646d5ac8f6b16805b11480de",
+      "chip": "Apple M4 Pro",
+      "cool_gate_passed_real_gate": "false",
+      "decode_tokens": 512,
+      "effective_mean_draft_len": 7.095890410958904,
+      "gate_qualified_for_timing": "false",
+      "gpu_temp_entry_c": "55.0369758605957",
+      "gpu_temp_exit_c": "57.58625793457031",
+      "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+      "host": "ip-10-231-2-22.ec2.internal",
+      "leg": "leg06-off",
+      "leg_index": 6,
+      "mapping": "split",
+      "mapping_dispatch_witness": {
+        "qmv_coop": 0.0,
+        "qmv_coop_final": 0.0,
+        "qmv_split_g2": 14713.0,
+        "qmv_split_g2_final": 16704.0,
+        "qmv_staged": 0.0,
+        "qmv_staged_final": 0.0
+      },
+      "mtp_seconds_per_token": 0.029099222738295794,
+      "residual_divergence_count": 0,
+      "rounds_traced": 71,
+      "serial_seconds_per_token": 0.07333225570619106,
+      "served_width_histogram": {
+        "2": 1,
+        "5": 11,
+        "6": 1,
+        "7": 2,
+        "8": 1,
+        "9": 55
+      },
+      "session": "p1",
+      "session_order": "off coop staged staged coop off",
+      "worker_digest_stable": "true",
+      "worker_sha256_after": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe",
+      "worker_sha256_before": "2b764b07b5852abe6b76da080e8b123381b34c0f8340fb6a8901ed7032760fbe"
+    }
+  ],
+  "mapping_dispatch_witness": {
+    "coop": {
+      "qmv_coop": 29426.0,
+      "qmv_split_g2": 0.0,
+      "qmv_staged": 0.0
+    },
+    "off": {
+      "qmv_coop": 0.0,
+      "qmv_split_g2": 29426.0,
+      "qmv_staged": 0.0
+    },
+    "staged": {
+      "qmv_coop": 0.0,
+      "qmv_split_g2": 0.0,
+      "qmv_staged": 29426.0
+    }
+  },
+  "noise_floor_ms": 0.24,
+  "official_or_ranked_score": false,
+  "promotion_gate": {
+    "measured_ms": -5.865733516483518,
+    "met": false,
+    "rule": "pooled-census-weighted `staged - off` >= +1.0 ms/round",
+    "sem_ms": 0.13093292672917314,
+    "threshold_ms": 1.0
+  },
+  "sessions": [
+    "p1"
+  ],
+  "sign_convention": "a contrast `X - off` is the SAVING of X; positive means X is faster",
+  "thermal": {
+    "arm_leg_spread_mtp_spt": {
+      "coop": {
+        "abs_spread": 0.0001900938805192709,
+        "relative_spread": 0.006460857342103677,
+        "values": [
+          0.029327345546334982,
+          0.029517439426854253
+        ]
+      },
+      "off": {
+        "abs_spread": 1.8521444872021675e-05,
+        "relative_spread": 0.0006366953955431027,
+        "values": [
+          0.029080701293423772,
+          0.029099222738295794
+        ]
+      },
+      "staged": {
+        "abs_spread": 4.7245994210243225e-06,
+        "relative_spread": 0.0001541151525452924,
+        "values": [
+          0.030658656265586615,
+          0.03065393166616559
+        ]
+      }
+    },
+    "entry_temp_c": [
+      32.472171783447266,
+      53.609493255615234,
+      54.16676330566406,
+      54.51833724975586,
+      54.24110412597656,
+      55.0369758605957
+    ],
+    "entry_temp_spread_c": 22.564804077148438,
+    "exit_temp_c": [
+      56.387081146240234,
+      57.634761810302734,
+      57.97944259643555,
+      57.417667388916016,
+      58.66050720214844,
+      57.58625793457031
+    ]
+  }
+}
