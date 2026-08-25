@@ -212,6 +212,27 @@ E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
      paid under step_e208      3.839823   +1.651% in-sample    +1.716% LOO-honest   worst prompt  +0.015%
      worst reading +1.638% in-sample, +1.321% LOO-honest; worst single prompt +0.015%
 
+  FORWARD-PRICING TABLES (advisor Entry 424). E208 r1 is merged, so the maintained
+  base carries the (9,5) correction and law step_e208 is the default forward law.
+  The uncorrected step law is dropped here: it is only what the aff4ad64 receipt
+  itself reads on, because candidate c47c7284 predates the (9,5) merge.
+   free over {smooth, step_e208}
+     price   0.012   0.006   0.020   0.079   0.130   0.110   0.093   0.078
+     Q_(d+1)0.0125  0.0780  0.3022  0.6513  0.8435  0.8435  0.8435  0.8435
+     paid under smooth         3.952792   +3.223% in-sample    +3.287% LOO-honest   worst prompt  -3.116%
+     paid under step_e208      3.867230   +2.376% in-sample    +2.372% LOO-honest   worst prompt  -3.116%
+     worst forward reading +2.376% in-sample, +2.372% LOO-honest; worst single prompt -3.116%
+     if the dropped uncorrected step law were paid: +0.268%
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+   guarded over {smooth, step_e208}
+     price   0.120   0.023   0.092   0.094   0.146   0.121   0.100   0.083
+     Q_(d+1)0.1200  0.1547  0.5256  0.6508  0.8285  0.8285  0.8285  0.8285
+     paid under smooth         3.951756   +3.196% in-sample    +3.200% LOO-honest   worst prompt  +0.000%
+     paid under step_e208      3.862135   +2.242% in-sample    +2.252% LOO-honest   worst prompt  +0.000%
+     worst forward reading +2.242% in-sample, +2.252% LOO-honest; worst single prompt +0.000%
+     if the dropped uncorrected step law were paid: -0.146%
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+
   VALIDATED EXTRAPOLATION ENVELOPE (round mass moved away from the PAID cap-7 anchor)
    the instrument was checked against a paid receipt at caps 4 and 5 only, so
    their relocation is the largest the instrument is known to survive.
@@ -219,6 +240,8 @@ E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
      cap5             0.757  <- validated
      cap8             0.547
      validated bar    0.890
+     forward          0.940   1.06x the bar   OUTSIDE the validated envelope
+     forward_guarded  0.940   1.06x the bar   OUTSIDE the validated envelope
      free_step_e208   0.940   1.06x the bar   OUTSIDE the validated envelope
      minimax          0.926   1.04x the bar   OUTSIDE the validated envelope
      minimax_guarded  0.752   0.85x the bar   inside
@@ -232,5 +255,10 @@ E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
    ASSIGNED RULE: IMPLEMENT under every law. Weakest law step_e208 at +2.312% LOO-honest.
    STRUCTURE READING: the step-aware SHAPE is worth +2.544% LOO-honest over a refitted level control.
    TRANSFER: worst cross-law transfer of a per-law fitted table is -1.271%. A table fitted under a guessed reading can lose.
-   RECOMMENDED TABLE: the no-regression guarded minimax table, +1.638% under its WORST reading (+1.321% LOO-honest) with no prompt below +0.015%. The unguarded minimax table pays +1.678% but costs one prompt -5.151%, and the hidden pool is not the proxy pool.
-   ENVELOPE: free_step_e208, minimax sit outside the paid cap-4/cap-5 extrapolation envelope (bar 0.890). The predicted gain is a desk prediction that a paid receipt has not yet covered; an implementation must measure it.
+   RECEIPT BRANCH READING (advisor Entry 424). The aff4ad64 receipt reads on laws smooth and step, because its candidate c47c7284 predates the (9,5) merge. It cannot read on step_e208. Either way the FORWARD law for an implementation is step_e208, because E208 r1 is merged into the maintained base.
+     receipt lands SMOOTH -> forward law smooth: free optimum +3.377% LOO-honest.
+     receipt lands STEP   -> forward law step_e208: free optimum +2.312% LOO-honest.
+   RECOMMENDED TABLE: the no-regression guarded FORWARD minimax table over {smooth, step_e208}. It pays +2.242% under its worst forward reading (+2.252% LOO-honest) with no prompt below +0.000%, so it needs no receipt branch and is correct under either outcome.
+     dropping the uncorrected step law is worth +0.604 pp of worst-reading delta (+2.242% forward vs +1.638% over all three readings). That uncorrected law was the whole source of the transfer risk.
+     the unguarded forward table pays +2.376% but costs one prompt -3.116%; the guard costs 0.135 pp and the hidden pool is not the proxy pool.
+   ENVELOPE: forward, forward_guarded, free_step_e208, minimax sit outside the paid cap-4/cap-5 extrapolation envelope (bar 0.890). The predicted gain is a desk prediction that a paid receipt has not yet covered; an implementation must measure it.

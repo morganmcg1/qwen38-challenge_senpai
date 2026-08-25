@@ -228,10 +228,20 @@ def main():
 
     import wandb
 
+    # Re-publishing must update the existing runs, not add a second set that
+    # a reader would have to disambiguate.
+    existing = {}
+    path = ARTIFACTS / "wandb.json"
+    if path.exists():
+        existing = {k: v["run"] for k, v in json.loads(path.read_text()).items()}
+
     published = {}
     for key, (spec, summary) in specs.items():
+        extra = ({"id": existing[key], "resume": "allow"}
+                 if key in existing else {})
         run = wandb.init(project=PROJECT.split("/")[-1],
-                         entity=PROJECT.split("/")[0], group=GROUP, **spec)
+                         entity=PROJECT.split("/")[0], group=GROUP,
+                         **spec, **extra)
         run.summary.update(summary)
         published[key] = {"run": run.id, "url": run.url}
         run.finish()

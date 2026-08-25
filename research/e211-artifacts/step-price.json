@@ -56,10 +56,19 @@
  "crown": 3.7291100105909,
  "decision": {
   "arms_outside_validated_envelope": [
+   "forward",
+   "forward_guarded",
    "free_step_e208",
    "minimax"
   ],
   "best_law": "smooth",
+  "forward_guarded_worst_loo_honest_pct": 2.252249131773897,
+  "forward_guarded_worst_pct": 2.241581864296397,
+  "forward_guarded_worst_prompt_pct": 0.00013437645776486287,
+  "forward_law_set": [
+   "smooth",
+   "step_e208"
+  ],
   "guarded_worst_loo_honest_pct": 1.3211661262867633,
   "guarded_worst_pct": 1.6379759690898534,
   "guarded_worst_prompt_pct": 0.015051693230408456,
@@ -79,8 +88,13 @@
    "ASSIGNED RULE: IMPLEMENT under every law. Weakest law step_e208 at +2.312% LOO-honest.",
    "STRUCTURE READING: the step-aware SHAPE is worth +2.544% LOO-honest over a refitted level control.",
    "TRANSFER: worst cross-law transfer of a per-law fitted table is -1.271%. A table fitted under a guessed reading can lose.",
-   "RECOMMENDED TABLE: the no-regression guarded minimax table, +1.638% under its WORST reading (+1.321% LOO-honest) with no prompt below +0.015%. The unguarded minimax table pays +1.678% but costs one prompt -5.151%, and the hidden pool is not the proxy pool.",
-   "ENVELOPE: free_step_e208, minimax sit outside the paid cap-4/cap-5 extrapolation envelope (bar 0.890). The predicted gain is a desk prediction that a paid receipt has not yet covered; an implementation must measure it."
+   "RECEIPT BRANCH READING (advisor Entry 424). The aff4ad64 receipt reads on laws smooth and step, because its candidate c47c7284 predates the (9,5) merge. It cannot read on step_e208. Either way the FORWARD law for an implementation is step_e208, because E208 r1 is merged into the maintained base.",
+   "  receipt lands SMOOTH -> forward law smooth: free optimum +3.377% LOO-honest.",
+   "  receipt lands STEP   -> forward law step_e208: free optimum +2.312% LOO-honest.",
+   "RECOMMENDED TABLE: the no-regression guarded FORWARD minimax table over {smooth, step_e208}. It pays +2.242% under its worst forward reading (+2.252% LOO-honest) with no prompt below +0.000%, so it needs no receipt branch and is correct under either outcome.",
+   "  dropping the uncorrected step law is worth +0.604 pp of worst-reading delta (+2.242% forward vs +1.638% over all three readings). That uncorrected law was the whole source of the transfer risk.",
+   "  the unguarded forward table pays +2.376% but costs one prompt -3.116%; the guard costs 0.135 pp and the hidden pool is not the proxy pool.",
+   "ENVELOPE: forward, forward_guarded, free_step_e208, minimax sit outside the paid cap-4/cap-5 extrapolation envelope (bar 0.890). The predicted gain is a desk prediction that a paid receipt has not yet covered; an implementation must measure it."
   ]
  },
  "harness": "ranked",
@@ -2347,6 +2361,350 @@
    "republic": 5.569500997428484,
    "travel": 3.4056129130524098
   },
+  "forward": {
+   "anchor_distance": {
+    "mass_at_depth_8": {
+     "beagle": 0.3973422983064663,
+     "botany": 0.805793119369667,
+     "drama": 0.0,
+     "essays": 0.5568222864437394,
+     "medicine": 0.5866888558496868,
+     "plutarch": 0.0,
+     "republic": 0.5195178495945407,
+     "travel": 0.021064973103768314
+    },
+    "round_mass_relocated": {
+     "beagle": 0.3953722810054566,
+     "botany": 0.3931724248057299,
+     "drama": 0.6554254134217998,
+     "essays": 0.4122377932464827,
+     "medicine": 0.3518892782575882,
+     "plutarch": 0.8558759204876432,
+     "republic": 0.4283988220418251,
+     "travel": 0.479833934594338
+    },
+    "worst_round_mass_relocated": 0.8558759204876432
+   },
+   "cuts": [
+    50,
+    312,
+    1209,
+    2606,
+    3375,
+    3375,
+    3375,
+    3375
+   ],
+   "edl": {
+    "beagle": 5.313923875326909,
+    "botany": 7.16296830072919,
+    "drama": 3.3114613893207787,
+    "essays": 6.047829544817973,
+    "medicine": 6.197258124553221,
+    "plutarch": 1.6169219585518537,
+    "republic": 5.922672995933256,
+    "travel": 3.5408459419022407
+   },
+   "greedy_agreement": 1.0,
+   "greedy_mismatches": 0,
+   "law_set": [
+    "smooth",
+    "step_e208"
+   ],
+   "loo_honest": {
+    "smooth": {
+     "delta_pct": 3.2869083785731137,
+     "per_prompt_raw": {
+      "beagle": 3.7565148619709614,
+      "botany": 4.1847178626965365,
+      "drama": 2.0975000064142075,
+      "essays": 4.153993774414682,
+      "medicine": 4.169000081733068,
+      "plutarch": 1.2393666267469812,
+      "republic": 4.192417434995502,
+      "travel": 2.415853889628875
+     },
+     "published_median": 3.955254318192822
+    },
+    "step_e208": {
+     "delta_pct": 2.3722505860863214,
+     "per_prompt_raw": {
+      "beagle": 3.68555168650067,
+      "botany": 4.051238242969333,
+      "drama": 2.0975000064142075,
+      "essays": 4.048589723262348,
+      "medicine": 4.062954760789419,
+      "plutarch": 1.2393666267469812,
+      "republic": 4.098187888469373,
+      "travel": 2.4121703427680354
+     },
+     "published_median": 3.8670707048815087
+    }
+   },
+   "paid_under_uncorrected_step_pct": 0.26825319829748406,
+   "per_law": {
+    "smooth": {
+     "delta_pct": 3.222614712232688,
+     "per_prompt_delta_pct": {
+      "beagle": 3.052572563358809,
+      "botany": 1.772615927438824,
+      "drama": -0.32052237480090034,
+      "essays": 3.377211794152348,
+      "medicine": 2.6898487293577373,
+      "plutarch": -3.1162151639253675,
+      "republic": 3.8493160192279885,
+      "travel": 0.04933220680578202
+     },
+     "per_prompt_raw": {
+      "beagle": 3.7585320693909283,
+      "botany": 4.186336614833578,
+      "drama": 2.1153882567951072,
+      "essays": 4.147052461792663,
+      "medicine": 4.168090827766074,
+      "plutarch": 1.221413814620444,
+      "republic": 4.199533796163027,
+      "travel": 2.428930026567959
+     },
+     "published_median": 3.9527922655917958,
+     "worst_prompt_delta_pct": -3.1162151639253675
+    },
+    "step_e208": {
+     "delta_pct": 2.376457967952313,
+     "per_prompt_delta_pct": {
+      "beagle": 2.277913353416029,
+      "botany": 0.7925542855740346,
+      "drama": -0.32052237480090034,
+      "essays": 2.4664126375550253,
+      "medicine": 1.8417524783031038,
+      "plutarch": -3.1162151639253675,
+      "republic": 2.840328207460603,
+      "travel": -0.08387576823126888
+     },
+     "per_prompt_raw": {
+      "beagle": 3.6874464655001473,
+      "botany": 4.055301078173823,
+      "drama": 2.1153882567951072,
+      "essays": 4.047012808587725,
+      "medicine": 4.063193450851047,
+      "plutarch": 1.221413814620444,
+      "republic": 4.102755040530646,
+      "travel": 2.425696093435082
+     },
+     "published_median": 3.8672296370439363,
+     "worst_prompt_delta_pct": -3.1162151639253675
+    }
+   },
+   "price_cumulative": [
+    1.0,
+    1.0124968757810546,
+    1.0182084374498788,
+    1.0383692484163538,
+    1.1178306629864683,
+    1.2482153355341123,
+    1.3581999068533572,
+    1.4509761948319755,
+    1.5292366227069658
+   ],
+   "price_marginal": [
+    0.012496875781054736,
+    0.005711561668824098,
+    0.020160810966475026,
+    0.07946141457011446,
+    0.13038467254764413,
+    0.10998457131924494,
+    0.09277628797861825,
+    0.07826042787499041
+   ],
+   "thresholds": [
+    0.012496875781054736,
+    0.07798050487378155,
+    0.3021744563859035,
+    0.6513371657085728,
+    0.8435391152211947,
+    0.8435391152211947,
+    0.8435391152211947,
+    0.8435391152211947
+   ],
+   "worst_delta_pct": 2.376457967952313,
+   "worst_loo_honest_delta_pct": 2.3722505860863214,
+   "worst_prompt": {
+    "smooth": "plutarch",
+    "step_e208": "plutarch"
+   },
+   "worst_prompt_delta_pct": -3.1162151639253675
+  },
+  "forward_guarded": {
+   "anchor_distance": {
+    "mass_at_depth_8": {
+     "beagle": 0.414555555567923,
+     "botany": 0.8529707764307601,
+     "drama": 0.0,
+     "essays": 0.5942564612915842,
+     "medicine": 0.6067254000568528,
+     "plutarch": 0.0,
+     "republic": 0.5620959872020646,
+     "travel": 0.04132845275056085
+    },
+    "round_mass_relocated": {
+     "beagle": 0.34350099522298216,
+     "botany": 0.39341885236147145,
+     "drama": 0.44970100914398337,
+     "essays": 0.3912738723525532,
+     "medicine": 0.3396998306021757,
+     "plutarch": 0.30658241927915586,
+     "republic": 0.4290015661978812,
+     "travel": 0.3622335812565476
+    },
+    "worst_round_mass_relocated": 0.44970100914398337
+   },
+   "cuts": [
+    480,
+    619,
+    2103,
+    2604,
+    3315,
+    3315,
+    3315,
+    3315
+   ],
+   "edl": {
+    "beagle": 5.28775561062685,
+    "botany": 7.33133309131771,
+    "drama": 3.107340415975656,
+    "essays": 6.136271850079234,
+    "medicine": 6.227027467629503,
+    "plutarch": 0.6508688062268749,
+    "republic": 6.04158812005891,
+    "travel": 3.4419802810461353
+   },
+   "greedy_agreement": 1.0,
+   "greedy_mismatches": 0,
+   "law_set": [
+    "smooth",
+    "step_e208"
+   ],
+   "loo_honest": {
+    "smooth": {
+     "delta_pct": 3.1996691990657844,
+     "per_prompt_raw": {
+      "beagle": 3.755848573935552,
+      "botany": 4.187946643372962,
+      "drama": 2.131648811517784,
+      "essays": 4.147978612750828,
+      "medicine": 4.158196546352641,
+      "plutarch": 1.2051643270373837,
+      "republic": 4.202375284095163,
+      "travel": 2.4471540488876244
+     },
+     "published_median": 3.95191359334319
+    },
+    "step_e208": {
+     "delta_pct": 2.252249131773897,
+     "per_prompt_raw": {
+      "beagle": 3.681823303416603,
+      "botany": 4.057353428315858,
+      "drama": 2.131648811517784,
+      "essays": 4.0432520927371005,
+      "medicine": 4.056870683097845,
+      "plutarch": 1.2051643270373837,
+      "republic": 4.1017829843381985,
+      "travel": 2.4415051482198646
+     },
+     "published_median": 3.862537698076852
+    }
+   },
+   "paid_under_uncorrected_step_pct": -0.14598415481864413,
+   "per_law": {
+    "smooth": {
+     "delta_pct": 3.1955527348485204,
+     "per_prompt_delta_pct": {
+      "beagle": 2.969010382950901,
+      "botany": 1.6102424989910187,
+      "drama": 0.007945869334146325,
+      "essays": 3.401518060307708,
+      "medicine": 2.6434095115082967,
+      "plutarch": 0.00013437645776486287,
+      "republic": 3.9429375717563624,
+      "travel": 0.36895005384261687
+     },
+     "per_prompt_raw": {
+      "beagle": 3.7554843906475543,
+      "botany": 4.179657511397033,
+      "drama": 2.1223589781805665,
+      "essays": 4.148027525437224,
+      "medicine": 4.1662059006738446,
+      "plutarch": 1.2607016313201147,
+      "republic": 4.20331973225739,
+      "travel": 2.436689492509122
+     },
+     "published_median": 3.9517559580423893,
+     "worst_prompt_delta_pct": 0.00013437645776486287
+    },
+    "step_e208": {
+     "delta_pct": 2.241581864296397,
+     "per_prompt_delta_pct": {
+      "beagle": 2.116365903668682,
+      "botany": 0.4996545638187318,
+      "drama": 0.007945869334146325,
+      "essays": 2.3558829899363527,
+      "medicine": 1.722788075859042,
+      "plutarch": 0.00013437645776486287,
+      "republic": 2.77679411595457,
+      "travel": 0.10704813765021384
+     },
+     "per_prompt_raw": {
+      "beagle": 3.681622162353455,
+      "botany": 4.043516511686246,
+      "drama": 2.1223589781805665,
+      "essays": 4.042647330299501,
+      "medicine": 4.058447112840042,
+      "plutarch": 1.2607016313201147,
+      "republic": 4.100220384926999,
+      "travel": 2.4303312149052245
+     },
+     "published_median": 3.862134746326478,
+     "worst_prompt_delta_pct": 0.00013437645776486287
+    }
+   },
+   "price_cumulative": [
+    1.0,
+    1.1199700074981256,
+    1.1431854605635925,
+    1.235315177502074,
+    1.329629693999155,
+    1.4756650162410119,
+    1.5966615404179065,
+    1.6969123471278305,
+    1.7799744376660454
+   ],
+   "price_marginal": [
+    0.11997000749812547,
+    0.023215453065466816,
+    0.09212971693848157,
+    0.09431451649708095,
+    0.14603532224185678,
+    0.12099652417689459,
+    0.10025080670992392,
+    0.08306209053821488
+   ],
+   "thresholds": [
+    0.11997000749812547,
+    0.15471132216945763,
+    0.5256185953511622,
+    0.6508372906773306,
+    0.828542864283929,
+    0.828542864283929,
+    0.828542864283929,
+    0.828542864283929
+   ],
+   "worst_delta_pct": 2.241581864296397,
+   "worst_loo_honest_delta_pct": 2.252249131773897,
+   "worst_prompt": {
+    "smooth": "plutarch",
+    "step_e208": "plutarch"
+   },
+   "worst_prompt_delta_pct": 0.00013437645776486287
+  },
   "greedy_agreement": 1.0,
   "greedy_mismatches": 0,
   "guarded": {
@@ -2395,6 +2753,11 @@
    },
    "greedy_agreement": 1.0,
    "greedy_mismatches": 0,
+   "law_set": [
+    "smooth",
+    "step",
+    "step_e208"
+   ],
    "loo_honest": {
     "smooth": {
      "delta_pct": 1.8049464762025709,
@@ -2556,6 +2919,11 @@
    },
    "worst_prompt_delta_pct": 0.015051693230408456
   },
+  "law_set": [
+   "smooth",
+   "step",
+   "step_e208"
+  ],
   "loo_honest": {
    "smooth": {
     "delta_pct": 1.901811038248158,
@@ -2741,6 +3109,16 @@
  "seed": 211,
  "validated_envelope": {
   "arms": {
+   "forward": {
+    "envelope_ratio": 1.0560754885200352,
+    "inside_validated_envelope": false,
+    "relocation_vs_cap7": 0.9398016300358696
+   },
+   "forward_guarded": {
+    "envelope_ratio": 1.0563524045127268,
+    "inside_validated_envelope": false,
+    "relocation_vs_cap7": 0.9400480575916111
+   },
    "free_step_e208": {
     "envelope_ratio": 1.0560754885200352,
     "inside_validated_envelope": false,
