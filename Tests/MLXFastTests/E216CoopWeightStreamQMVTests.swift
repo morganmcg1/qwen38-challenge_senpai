@@ -119,19 +119,14 @@ private struct E216Pipeline {
             header: head)
     }
 
-    /// `geometryStream` defaults to this pipeline's own mapping. Overriding it
-    /// launches the compiled source on the other mapping's grid, which is the
-    /// desynchronised-launcher positive control.
     func call(
         x: MLXArray, w: MLXArray, scales: MLXArray, biases: MLXArray,
-        xsums: MLXArray, m: Int, n: Int, useTable: Bool,
-        geometryStream: Qwen35CustomQMV.WeightStream? = nil
+        xsums: MLXArray, m: Int, n: Int, useTable: Bool
     ) -> MLXArray {
         var outShape = x.shape
         outShape[outShape.count - 1] = n
         let geometry = Qwen35CustomQMV.launchGeometry(
-            m: m, n: n, variant: .staged,
-            stream: geometryStream ?? stream)
+            m: m, n: n, variant: .staged, stream: stream)
         let launch = Qwen35KernelLaunch(
             grid: geometry.grid,
             threadGroup: geometry.threadGroup,
@@ -227,6 +222,38 @@ private func e216RowSamples(_ values: [Float], m: Int, n: Int, columns: Int)
     return samples
 }
 
+/// How many times each `(token row, four-row output block)` cell of the result
+/// is written when a mapping runs on a grid, counted by walking every
+/// threadgroup and simdgroup the launch dispatches.
+///
+/// The index formulas are the ones `qwen35E120QMVSource` emits; `geometry`
+/// asserts the shipped source text carries exactly those expressions, so this
+/// walk describes the real pair of source and launcher rather than a private
+/// model of it. A correct mapping writes every cell exactly once.
+private func e216WriteCensus(
+    m: Int, n: Int, ipg: Int, coop: Bool, grid: (Int, Int, Int)
+) -> [Int] {
+    let blocks = n / 4
+    var counts = [Int](repeating: 0, count: m * blocks)
+    let tail = m % ipg
+    for tidX in 0 ..< (grid.0 / 32) {
+        for tidY in 0 ..< (grid.1 / 2) {
+            for sgid in 0 ..< 2 {
+                let firstM = (coop ? sgid : tidX) * ipg
+                let outRow = coop ? tidY * 4 : tidY * 8 + sgid * 4
+                if firstM >= m { continue }
+                let na = (tail == 0 || m - firstM >= ipg) ? ipg : tail
+                for lane in 0 ..< na {
+                    let block = outRow / 4
+                    guard block < blocks else { continue }
+                    counts[(firstM + lane) * blocks + block] += 1
+                }
+            }
+        }
+    }
+    return counts
+}
+
 private func e216Write(_ payload: [String: Any], to key: String) throws {
     let path = try #require(
         ProcessInfo.processInfo.environment[key],
@@ -317,6 +344,46 @@ struct E216CoopWeightStreamQMVTests {
                 movedCases += 1
             }
             #expect(movedCases == Self.twoGroupWidths.count)
+        }
+
+        // Write coverage. Both mappings must write every (token row, four-row
+        // output block) cell exactly once, and the coop indices launched on the
+        // split grid must NOT, which proves the walk can detect a bad pairing.
+        //
+        // A GPU control cannot answer this question. A mapping error leaves
+        // part of the output unwritten rather than wrong, and MLX recycles freed
+        // device buffers, so an unwritten region can silently return the correct
+        // values of an earlier identical call. The first E216 gate run measured
+        // exactly that: the coop source on the split grid compared 0-differing
+        // against the split result at five of six cells. The mapping question is
+        // combinatorial and is settled here; the floating-point question is
+        // settled by `numericalGate` and its arithmetic control.
+        for n in [64, 4104, 5120] {
+            for m in Qwen35CustomQMV.widths {
+                let ipg = Qwen35CustomQMV.inputsPerGroup(m, variant: .staged)
+                let split = Qwen35CustomQMV.launchGeometry(
+                    m: m, n: n, variant: .staged, stream: .split)
+                let coop = Qwen35CustomQMV.launchGeometry(
+                    m: m, n: n, variant: .staged, stream: .coop)
+                let splitCounts = e216WriteCensus(
+                    m: m, n: n, ipg: ipg, coop: false, grid: split.grid)
+                let coopCounts = e216WriteCensus(
+                    m: m, n: n, ipg: ipg, coop: coop.coop, grid: coop.grid)
+                #expect(
+                    splitCounts.allSatisfy { $0 == 1 },
+                    "split m=\(m) n=\(n) coverage \(Set(splitCounts).sorted())")
+                #expect(
+                    coopCounts.allSatisfy { $0 == 1 },
+                    "coop m=\(m) n=\(n) coverage \(Set(coopCounts).sorted())")
+                #expect(splitCounts == coopCounts)
+
+                guard coop.coop else { continue }
+                let misgridded = e216WriteCensus(
+                    m: m, n: n, ipg: ipg, coop: true, grid: split.grid)
+                #expect(
+                    misgridded.contains(0) && misgridded.contains(2),
+                    "the coverage walk must reject coop indices on the split grid")
+            }
         }
 
         // Default build carries the shipped mapping and the unchanged witness.
@@ -413,8 +480,13 @@ struct E216CoopWeightStreamQMVTests {
                             #expect(diff.nanOrInf == 0)
                         }
 
-                        // Positive controls at the widest moved width of a
-                        // small cell, so both run on every cell that has one.
+                        // Positive control at the widest moved width of a small
+                        // cell, so it runs on every cell that has one. The
+                        // mapping dimension is falsified by the coverage walk
+                        // in `geometry`, not here: a mapping error leaves output
+                        // unwritten rather than wrong, and MLX recycles freed
+                        // device buffers, so an unwritten region can return the
+                        // correct values of an earlier call.
                         guard m == 9, cell.n <= 16480 else { return }
                         for useTable in [true, false] {
                             let good = split.call(
@@ -425,24 +497,10 @@ struct E216CoopWeightStreamQMVTests {
                                 x: x, w: w, scales: scales, biases: biases,
                                 xsums: xsums, m: m, n: cell.n,
                                 useTable: useTable)
-                            // The paired source on the split grid: one x group
-                            // is dropped and half of every row slice is never
-                            // written. This is the exact failure a launcher
-                            // that desynchronised from the source would cause.
-                            let misgridded = coop.call(
-                                x: x, w: w, scales: scales, biases: biases,
-                                xsums: xsums, m: m, n: cell.n,
-                                useTable: useTable, geometryStream: .split)
-                            eval(good, bad, misgridded)
-                            let goodValues = good.asType(.float32)
-                                .asArray(Float.self)
+                            eval(good, bad)
                             let arithmetic = e216Compare(
                                 bad.asType(.float32).asArray(Float.self),
-                                goodValues)
-                            let mapping = e216Compare(
-                                misgridded.asType(.float32)
-                                    .asArray(Float.self),
-                                goodValues)
+                                good.asType(.float32).asArray(Float.self))
                             control.append([
                                 "cell": cell.name, "m": m,
                                 "use_table": useTable,
@@ -450,15 +508,10 @@ struct E216CoopWeightStreamQMVTests {
                                 "arithmetic_max_ulp": arithmetic.maxUlp,
                                 "arithmetic_max_abs_diff":
                                     arithmetic.maxAbsDiff,
-                                "misgridded_differing": mapping.count,
-                                "misgridded_max_abs_diff": mapping.maxAbsDiff,
                             ])
                             #expect(
                                 arithmetic.count > 0,
                                 "arithmetic control did not trip at \(cell.name)")
-                            #expect(
-                                mapping.count > 0,
-                                "grid control did not trip at \(cell.name)")
                         }
                     }
                 }

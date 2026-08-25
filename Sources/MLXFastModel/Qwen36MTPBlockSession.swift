@@ -2015,6 +2015,7 @@ public final class Qwen36MTPBlockSession {
                 // shipped grid.
                 + "qmv_coop=\(qwen35QMVCoopLaunches) "
                 + "qmv_split=\(qwen35QMVSplitLaunches) "
+                + "qmv_split_g2=\(qwen35QMVSplitTwoGroupLaunches) "
                 // E174 step 1. `xs_uniq` counts DISTINCT activations among
                 // those fills, so `xs_fill - xs_uniq` per round is the number
                 // of fills that rebuilt a table an earlier cell in the same

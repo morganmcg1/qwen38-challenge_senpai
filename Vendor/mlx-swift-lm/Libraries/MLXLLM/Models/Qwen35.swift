@@ -2314,6 +2314,12 @@ public enum Qwen35CustomQMV {
             qwen35QMVCoopLaunches &+= 1
         } else {
             qwen35QMVSplitLaunches &+= 1
+            if Self.cooperativeWeightStream(
+                m: cell.m,
+                ipg: Self.inputsPerGroup(cell.m, variant: variant))
+            {
+                qwen35QMVSplitTwoGroupLaunches &+= 1
+            }
         }
         if Qwen35KernelConfigCache.enabled {
             return qwen35CachedQMVKernel(
@@ -2388,6 +2394,12 @@ public enum Qwen35CustomQMV {
             qwen35QMVCoopLaunches &+= 1
         } else {
             qwen35QMVSplitLaunches &+= 1
+            if Self.cooperativeWeightStream(
+                m: cell.m,
+                ipg: Self.inputsPerGroup(cell.m, variant: variant))
+            {
+                qwen35QMVSplitTwoGroupLaunches &+= 1
+            }
         }
         if Qwen35KernelConfigCache.enabled {
             return qwen35CachedQMVKernel(
@@ -5074,6 +5086,11 @@ public nonisolated(unsafe) var qwen35XSumsStandaloneFills: Int = 0
 /// environment requested.
 public nonisolated(unsafe) var qwen35QMVCoopLaunches: Int = 0
 public nonisolated(unsafe) var qwen35QMVSplitLaunches: Int = 0
+
+/// Split-grid launches at a plan entry that streams the weights twice. A `coop`
+/// leg must report zero here: any non-zero count means a two-group entry
+/// escaped the paired mapping, which invalidates the arm before any timing.
+public nonisolated(unsafe) var qwen35QMVSplitTwoGroupLaunches: Int = 0
 
 /// Distinct activations among those standalone fills, summed over rounds, so a
 /// per-round delta against `qwen35XSumsStandaloneFills` gives the round's
