@@ -1329,8 +1329,10 @@ def main() -> int:
             "gate_qualified_for_timing": blob.get("gate_qualified_for_timing"),
         }
         phase_meta[name]["phase"] = blob["phase"]
-        if blob["phase"] == "sanity":
-            phase_meta[name]["comparisons"] = blob.get("comparisons")
+        if blob["phase"].startswith("sanity"):
+            for key in ("comparisons", "value_comparisons", "write_census"):
+                if key in blob:
+                    phase_meta[name][key] = blob[key]
             continue
         for label, unit in chain_slopes(blob).items():
             unit["phase"] = name

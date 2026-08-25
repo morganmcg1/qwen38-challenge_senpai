@@ -111,3 +111,5 @@ research/e77-artifacts/rung1.log
 research/e78-artifacts/rung2a.log
 research/e78-artifacts/rung2b.log
 # SENPAI-CAMPAIGN-END
+# E221 generated Metal dumps; regenerate with research/e221_register_probe.py
+research/e221-artifacts/*.metal
