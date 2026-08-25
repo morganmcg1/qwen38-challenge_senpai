@@ -17,7 +17,7 @@ out="research/out/${tag}"
 rm -rf "${out}"
 mkdir -p "${out}"
 
-export MLXFAST_MACMON_BIN="${MLXFAST_MACMON_BIN:-/opt/homebrew/bin/macmon}"
+export MLXFAST_MACMON_BIN="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
 gpu_temp() {
   "${MLXFAST_MACMON_BIN}" pipe -s1 2>/dev/null \
     | jq -r '.temp.gpu_temp_avg // empty' 2>/dev/null

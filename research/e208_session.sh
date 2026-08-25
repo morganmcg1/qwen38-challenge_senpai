@@ -53,7 +53,7 @@ head_dir="${E208_HEAD_DIR:-${HOME}/.cache/mlxfast/qwen3.8-27b-mtp-v1/mtp-head-de
 }
 export MLXFAST_QWEN_MTP_HEAD_DIR="${head_dir}"
 
-export MLXFAST_MACMON_BIN="${MLXFAST_MACMON_BIN:-/opt/homebrew/bin/macmon}"
+export MLXFAST_MACMON_BIN="${MLXFAST_MACMON_BIN:-${HOME}/bin/macmon}"
 export MLXFAST_LOCAL_RUN_LOCK_DIR="${MLXFAST_LOCAL_RUN_LOCK_DIR:-/tmp/mlxfast-shared}"
 export MLXFAST_QWEN_MTP_LOCAL_ITERATE_TOKENS="${tokens}"
 export MLXFAST_LOCAL_COOL_GATE=0
