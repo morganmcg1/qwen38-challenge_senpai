@@ -72683,3 +72683,25 @@ Same-host back-to-back pair, all provenance assertions passed: base 76 rounds / 
 ### Queue state
 
 Receipt 5f508da validating (composed 9a91ba76). Behind-slot EMPTY; E214 is one gated confirm from freeze-ready; E213 g1 is one clean re-gate + palindrome from a verdict. E212 20-leg census running.
+
+## Entry 430 — 2026-08-25 — E214 MERGED: guarded forward-minimax step-price table ships; base = cap-8+(9,5)+stepq; merge commit 3f1065cb is the frozen candidate behind 5f508da
+
+### FINDING 554 — the E211 step-price SHAPE is now the shipped schedule surface (E214, PR 212, merged at 3f1065cb)
+
+Scored change: one file, `Sources/MLXFastModel/Qwen36MTPBlockSession.swift` (+112/−14) — `shippedDepthThresholds` (cuts 480, 619, 2103, 2604, 3315×4 over the 4001-node QGRID), `makeThresholdDepthPrice(_:)`, `depthPriceArm .stepq` default, uniform-0.18 `ship` arm retained as control, trace-gated hexfloat witness. No Metal or trusted-path change.
+
+Evidence chain (Askeladd, head 02e7dc42; confirm-to-head binding verified — scored diff 432bf8f5..02e7dc42 empty):
+
+- **Open-loop realization exact** (W&B [n44rqrxf](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/n44rqrxf)): compiled table bit-identical to `research/e211-artifacts/step-price.json::receipt_proof.forward_guarded` (sha256 3c5295cc…); grid agreement 1.0000/4001 nodes; replay 0 mismatches ≤1e-6 print unit; positive control fails 9/9 at 258240 units.
+- **Schedule census** (same host, symbol-certified arms per RULE 402): base exactly reproduces FINDING 545 (76 / 6.855263158 / 0.836852207); candidate **73 rounds (−3.95%) / EDL 7.095890411 (+3.51%) / acceptance 0.847490347 (+1.06 pp)**; both arms token-exact.
+- **Gated 512-token confirm** (W&B [00k2cht2](https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/00k2cht2), real 40 C gate): `all_tokens_matched=true`, 0 residual divergence, `parity_all_ok=true`, ledger closes 591 = 439+79+73, full fixed window (offset 1024). Honest limit on record: the public fixture has no EOS in-window, so post-EOS continuation is unexercised locally.
+- Swift suite matched 41-issue floor with empty failing-name diff vs same-host base run; boundary/scope/budget/twin checks pass (growth 5,001/262,144).
+- **Value claim stays harness=ranked desk**: +2.252% LOO-honest worst reading, worst prompt +0.000% (no-regression guard). All local seconds NOT-A-PRICE (RULE 79); ungated sign-consistent (−1.03%). Only the official receipt settles the price.
+
+### Queue and base state
+
+- Maintained base scored surface: **cap-8 + staged (9,5) + stepq**.
+- **Frozen-behind slot OCCUPIED: 3f1065cb** (merge commit; scored tree identical to confirmed head). Receipt 5f508da (9a91ba76) still validating ahead of it.
+- **E213 consequence (material base move):** Edward's in-flight palindrome on e0c7a026 remains valid causal evidence; per-width paired deltas stay valid; the round-weighted total must be recomputed with the composed base's served-width census (stepq shifts rounds deeper, likely increasing g1's m∈{7,8,9} weight); ship-form requires rebase onto the composed base + cheap kernel re-gate + gated confirm there.
+- **E212 consequence (benign):** the width census pins widths explicitly, so R_local(m) is schedule-independent; only the shipped-share weighting must use the composed stepq census. Desk re-weighting, no re-timing.
+- Follow-ups recorded from the result: pin test for `depthPriceArm`+thresholds digest (base brief's `QwenMTPDepthPriceTests` name was stale — no such test exists); EOS-in-window exactness fixture; second-prompt census. These become E215.
