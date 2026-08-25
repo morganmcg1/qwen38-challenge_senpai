@@ -339,36 +339,37 @@ struct E217StagedMappingTests {
         // scale. `coop` runs the shipped `qwen_e120_qmv_wide` body; `staged`
         // runs `qwen_e217_consume_block`. The comparison must report differences
         // for both, otherwise a pass proves nothing.
+        // Both targets are single lines, so neither substitution depends on
+        // how the surrounding Swift literal is indented.
         let coopAccumulate =
             "acc[r] += scale_local[r] * partial[r] + sums * bias_local[r];"
+        let coopPerturbed =
+            "acc[r] += scale_local[r] * partial[r] * 1.0000305f "
+            + "+ sums * bias_local[r];"
         let stagedAccumulate =
-            "acc[r][m] +=\n"
-            + "                    scale_local[r] * partial[r][m] "
+            "scale_local[r] * partial[r][m] + sums[m] * bias_local[r];"
+        let stagedPerturbed =
+            "scale_local[r] * partial[r][m] * 1.0000305f "
             + "+ sums[m] * bias_local[r];"
-        let controls = [
-            E217Pipeline(
-                mapping: .coop, label: "coop_ctl",
-                headerTransform: {
-                    $0.replacingOccurrences(
-                        of: coopAccumulate,
-                        with:
-                            "acc[r] += scale_local[r] * partial[r] * 1.0000305f"
-                            + " + sums * bias_local[r];")
-                }),
-            E217Pipeline(
-                mapping: .staged, label: "staged_ctl",
-                headerTransform: {
-                    $0.replacingOccurrences(
-                        of: stagedAccumulate,
-                        with:
-                            "acc[r][m] += scale_local[r] * partial[r][m] "
-                            + "* 1.0000305f + sums[m] * bias_local[r];")
-                }),
-        ]
         // A substitution that silently matched nothing would make the control
         // identical to the candidate and the control would prove nothing.
         #expect(qwen35E217Header.contains(coopAccumulate))
         #expect(qwen35E217Header.contains(stagedAccumulate))
+        let coopControlHeader = qwen35E217Header.replacingOccurrences(
+            of: coopAccumulate, with: coopPerturbed)
+        let stagedControlHeader = qwen35E217Header.replacingOccurrences(
+            of: stagedAccumulate, with: stagedPerturbed)
+        #expect(coopControlHeader != qwen35E217Header)
+        #expect(stagedControlHeader != qwen35E217Header)
+
+        let controls = [
+            E217Pipeline(
+                mapping: .coop, label: "coop_ctl",
+                headerTransform: { _ in coopControlHeader }),
+            E217Pipeline(
+                mapping: .staged, label: "staged_ctl",
+                headerTransform: { _ in stagedControlHeader }),
+        ]
 
         var rows: [[String: Any]] = []
         var controlRows: [[String: Any]] = []
