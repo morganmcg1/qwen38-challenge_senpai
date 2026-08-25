@@ -59,7 +59,7 @@ let e219LivePathNeedle = "E219-QMV-PASS-ANATOMY-CENSUS-LIVE-PATH-2026-08-25"
 
 // MARK: - shapes
 
-private struct E219Cell {
+struct E219Cell {
     var name: String
     var k: Int
     var n: Int
@@ -67,7 +67,7 @@ private struct E219Cell {
     var invocations: Int
 }
 
-private let e219ScoredCells = [
+let e219ScoredCells = [
     E219Cell(name: "mlp.gate_up", k: 5120, n: 34816, invocations: 64),
     E219Cell(name: "mlp.down", k: 17408, n: 5120, invocations: 64),
     E219Cell(name: "gdn.in_proj", k: 5120, n: 16480, invocations: 48),
@@ -81,7 +81,7 @@ private let e219ScoredCells = [
 /// `activationUnique` is the slab every threadgroup needs; `activationRead` is
 /// what the `n / 8` row-slice threadgroups collectively request, which is what
 /// the cache hierarchy -- not DRAM -- must serve.
-private struct E219Bytes {
+struct E219Bytes {
     var weight: Int
     var scaleBias: Int
     var activationUnique: Int
@@ -198,7 +198,7 @@ func e221WriteCensus(n: Int, rows: Int, sgStride: Int? = nil) -> [Int: Int] {
     return writes
 }
 
-private func e219SumsStride(_ m: Int) -> Int { Qwen35CustomQMV.sumsStride(m) }
+func e219SumsStride(_ m: Int) -> Int { Qwen35CustomQMV.sumsStride(m) }
 
 // MARK: - the instrument kernel
 
@@ -310,7 +310,7 @@ private struct E219PipelineCache {
 
 // MARK: - weight replicas
 
-private struct E219WeightSet {
+struct E219WeightSet {
     var w: MLXArray
     var scales: MLXArray
     var biases: MLXArray
@@ -326,7 +326,7 @@ private struct E219WeightSet {
 /// One randomly packed affine-4/group-64 set at a scored cell shape. Nibble
 /// values and scale magnitudes carry the range a decode round really sees, so
 /// the numerical sanity check compares meaningful floats.
-private func e219RandomSet(k: Int, n: Int, seed: UInt64) -> E219WeightSet {
+func e219RandomSet(k: Int, n: Int, seed: UInt64) -> E219WeightSet {
     MLXRandom.seed(seed)
     let w = MLXRandom.uniform(low: 0.0, high: 4.2e9, [n, k / 8]).asType(.uint32)
     let scales = MLXRandom.uniform(low: 0.005, high: 0.03, [n, k / 64])
@@ -341,7 +341,7 @@ private func e219RandomSet(k: Int, n: Int, seed: UInt64) -> E219WeightSet {
 /// of addresses and extents, not of nibble values, so a rotation buys a
 /// genuinely distinct 50-100 MB device buffer for one copy instead of a second
 /// multi-hundred-megabyte random draw.
-private func e219RotatedSet(_ base: E219WeightSet, shift: Int)
+func e219RotatedSet(_ base: E219WeightSet, shift: Int)
     -> E219WeightSet
 {
     let n = base.n
@@ -361,7 +361,7 @@ private func e219RotatedSet(_ base: E219WeightSet, shift: Int)
 /// dispatch streams weights the previous dispatch did not touch. The ring is
 /// deliberately small: one replica already exceeds any Apple GPU cache, and a
 /// large resident footprint reintroduces first-touch and residency noise.
-private struct E219Replicas {
+struct E219Replicas {
     var sets: [E219WeightSet]
     var requestedCount: Int
     var totalBytes: Int
@@ -395,26 +395,26 @@ private struct E219Replicas {
 
 // MARK: - timing
 
-private struct E219Unit {
+struct E219Unit {
     var label: String
     var fields: [String: Any]
     /// Enqueues the unit's dispatches and returns their outputs unevaluated.
     var enqueue: () -> [MLXArray]
 }
 
-private func e219Int(_ key: String, _ fallback: Int) -> Int {
+func e219Int(_ key: String, _ fallback: Int) -> Int {
     guard let raw = ProcessInfo.processInfo.environment[key], let v = Int(raw)
     else { return fallback }
     return v
 }
 
-private func e219IntList(_ key: String, _ fallback: [Int]) -> [Int] {
+func e219IntList(_ key: String, _ fallback: [Int]) -> [Int] {
     guard let raw = ProcessInfo.processInfo.environment[key], !raw.isEmpty
     else { return fallback }
     return raw.split(separator: ",").compactMap { Int($0) }
 }
 
-private func e219GpuTemperature() -> Double? {
+func e219GpuTemperature() -> Double? {
     for path in [
         ProcessInfo.processInfo.environment["MLXFAST_MACMON_BIN"] ?? "",
         "\(ProcessInfo.processInfo.environment["HOME"] ?? "")/bin/macmon",
@@ -445,7 +445,7 @@ private func e219GpuTemperature() -> Double? {
 
 /// One chain-slope block over `units`, palindromic in the block index so
 /// monotone session drift cancels to first order between orientations.
-private struct E219Session {
+struct E219Session {
     let blocks: Int
     let chains: [Int]
     let warmup: Int
@@ -455,13 +455,14 @@ private struct E219Session {
     var temperatures: [String: Double?] = [:]
     var samples: [[String: Any]] = []
 
-    init() {
-        blocks = e219Int("MLX_E219_BLOCKS", 6)
-        chains = e219IntList("MLX_E219_CHAINS", [1, 2, 3, 4])
-        warmup = e219Int("MLX_E219_WARMUP", 4)
-        touch = e219Int("MLX_E219_TOUCH", 24)
-        minimumReps = e219Int("MLX_E219_MIN_REPS", 8)
-        targetMicroseconds = Double(e219Int("MLX_E219_TARGET_US", 6000))
+    /// `prefix` lets a second probe reuse this session with its own env knobs.
+    init(prefix: String = "MLX_E219") {
+        blocks = e219Int("\(prefix)_BLOCKS", 6)
+        chains = e219IntList("\(prefix)_CHAINS", [1, 2, 3, 4])
+        warmup = e219Int("\(prefix)_WARMUP", 4)
+        touch = e219Int("\(prefix)_TOUCH", 24)
+        minimumReps = e219Int("\(prefix)_MIN_REPS", 8)
+        targetMicroseconds = Double(e219Int("\(prefix)_TARGET_US", 6000))
     }
 
     mutating func recordTemperature(_ label: String) {
@@ -610,14 +611,14 @@ private func e219PhaseEnabled(_ name: String) -> Bool {
         || raw.split(separator: ",").map(String.init).contains(name)
 }
 
-private func e219Settle() -> () -> Void {
+func e219Settle() -> () -> Void {
     let weights = MLXRandom.normal([2048, 2048]).asType(.bfloat16)
     let input = MLXRandom.normal([64, 2048]).asType(.bfloat16)
     eval(weights, input)
     return { eval(matmul(input, weights)) }
 }
 
-private func e219Activations(m: Int, k: Int, seed: UInt64) -> MLXArray {
+func e219Activations(m: Int, k: Int, seed: UInt64) -> MLXArray {
     MLXRandom.seed(seed)
     let x = MLXRandom.normal([1, m, k]).asType(.bfloat16)
     eval(x)
@@ -1209,7 +1210,7 @@ struct E219PassAnatomyTests {
 
 /// Replica rings live behind a reference box because the timed closures
 /// escape and must share one cursor per ring.
-private final class E219RingBox: @unchecked Sendable {
+final class E219RingBox: @unchecked Sendable {
     private var rings: [String: E219Replicas] = [:]
 
     func install(_ key: String, _ ring: E219Replicas) { rings[key] = ring }
