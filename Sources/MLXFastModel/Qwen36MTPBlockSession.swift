@@ -1481,7 +1481,15 @@ public final class Qwen36MTPBlockSession {
         // the single blocking eval's GPU wall. Never on in a ranked run.
         let tRound0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
         let cpuRound0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
-        if Self.stallMicroseconds > 0 { usleep(Self.stallMicroseconds) }
+        // E210 positive control. `usleep` overshoots its argument by whatever
+        // the scheduler adds, so the planted window is MEASURED and carried in
+        // the anchor line; the control compares the census against the observed
+        // stall, never against the requested one.
+        var tStallDone = tRound0
+        if Self.stallMicroseconds > 0 {
+            usleep(Self.stallMicroseconds)
+            tStallDone = DispatchTime.now().uptimeNanoseconds
+        }
         if Qwen35BandTimer.enabled { Qwen35BandTimer.reset() }
         var tDraftBuilt: UInt64 = 0
         var tSnapshotDone: UInt64 = 0
@@ -1618,7 +1626,7 @@ public final class Qwen36MTPBlockSession {
                     "mtp-anchor: leg=\(Self.traceLeg) "
                         + "round=\(roundCount) d=0 acc=0 serial=1 "
                         + "pid=\(ProcessInfo.processInfo.processIdentifier) "
-                        + "t_round0=\(tRound0) "
+                        + "t_round0=\(tRound0) t_stall_done=\(tStallDone) "
                         + "t_eval_done=\(tSerialEval) "
                         + "t_row_trace0=\(tSerialEval) "
                         + "t_row_trace_done=\(tSerialDone) "
@@ -2003,7 +2011,8 @@ public final class Qwen36MTPBlockSession {
                     // the GPU interval ledger is per process, so the reader
                     // needs the pid to join the two without mixing workers.
                     + "pid=\(ProcessInfo.processInfo.processIdentifier) "
-                    + "t_round0=\(tRound0) t_draft0=\(tDraft0) "
+                    + "t_round0=\(tRound0) t_stall_done=\(tStallDone) "
+                    + "t_draft0=\(tDraft0) "
                     + "t_flush_built=\(tFlushBuilt) t_head1_built=\(tHead1Built) "
                     + "t_submit1=\(tSubmit1) t_chain_built=\(tChainBuilt) "
                     + "t_draft_built=\(tDraftBuilt) "

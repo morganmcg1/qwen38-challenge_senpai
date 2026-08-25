@@ -1,0 +1,213 @@
+{
+  "accepted_draft_rate": 0.9734513274336283,
+  "all_tokens_matched": true,
+  "base_sha": "f1e598fff4908a0032db492a2ea72ce999dddf63",
+  "chip": "Apple M4 Pro",
+  "cool_gate_passed_real_gate": "false",
+  "effective_mean_draft_len": 5.947368421052632,
+  "experiment": "e210-gpu-idle-census",
+  "gate_qualified_for_timing": "false",
+  "harness": "local",
+  "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+  "host": "ip-10-231-2-22.ec2.internal",
+  "leg_role": "gpu-interval-ledger-observation",
+  "legs": {
+    "leg1-serial-k1": {
+      "budget_crosscheck": {
+        "anchored_share_pct": 70.36423377601962,
+        "anchored_us": 9401188.665,
+        "e204_reader_outside_share_pct": 21.971584503933467,
+        "e204_reader_outside_us": 2935568.258271363,
+        "e204_reader_seed_share_pct": 7.664181720046918,
+        "e204_reader_seed_us": 1023992.083,
+        "leg_us": 13360749.006271362,
+        "outside_share_pct": 0.32042870688812247,
+        "outside_us": 42811.675271363,
+        "seed_share_pct": 29.315337517092264,
+        "seed_us": 3916748.666
+      },
+      "censused_idle_us": 1161314.375,
+      "censused_span_us": 9100264.042,
+      "coherent_slices": {
+        "count": 161,
+        "count_per_round": 1.2983870967741935,
+        "largest_us": [
+          21730.125,
+          18217.75,
+          10565.667,
+          9872.875,
+          9619.458,
+          9604.125,
+          9598.5,
+          9585.75,
+          9565.542,
+          9560.083
+        ],
+        "min_slice_us": 100.0,
+        "pct_of_censused_span": 12.694914176864936,
+        "total_us": 1155270.71,
+        "us_per_round": 9316.699274193548
+      },
+      "idle_share_of_leg_idle_pct": {
+        "prologue": 0.021471222466822967,
+        "rounds": 88.56646351161044,
+        "seed": 1.4445935307425861,
+        "turnaround": 3.246159100710154
+      },
+      "instrument_idle_us": 16400.457,
+      "leg_gpu_busy_us": 12095297.541,
+      "leg_gpu_idle_pct": 9.46750102451039,
+      "leg_gpu_idle_pct_production": 9.34474469284372,
+      "leg_gpu_idle_us": 1264874.417,
+      "leg_kind": "serial-k1",
+      "leg_span_minus_parent_leg_us": -577.0482713617384,
+      "leg_span_us": 13360171.958,
+      "parent_leg_us": 13360749.006271362,
+      "parent_seconds_per_token": 0.10438085161149502,
+      "phases": {
+        "row_dump": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 11239.497,
+          "idle_us_per_window": {
+            "max": 215.583,
+            "mean": 90.64110483870967,
+            "median": 88.3125,
+            "n": 124,
+            "p90": 97.417,
+            "total": 11239.497
+          },
+          "span_us": 11239.497,
+          "windows": 124
+        },
+        "serial_body": {
+          "gpu_busy_us": 7938949.667,
+          "gpu_idle_pct_of_segment": 12.257066397450291,
+          "gpu_idle_us": 1109015.042,
+          "idle_us_per_window": {
+            "max": 21021.624,
+            "mean": 8943.669693548387,
+            "median": 9012.1885,
+            "n": 124,
+            "p90": 9252.207,
+            "total": 1109015.042
+          },
+          "span_us": 9047964.709,
+          "windows": 124
+        }
+      },
+      "rounds_analysed": 124,
+      "rounds_skipped": 4,
+      "segment_share_of_leg_pct": {
+        "prologue": 0.0020327882070213694,
+        "rounds": 67.80754195738773,
+        "seed": 29.31660369576809,
+        "turnaround": 0.3073301461169711
+      },
+      "segments": {
+        "prologue": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 271.584,
+          "idle_us_per_window": {
+            "max": 271.584,
+            "mean": 271.584,
+            "median": 271.584,
+            "n": 1,
+            "p90": 271.584,
+            "total": 271.584
+          },
+          "span_us": 271.584,
+          "windows": 1
+        },
+        "rounds": {
+          "gpu_busy_us": 7938949.667,
+          "gpu_idle_pct_of_segment": 12.365926559620373,
+          "gpu_idle_us": 1120254.539,
+          "idle_us_per_window": {
+            "max": 21237.207,
+            "mean": 9034.310798387098,
+            "median": 9100.647,
+            "n": 124,
+            "p90": 9341.457,
+            "total": 1120254.539
+          },
+          "span_us": 9059204.206,
+          "windows": 124
+        },
+        "seed": {
+          "gpu_busy_us": 3898476.372,
+          "gpu_idle_pct_of_segment": 0.46651688832157506,
+          "gpu_idle_us": 18272.294,
+          "idle_us_per_window": {
+            "max": 18272.294,
+            "mean": 18272.294,
+            "median": 18272.294,
+            "n": 1,
+            "p90": 18272.294,
+            "total": 18272.294
+          },
+          "span_us": 3916748.666,
+          "windows": 1
+        },
+        "turnaround": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 41059.836,
+          "idle_us_per_window": {
+            "max": 659.583,
+            "mean": 333.8198048780488,
+            "median": 321.041,
+            "n": 123,
+            "p90": 358.583,
+            "total": 41059.836
+          },
+          "span_us": 41059.836,
+          "windows": 123
+        },
+        "turnaround_protocol_gap": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 35898.876,
+          "idle_us_per_window": {
+            "max": 590.083,
+            "mean": 291.8607804878049,
+            "median": 281.417,
+            "n": 123,
+            "p90": 306.417,
+            "total": 35898.876000000004
+          },
+          "span_us": 35898.876,
+          "windows": 123
+        },
+        "turnaround_trace_emit": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 5160.96,
+          "idle_us_per_window": {
+            "max": 71.541,
+            "mean": 41.959024390243904,
+            "median": 39.0,
+            "n": 123,
+            "p90": 58.583,
+            "total": 5160.96
+          },
+          "span_us": 5160.96,
+          "windows": 123
+        }
+      }
+    }
+  },
+  "memory_bytes": "51539607552",
+  "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+  "mtp_seconds_per_token": 0.051577163860201836,
+  "official_or_ranked_score": false,
+  "pid": 14648,
+  "sandbox": "off",
+  "serial_seconds_per_token": 0.10438085161149502,
+  "stall_us": "5000",
+  "tag": "e210-s0-on",
+  "tokens": "128",
+  "union_intervals": 6350,
+  "worker_sha256": "81914078ea2d18ceec3fd305bca7d899bd9cb949b5261aac6db5935b1dbe4430"
+}

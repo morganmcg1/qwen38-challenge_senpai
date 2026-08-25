@@ -138,9 +138,14 @@ def leg_census(merged, begin: dict, anchors: list[dict], skip: int,
 
     per_phase = {}
     instrument_idle = 0.0
-    # The serial body defines no drafting anchors, so its compute window has no
-    # name in the drafting phase list.
-    for lo, hi, name in PHASES + [("t_round0", "t_eval_done", "serial_body")]:
+    extra = [
+        # The serial body defines no drafting anchors, so its compute window
+        # has no name in the drafting phase list.
+        ("t_round0", "t_eval_done", "serial_body"),
+        # The Stage-0 planted stall. Zero-width unless MLX_E210_STALL_US is set.
+        ("t_round0", "t_stall_done", "planted_stall"),
+    ]
+    for lo, hi, name in PHASES + extra:
         windows = []
         for a in kept:
             t0, t1 = a.get(lo, 0), a.get(hi, 0)
@@ -260,18 +265,22 @@ def main() -> int:
         print("e210_census: no gpu intervals for pid %d" % pid, file=sys.stderr)
         return 2
 
-    # One trace file collects every worker the run spawns -- the reference pass
-    # writes anchors too -- and `leg` counts begins per process, so both records
-    # are scoped to the timed worker before anything is joined (RULE 386).
-    anchors = [a for a in anchors if a["pid"] == pid]
-    begins = [b for b in begins if b["pid"] == pid]
-
+    # The wrapper runs each decode leg in its OWN worker process, and `leg`
+    # counts begins per process, so a leg is the pair (pid, leg) -- never `leg`
+    # alone (RULE 386). The GPU interval ledger is per process too, so the
+    # union is rebuilt for each leg's own pid.
     decode_tokens = score["decode_tokens"]
     legs = {}
-    for leg_id in sorted({a["leg"] for a in anchors if "leg" in a}):
-        leg_anchors = [a for a in anchors if a.get("leg") == leg_id]
-        begin = next((b for b in begins if b.get("leg") == leg_id), None)
+    for key in sorted({(a["pid"], a["leg"]) for a in anchors if "leg" in a}):
+        leg_pid, leg_id = key
+        leg_anchors = [a for a in anchors
+                       if a["pid"] == leg_pid and a.get("leg") == leg_id]
+        begin = next((b for b in begins if b["pid"] == leg_pid
+                      and b.get("leg") == leg_id), None)
         if not begin or not leg_anchors:
+            continue
+        merged = union(read_intervals(out / "gpu-intervals.jsonl", leg_pid))
+        if not merged:
             continue
         serial = all(a.get("serial", 0) == 1 for a in leg_anchors)
         spt = (score["serial_seconds_per_token"] if serial
@@ -279,6 +288,7 @@ def main() -> int:
         report = leg_census(merged, begin, leg_anchors, args.skip_rounds,
                             args.min_slice_us)
         report["leg_kind"] = "serial-k1" if serial else "mtp"
+        report["pid"] = leg_pid
         report["parent_leg_us"] = spt * decode_tokens * 1e6
         report["parent_seconds_per_token"] = spt
         report["leg_span_minus_parent_leg_us"] = (
@@ -291,7 +301,7 @@ def main() -> int:
             seed_eval_wall_us=(
                 begin["t_begin_done"] - begin["t_begin_built"]) / 1000.0,
         )
-        legs[f"leg{leg_id}-{report['leg_kind']}"] = report
+        legs[f"{report['leg_kind']}-pid{leg_pid}-leg{leg_id}"] = report
 
     report = {
         "tag": args.tag,
