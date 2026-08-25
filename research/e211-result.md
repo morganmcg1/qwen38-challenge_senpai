@@ -19,7 +19,11 @@ SENPAI-RESULT: {"terminal":true,"status":"complete","pending_arms":false,"yukon_
 - Yukon promoted submission / source ref used as frontier: receipt A
   `3.70784519` (cap 7) and crown `3.72911001`, read through the pinned
   constants in `research/e200_desk_price.py`. This experiment did not query
-  Yukon and did not submit.
+  Yukon and did not submit. Advisor Entry 424 confirms that E208 r1 is merged
+  and that the frozen candidate behind the in-flight receipt is cap-8 + (9,5)
+  (`9a91ba76`, FINDING 545, W&B run `hrzezfsk`). That candidate is not a
+  comparison point for this desk experiment; it fixes which cost law prices a
+  forward implementation.
 - Candidate build fingerprint: none. No Swift build, no worker, no GPU.
 - Submitted-surface / generated-twin / metallib digests: unchanged. The
   editable-budget gate reports `growth=0/262144` bytes against the assignment
@@ -170,19 +174,65 @@ only after a table must be chosen, so a per-law fitted table is a bet that can
 lose. This is the reason the recommendation below is a minimax table, not the
 best table under any single law.
 
-### Recommended table: no-regression guarded minimax
+### Recommended branch reading for both receipt outcomes
 
-Two receipt-proof arms were computed. Both maximise the weakest per-law
-published median. The guarded arm adds a floor forbidding any single prompt
-from falling below its shipped raw ratio.
+Advisor Entry 424 fixes which law prices which decision. E208 r1 is merged, so
+the maintained base carries the (9,5) correction and law (c) `step_e208` is the
+default **forward-pricing** law. The `aff4ad64` receipt itself reads on laws
+(a)/(b), because its candidate `c47c7284` predates that merge and pays the
+uncorrected m=9 cost. The receipt therefore cannot read on `step_e208` at all.
 
-| arm | worst-law in-sample | worst-law LOO-honest | worst single prompt | envelope |
-| --- | ---: | ---: | ---: | --- |
-| unguarded minimax | +1.678 % | +1.249 % | **−5.151 %** (plutarch) | 1.04× bar, OUTSIDE |
-| **guarded minimax** | **+1.638 %** | **+1.321 %** | **+0.015 %** | 0.85× bar, inside |
+| receipt outcome | what it settles | forward law for an implementation | free optimum, LOO-honest |
+| --- | --- | --- | ---: |
+| lands SMOOTH | no step at m=9, so the (9,5) correction removes a cost that was not there | smooth | +3.377 % |
+| lands STEP | the E186 step is real, and (9,5) is already merged | step_e208 | +2.312 % |
 
-The guard costs 0.04 pp of worst-law in-sample delta and *improves* the
-worst-law LOO-honest number. Recommended table:
+Both branches say IMPLEMENT. The branch only changes the size of the prize,
+from `+2.312 %` to `+3.377 %` LOO-honest.
+
+### Recommended table: no-regression guarded FORWARD minimax
+
+Because no future implementation is ever priced under the uncorrected step
+law, the minimax table should be chosen over the **forward** set
+{`smooth`, `step_e208`} rather than over all three readings. This matters:
+
+| arm | law set | worst-reading in-sample | worst-reading LOO-honest | worst single prompt | envelope |
+| --- | --- | ---: | ---: | ---: | --- |
+| unguarded minimax | all three | +1.678 % | +1.249 % | **−5.151 %** | 1.04× bar, OUTSIDE |
+| guarded minimax | all three | +1.638 % | +1.321 % | +0.015 % | **0.85× bar, inside** |
+| unguarded forward | forward | +2.376 % | +2.372 % | **−3.116 %** | 1.06× bar, OUTSIDE |
+| **guarded forward** | forward | **+2.242 %** | **+2.252 %** | **+0.000 %** | 1.06× bar, OUTSIDE |
+
+Dropping the uncorrected step law is worth **+0.604 pp** of worst-reading
+delta (`+2.242 %` versus `+1.638 %`). That law was the whole source of the
+transfer risk: every negative or near-zero cell in the cross-law matrix above
+involves it, while the two forward laws transfer benignly in both directions
+(`+2.115 %` and `+3.204 %`).
+
+**Recommended table** — guarded forward minimax:
+
+```text
+d                0       1       2       3       4       5       6       7
+marginal     0.120   0.023   0.092   0.094   0.146   0.121   0.100   0.083
+Q_(d+1)     0.1200  0.1547  0.5256  0.6508  0.8285  0.8285  0.8285  0.8285
+```
+
+Greedy-table agreement `1.0000`, `0` mismatches. It pays `+3.196 %` under
+smooth and `+2.242 %` under step_e208 in-sample (`+3.200 %` / `+2.252 %`
+LOO-honest), regresses no prompt, and needs no receipt branch. If the dropped
+uncorrected step law were somehow paid it would give `−0.146 %` — that
+exposure is reported, not hidden, and it is the price of the +0.604 pp.
+
+The guard is not optional. The unguarded forward table gains 0.135 pp more but
+loses `−3.116 %` on one prompt, and the unguarded three-law table loses
+`−5.151 %` on `plutarch`. `plutarch` does not set the proxy median, but the
+hidden pool is not the proxy pool and it may set the hidden one. The guard
+binds exactly, at `+0.000 %`.
+
+**Conservative fallback.** The guarded three-law table is the only arm inside
+the validated extrapolation envelope (0.85× the bar). If the advisor prefers
+to stay inside what a paid receipt has covered, that table pays `+1.716 %`
+LOO-honest under `step_e208` instead of `+2.252 %`:
 
 ```text
 d                0       1       2       3       4       5       6       7
@@ -190,15 +240,8 @@ marginal     0.180   0.032   0.032   0.105   0.176   0.153   0.134   0.145
 Q_(d+1)     0.1800  0.1800  0.3367  0.6728  0.8723  0.8723  0.8723  0.9105
 ```
 
-Row 0 keeps the shipped `0.180` exactly, so the first-draft decision is
-unchanged and only rows 1–7 are re-priced. Greedy-table agreement `1.0000`,
-`0` mismatches. Per-law: `+1.638 % / +1.638 % / +1.651 %` in-sample and
-`+1.805 % / +1.321 % / +1.716 %` LOO-honest. It needs no receipt branch and
-does not wait for `aff4ad64`.
-
-Guarded per-prompt deltas under step_e208: `plutarch +0.015 %`,
-`drama +0.02 %`, `travel +0.275 %`, `botany +0.920 %`, `medicine +1.222 %`,
-`essays +1.613 %`, `beagle +1.692 %`, `republic +1.776 %`.
+Its row 0 keeps the shipped `0.180` exactly, so the first-draft decision is
+unchanged and only rows 1–7 are re-priced.
 
 ### Validated extrapolation envelope
 
@@ -213,12 +256,22 @@ largest relocation the instrument is known to survive.
 | cap 8 | 0.547 | shipped |
 | validated bar | 0.890 | |
 | free step_e208 optimum | 0.940 | 1.06× — OUTSIDE |
-| unguarded minimax | 0.926 | 1.04× — OUTSIDE |
-| **guarded minimax** | **0.752** | **0.85× — inside** |
+| unguarded minimax, all three | 0.926 | 1.04× — OUTSIDE |
+| **guarded minimax, all three** | **0.752** | **0.85× — inside** |
+| forward minimax, free | 0.940 | 1.06× — OUTSIDE |
+| forward minimax, guarded | 0.940 | 1.06× — OUTSIDE |
 
-The free per-law optima and the unguarded minimax table both extrapolate past
-anything a paid receipt has covered. The guarded table does not. That is the
-second, independent reason to prefer it.
+This is the one place where the Entry 424 restriction costs something. Freeing
+the table from the uncorrected step law lets it push depth further, and the
+resulting schedule extrapolates 1.06× past anything a paid receipt has
+covered. The guarded three-law table is the only arm that stays inside.
+
+The excursion is small relative to the effect. The instrument's own
+out-of-sample error at the two validated caps is `−0.44 %` and `+0.24 %`
+against a receipt-channel 1σ of `0.689 %`, while the guarded forward table
+predicts `+2.242 %` — roughly 3σ. A 1.06× envelope excursion is therefore a
+modest extrapolation for a large predicted effect, but it is an extrapolation,
+and only a paid measurement closes it.
 
 ### Metrics
 
@@ -226,14 +279,13 @@ There is no timed leg in this experiment, so the template's timing table has
 no measured row. The reported quantities are desk predictions of the ranked
 published median.
 
-| Metric | Baseline (shipped h=0.18, cap 8) | Candidate (guarded minimax) | Delta |
+| Metric | Baseline (shipped h=0.18, cap 8) | Candidate (guarded forward minimax) | Delta |
 | --- | ---: | ---: | ---: |
-| published median, smooth | 3.829386 | 3.892111 | +1.638 % |
-| published median, step | 3.681378 | 3.741678 | +1.638 % |
-| published median, step_e208 | 3.777460 | 3.839823 | +1.651 % |
-| worst-law LOO-honest delta | — | — | +1.321 % |
-| effective mean draft length, botany | 6.70 | 6.63 | −0.07 |
-| effective mean draft length, plutarch | 0.16 | 0.24 | +0.08 |
+| published median, smooth | 3.829386 | 3.951756 | +3.196 % |
+| published median, step_e208 (forward law) | 3.777460 | 3.862135 | +2.242 % |
+| worst forward-reading LOO-honest delta | — | — | **+2.252 %** |
+| published median, step (receipt-only law) | 3.681378 | 3.676004 | −0.146 % |
+| worst single prompt, any forward law | — | — | +0.000 % |
 | serial seconds/token | not measured | not measured | not measured |
 | MTP seconds/token | not measured | not measured | not measured |
 
@@ -259,9 +311,11 @@ Group `qwen38-r1-e211-step-aware-depth-price`, project
 
 - **What happened.** The shipped uniform depth price is not optimal in its own
   family. Under every live reading of the 9-row cell, a free eight-cut price
-  table gains `+2.3 %` to `+3.4 %` of published median LOO-honest, and a single
-  receipt-proof table that needs no branch gains `+1.3 %` LOO-honest under its
-  weakest reading while regressing no prompt.
+  table gains `+2.3 %` to `+3.4 %` of published median LOO-honest. A single
+  table that needs no receipt branch and regresses no prompt gains `+2.252 %`
+  LOO-honest under its weakest **forward** reading, or `+1.321 %` if it must
+  also survive the uncorrected step law that only the `aff4ad64` receipt reads
+  on.
 - **Evidence for the mechanism.** The gain survives an honestly refitted
   uniform-level control by `+1.6 %` to `+2.5 %` LOO-honest, so it is the price
   *shape*, not the price level. Under the step law the level control is worth
@@ -270,28 +324,34 @@ Group `qwen38-r1-e211-step-aware-depth-price`, project
   greedy walk with zero mismatches, so this is an exact optimum over the
   family and not a fitted approximation of one.
 - **Evidence against, and the two named risks.**
-  1. **Anchor distance.** The free optima relocate 27–94 % of round mass off
-     the paid schedule and sit just outside the paid cap-4/cap-5 extrapolation
-     envelope. The instrument's own out-of-sample error at caps 4 and 5 is
-     `−0.44 %` and `+0.24 %`, against a receipt-channel 1σ of `0.689 %`. A
-     predicted `+1.3 %` is above that 1σ but not by a large factor.
-  2. **Prompt risk.** The unguarded minimax table buys its median with a
-     `−5.151 %` loss on `plutarch`. `plutarch` does not set the proxy median,
-     but the hidden pool is not the proxy pool and it may set the hidden one.
-     The guard removes this for 0.04 pp.
+  1. **Anchor distance.** The free optima and the forward minimax tables
+     relocate up to 94 % of round mass off the paid schedule and sit 1.06×
+     outside the paid cap-4/cap-5 extrapolation envelope. The instrument's own
+     out-of-sample error at caps 4 and 5 is `−0.44 %` and `+0.24 %`, against a
+     receipt-channel 1σ of `0.689 %`. The predicted `+2.242 %` is about 3σ, so
+     the extrapolation is modest relative to the effect — but it is real, and
+     the guarded three-law table is the only in-envelope alternative.
+  2. **Prompt risk.** Every unguarded table buys its median with a single-prompt
+     loss: `−5.151 %` on `plutarch` over all three laws, `−3.116 %` over the
+     forward set. Those prompts do not set the proxy median, but the hidden
+     pool is not the proxy pool and they may set the hidden one. The guard
+     removes this for 0.04–0.135 pp and should not be dropped.
 - **Transfer risk.** Local-to-M5 transfer is not in question here because
   nothing was timed. The live risk is reading-to-reading: a per-law fitted
-  table can lose `−1.271 %` under a different reading of the same cell. The
-  guarded minimax table is immune to that by construction.
+  table can lose `−1.271 %` under a different reading of the same cell.
+  Entry 424 shrinks this risk sharply, because the uncorrected step law that
+  produces every bad transfer cell is no longer a forward-pricing surface. The
+  two forward laws transfer benignly in both directions, and the guarded
+  forward table is immune by construction.
 - **Correction to the record.** FINDING 519 ("the price-shape axis is dead")
   should be narrowed to E200's uniform↔measured-cost blend. The shape axis
   itself pays `+1.7 %` to `+2.7 %` in-sample at the shipped price level.
-- **Smallest useful next action.** Implement the guarded minimax table as a
-  constant vector replacing `makeUniformDepthPrice`, then run one thermally
-  gated 512-token `--local-submit` pair against a fresh same-host base. The
-  change is eight constants; the whole risk is whether the desk instrument's
-  prediction survives contact with a paid measurement. That is exactly the
-  question a receipt answers and a desk cannot.
+- **Smallest useful next action.** Implement the guarded **forward** minimax
+  table as a constant vector replacing `makeUniformDepthPrice`, then run one
+  thermally gated 512-token `--local-submit` pair against a fresh same-host
+  base. The change is eight constants; the whole risk is whether the desk
+  instrument's prediction survives contact with a paid measurement. That is
+  exactly the question a receipt answers and a desk cannot.
 - **Recommendation: implement in a separate PR.** The assigned stop rule fires
   IMPLEMENT under every law (weakest `+2.312 %` LOO-honest). Per the
   assignment, the implementation is a separate assignment, so this PR stays
