@@ -2010,6 +2010,12 @@ public final class Qwen36MTPBlockSession {
                 // Fixed build witness for the compiled QMV width plan. No
                 // runtime state, no hot-path counter.
                 + "qmv_plan=\(qwen35QMVWidthPlanWitness) "
+                // E217 grid-mapping census over the two-pass widths. Exactly
+                // one of the three counts moves per `G == 2` launch, so the
+                // per-round deltas witness the mapping the round executed.
+                + "qmv_split_g2=\(qwen35QMVSplitG2Dispatches) "
+                + "qmv_coop=\(qwen35QMVCoopDispatches) "
+                + "qmv_staged=\(qwen35QMVStagedDispatches) "
                 // E174 step 1. `xs_uniq` counts DISTINCT activations among
                 // those fills, so `xs_fill - xs_uniq` per round is the number
                 // of fills that rebuilt a table an earlier cell in the same

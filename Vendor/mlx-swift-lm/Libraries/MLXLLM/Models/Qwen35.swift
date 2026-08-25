@@ -1558,6 +1558,195 @@ let qwen35E120QMVHeader = """
     }
     """
 
+/// E217 research header: the `coop` and `staged` group mappings for the widths
+/// that dispatch two weight passes (`G(m) == 2`).
+///
+/// The shipped `split` mapping gives each threadgroup one token-column group
+/// and eight output rows, so the two weight passes run in different
+/// threadgroups and each simdgroup fetches and dequantizes its own weight
+/// tile. `coop` puts both column groups in ONE threadgroup over the same four
+/// output rows, so the second pass reads weights the first pass just read.
+/// `staged` adds one dequantized four-row tile in threadgroup memory: the two
+/// simdgroups produce one half of it each, then both consume all of it, so a
+/// weight word is fetched once and its nibbles are extracted once per
+/// threadgroup instead of twice.
+///
+/// Exactness. This kernel never materializes `scale * q + bias` per weight
+/// element: it accumulates `sum_k a_k * q_k` and applies `scale` and `bias`
+/// once per k-block (`acc += scale * partial + sums * bias`). The only
+/// per-element dequantization is the nibble extraction and its conversion to
+/// float, so that value -- an integer in `[0, 15]`, exactly representable --
+/// is what the tile stages. Consuming `a * tile[j]` is bit-identical to the
+/// incumbent's `a * (packed >> 4j & 0xf)`, and the block accumulate keeps the
+/// incumbent statement shape per component.
+///
+/// Control flow. The two simdgroups of a `G == 2` threadgroup can carry
+/// different token counts (m = 7 is 4 + 3, m = 9 is 5 + 4), so the consumer is
+/// instantiated twice. Both `threadgroup_barrier` calls sit in the uniform
+/// k-block loop OUTSIDE that branch, so every thread of the threadgroup
+/// reaches the same barrier. The accumulator is one `vec<float, IPG>` array
+/// shared by both branches -- the tail branch touches only its first `TAIL`
+/// components -- so the divergence costs no extra live registers.
+///
+/// Tile layout is `[(row, word), lane, nibble]`: consecutive lanes read
+/// consecutive 16-byte chunks, which is the conflict-free threadgroup access
+/// pattern. A column-major `[row][column]` tile would give every lane a
+/// 64-byte stride and serialize on two banks.
+let qwen35E217StagedHeader = """
+    template <int NA_ACC, int NA, bool USE_TABLE>
+    inline void qwen_e217_consume_block(
+        const threadgroup float* tile,
+        const device bfloat16_t* scales,
+        const device bfloat16_t* biases,
+        const device bfloat16_t* x,
+        const device float* xsums,
+        const int in_vec_size,
+        const int sums_stride,
+        const int first_m,
+        const int out_row,
+        const int k,
+        uint simd_lid,
+        thread vec<float, NA_ACC>* acc
+    ) {
+        typedef vec<float, NA> VF;
+        constexpr int rows_per_simd = 4;
+        constexpr int values_per_thread = 16;
+        constexpr int block_size = values_per_thread * 32;
+        const int in_vec_size_g = in_vec_size / 64;
+
+        thread float scale_local[rows_per_simd];
+        thread float bias_local[rows_per_simd];
+        for (int r = 0; r < rows_per_simd; r++) {
+            const int group_index =
+                (out_row + r) * in_vec_size_g + k / 64 + int(simd_lid) / 4;
+            scale_local[r] = scales[group_index];
+            bias_local[r] = biases[group_index];
+        }
+
+        VF sums = VF(0.0f);
+        if (USE_TABLE) {
+            const device float* st =
+                xsums + ((k / block_size) * 32 + int(simd_lid)) *
+                sums_stride + first_m;
+            for (int m = 0; m < NA; m++) {
+                sums[m] = st[m];
+            }
+        }
+        VF partial[rows_per_simd];
+        for (int r = 0; r < rows_per_simd; r++) {
+            partial[r] = VF(0.0f);
+        }
+        for (int i = 0; i < 4; i++) {
+            VF a0, a1, a2, a3;
+            for (int m = 0; m < NA; m++) {
+                const device bfloat16_t* xm =
+                    x + (first_m + m) * in_vec_size + k +
+                    simd_lid * values_per_thread + 4 * i;
+                const vec<bfloat16_t, 4> xv =
+                    *reinterpret_cast<const device vec<bfloat16_t, 4>*>(xm);
+                a0[m] = static_cast<float>(xv[0]);
+                a1[m] = static_cast<float>(xv[1]);
+                a2[m] = static_cast<float>(xv[2]);
+                a3[m] = static_cast<float>(xv[3]);
+                if (!USE_TABLE) {
+                    sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
+                }
+            }
+            for (int r = 0; r < rows_per_simd; r++) {
+                const vec<float, 4> wq =
+                    *reinterpret_cast<const threadgroup vec<float, 4>*>(
+                        tile + ((r * 4 + i) * 32 + int(simd_lid)) * 4);
+                partial[r] += (a0 * wq[0] + a1 * wq[1] + a2 * wq[2] +
+                               a3 * wq[3]);
+            }
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+            for (int m = 0; m < NA; m++) {
+                acc[r][m] +=
+                    scale_local[r] * partial[r][m] + sums[m] * bias_local[r];
+            }
+        }
+    }
+
+    template <int M, int IPG, bool USE_TABLE>
+    inline void qwen_e217_qmv_staged(
+        const device uint32_t* w,
+        const device bfloat16_t* scales,
+        const device bfloat16_t* biases,
+        const device bfloat16_t* x,
+        const device float* xsums,
+        device bfloat16_t* y,
+        threadgroup float* tile,
+        const int in_vec_size,
+        const int out_vec_size,
+        const int sums_stride,
+        const int out_row,
+        uint sgid,
+        uint simd_lid
+    ) {
+        static_assert(M % IPG != 1, "a one-input tail group is not built");
+        static_assert(
+            (M + IPG - 1) / IPG == 2, "E217 maps G == 2 widths only");
+        constexpr int TAIL = (M % IPG == 0) ? IPG : (M % IPG);
+        constexpr int rows_per_simd = 4;
+        constexpr int values_per_thread = 16;
+        constexpr int block_size = values_per_thread * 32;
+        constexpr int bytes_per_lane = 8;
+        const int in_vec_size_w = in_vec_size / 2;
+        const int first_m = int(sgid) * IPG;
+
+        typedef vec<float, IPG> VACC;
+        VACC acc[rows_per_simd];
+        for (int r = 0; r < rows_per_simd; r++) {
+            acc[r] = VACC(0.0f);
+        }
+
+        for (int k = 0; k < in_vec_size; k += block_size) {
+            for (int rr = 0; rr < 2; rr++) {
+                const int r = int(sgid) * 2 + rr;
+                const device uint16_t* ws =
+                    reinterpret_cast<const device uint16_t*>(
+                        reinterpret_cast<const device uint8_t*>(w) +
+                        (out_row + r) * in_vec_size_w + k / 2 +
+                        simd_lid * bytes_per_lane);
+                for (int i = 0; i < 4; i++) {
+                    const uint16_t pw = ws[i];
+                    threadgroup float* dst =
+                        tile + ((r * 4 + i) * 32 + int(simd_lid)) * 4;
+                    dst[0] = static_cast<float>(pw & 0x000f);
+                    dst[1] = static_cast<float>((pw >> 4) & 0x000f);
+                    dst[2] = static_cast<float>((pw >> 8) & 0x000f);
+                    dst[3] = static_cast<float>((pw >> 12) & 0x000f);
+                }
+            }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+            if (sgid == 0) {
+                qwen_e217_consume_block<IPG, IPG, USE_TABLE>(
+                    tile, scales, biases, x, xsums, in_vec_size, sums_stride,
+                    first_m, out_row, k, simd_lid, acc);
+            } else {
+                qwen_e217_consume_block<IPG, TAIL, USE_TABLE>(
+                    tile, scales, biases, x, xsums, in_vec_size, sums_stride,
+                    first_m, out_row, k, simd_lid, acc);
+            }
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+        }
+
+        const int na = (sgid == 0) ? IPG : TAIL;
+        for (int r = 0; r < rows_per_simd; r++) {
+            for (int m = 0; m < IPG; m++) {
+                if (m < na) {
+                    const float reduced = simd_sum(acc[r][m]);
+                    if (simd_lid == 0) {
+                        y[(first_m + m) * out_vec_size + out_row + r] =
+                            static_cast<bfloat16_t>(reduced);
+                    }
+                }
+            }
+        }
+    }
+    """
+
 /// How a compiled QMV kernel partitions its input rows across threadgroups.
 ///
 /// One threadgroup streams the whole weight matrix, so a cell pays
@@ -1891,6 +2080,172 @@ private func qwen35CachedQMVKernel(
     }
 }
 
+/// E217 research arm: how a `G == 2` width maps its two token-column groups
+/// onto the two simdgroups of a threadgroup. `Qwen35QMVKernelVariant` above
+/// names the WIDTH PLAN (which `(m, IPG)` pair a cell compiles); this names the
+/// GRID MAPPING of that pair, and the two are independent.
+public enum Qwen35QMVGroupMapping: String, Sendable, CaseIterable {
+    /// Shipped: one column group per threadgroup, eight output rows each.
+    case split
+    /// Both column groups in one threadgroup over the same four output rows.
+    case coop
+    /// `coop` plus one dequantized four-row tile in threadgroup memory.
+    case staged
+}
+
+/// Geometry and width switch for the two E217 mappings. Only the `G == 2`
+/// staged pairs compile here: every other width keeps the shipped mapping, so
+/// routing one to this source would launch a second column group that owns no
+/// token and, under `staged`, would still be required to produce its half of
+/// the tile.
+func qwen35E217QMVSource(
+    table: Bool, mapping: Qwen35QMVGroupMapping
+) -> String {
+    precondition(mapping != .split, "the shipped mapping has its own source")
+    let sums = table ? "xsums" : "qmv_null_sums"
+    let flag = table ? "USE_TABLE" : "false"
+    let pairs = Qwen35QMVKernelVariant.staged.pairs.filter {
+        ($0.m + $0.ipg - 1) / $0.ipg == 2
+    }
+    let cases = pairs
+        .map { m, ipg in
+            mapping == .coop
+                ? """
+                        case \(m):
+                            qwen_e120_qmv_m<\(m), \(ipg), \(flag)>(
+                                w, scales, biases, x, \(sums), y,
+                                qmv_k, qmv_n, qmv_stride,
+                                qmv_gx, qmv_out_row, qmv_lid);
+                            break;
+                """
+                : """
+                        case \(m):
+                            qwen_e217_qmv_staged<\(m), \(ipg), \(flag)>(
+                                w, scales, biases, x, \(sums), y, qmv_tile,
+                                qmv_k, qmv_n, qmv_stride,
+                                qmv_out_row, qmv_sgid, qmv_lid);
+                            break;
+                """
+        }
+        .joined(separator: "\n")
+    let nullDecl = table ? "" : "\n        const device float* qmv_null_sums = nullptr;"
+    let mappingDecl =
+        mapping == .coop
+        ? "\n        const int qmv_gx = int(qmv_sgid);"
+        : "\n        threadgroup float qmv_tile[2048];"
+    return """
+            const int qmv_m = x_shape[x_ndim - 2];
+            const int qmv_k = x_shape[x_ndim - 1];
+            const int qmv_n = w_shape[0];
+            const int qmv_stride = qmv_m <= 8 ? 8 : 16;
+            const uint3 qmv_tid = threadgroup_position_in_grid;
+            const uint qmv_lid = thread_index_in_simdgroup;
+            const uint qmv_sgid = simdgroup_index_in_threadgroup;
+            const int qmv_out_row = int(qmv_tid.y) * 4;\(nullDecl)\(mappingDecl)
+            switch (qmv_m) {
+        \(cases)
+                default:
+                    break;
+            }
+        """
+}
+
+private let qwen35E217Header = qwen35E120QMVHeader + "\n" + qwen35E217StagedHeader
+
+private let qwen35CachedAffine4QMVKernelCoop = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_coop",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E217QMVSource(table: false, mapping: .coop),
+    header: qwen35E217Header
+)
+
+private let qwen35CachedAffine4QMVTableKernelCoop = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_coop",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E217QMVSource(table: true, mapping: .coop),
+    header: qwen35E217Header
+)
+
+private let qwen35CachedAffine4QMVKernelStaged = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_staged",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E217QMVSource(table: false, mapping: .staged),
+    header: qwen35E217Header
+)
+
+private let qwen35CachedAffine4QMVTableKernelStaged = Qwen35CachedKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_staged",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E217QMVSource(table: true, mapping: .staged),
+    header: qwen35E217Header
+)
+
+private func qwen35CachedE217QMVKernel(
+    table: Bool, mapping: Qwen35QMVGroupMapping
+) -> Qwen35CachedKernel {
+    switch (table, mapping) {
+    case (false, .coop): return qwen35CachedAffine4QMVKernelCoop
+    case (true, .coop): return qwen35CachedAffine4QMVTableKernelCoop
+    case (false, .staged): return qwen35CachedAffine4QMVKernelStaged
+    case (true, .staged): return qwen35CachedAffine4QMVTableKernelStaged
+    case (_, .split):
+        preconditionFailure("the shipped mapping has its own kernel")
+    }
+}
+
+private let qwen35CustomAffine4QMVKernelCoop = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_coop",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E217QMVSource(table: false, mapping: .coop),
+    header: qwen35E217Header,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVTableKernelCoop = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_coop",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E217QMVSource(table: true, mapping: .coop),
+    header: qwen35E217Header,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVKernelStaged = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_staged",
+    inputNames: ["w", "scales", "biases", "x"],
+    outputNames: ["y"],
+    source: qwen35E217QMVSource(table: false, mapping: .staged),
+    header: qwen35E217Header,
+    ensureRowContiguous: true
+)
+
+private let qwen35CustomAffine4QMVTableKernelStaged = MLXFast.metalKernel(
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_staged",
+    inputNames: ["w", "scales", "biases", "x", "xsums"],
+    outputNames: ["y"],
+    source: qwen35E217QMVSource(table: true, mapping: .staged),
+    header: qwen35E217Header,
+    ensureRowContiguous: true
+)
+
+private func qwen35UncachedE217QMVKernel(
+    table: Bool, mapping: Qwen35QMVGroupMapping
+) -> MLXFast.MLXFastKernel {
+    switch (table, mapping) {
+    case (false, .coop): return qwen35CustomAffine4QMVKernelCoop
+    case (true, .coop): return qwen35CustomAffine4QMVTableKernelCoop
+    case (false, .staged): return qwen35CustomAffine4QMVKernelStaged
+    case (true, .staged): return qwen35CustomAffine4QMVTableKernelStaged
+    case (_, .split):
+        preconditionFailure("the shipped mapping has its own kernel")
+    }
+}
+
 private let qwen35CustomAffine4QMVKernel = MLXFast.metalKernel(
     name: "qwen35_custom_affine4_g64_qmv_wide_v1",
     inputNames: ["w", "scales", "biases", "x"],
@@ -2037,6 +2392,39 @@ public enum Qwen35CustomQMV {
     /// applies the same active-group launch the M=3..9 path already uses.
     static let widths = 2 ... 9
 
+    /// The E217 grid mapping for the `G == 2` widths. Read once at process
+    /// start, like `arm`; it never varies with the request, the prompt or the
+    /// benchmark phase. The name carries the `MLX_` prefix because
+    /// `sanitizedRuntimeWorkerEnvironment` drops every `MLXFAST_*` name, and it
+    /// is 16 UTF-8 bytes so `strings` can witness it in the built worker.
+    public static let groupMapping: Qwen35QMVGroupMapping = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E217_QMV_MAP"]
+        guard let raw, !raw.isEmpty else { return .split }
+        return Qwen35QMVGroupMapping(rawValue: raw) ?? .split
+    }()
+
+    /// The mapping one launch will use, and the witness counter for it. Only a
+    /// two-pass width can leave the shipped mapping, so a leg's counters prove
+    /// which mapping every `G == 2` dispatch of that leg actually took.
+    static func mappingForLaunch(groups: Int) -> Qwen35QMVGroupMapping {
+        guard groups == 2 else { return .split }
+        switch groupMapping {
+        case .split: qwen35QMVSplitG2Dispatches &+= 1
+        case .coop: qwen35QMVCoopDispatches &+= 1
+        case .staged: qwen35QMVStagedDispatches &+= 1
+        }
+        return groupMapping
+    }
+
+    /// Threads per launch dimension. The shipped mapping gives a threadgroup
+    /// eight output rows and one column group; both E217 mappings give it four
+    /// output rows and both column groups.
+    static func launchGrid(
+        n: Int, groups: Int, mapping: Qwen35QMVGroupMapping
+    ) -> (Int, Int, Int) {
+        mapping == .split ? (groups * 32, (n / 8) * 2, 1) : (32, (n / 4) * 2, 1)
+    }
+
     /// Lane stride of the chunk-sum table, in floats.
     public static func sumsStride(_ m: Int) -> Int { m <= 8 ? 8 : 16 }
 
@@ -2179,20 +2567,30 @@ public enum Qwen35CustomQMV {
         outShape[outShape.count - 1] = cell.n
         let variant = Self.kernelVariant(cell)
         let groups = Self.activeInputGroups(cell.m, variant: variant)
+        let mapping = Self.mappingForLaunch(groups: groups)
+        let grid = Self.launchGrid(n: cell.n, groups: groups, mapping: mapping)
         if Qwen35KernelConfigCache.enabled {
-            return qwen35CachedQMVKernel(table: true, variant: variant)(
+            let kernel =
+                mapping == .split
+                ? qwen35CachedQMVKernel(table: true, variant: variant)
+                : qwen35CachedE217QMVKernel(table: true, mapping: mapping)
+            return kernel(
                 [w, scales, biases, x, xsums],
                 Qwen35KernelLaunch(
-                    grid: (groups * 32, (cell.n / 8) * 2, 1),
+                    grid: grid,
                     threadGroup: (32, 2, 1),
                     outputShape: outShape.map(Int32.init),
                     outputDType: .bfloat16,
                     useTable: consume))
         }
-        return qwen35UncachedQMVKernel(table: true, variant: variant)(
+        let kernel =
+            mapping == .split
+            ? qwen35UncachedQMVKernel(table: true, variant: variant)
+            : qwen35UncachedE217QMVKernel(table: true, mapping: mapping)
+        return kernel(
             [w, scales, biases, x, xsums],
             template: [("USE_TABLE", consume)],
-            grid: (groups * 32, (cell.n / 8) * 2, 1),
+            grid: grid,
             threadGroup: (32, 2, 1),
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]
@@ -2244,18 +2642,28 @@ public enum Qwen35CustomQMV {
         outShape[outShape.count - 1] = cell.n
         let variant = Self.kernelVariant(cell)
         let groups = Self.activeInputGroups(cell.m, variant: variant)
+        let mapping = Self.mappingForLaunch(groups: groups)
+        let grid = Self.launchGrid(n: cell.n, groups: groups, mapping: mapping)
         if Qwen35KernelConfigCache.enabled {
-            return qwen35CachedQMVKernel(table: false, variant: variant)(
+            let kernel =
+                mapping == .split
+                ? qwen35CachedQMVKernel(table: false, variant: variant)
+                : qwen35CachedE217QMVKernel(table: false, mapping: mapping)
+            return kernel(
                 [w, scales, biases, x],
                 Qwen35KernelLaunch(
-                    grid: (groups * 32, (cell.n / 8) * 2, 1),
+                    grid: grid,
                     threadGroup: (32, 2, 1),
                     outputShape: outShape.map(Int32.init),
                     outputDType: .bfloat16))
         }
-        return qwen35UncachedQMVKernel(table: false, variant: variant)(
+        let kernel =
+            mapping == .split
+            ? qwen35UncachedQMVKernel(table: false, variant: variant)
+            : qwen35UncachedE217QMVKernel(table: false, mapping: mapping)
+        return kernel(
             [w, scales, biases, x],
-            grid: (groups * 32, (cell.n / 8) * 2, 1),
+            grid: grid,
             threadGroup: (32, 2, 1),
             outputShapes: [outShape],
             outputDTypes: [.bfloat16]
@@ -4919,6 +5327,15 @@ public nonisolated(unsafe) var qwen35RowTop32ArgPartitionDrafts: Int = 0
 /// much of the 257-site fill surface the inherited fusion actually covers.
 public nonisolated(unsafe) var qwen35XSumsSidecarHits: Int = 0
 public nonisolated(unsafe) var qwen35XSumsStandaloneFills: Int = 0
+
+/// E217 grid-mapping census. Every wide QMV launch at a `G == 2` width
+/// increments exactly one of these, so a leg's per-round deltas prove which
+/// mapping the round executed instead of trusting the environment value: a
+/// `staged` leg must end `qwen35QMVStagedDispatches > 0` with the other two
+/// unchanged from the round before.
+public nonisolated(unsafe) var qwen35QMVSplitG2Dispatches: Int = 0
+public nonisolated(unsafe) var qwen35QMVCoopDispatches: Int = 0
+public nonisolated(unsafe) var qwen35QMVStagedDispatches: Int = 0
 
 /// Distinct activations among those standalone fills, summed over rounds, so a
 /// per-round delta against `qwen35XSumsStandaloneFills` gives the round's
