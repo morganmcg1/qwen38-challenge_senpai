@@ -1591,10 +1591,15 @@ let qwen35E120QMVHeader = """
 /// (144). That boundary, not the group count, is what stopped E195's
 /// single-pass form at m = 7 and m = 8. `stagedG1` lowers `rows` far enough to
 /// hold `IPG = m` under the boundary at m = 7, 8 and 9, so those widths stream
-/// the weights once instead of twice: `(7, 7, 2)` is 117 live values, `(8, 8, 1)`
+/// the weights once instead of twice: `(7, 7, 1)` is 94 live values, `(8, 8, 1)`
 /// is 104 and `(9, 9, 1)` is 114. `probeRows2` is the attribution control for a
 /// loss: it holds `G = 2` at m = 9 and lowers `rows` alone, so it prices low
 /// `rows_per_simd` without the weight pass it is meant to buy.
+///
+/// `(NA = 7, rows = 2)` is excluded on evidence, not on cost: the E213 gate
+/// found that instantiation numerically wrong on the plain (`USE_TABLE=false`)
+/// pipeline at every measured cell, while its table twin is bit exact. No
+/// shipped or research plan may compile it.
 enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
     case staged
     case singlePass = "singlepass"
@@ -1619,7 +1624,7 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
         case .stagedG1:
             return [
                 (2, 2, 4), (3, 3, 4), (4, 4, 4), (5, 5, 4),
-                (6, 3, 4), (7, 7, 2), (8, 8, 1), (9, 9, 1),
+                (6, 3, 4), (7, 7, 1), (8, 8, 1), (9, 9, 1),
             ]
         case .probeRows2:
             return [

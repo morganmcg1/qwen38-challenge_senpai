@@ -30,13 +30,18 @@ import Testing
 //     2             91    104    117    132    147
 //     1             74     84     94    104    114
 //
-// `(rows 2, NA 7)` = 117, `(rows 1, NA 8)` = 104 and `(rows 1, NA 9)` = 114 all
+// `(rows 1, NA 7)` = 94, `(rows 1, NA 8)` = 104 and `(rows 1, NA 9)` = 114 all
 // sit under today's shipped 125 while giving `G = 1`. That is the `g1` arm: it
 // removes the second weight pass at the three widths that carry 76 % of cap-8
 // rounds. `probeRows2` is the attribution control for a loss: `(9, 5, rows 2)`
 // holds `G = 2` and lowers `rows` alone.
 //
-// Three sections:
+// m = 7 uses `rows = 1` rather than the cheaper-looking `rows = 2`: the first
+// `g1` gate found `<NA = 7, USE_TABLE = false, ROWS = 2>` numerically wrong at
+// every cell, while `<NA = 7, ROWS = 4>` and `<NA = 5, ROWS = 2>` are both bit
+// exact. Only that pair is wrong, and no plan may compile it.
+//
+// Four sections:
 //
 //   * `planTable` is a pure-function test. It proves the legality rule, the
 //     group counts each arm claims, that no arm moves a width it does not
@@ -46,6 +51,10 @@ import Testing
 //   * `launchGeometry` proves the launched y extent covers every output row of
 //     every cell exactly once at every plan entry, so no row is dropped and no
 //     thread addresses a row past the end;
+//   * `plainAgreesWithTable` sweeps the `(NA, ROWS)` grid every plan compiles,
+//     plus a research-only `(NA 7, ROWS 2)` witness, and reports where the two
+//     pipelines disagree. It asserts that no `rows = 4` instantiation and no
+//     scored plain width disagrees;
 //   * `numericalGate` compares actual floating-point values, cell by cell, with
 //     real packed 4-bit weights and real bfloat16 activations. It gates three
 //     claims: the `ROWS` parameterization leaves the shipped `rows = 4` path
@@ -117,6 +126,32 @@ private let e213LegacyHeader = qwen35E120QMVHeader
         of: "qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), USE_TABLE, ROWS>",
         with: "qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), USE_TABLE>")
 
+/// `<NA = 7, ROWS = 2>` at m = 7, built here instead of in a shipped plan.
+///
+/// The first `g1` gate compiled that instantiation through `stagedG1` and found
+/// it numerically wrong on the plain pipeline at every cell. No shipped or
+/// research plan may carry a known-wrong instantiation into a submitted
+/// snapshot, so the plan now uses `(7, 7, 1)` and this text-level witness keeps
+/// the defect reproducible from research-only code.
+///
+/// Derived from the `singlePass` source, which emits `<7, 7, flag>` at the
+/// default `ROWS`, by rewriting that one case to the `ROWS = 2` template
+/// argument and the matching output-row expression.
+private func e213Rows2NA7Source(table: Bool) -> String {
+    let source = qwen35E120QMVSource(table: table, variant: .singlePass)
+    let flag = table ? "USE_TABLE" : "false"
+    let original = e213CaseText(source, m: 7)
+    let rewritten = original
+        .replacingOccurrences(
+            of: "qwen_e120_qmv_m<7, 7, \(flag)>",
+            with: "qwen_e120_qmv_m<7, 7, \(flag), 2>")
+        .replacingOccurrences(
+            of: "qmv_out_row",
+            with: "int(qmv_tid.y) * 4 + int(qmv_sgid) * 2")
+    precondition(!original.isEmpty && rewritten != original)
+    return source.replacingOccurrences(of: original, with: rewritten)
+}
+
 /// The `case <m>:` block of a compiled switch, so a test can compare one
 /// width's emitted text without matching the whole source.
 private func e213CaseText(_ source: String, m: Int) -> String {
@@ -134,25 +169,31 @@ private struct E213Pipeline {
     var label: String
     var table: Qwen35CachedKernel
     var plain: Qwen35CachedKernel
+    /// Rows per simdgroup this build really compiled, when it is not the value
+    /// `variant` would give. The launcher must match the compiled body.
+    var rowsOverride: Int?
 
     init(
         variant: Qwen35QMVKernelVariant, label: String,
-        header: String? = nil, nameSuffix: String = ""
+        header: String? = nil, nameSuffix: String = "",
+        source: ((Bool) -> String)? = nil, rowsOverride: Int? = nil
     ) {
         self.variant = variant
         self.label = label
+        self.rowsOverride = rowsOverride
         let head = header ?? qwen35E120QMVHeader
+        let body = source ?? { qwen35E120QMVSource(table: $0, variant: variant) }
         self.table = Qwen35CachedKernel(
             name: "e213_qmv_table_\(label)\(nameSuffix)",
             inputNames: ["w", "scales", "biases", "x", "xsums"],
             outputNames: ["y"],
-            source: qwen35E120QMVSource(table: true, variant: variant),
+            source: body(true),
             header: head)
         self.plain = Qwen35CachedKernel(
             name: "e213_qmv_plain_\(label)\(nameSuffix)",
             inputNames: ["w", "scales", "biases", "x"],
             outputNames: ["y"],
-            source: qwen35E120QMVSource(table: false, variant: variant),
+            source: body(false),
             header: head)
     }
 
@@ -162,8 +203,10 @@ private struct E213Pipeline {
     ) -> MLXArray {
         var outShape = x.shape
         outShape[outShape.count - 1] = n
+        var grid = Qwen35CustomQMV.launchGrid(m: m, n: n, variant: variant)
+        if let rows = rowsOverride { grid.1 = (n / (2 * rows)) * 2 }
         let launch = Qwen35KernelLaunch(
-            grid: Qwen35CustomQMV.launchGrid(m: m, n: n, variant: variant),
+            grid: grid,
             threadGroup: (32, 2, 1),
             outputShape: outShape.map(Int32.init),
             outputDType: .bfloat16,
@@ -296,7 +339,7 @@ struct E213RowsPerSimdQMVTests {
     /// them next to the plan, so the register claim travels with the evidence.
     static let registerProxy: [String: Int] = [
         "4x5": 125, "4x6": 144, "4x7": 155, "4x8": 175, "4x9": 195,
-        "2x7": 117, "1x8": 104, "1x9": 114, "2x5": 91,
+        "1x7": 94, "1x8": 104, "1x9": 114, "2x5": 91, "2x7": 117,
     ]
 
     // MARK: - plan table
@@ -412,7 +455,7 @@ struct E213RowsPerSimdQMVTests {
             qwen35QMVWidthPlanWitnessText(for: .staged) == "selective-m6+ipg9-5")
         #expect(
             qwen35QMVWidthPlanWitnessText(for: .stagedG1)
-                == "selective-m6+ipg9-9+e213-3x4-7x2-8x1-9x1")
+                == "selective-m6+ipg9-9+e213-3x4-7x1-8x1-9x1")
         #expect(
             qwen35QMVWidthPlanWitnessText(for: .probeRows2)
                 == "selective-m6+ipg9-5+e213-3x4-4x4-4x4-5x2")
@@ -494,35 +537,54 @@ struct E213RowsPerSimdQMVTests {
     /// The two paths are documented to agree bit for bit: the table entry holds
     /// the same float accumulation of the same BF16 expression tree in the same
     /// `i` order that `sums[m] += xv[0] + xv[1] + xv[2] + xv[3]` builds. The
-    /// `g1` gate found that they disagree at `<NA = 7, USE_TABLE = false,
+    /// first `g1` gate found that they disagree at `<NA = 7, USE_TABLE = false,
     /// ROWS = 2>`, and that input row 0 is the only correct row.
     ///
-    /// This section separates the two candidate causes. `ROWS` cannot be the
-    /// cause on its own, because the plain-only code is the `sums`
-    /// accumulation, which no `ROWS` value reads or writes. So the sweep
-    /// compares plain against table over the `(NA, ROWS)` grid the shipped
-    /// enum already compiles, including `singlePass` at m = 7, which is
-    /// `NA = 7` at the shipped `ROWS = 4`.
+    /// The sweep separates the candidate causes over the `(NA, ROWS)` grid:
+    /// `singlePass` at m = 7 is `NA = 7` at the shipped `ROWS = 4`, and
+    /// `probeRows2` at m = 9 is `ROWS = 2` at `NA = 5`. Both agree, so neither
+    /// `NA = 7` nor `ROWS = 2` is wrong on its own and only the pair is.
     ///
-    /// A `singlePass` m = 7 failure means the defect is a property of `NA = 7`
-    /// in the plain pipeline and predates E213. A `singlePass` m = 7 pass with
-    /// a `g1` m = 7 failure means `ROWS = 2` provoked it.
+    /// Two claims this section asserts rather than reports:
+    ///
+    ///   * every `rows = 4` instantiation agrees, so the base compiles no wrong
+    ///     plain instantiation and the defect is reachable only through E213's
+    ///     new `ROWS` values;
+    ///   * the widths the scored `sumTable` arm really routes to the plain
+    ///     kernel agree. `tablePays(m) = m >= 4`, so those are m = 2 and m = 3,
+    ///     and both keep `rows = 4` in every plan.
     @Test(.enabled(if: E213RowsPerSimdQMVTests.gateEnabled))
     func plainAgreesWithTable() throws {
+        struct Case {
+            var label: String
+            var widths: [Int]
+            var rows: (Int) -> Int
+            var pipeline: E213Pipeline
+        }
+
         let sweep: [(variant: Qwen35QMVKernelVariant, widths: [Int])] = [
             (.staged, Array(Qwen35CustomQMV.widths)),
             (.singlePass, [6, 7, 8, 9]),
             (.stagedG1, [7, 8, 9]),
             (.probeRows2, [9]),
         ]
-        let pipelines = sweep.map {
-            (
-                variant: $0.variant, widths: $0.widths,
+        var pipelines = sweep.map { entry in
+            Case(
+                label: entry.variant.rawValue, widths: entry.widths,
+                rows: { Qwen35CustomQMV.rowsPerSimd($0, variant: entry.variant) },
                 pipeline: E213Pipeline(
-                    variant: $0.variant, label: "pvt_\($0.variant.rawValue)",
-                    nameSuffix: "_pvt")
-            )
+                    variant: entry.variant,
+                    label: "pvt_\(entry.variant.rawValue)",
+                    nameSuffix: "_pvt"))
         }
+        // The withdrawn instantiation, kept reproducible outside every plan.
+        pipelines.append(
+            Case(
+                label: "research_na7_rows2", widths: [7], rows: { _ in 2 },
+                pipeline: E213Pipeline(
+                    variant: .singlePass, label: "pvt_na7_rows2",
+                    nameSuffix: "_pvt", source: e213Rows2NA7Source(table:),
+                    rowsOverride: 2)))
 
         var rows: [[String: Any]] = []
         for cell in e213Cells {
@@ -563,13 +625,15 @@ struct E213RowsPerSimdQMVTests {
                                 }
                             }
                             rows.append([
-                                "variant": entry.variant.rawValue,
+                                "variant": entry.label,
                                 "cell": cell.name,
                                 "m": m,
                                 "na_first_group": Qwen35CustomQMV
-                                    .inputsPerGroup(m, variant: entry.variant),
-                                "rows_per_simd": Qwen35CustomQMV.rowsPerSimd(
-                                    m, variant: entry.variant),
+                                    .inputsPerGroup(
+                                        m, variant: entry.pipeline.variant),
+                                "rows_per_simd": entry.rows(m),
+                                "scored_plain_width":
+                                    !Qwen35CustomQMV.tablePays(m: m),
                                 "elements": m * cell.n,
                                 "differing": diff.count,
                                 "max_ulp": diff.maxUlp,
@@ -594,9 +658,28 @@ struct E213RowsPerSimdQMVTests {
                 "rows": rows,
             ], to: "MLXFAST_E213_PLAIN_OUT")
 
-        // Reported, not asserted: this section exists to localize a defect the
-        // gate already fails on, so it must produce its whole table.
         let broken = rows.filter { ($0["differing"] as? Int ?? 0) > 0 }
+
+        // The base compiles no wrong plain instantiation: every `rows = 4`
+        // entry, at every width and cell, agrees bit for bit.
+        for row in broken where (row["rows_per_simd"] as? Int) == 4 {
+            Issue.record(
+                """
+                base defect: rows=4 \(row["variant"] ?? "") \
+                m=\(row["m"] ?? "") \(row["cell"] ?? "") differs, \
+                \(row["differing"] ?? "") elements
+                """)
+        }
+
+        // Affirmative scored-surface check. The `sumTable` arm reaches the
+        // plain kernel only where `tablePays` is false, so those widths must
+        // agree by measurement, not by a routing argument alone.
+        let scored = rows.filter { $0["scored_plain_width"] as? Bool == true }
+        #expect(!scored.isEmpty)
+        #expect(scored.allSatisfy { ($0["differing"] as? Int ?? 0) == 0 })
+
+        // The rest is reported, not asserted: this section exists to localize
+        // a known defect, so it must produce its whole table.
         Issue.record(
             "plain vs table: \(broken.count) of \(rows.count) instantiations differ")
     }

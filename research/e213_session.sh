@@ -7,7 +7,7 @@
 # ONE binary, arms selected at process start by DARKBLOOM_E213_QMV_ARM:
 #
 #   off    shipped staged plan: (6,3) (7,4) (8,4) (9,5), all at rows_per_simd 4
-#   g1     (7,7) at rows 2, (8,8) at rows 1, (9,9) at rows 1; m <= 6 unchanged
+#   g1     (7,7) at rows 1, (8,8) at rows 1, (9,9) at rows 1; m <= 6 unchanged
 #   probe  (9,5) at rows 2: the attribution control, run only after a loss
 #
 # G(m) = ceil(m / IPG) is 2 at m = 7, 8 and 9 in `off` and 1 in `g1`, so `g1`
@@ -95,7 +95,7 @@ for arm in "${session[@]}"; do
       expect_plan="selective-m6+ipg9-5" ;;
     g1)
       export DARKBLOOM_E213_QMV_ARM=g1
-      expect_plan="selective-m6+ipg9-9+e213-3x4-7x2-8x1-9x1" ;;
+      expect_plan="selective-m6+ipg9-9+e213-3x4-7x1-8x1-9x1" ;;
     probe)
       export DARKBLOOM_E213_QMV_ARM=probe
       expect_plan="selective-m6+ipg9-5+e213-3x4-4x4-4x4-5x2" ;;
