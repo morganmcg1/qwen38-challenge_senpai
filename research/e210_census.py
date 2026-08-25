@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import statistics as st
 import sys
 from pathlib import Path
@@ -261,21 +260,16 @@ def main() -> int:
         print("e210_census: no gpu intervals for pid %d" % pid, file=sys.stderr)
         return 2
 
-    seed_wall = {}
-    seed_eval = {}
-    index = 0
-    for line in (out / "trace.txt").read_text(errors="replace").splitlines():
-        if not line.startswith("mtp-trace: begin"):
-            continue
-        index += 1
-        seed_wall[index] = int(re.search(r"[^_]wall_us=(\d+)", line).group(1))
-        seed_eval[index] = int(re.search(r"eval_wall_us=(\d+)", line).group(1))
+    # One trace file collects every worker the run spawns -- the reference pass
+    # writes anchors too -- and `leg` counts begins per process, so both records
+    # are scoped to the timed worker before anything is joined (RULE 386).
+    anchors = [a for a in anchors if a["pid"] == pid]
+    begins = [b for b in begins if b["pid"] == pid]
 
     decode_tokens = score["decode_tokens"]
     legs = {}
     for leg_id in sorted({a["leg"] for a in anchors if "leg" in a}):
-        leg_anchors = [a for a in anchors if a.get("leg") == leg_id
-                       and a["pid"] == pid]
+        leg_anchors = [a for a in anchors if a.get("leg") == leg_id]
         begin = next((b for b in begins if b.get("leg") == leg_id), None)
         if not begin or not leg_anchors:
             continue
@@ -291,10 +285,11 @@ def main() -> int:
             report["leg_span_us"] - report["parent_leg_us"])
         report["budget_crosscheck"] = budget_crosscheck(
             leg_us=report["parent_leg_us"],
-            seed_us=seed_wall.get(leg_id, 0),
+            seed_us=(begin["t_begin_done"] - begin["t_begin0"]) / 1000.0,
             round_us=[(a["t_tail_done"] - a["t_round0"]) / 1000.0
                       for a in leg_anchors],
-            seed_eval_wall_us=seed_eval.get(leg_id, 0),
+            seed_eval_wall_us=(
+                begin["t_begin_done"] - begin["t_begin_built"]) / 1000.0,
         )
         legs[f"leg{leg_id}-{report['leg_kind']}"] = report
 
