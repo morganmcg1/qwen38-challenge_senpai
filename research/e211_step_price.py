@@ -289,12 +289,13 @@ def objective(tables, names, cuts):
     return median_of(picked) + TIEBREAK * (sum(picked) / len(picked))
 
 
-def _sweep_axis(tables, names, cuts, k):
-    """Best cut for row k with every other cut held, evaluated in one shot."""
+def _median_curve(tables, names, cuts, k, ts):
+    """Published median and mean over every candidate cut for row k.
+
+    Only the two segments that touch row k change, so the other segments are
+    summed once and the sweep is a pair of prefix-sum lookups per prompt.
+    """
     lo, hi = cuts[k - 1], cuts[k + 1]
-    if hi <= lo:
-        return cuts[k], None
-    ts = np.arange(lo, hi + 1)
     rows = np.empty((len(names), ts.size))
     for j, name in enumerate(names):
         T = tables[name]
@@ -314,7 +315,17 @@ def _sweep_axis(tables, names, cuts, k):
     n = len(names)
     med = (ordered[n // 2] if n % 2
            else 0.5 * (ordered[n // 2 - 1] + ordered[n // 2]))
-    score = med + TIEBREAK * rows.mean(axis=0)
+    return med, rows.mean(axis=0)
+
+
+def _sweep_axis(tables, names, cuts, k):
+    """Best cut for row k with every other cut held, evaluated in one shot."""
+    lo, hi = cuts[k - 1], cuts[k + 1]
+    if hi <= lo:
+        return cuts[k], None
+    ts = np.arange(lo, hi + 1)
+    med, mean = _median_curve(tables, names, cuts, k, ts)
+    score = med + TIEBREAK * mean
     best = int(np.argmax(score))
     return int(ts[best]), float(score[best])
 
@@ -331,6 +342,57 @@ def ascend(tables, names, start, passes=60):
         if not moved:
             break
     return cuts, best
+
+
+# ------------------------------------------------- receipt-proof (minimax)
+
+def minimax_objective(law_tables, ship_medians, names, cuts):
+    rel = []
+    for key, tables in law_tables.items():
+        raws = evaluate(tables, cuts)
+        med = median_of([raws[n] for n in names])
+        rel.append((med - ship_medians[key]) / ship_medians[key])
+    return min(rel) + TIEBREAK * (sum(rel) / len(rel))
+
+
+def ascend_minimax(law_tables, ship_medians, names, start, passes=60):
+    """Maximise the WORST per-law delta.
+
+    The `aff4ad64` receipt names the true 9-row cell only after a table has to
+    be chosen, so the table that may be implemented is the one whose weakest
+    reading still pays, not the one that wins under a guessed reading.
+    """
+    cuts = list(start)
+    best = minimax_objective(law_tables, ship_medians, names, cuts)
+    for _ in range(passes):
+        moved = False
+        for k in range(1, MAXD + 1):
+            lo, hi = cuts[k - 1], cuts[k + 1]
+            if hi <= lo:
+                continue
+            ts = np.arange(lo, hi + 1)
+            worst = total = None
+            for key, tables in law_tables.items():
+                med, _mean = _median_curve(tables, names, cuts, k, ts)
+                rel = (med - ship_medians[key]) / ship_medians[key]
+                worst = rel if worst is None else np.minimum(worst, rel)
+                total = rel if total is None else total + rel
+            score = worst + TIEBREAK * total / len(law_tables)
+            pick = int(np.argmax(score))
+            if float(score[pick]) > best + 1e-15:
+                cuts[k], best, moved = int(ts[pick]), float(score[pick]), True
+        if not moved:
+            break
+    return cuts, best
+
+
+def optimise_minimax(law_tables, ship_medians, names, rng):
+    best_cuts, best_score = None, -1e18
+    for seed in starts(rng):
+        cuts, score = ascend_minimax(law_tables, ship_medians, names, seed)
+        if score > best_score:
+            best_cuts, best_score = cuts, score
+    return best_cuts
 
 
 def starts(rng):
@@ -655,6 +717,50 @@ def cross_law(inst, laws, results):
     return out
 
 
+def receipt_proof(inst, laws, rng):
+    """One table that must pay under EVERY live reading of the 9-row cell."""
+    law_tables = {key: prompt_tables(inst, laws[key]) for key in LAW_KEYS}
+    ship = {key: median_of([evaluate(law_tables[key], ship_cuts(8))[n]
+                            for n in ORDER]) for key in LAW_KEYS}
+    cuts = optimise_minimax(law_tables, ship, ORDER, rng)
+    price = price_of_cuts(cuts)
+    agree, mismatches = verify_price(cuts, price)
+
+    per_law = {}
+    for key in LAW_KEYS:
+        raws = evaluate(law_tables[key], cuts)
+        value = median_of([raws[n] for n in ORDER])
+        per_law[key] = {"published_median": value,
+                        "delta_pct": pct(value, ship[key]),
+                        "per_prompt_raw": raws}
+
+    honest = {key: {} for key in LAW_KEYS}
+    for held in ORDER:
+        pool = [n for n in ORDER if n != held]
+        fold = optimise_minimax(law_tables, ship, pool, rng)
+        for key in LAW_KEYS:
+            honest[key][held] = evaluate(law_tables[key], fold)[held]
+    honest_out = {}
+    for key in LAW_KEYS:
+        value = median_of([honest[key][n] for n in ORDER])
+        honest_out[key] = {"published_median": value,
+                           "delta_pct": pct(value, ship[key]),
+                           "per_prompt_raw": honest[key]}
+
+    return {"cuts": cuts[1:MAXD + 1],
+            "thresholds": [c / QGRID for c in cuts[1:MAXD + 1]],
+            "price_marginal": price["marginal"],
+            "price_cumulative": price["cumulative"],
+            "greedy_agreement": agree, "greedy_mismatches": mismatches,
+            "shipped": ship, "per_law": per_law, "loo_honest": honest_out,
+            "worst_delta_pct": min(per_law[k]["delta_pct"] for k in LAW_KEYS),
+            "worst_loo_honest_delta_pct":
+                min(honest_out[k]["delta_pct"] for k in LAW_KEYS),
+            "edl": edl_of(law_tables["step_e208"], cuts),
+            "anchor_distance": anchor_distance(law_tables["step_e208"],
+                                               ship_cuts(8), cuts)}
+
+
 # ---------------------------------------------------------------- report
 
 def pct(x, base):
@@ -810,6 +916,27 @@ def report(out):
                               for f in LAW_KEYS)))
     L.append("   worst transfer %+.3f%%" % x["worst_transfer_delta_pct"])
 
+    rp = out["receipt_proof"]
+    L.append("")
+    L.append("  RECEIPT-PROOF TABLE (maximises the WORST per-law delta)")
+    L.append("     d      %s" % "  ".join("%6d" % d for d in range(MAXD)))
+    L.append("     price  %s"
+             % "  ".join("%6.3f" % v for v in rp["price_marginal"]))
+    L.append("     Q_(d+1)%s"
+             % "  ".join("%6.4f" % v for v in rp["thresholds"]))
+    L.append("     greedy-table agreement %.4f (%d mismatching grid points)"
+             % (rp["greedy_agreement"], rp["greedy_mismatches"]))
+    for key in LAW_KEYS:
+        L.append("     paid under %-10s %12.6f  %+7.3f%% in-sample   "
+                 "%+7.3f%% LOO-honest"
+                 % (key, rp["per_law"][key]["published_median"],
+                    rp["per_law"][key]["delta_pct"],
+                    rp["loo_honest"][key]["delta_pct"]))
+    L.append("     worst reading %+.3f%% in-sample, %+.3f%% LOO-honest"
+             % (rp["worst_delta_pct"], rp["worst_loo_honest_delta_pct"]))
+    L.append("     worst-prompt round mass relocated %.3f"
+             % rp["anchor_distance"]["worst_round_mass_relocated"])
+
     d = out["decision"]
     L.append("=" * 78)
     L.append("  DECISION")
@@ -828,7 +955,7 @@ def report(out):
     return "\n".join(L)
 
 
-def decide(laws_out, cross):
+def decide(laws_out, cross, proof):
     """The assigned stop rule, plus the reading the decomposition forces.
 
     The assignment's statistic is the LOO-honest published-median improvement
@@ -875,10 +1002,20 @@ def decide(laws_out, cross):
         lines.append("STRUCTURE READING: the step-aware SHAPE is worth "
                      "%+.3f%% LOO-honest over a refitted level control."
                      % max(struct.values()))
-    lines.append("TRANSFER: worst cross-law transfer of a fitted table is "
-                 "%+.3f%%." % cross["worst_transfer_delta_pct"])
+    lines.append("TRANSFER: worst cross-law transfer of a per-law fitted "
+                 "table is %+.3f%%. A table fitted under a guessed reading "
+                 "can lose." % cross["worst_transfer_delta_pct"])
+    lines.append("RECOMMENDED TABLE: the receipt-proof minimax table, "
+                 "%+.3f%% under its WORST reading (%+.3f%% LOO-honest). It "
+                 "needs no branch and does not wait for the receipt."
+                 % (proof["worst_delta_pct"],
+                    proof["worst_loo_honest_delta_pct"]))
     return {"per_law_verdict": verdicts, "best_law": best,
-            "structure_premium_pct": struct, "verdict": lines}
+            "structure_premium_pct": struct,
+            "receipt_proof_worst_pct": proof["worst_delta_pct"],
+            "receipt_proof_worst_loo_honest_pct":
+                proof["worst_loo_honest_delta_pct"],
+            "verdict": lines}
 
 
 def main():
@@ -903,7 +1040,9 @@ def main():
     for key in LAW_KEYS:
         out["laws"][key] = run_law(inst, laws[key], key, rng)
     out["cross_law"] = cross_law(inst, laws, out["laws"])
-    out["decision"] = decide(out["laws"], out["cross_law"])
+    out["receipt_proof"] = receipt_proof(inst, laws, rng)
+    out["decision"] = decide(out["laws"], out["cross_law"],
+                             out["receipt_proof"])
 
     text = report(out)
     print(text)
