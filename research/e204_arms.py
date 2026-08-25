@@ -394,6 +394,150 @@ def cmd_alt(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_paired(args: argparse.Namespace) -> int:
+    """THE DECISION. Two complementary alternating legs, paired by round index.
+
+    One alternating leg is not enough. A round's cost is dominated by whether
+    it accepts its whole chain; that outcome sequence is fixed by the prompt,
+    and an alternating window that lands unevenly on it hands one arm the
+    expensive rejection rounds. The first `alt2` session split 0.703 / 0.854 on
+    full acceptance and the raw arm means were unusable.
+
+    Running the exact complement as a second leg fixes both confounds at once:
+
+    * **Difficulty.** Round index N carries the identical `(d, acc)` outcome in
+      both legs — asserted here, not assumed — so the pair differs only in the
+      arm.
+    * **Session offset.** Index N is ON in exactly one leg. Half the indices
+      are ON in leg A and half in leg B, so a constant per-leg offset (a warmer
+      start, a different power state) enters the two halves with OPPOSITE signs
+      and cancels in the mean.
+
+    The statistic stays `round_us` per RULE 394.
+    """
+    legs = {}
+    for tag in (args.tag_a, args.tag_b):
+        rows = [r for r in read_rounds(Path("research/out") / tag / "trace.txt")
+                if "pf_chain_in" in r]
+        if not rows:
+            print("%s has no pf_chain_in witness; rebuild before measuring" % tag)
+            return 2
+        legs[tag] = rows
+    a, b = legs[args.tag_a], legs[args.tag_b]
+    if len(a) != len(b):
+        print("legs decoded different round counts: %d vs %d" % (len(a), len(b)))
+        return 2
+
+    seq_a = [(r["d"], r["acc"]) for r in a]
+    seq_b = [(r["d"], r["acc"]) for r in b]
+    if seq_a != seq_b:
+        print("the two legs did not follow the same trajectory; not pairable")
+        return 2
+
+    pairs = []
+    unusable = 0
+    for index in range(args.skip_rounds, len(a)):
+        arm_a, arm_b = a[index]["pf_chain_in"], b[index]["pf_chain_in"]
+        if arm_a == arm_b:
+            # Not complementary at this index: both legs saw the same arm, so
+            # the pair carries no arm contrast. Counted, never silently used.
+            unusable += 1
+            continue
+        on_row, off_row = ((a[index], b[index]) if arm_a == "1"
+                           else (b[index], a[index]))
+        pairs.append({
+            "index": index,
+            "d": int(on_row["d"]),
+            "acc": int(on_row["acc"]),
+            "full_accept": on_row["acc"] == on_row["d"],
+            # off - on: POSITIVE means the chain prefetch made the round
+            # shorter, matching the "minimize round time" direction.
+            "delta_us": float(off_row["round_us"]) - float(on_row["round_us"]),
+            "on_leg": args.tag_a if arm_a == "1" else args.tag_b,
+        })
+
+    if len(pairs) < 2:
+        print("only %d usable pairs" % len(pairs))
+        return 2
+
+    deltas = [p["delta_us"] for p in pairs]
+    mean = st.fmean(deltas)
+    sigma = st.stdev(deltas) / math.sqrt(len(deltas))
+
+    # The cancellation only works if both directions are represented. Report
+    # the split and the per-direction means so a reader can see the session
+    # offset being removed rather than take it on trust.
+    by_leg: dict[str, list[float]] = {}
+    for p in pairs:
+        by_leg.setdefault(p["on_leg"], []).append(p["delta_us"])
+
+    def group(rows: list[dict]) -> dict:
+        values = [r["delta_us"] for r in rows]
+        if len(values) < 2:
+            return {"n": len(values)}
+        m = st.fmean(values)
+        s = st.stdev(values) / math.sqrt(len(values))
+        return {"n": len(values), "mean_us": m, "sigma_us": s,
+                "median_us": st.median(values), "sigma_ratio": m / s if s else None}
+
+    report = {
+        "experiment": "e204-round-end-seam-overlap",
+        "harness": "local",
+        "check": "stage2-complementary-paired-arm-switch",
+        "official_or_ranked_score": False,
+        "decision_statistic": "round_us",
+        "sign_convention": "delta = off - on; positive means the prefetch is faster",
+        "leg_a": args.tag_a,
+        "leg_b": args.tag_b,
+        "meta_a": read_meta(args.tag_a),
+        "meta_b": read_meta(args.tag_b),
+        "score_a": read_score(args.tag_a),
+        "score_b": read_score(args.tag_b),
+        "trajectories_identical": True,
+        "pairs_used": len(pairs),
+        "pairs_unusable_same_arm": unusable,
+        "rounds_skipped": args.skip_rounds,
+        "delta_us_mean": mean,
+        "delta_us_sigma": sigma,
+        "delta_us_median": st.median(deltas),
+        "delta_sigma_ratio": mean / sigma if sigma else None,
+        "delta_2sigma_interval": [mean - 2 * sigma, mean + 2 * sigma],
+        "promote_threshold_us": 200.0,
+        "promote": mean >= 200.0 and mean - 2 * sigma > 0.0,
+        "by_on_leg": {tag: group([p for p in pairs if p["on_leg"] == tag])
+                      for tag in by_leg},
+        "full_acceptance": group([p for p in pairs if p["full_accept"]]),
+        "rejection": group([p for p in pairs if not p["full_accept"]]),
+    }
+
+    print("E204 stage 2 DECISION: complementary paired arm switch")
+    print("  legs %s / %s" % (args.tag_a, args.tag_b))
+    print("  trajectories identical; %d usable pairs, %d unusable (same arm)"
+          % (len(pairs), unusable))
+    print("  delta (off - on) mean %.1f us +- %.1f us (%.2f sigma), median %.1f"
+          % (mean, sigma, mean / sigma if sigma else float("nan"),
+             report["delta_us_median"]))
+    print("  2-sigma interval [%.1f, %.1f]"
+          % (report["delta_2sigma_interval"][0],
+             report["delta_2sigma_interval"][1]))
+    print("  promote at >= 200 us with 2 sigma clear of zero: %s"
+          % report["promote"])
+    print("  -- session-offset cancellation --")
+    for tag, block in report["by_on_leg"].items():
+        print("     ON in %-16s n=%2d mean %8.1f us" % (tag, block.get("n", 0),
+                                                       block.get("mean_us", 0.0)))
+    print("  -- by outcome --")
+    for name in ("full_acceptance", "rejection"):
+        block = report[name]
+        print("     %-16s n=%2d mean %8.1f us +- %7.1f (%.2f sigma)"
+              % (name, block.get("n", 0), block.get("mean_us", 0.0),
+                 block.get("sigma_us", 0.0), block.get("sigma_ratio") or 0.0))
+
+    if args.json_path:
+        Path(args.json_path).write_text(json.dumps(report, indent=2) + "\n")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="mode", required=True)
@@ -409,6 +553,13 @@ def main() -> int:
     alt.add_argument("--skip-rounds", type=int, default=8)
     alt.add_argument("--json", dest="json_path")
     alt.set_defaults(func=cmd_alt)
+
+    paired = sub.add_parser("paired")
+    paired.add_argument("tag_a")
+    paired.add_argument("tag_b")
+    paired.add_argument("--skip-rounds", type=int, default=8)
+    paired.add_argument("--json", dest="json_path")
+    paired.set_defaults(func=cmd_paired)
 
     args = ap.parse_args()
     return args.func(args)

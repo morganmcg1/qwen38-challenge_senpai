@@ -1369,7 +1369,18 @@ public final class Qwen36MTPBlockSession {
         /// process. Both arms then share the seed, the prompt, the warm
         /// caches and the thermal ramp, so monotone drift cancels to first
         /// order instead of loading onto whichever arm ran second.
-        case alternating(window: Int)
+        ///
+        /// `inverted` is the exact complement of the same schedule, and it
+        /// exists because one alternating leg is NOT enough. A round's cost is
+        /// dominated by whether it accepts its whole chain, that outcome
+        /// sequence is fixed by the prompt, and a window landing unevenly on
+        /// it loads one arm with the expensive rejection rounds — measured at
+        /// a 0.703 / 0.854 full-accept split on the first `alt2` session.
+        /// Running the complement as a second leg gives every round index one
+        /// ON and one OFF observation of IDENTICAL difficulty, and the two
+        /// legs' session offsets enter the paired difference with opposite
+        /// signs, so they cancel instead of loading onto one arm.
+        case alternating(window: Int, inverted: Bool)
     }
 
     /// Parsed once. Reading the environment per round would put a dictionary
@@ -1379,10 +1390,13 @@ public final class Qwen36MTPBlockSession {
             .environment["DARKBLOOM_E204_CHAIN_ARM"], !raw.isEmpty
         else { return .on }
         if raw == "off" { return .off }
-        if raw.hasPrefix("alt"), let window = Int(raw.dropFirst(3)),
-           window > 0
-        {
-            return .alternating(window: window)
+        if raw.hasPrefix("alt") {
+            var body = raw.dropFirst(3)
+            let inverted = body.hasSuffix("i")
+            if inverted { body = body.dropLast() }
+            if let window = Int(body), window > 0 {
+                return .alternating(window: window, inverted: inverted)
+            }
         }
         return .on
     }()
@@ -1391,12 +1405,13 @@ public final class Qwen36MTPBlockSession {
         switch chainPrefetchArm {
         case .on: return true
         case .off: return false
-        case .alternating(let window):
+        case .alternating(let window, let inverted):
             // A B B A over four windows: the on-arm rounds sit at both ends
             // of the block and the off-arm rounds sit in the middle, so a
             // linear drift across the block contributes equally to each.
             let block = (round / window) % 4
-            return block == 0 || block == 3
+            let enabled = block == 0 || block == 3
+            return inverted ? !enabled : enabled
         }
     }
 
