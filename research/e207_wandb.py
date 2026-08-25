@@ -182,16 +182,38 @@ def characterize_summary():
     return out
 
 
+def oracle_summary():
+    """Flatten the depth-policy oracle ceiling artifact for W&B."""
+    payload = json.loads((ARTIFACTS / "stage0-oracle.json").read_text())
+    out = dict(payload["summary"])
+    for prompt, row in payload["per_prompt"].items():
+        out["oracle_%s_shippedMsPerToken" % prompt] = \
+            row["shipped"]["ms_per_token"]
+        out["oracle_%s_bestFixedDepth" % prompt] = row["best_fixed_depth"]
+        out["oracle_%s_bestFixedPctFaster" % prompt] = \
+            row["best_fixed_delta"]["pct_faster"]
+        out["oracle_%s_varianceOnlyPctFaster" % prompt] = \
+            row["variance_only_delta"]["pct_faster"]
+        out["oracle_%s_oraclePctFaster" % prompt] = \
+            row["oracle_delta"]["pct_faster"]
+        out["oracle_%s_shippedDepthSd" % prompt] = row["shipped_depth_sd"]
+        out["oracle_%s_depthKCorrelation" % prompt] = \
+            row["shipped_depth_k_correlation"]
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screen", default="e207-exact-1-frozen")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--only", choices=["screen", "desk", "characterize"],
+    ap.add_argument("--only",
+                    choices=["screen", "desk", "characterize", "oracle"],
                     action="append",
                     help="log only these runs; repeatable. Use it to add one "
                          "run without duplicating runs already published.")
     args = ap.parse_args()
-    wanted = set(args.only or ["screen", "desk", "characterize"])
+    wanted = set(args.only
+                 or ["screen", "desk", "characterize", "oracle"])
 
     head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
                           text=True).stdout.strip()
@@ -236,7 +258,8 @@ def main():
 
     if args.dry_run:
         print(json.dumps({"screen": screen, "desk": desk_summary,
-                          "characterize": characterize_summary()}, indent=1))
+                          "characterize": characterize_summary(),
+                          "oracle": oracle_summary()}, indent=1))
         return
 
     import wandb
@@ -269,10 +292,20 @@ def main():
                         "cap": char.pop("cap"),
                         "corpus": "e168 p7 pinned-depth-7, 9 prompts"}},
             char),
+        "oracle": (
+            {"job_type": "desk", "name": "e207-stage0-oracle-ceiling",
+             "config": {"experiment": "e207-ema-subtraction", "stage": "0",
+                        "commitSha": head,
+                        "assignmentBaseSha": ASSIGNMENT_BASE,
+                        "deliverable": "depth-policy family oracle ceiling",
+                        "corpus": "e168 p7 pinned-depth-7, 9 prompts",
+                        "capNote": "cap 7 only; cap 8 not evaluated because "
+                                   "width 9 has no measured cost cell"}},
+            oracle_summary()),
     }
 
     published = {}
-    for key in ("screen", "desk", "characterize"):
+    for key in ("screen", "desk", "characterize", "oracle"):
         if key not in wanted:
             continue
         spec, summary = specs[key]
