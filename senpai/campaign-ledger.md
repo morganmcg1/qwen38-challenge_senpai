@@ -72617,3 +72617,27 @@ Before assigning any QMV partition/table retune, run the legality compile probe 
 - **E213 r1 redirected** to the section-6 lever: per-width sub-boundary G=1 arm (m=7 rows2/IPG7, m=8 rows1/IPG8, m=9 rows1/IPG9; m≤6 unchanged), optional (9,6) na6 register control, numerics gate per changed width with ragged-edge tests before timing, trajectory invariants, ABBA paired, whole-leg headline, fixed-G rows2/IPG5 attribution probe only on a loss, ship form + freeze behind the queue on a ≥0.5 ms/round 2σ win. W&B group `qwen38-r1-e213-rows-per-simd-g1`.
 
 Stage-0 worked exactly as designed: three decisive desk findings and a live lever for the price of zero GPU minutes.
+
+## Entry 427 — 2026-08-25 — aff4ad64 FAILED (runner infra, no score); c47c7284 stood down; composed 9a91ba76 ordered submitted (E199 r1)
+
+**Receipt terminal.** `aff4ad64-7850-49fb-bf8b-e9107c387f71` status `failed`, claimedScore/officialScore null, submissionCommitSha b8809def (archive of frozen c47c7284, cap-8 one-liner). Queue 3 h 26 min; ranked job 23 min (02:49:52Z→03:12:57Z). The fourth outcome branch — the Entry 418 table covered promoted/rejected only. dR9 was NOT measured; nothing was discriminated; nothing about the candidate was invalidated.
+
+### FINDING 550 — the failure is organizer runner infrastructure, not the candidate (harness=ranked)
+
+Thorfinn pulled the public Actions per-step timeline (run 32802144712). The failing step, "Timed paired Qwen-MTP benchmark (measure-qwen-mtp-job)", ran **zero seconds** — the measure job was never invoked. The only code before the wrapper call is runner-side precondition checking: baseline-workspace `readlink/test -d`, hidden-prompt `jq length`, hidden-golden `test -s`, `--golden` arity. None reads, loads, or executes the candidate. Every candidate-facing gate PASSED untimed: static review (324 s), sandbox build (192 s), public behavior gate, full correctness+hidden gates (120 s), semantic GPQA, declared-head resolve, Qwen-MTP correctness and parity gate (80 s). The cap-8 one-liner is therefore contract-clean on the official runner; the composed candidate inherits that for its cap-8 half. Cross-solver corroboration: same-step zero-second failures recur across solvers; retries are routine and produce scored runs (scarletbright: 11-minute gap to a full scored run).
+
+### FINDING 551 — failure-rate limiter is per-submission; failures are common; dedup refusals are board-invisible (harness=ranked board metadata)
+
+Board census (1,375 rows): 906 rejected, 322 failed (23.4%), 99 accepted, 40 cancelled, 8 validating. newjordan holds the crown with 34 lifetime failures; audreyt reached accepted after 18 — `MLXFAST_QWEN_MTP_MAX_RANKED_FAILURES=5` therefore keys per submission ref, not per solver; our single attributable failure carries no retry risk. Dedup (FINDING 467) refusals return an existing row and create no new row: zero duplicate submissionCommitSha across all rows proves reused rows are invisible in board data, not absent. Credit: Thorfinn, PR 196 comments `e199-receipt-failed-infra-diagnosis` and `e199-retry-risk-unknown1-resolved`.
+
+### RULE 401 — failed no-score receipts
+
+A `failed` receipt with no score is the fourth outcome branch: it discriminates nothing, is never recorded as a negative result, invalidates nothing about the frozen candidate, and frees the official slot. The slot then goes to the STRONGEST frozen candidate under the 15-minute rule — not to an automatic retry of the failed archive. Retry the identical archive only when it is still the strongest frozen candidate.
+
+### Ruling (delivered as E199 r1, hold lifted)
+
+1. **c47c7284 stood down** and leaves ship mode. It is now a strict subset of the composed candidate; its clean dR9 discrimination prices a forward surface that died when (9,5) merged (FINDING 546), and no live work gates on it (E214 is receipt-branch-free by design; FINDING 541 closed level controllers; E212 re-prices the width law). SHA and evidence archived. Reopen condition: composed official score ambiguous vs composed desk predictions in a way that changes a next action.
+2. **Submit 9a91ba76 (cap-8 + staged (9,5)) immediately** — the strongest frozen candidate, fully ship-formed at freeze (FINDING 545), fresh submissionCommitSha (no dedup exposure). Thorfinn submits from the exact checkout with the standard guard, reports the receipt ID, and owns the single read-only watcher.
+3. **E199 depth question stays OPEN** (flat ~3.82 vs step ~3.68 undiscriminated). Not a negative.
+4. **Receipt-contingent work deferred, not cancelled:** E205 Stage-B reading, FINDING 520 instrument revalidation, and the Entry 418 re-derivations now attach to the composed receipt (derive composed desk predictions when it returns). E214's contingency clause is moot — no falsification evidence exists; Askeladd proceeds on the primary guarded forward minimax plan.
+5. Behind-slot is now EMPTY; the next frozen candidate comes from E213 rows_per_simd G=1 or E214 step-price, whichever wins first.
