@@ -527,6 +527,148 @@ def cell_decomposition(e186: dict) -> dict:
     return out
 
 
+# Which isolated cells the scored forward runs inside each in-situ band, and
+# how many times per forward. 64 decoder layers: 48 gated-DeltaNet and 16 full
+# attention, each with its own fused MLP.
+BAND_QMV_CELLS = {
+    "band_gdn_mixer_us": [("gdn.in_proj", 48), ("gdn.out_proj", 48)],
+    "band_gdn_mlp_us": [("mlp.gate_up", 48), ("mlp.down", 48)],
+    "band_fa_mixer_us": [("fa.qkv", 16), ("fa.o_proj", 16)],
+    "band_fa_mlp_us": [("mlp.gate_up", 16), ("mlp.down", 16)],
+    "lm_head_readout": [("lm_head", 1)],
+}
+# Non-QMV cells this census can measure in isolation.
+BAND_NON_QMV = {
+    "band_gdn_mixer_us": [("gdn_recurrence:T=m", 48)],
+    "band_fa_mixer_us": [("sdpa:kv={kv}", 16)],
+}
+
+
+def insitu_reconciliation(e186: dict, b_table: dict, w_table: dict,
+                          kv: str = "1024") -> dict:
+    """Absolute-level closure: isolated cells scaled to the whole forward.
+
+    RULE 405 v2 wants absolute levels, not a hot/cold bracket. Each band's
+    modeled level is the sum of its isolated cells at whole-model counts. The
+    in-situ level comes from the band arm at the same width, and the forward
+    total is checked against the untraced w leg, which is the only unperturbed
+    instrument here.
+    """
+    curves = {k: {int(m): v for m, v in by_m.items()}
+              for k, by_m in e186["curves_ms"].items()}
+
+    def cell(key: str, m: int) -> float | None:
+        return curves.get(key, {}).get(m)
+
+    rows = []
+    for key in sorted(b_table, key=int):
+        m = int(key)
+        band_rows = {}
+        modeled_total = 0.0
+        for band, cells in BAND_QMV_CELLS.items():
+            qmv = 0.0
+            missing = []
+            for name, count in cells:
+                v = cell(f"qmv_inpath:{name}", m)
+                if v is None:
+                    missing.append(name)
+                else:
+                    qmv += count * v
+            non_qmv = 0.0
+            non_qmv_terms = {}
+            for name, count in BAND_NON_QMV.get(band, []):
+                v = cell(name.format(kv=kv), m)
+                if v is None:
+                    missing.append(name)
+                else:
+                    non_qmv += count * v
+                    non_qmv_terms[name.format(kv=kv)] = count * v
+            insitu = b_table[key]["phase_ms"].get(band, {}).get("value")
+            if insitu is None and band == "lm_head_readout":
+                insitu = post_band_ms(b_table[key])
+            modeled = qmv + non_qmv
+            modeled_total += modeled
+            band_rows[band] = {
+                "modeled_qmv_ms": qmv,
+                "modeled_non_qmv_ms": non_qmv,
+                "modeled_non_qmv_terms_ms": non_qmv_terms,
+                "modeled_total_ms": modeled,
+                "insitu_ms": insitu,
+                "unmodeled_ms": (None if insitu is None else insitu - modeled),
+                "modeled_over_insitu": (None if not insitu else modeled / insitu),
+                "missing_cells": missing,
+            }
+        forward_insitu = (w_table[key]["phase_ms"]["verify_build_us"]["value"]
+                          + w_table[key]["phase_ms"]["eval_wall_us"]["value"]) \
+            if key in w_table else None
+        rows.append({
+            "m": m,
+            "bands": band_rows,
+            "modeled_forward_ms": modeled_total,
+            "insitu_forward_ms": forward_insitu,
+            "modeled_over_insitu_forward": (
+                None if not forward_insitu else modeled_total / forward_insitu),
+            "within_15pct": (
+                None if not forward_insitu
+                else abs(modeled_total / forward_insitu - 1.0) <= 0.15),
+        })
+    return {"kv_used": kv, "per_width": rows}
+
+
+def post_band_ms(entry: dict) -> float | None:
+    """lm_head + final norm + top-two: the forward total minus every band."""
+    phases = entry["phase_ms"]
+    if "verify_build_us" not in phases:
+        return None
+    forward = phases["verify_build_us"]["value"] + phases["eval_wall_us"]["value"]
+    return forward - sum(phases[b]["value"] for b in BANDS if b in phases)
+
+
+def finding571_allocation(reconciliation: dict, families: dict,
+                          total_ms: float, weight_pass_ms: float,
+                          m: int = 9) -> dict:
+    """Allocate FINDING 571's non-QMV residual across census families.
+
+    FINDING 543 measured +20.774 ms/round at m=9 for the third weight pass the
+    staged (9,5) entry removes. FINDING 570's QMV decomposition prices only
+    `weight_pass_ms` of that as weight-stream work, so the rest must land on
+    per-row accumulate, dispatch, and non-QMV work that the extra pass carried
+    with it. This census cannot rerun the (9,3) plan, so it does not claim a
+    causal split. It reports, for each family, the measured capacity that could
+    hold the residual and allocates the residual in proportion to that
+    capacity. A residual larger than the total capacity is itself the finding.
+    """
+    row = next((r for r in reconciliation["per_width"] if r["m"] == m), None)
+    if row is None:
+        return {}
+    residual = total_ms - weight_pass_ms
+    # Capacity = everything in the band that is NOT modeled weight-stream QMV
+    # work: the isolated non-QMV cells plus the unmodeled band remainder.
+    capacity = {}
+    for band, entry in row["bands"].items():
+        if entry["insitu_ms"] is None:
+            continue
+        cap = entry["insitu_ms"] - entry["modeled_qmv_ms"]
+        capacity[band] = max(cap, 0.0)
+    total_capacity = sum(capacity.values())
+    alloc = {b: (residual * c / total_capacity if total_capacity else None)
+             for b, c in capacity.items()}
+    return {
+        "shape": f"m={m}, G-boundary, harness=local",
+        "finding_543_total_ms_per_round": total_ms,
+        "finding_570_weight_pass_ms_per_round": weight_pass_ms,
+        "non_qmv_residual_ms_per_round": residual,
+        "band_capacity_ms": capacity,
+        "total_capacity_ms": total_capacity,
+        "capacity_covers_residual": total_capacity >= residual,
+        "allocation_ms": alloc,
+        "allocation_basis": (
+            "in-situ band level minus modeled weight-stream QMV time at the "
+            "same width; proportional, NOT causal"),
+        "uncovered_ms": max(residual - total_capacity, 0.0),
+    }
+
+
 def census_pricing(families: dict, w_table: dict, census_path: pathlib.Path) -> dict:
     """Census-weighted ceiling of each family's width tax.
 
@@ -588,6 +730,12 @@ def main() -> int:
     ap.add_argument("--census",
                     default="research/e215-artifacts/width-census-stepq.json")
     ap.add_argument("--out", default="research/e218-artifacts/width-tax-census.json")
+    ap.add_argument("--kv", default="1024",
+                    help="isolated attention KV length used for reconciliation")
+    ap.add_argument("--f543-ms", type=float, default=20.774,
+                    help="FINDING 543 paired m=9 third-weight-pass value")
+    ap.add_argument("--f570-weight-pass-ms", type=float, default=5.253,
+                    help="FINDING 570 weight-pass share of that value")
     args = ap.parse_args()
 
     legs: list[dict] = []
@@ -654,6 +802,11 @@ def main() -> int:
         e186 = load_e186(pathlib.Path(args.e186))
         report["e186"] = e186
         report["e186_decomposition"] = cell_decomposition(e186)
+        recon = insitu_reconciliation(e186, b_table, w_table, kv=args.kv)
+        report["insitu_reconciliation"] = recon
+        report["finding571_allocation"] = finding571_allocation(
+            recon, report["family_census"],
+            total_ms=args.f543_ms, weight_pass_ms=args.f570_weight_pass_ms)
 
     out_path = pathlib.Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -696,6 +849,35 @@ def main() -> int:
                   f"| {parts} head={row['draft_head_step_ms']:5.2f} "
                   f"other={row['other_round_step_ms']:5.2f} "
                   f"| residual {row['closure_residual_ms']:6.3f}")
+
+    recon = report.get("insitu_reconciliation")
+    if recon:
+        print(f"\nabsolute-level reconciliation (isolated cells scaled to the "
+              f"forward, kv={recon['kv_used']})")
+        print(f"{'m':>3} {'modeled':>9} {'in-situ w':>10} {'ratio':>7} "
+              f"{'<=15%':>6}   per-band modeled/in-situ")
+        for row in recon["per_width"]:
+            bands = " ".join(
+                f"{b.replace('band_', '').replace('_us', '')}="
+                f"{(e['modeled_over_insitu'] or float('nan')):.2f}"
+                for b, e in row["bands"].items())
+            print(f"{row['m']:>3} {row['modeled_forward_ms']:9.3f} "
+                  f"{(row['insitu_forward_ms'] or float('nan')):10.3f} "
+                  f"{(row['modeled_over_insitu_forward'] or float('nan')):7.3f} "
+                  f"{str(row['within_15pct']):>6}   {bands}")
+
+    alloc = report.get("finding571_allocation")
+    if alloc:
+        print(f"\nFINDING 571 allocation at {alloc['shape']}: "
+              f"{alloc['non_qmv_residual_ms_per_round']:.3f} ms/round "
+              f"non-QMV residual of {alloc['finding_543_total_ms_per_round']:.3f}")
+        for band, ms in alloc["allocation_ms"].items():
+            cap = alloc["band_capacity_ms"][band]
+            print(f"  {band.replace('band_', '').replace('_us', ''):>16} "
+                  f"allocated {(ms or float('nan')):7.3f} ms  "
+                  f"(capacity {cap:8.3f} ms)")
+        print(f"  total capacity {alloc['total_capacity_ms']:.3f} ms, "
+              f"uncovered {alloc['uncovered_ms']:.3f} ms")
     return 0
 
 
