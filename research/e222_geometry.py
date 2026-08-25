@@ -104,160 +104,12 @@ kernel void {name}(
 
 # --- family 2: register reuse, one thread owns both token groups -------------
 
-FUSED_HEADER = """
-    template <int NA0, int NA1, int R, bool LAZY, bool LATE_SB, bool USE_TABLE>
-    inline void qwen_e222_fused(
-        const device uint32_t* w,
-        const device bfloat16_t* scales,
-        const device bfloat16_t* biases,
-        const device bfloat16_t* x,
-        const device float* xsums,
-        device bfloat16_t* y,
-        const int in_vec_size,
-        const int out_vec_size,
-        const int sums_stride,
-        int out_row,
-        uint simd_lid
-    ) {
-        typedef vec<float, NA0> VF0;
-        typedef vec<float, NA1> VF1;
-        constexpr int rows_per_simd = R;
-        constexpr int values_per_thread = 16;
-        constexpr int block_size = values_per_thread * 32;
-        constexpr int bytes_per_lane = 8;
-        const int in_vec_size_w = in_vec_size / 2;
-        const int in_vec_size_g = in_vec_size / 64;
+FUSED_TEMPLATE_PATH = HERE / "e222_fused.msl"
 
-        VF0 acc0[rows_per_simd];
-        VF1 acc1[rows_per_simd];
-        for (int r = 0; r < rows_per_simd; r++) {
-            acc0[r] = VF0(0.0f);
-            acc1[r] = VF1(0.0f);
-        }
-
-        for (int k = 0; k < in_vec_size; k += block_size) {
-            thread uint16_t packed[rows_per_simd][4];
-            thread float scale_local[rows_per_simd];
-            thread float bias_local[rows_per_simd];
-            for (int r = 0; r < rows_per_simd; r++) {
-                const int row = out_row + r;
-                if (!LAZY) {
-                    const device uint16_t* ws =
-                        reinterpret_cast<const device uint16_t*>(
-                            reinterpret_cast<const device uint8_t*>(w) +
-                            row * in_vec_size_w + k / 2 +
-                            simd_lid * bytes_per_lane);
-                    for (int i = 0; i < 4; i++) {
-                        packed[r][i] = ws[i];
-                    }
-                }
-                if (!LATE_SB) {
-                    const int group_index =
-                        row * in_vec_size_g + k / 64 + int(simd_lid) / 4;
-                    scale_local[r] = scales[group_index];
-                    bias_local[r] = biases[group_index];
-                }
-            }
-
-            VF0 sums0 = VF0(0.0f);
-            VF1 sums1 = VF1(0.0f);
-            if (USE_TABLE) {
-                const device float* st =
-                    xsums + ((k / block_size) * 32 + int(simd_lid)) *
-                    sums_stride;
-                for (int m = 0; m < NA0; m++) {
-                    sums0[m] = st[m];
-                }
-                for (int m = 0; m < NA1; m++) {
-                    sums1[m] = st[NA0 + m];
-                }
-            }
-            VF0 partial0[rows_per_simd];
-            VF1 partial1[rows_per_simd];
-            for (int r = 0; r < rows_per_simd; r++) {
-                partial0[r] = VF0(0.0f);
-                partial1[r] = VF1(0.0f);
-            }
-            for (int i = 0; i < 4; i++) {
-                VF0 a0, a1, a2, a3;
-                for (int m = 0; m < NA0; m++) {
-                    const device bfloat16_t* xm =
-                        x + m * in_vec_size + k +
-                        simd_lid * values_per_thread + 4 * i;
-                    const vec<bfloat16_t, 4> xv =
-                        *reinterpret_cast<const device vec<bfloat16_t, 4>*>(xm);
-                    a0[m] = static_cast<float>(xv[0]);
-                    a1[m] = static_cast<float>(xv[1]);
-                    a2[m] = static_cast<float>(xv[2]);
-                    a3[m] = static_cast<float>(xv[3]);
-                    if (!USE_TABLE) {
-                        sums0[m] += xv[0] + xv[1] + xv[2] + xv[3];
-                    }
-                }
-                VF1 b0, b1, b2, b3;
-                for (int m = 0; m < NA1; m++) {
-                    const device bfloat16_t* xm =
-                        x + (NA0 + m) * in_vec_size + k +
-                        simd_lid * values_per_thread + 4 * i;
-                    const vec<bfloat16_t, 4> xv =
-                        *reinterpret_cast<const device vec<bfloat16_t, 4>*>(xm);
-                    b0[m] = static_cast<float>(xv[0]);
-                    b1[m] = static_cast<float>(xv[1]);
-                    b2[m] = static_cast<float>(xv[2]);
-                    b3[m] = static_cast<float>(xv[3]);
-                    if (!USE_TABLE) {
-                        sums1[m] += xv[0] + xv[1] + xv[2] + xv[3];
-                    }
-                }
-                for (int r = 0; r < rows_per_simd; r++) {
-                    uint16_t word = packed[r][i];
-                    if (LAZY) {
-                        const device uint16_t* ws =
-                            reinterpret_cast<const device uint16_t*>(
-                                reinterpret_cast<const device uint8_t*>(w) +
-                                (out_row + r) * in_vec_size_w + k / 2 +
-                                simd_lid * bytes_per_lane);
-                        word = ws[i];
-                    }
-                    const int n0 = word & 0x000f;
-                    const int n1 = (word >> 4) & 0x000f;
-                    const int n2 = (word >> 8) & 0x000f;
-                    const int n3 = (word >> 12) & 0x000f;
-                    partial0[r] += (a0 * n0 + a1 * n1 + a2 * n2 + a3 * n3);
-                    partial1[r] += (b0 * n0 + b1 * n1 + b2 * n2 + b3 * n3);
-                }
-            }
-            for (int r = 0; r < rows_per_simd; r++) {
-                if (LATE_SB) {
-                    const int group_index =
-                        (out_row + r) * in_vec_size_g + k / 64 +
-                        int(simd_lid) / 4;
-                    scale_local[r] = scales[group_index];
-                    bias_local[r] = biases[group_index];
-                }
-                acc0[r] += scale_local[r] * partial0[r] + sums0 * bias_local[r];
-                acc1[r] += scale_local[r] * partial1[r] + sums1 * bias_local[r];
-            }
-        }
-
-        for (int r = 0; r < rows_per_simd; r++) {
-            for (int m = 0; m < NA0; m++) {
-                const float reduced = simd_sum(acc0[r][m]);
-                if (simd_lid == 0) {
-                    y[m * out_vec_size + out_row + r] =
-                        static_cast<bfloat16_t>(reduced);
-                }
-            }
-            for (int m = 0; m < NA1; m++) {
-                const float reduced = simd_sum(acc1[r][m]);
-                if (simd_lid == 0) {
-                    y[(NA0 + m) * out_vec_size + out_row + r] =
-                        static_cast<bfloat16_t>(reduced);
-                }
-            }
-        }
-    }
-"""
+# Single source of truth: Tests/MLXFastTests/E222ValueSharingTests.swift JITs
+# the same text for its timed arms, so the screened geometry and the timed
+# geometry cannot diverge.
+FUSED_HEADER = FUSED_TEMPLATE_PATH.read_text()
 
 FUSED_ENTRY = """
 kernel void {name}(
@@ -267,6 +119,7 @@ kernel void {name}(
     const device bfloat16_t* x [[buffer(3)]],
     const device float* xsums [[buffer(4)]],
     device bfloat16_t* y [[buffer(5)]],
+    device atomic_uint* census [[buffer(9)]],
     constant int& qmv_k [[buffer(6)]],
     constant int& qmv_n [[buffer(7)]],
     constant int& qmv_stride [[buffer(8)]],
@@ -276,8 +129,9 @@ kernel void {name}(
 {{
     const int qmv_out_row =
         int(qmv_tid.y) * ({sg} * {rows}) + int(qmv_sgid) * {rows};
-    qwen_e222_fused<{na0}, {na1}, {rows}, {lazy}, {late_sb}, {table}>(
-        w, scales, biases, x, xsums, y,
+    qwen_e222_fused<{na0}, {na1}, {rows}, {lazy}, {late_sb}, {seq},
+                    {table}, false>(
+        w, scales, biases, x, xsums, y, census,
         qmv_k, qmv_n, qmv_stride, qmv_out_row, qmv_lid);
 }}
 """
@@ -507,24 +361,27 @@ def geometries() -> list[dict]:
                                        (True, False, "lazyw"),
                                        (False, True, "latesb"),
                                        (True, True, "both")):
-                for table in (False, True):
-                    out.append({
-                        "family": "fused",
-                        "name": (f"e222_fused_m{m}_r{rows}_{tag}"
-                                 f"_{'tbl' if table else 'rec'}"),
-                        "rows": rows,
-                        "na0": na0,
-                        "na1": na1,
-                        "m": m,
-                        "lazy": lazy,
-                        "late_sb": late_sb,
-                        "table": table,
-                        "simdgroups": 8 // rows,
-                        "rows_per_tg": 8,
-                        "tg_bytes": 0,
-                        "barriers_per_k_block": 0,
-                        "role": "candidate1",
-                    })
+                for seq in (False, True):
+                    for table in (False, True):
+                        out.append({
+                            "family": "fused",
+                            "name": (f"e222_fused_m{m}_r{rows}_{tag}"
+                                     f"{'_seq' if seq else ''}"
+                                     f"_{'tbl' if table else 'rec'}"),
+                            "rows": rows,
+                            "na0": na0,
+                            "na1": na1,
+                            "m": m,
+                            "lazy": lazy,
+                            "late_sb": late_sb,
+                            "seq": seq,
+                            "table": table,
+                            "simdgroups": 8 // rows,
+                            "rows_per_tg": 8,
+                            "tg_bytes": 0,
+                            "barriers_per_k_block": 0,
+                            "role": "candidate1_seq" if seq else "candidate1",
+                        })
 
     nas = sorted({na for pair in G2_SPLITS.values() for na in pair})
     for vt in ("float", "bfloat16_t", "uchar"):
@@ -583,6 +440,7 @@ def entry_for(geo: dict) -> str:
             rows=geo["rows"], sg=geo["simdgroups"],
             lazy="true" if geo["lazy"] else "false",
             late_sb="true" if geo["late_sb"] else "false",
+            seq="true" if geo["seq"] else "false",
             table="true" if geo["table"] else "false")
     return TGSHARE_ENTRY.format(
         name=geo["name"], na=geo["na"], rows_tg=geo["rows_tg"], sg=geo["sg"],
@@ -670,6 +528,26 @@ def unit_cost_model() -> dict:
                 "share_of_ideal": 1.0,
                 "why": ("the value never leaves the register that produced "
                         "it, so the second chain adds no access cost"),
+            },
+            # SEQ runs the two groups as two phases of each `i` step, so only
+            # one group's activation vectors are live at a time. The packed
+            # word is loaded once either way, but the integer extraction and
+            # the nibble-to-float conversion appear twice in the source. This
+            # entry prices the PESSIMISTIC case, in which the compiler
+            # rematerialises both instead of keeping four floats live per row.
+            # The AIR census decides which case a build actually is.
+            "fused:seq": {
+                "ops_per_unit_two_groups": (
+                    unit["device_load"] + 2 * unit["int_ops"]
+                    + 2 * unit["convert"]),
+                "share_of_ideal": round(
+                    (shipped
+                     - (unit["device_load"] + 2 * unit["int_ops"]
+                        + 2 * unit["convert"]))
+                    / (shipped - ideal), 4),
+                "why": ("register relief bought by re-deriving the nibbles "
+                        "for the second group; a lower bound on the shared "
+                        "work the geometry keeps"),
             },
         },
     }
