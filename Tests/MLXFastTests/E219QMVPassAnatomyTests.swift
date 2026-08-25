@@ -90,17 +90,28 @@ private struct E219Bytes {
     var xsumsUnique: Int
     var xsumsRead: Int
     var threadgroups: Int
+    var simdgroups: Int
+    var bytesPerRowPerKBlock: Double
 
-    init(k: Int, n: Int, na: Int, stride: Int) {
-        let rowSlices = n / 8
+    /// `rows` is `rows_per_simd`. One simdgroup owns `rows` output rows and
+    /// reads the WHOLE activation slab, so the simdgroup count -- and with it
+    /// every re-read term -- is inversely proportional to `rows` while the
+    /// weight and metadata streams are invariant in it.
+    init(k: Int, n: Int, na: Int, stride: Int, rows: Int = 4) {
+        let simds = n / rows
         weight = n * (k / 2)
         scaleBias = n * (k / 64) * 4
         activationUnique = na * k * 2
-        activationRead = rowSlices * 2 * activationUnique
+        activationRead = simds * activationUnique
         output = na * n * 2
         xsumsUnique = (k / 512) * 32 * stride * 4
-        xsumsRead = rowSlices * 2 * xsumsUnique
-        threadgroups = rowSlices
+        xsumsRead = simds * xsumsUnique
+        threadgroups = n / (2 * rows)
+        simdgroups = simds
+        // Per output row per k-block, from the kernel body: `12 * rows` bytes
+        // of weights and metadata against `36 * na` bytes of activation and
+        // chunk sums, the second group divided by `rows`.
+        bytesPerRowPerKBlock = 12.0 + 36.0 * Double(na) / Double(rows)
     }
 
     var dictionary: [String: Int] {
@@ -112,8 +123,79 @@ private struct E219Bytes {
             "output_bytes": output,
             "xsums_unique_bytes": xsumsUnique, "xsums_read_bytes": xsumsRead,
             "threadgroups_per_pass": threadgroups,
+            "simdgroups_per_pass": simdgroups,
         ]
     }
+}
+
+// MARK: - E221: the rows_per_simd arm
+
+/// `rows_per_simd` promoted to a template argument, from the SHIPPED text.
+///
+/// E221 asks whether the super-linear NA cost above NA=3 is register pressure.
+/// The mechanism under test halves outputs per simdgroup, which halves live
+/// accumulators at unchanged device weight bytes -- and doubles every activation
+/// and chunk-sum re-read, because the simdgroup count doubles. The two premises
+/// are separated only by measurement, so this arm compiles the real body with
+/// one substituted line and times it beside the incumbent.
+///
+/// The substitution count is asserted, so a base move that renames or duplicates
+/// any of these lines fails here instead of silently timing the wrong kernel.
+/// `research/e221_register_probe.py` shows the parameterized body is register
+/// identical to the shipped body at ROWS=4 on the AIR proxy and on both real
+/// AGX backends, and the `rows4param` arm below is the timed form of the same
+/// control.
+func e221RowsParameterizedHeader() -> String {
+    let substitutions = [
+        ("template <int NA, bool USE_TABLE>",
+         "template <int NA, int ROWS, bool USE_TABLE>"),
+        ("constexpr int rows_per_simd = 4;",
+         "constexpr int rows_per_simd = ROWS;"),
+        ("template <int M, int IPG, bool USE_TABLE>",
+         "template <int M, int IPG, int ROWS, bool USE_TABLE>"),
+        ("qwen_e120_qmv_wide<IPG, USE_TABLE>(",
+         "qwen_e120_qmv_wide<IPG, ROWS, USE_TABLE>("),
+        ("qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), USE_TABLE>(",
+         "qwen_e120_qmv_wide<(TAIL >= 2 ? TAIL : 2), ROWS, USE_TABLE>("),
+    ]
+    var text = qwen35E120QMVHeader
+    for (old, new) in substitutions {
+        let occurrences = text.components(separatedBy: old).count - 1
+        precondition(
+            occurrences == 1,
+            "[e221] expected one occurrence of \(old), found \(occurrences)")
+        text = text.replacingOccurrences(of: old, with: new)
+    }
+    return text
+}
+
+/// Which output rows each simdgroup writes, by pure launch arithmetic.
+///
+/// RULE 403: a value comparison cannot prove write coverage, because a wrong
+/// mapping leaves cells UNWRITTEN and MLX buffer recycling can return
+/// stale-correct values. This enumerates the launched simdgroups and counts
+/// writes per output row, so coverage is proved rather than inferred.
+///
+/// Check the returned KEY SET against `0 ..< n`, not its size: a stale
+/// simdgroup stride can write exactly `n` distinct rows and still miss half the
+/// output while addressing indices beyond `n - 1`.
+///
+/// `sgStride` is the per-simdgroup row stride the launch shim encodes. It
+/// equals `rows` in every timed arm; passing a different value builds the
+/// positive control that proves this census can fail.
+func e221WriteCensus(n: Int, rows: Int, sgStride: Int? = nil) -> [Int: Int] {
+    let stride = sgStride ?? rows
+    var writes: [Int: Int] = [:]
+    let threadgroupsY = n / (2 * rows)
+    for tidY in 0 ..< threadgroupsY {
+        for sgid in 0 ..< 2 {
+            let outRow = tidY * (2 * stride) + sgid * stride
+            for r in 0 ..< rows {
+                writes[outRow + r, default: 0] += 1
+            }
+        }
+    }
+    return writes
 }
 
 private func e219SumsStride(_ m: Int) -> Int { Qwen35CustomQMV.sumsStride(m) }
@@ -132,46 +214,72 @@ private struct E219Pipeline {
     let na: Int
     let stride: Int
     let table: Bool
+    /// `rows_per_simd`. 4 is the shipped value.
+    let rows: Int
+    /// True when the body came from `e221RowsParameterizedHeader()`. At
+    /// `rows == 4` this is the E221 control arm: same geometry, same
+    /// arithmetic, one substituted line.
+    let parameterized: Bool
     let kernel: Qwen35CachedKernel
 
-    init(na: Int, stride: Int, table: Bool) {
+    init(na: Int, stride: Int, table: Bool, rows: Int = 4,
+         parameterized: Bool = false) {
+        precondition(rows >= 1 && rows <= 4, "[e221] rows out of range")
+        precondition(
+            parameterized || rows == 4,
+            "[e221] rows != 4 needs the parameterized header")
+        // FINDING 552: `<NA=7, USE_TABLE=false, ROWS=2>` is miscompiled. It is
+        // never timed, so the joint pair cannot reach a measurement.
+        precondition(
+            !(na == 7 && rows == 2 && !table),
+            "[e221] FINDING 552 forbids (NA=7, rows=2, plain)")
         self.na = na
         self.stride = stride
         self.table = table
+        self.rows = rows
+        self.parameterized = parameterized
         let sums = table ? "xsums" : "qmv_null_sums"
         let flag = table ? "USE_TABLE" : "false"
         let nullDecl =
             table
             ? "" : "\n        const device float* qmv_null_sums = nullptr;"
+        let arguments = parameterized
+            ? "<\(na), \(rows), \(flag)>" : "<\(na), \(flag)>"
         let source = """
                 const int qmv_k = x_shape[x_ndim - 1];
                 const int qmv_n = w_shape[0];
                 const uint3 qmv_tid = threadgroup_position_in_grid;
                 const uint qmv_lid = thread_index_in_simdgroup;
                 const uint qmv_sgid = simdgroup_index_in_threadgroup;
-                const int qmv_out_row = int(qmv_tid.y) * 8 + int(qmv_sgid) * 4;
+                const int qmv_out_row = int(qmv_tid.y) * \(2 * rows)
+                    + int(qmv_sgid) * \(rows);
                 const int qmv_first_m = int(qmv_tid.x) * \(na);\(nullDecl)
-                qwen_e120_qmv_wide<\(na), \(flag)>(
+                qwen_e120_qmv_wide\(arguments)(
                     w, scales, biases, x, \(sums), y,
                     qmv_k, qmv_n, \(stride),
                     qmv_first_m, qmv_out_row, qmv_lid);
             """
+        let tag = parameterized ? "r\(rows)p" : "ship"
         self.kernel = Qwen35CachedKernel(
-            name: "e219_qmv_na\(na)_s\(stride)_\(table ? "tab" : "raw")",
+            name: "e219_qmv_na\(na)_s\(stride)_\(table ? "tab" : "raw")_\(tag)",
             inputNames: table
                 ? ["w", "scales", "biases", "x", "xsums"]
                 : ["w", "scales", "biases", "x"],
             outputNames: ["y"],
             source: source,
-            header: qwen35E120QMVHeader)
+            header: parameterized
+                ? e221RowsParameterizedHeader() : qwen35E120QMVHeader)
     }
 
     /// One dispatch: `groups` weight-group passes over `n` output rows.
+    ///
+    /// One simdgroup owns `rows` rows and a threadgroup holds two simdgroups,
+    /// so `n` rows need `n / rows` simdgroups. The y extent is in threads.
     func call(
         x: MLXArray, xsums: MLXArray, set: E219WeightSet, m: Int, groups: Int
     ) -> MLXArray {
         let launch = Qwen35KernelLaunch(
-            grid: (groups * 32, (set.n / 8) * 2, 1),
+            grid: (groups * 32, set.n / rows, 1),
             threadGroup: (32, 2, 1),
             outputShape: [1, Int32(m), Int32(set.n)],
             outputDType: .bfloat16,
@@ -186,10 +294,15 @@ private struct E219Pipeline {
 private struct E219PipelineCache {
     private var pipelines: [String: E219Pipeline] = [:]
 
-    mutating func get(na: Int, stride: Int, table: Bool) -> E219Pipeline {
-        let key = "\(na)/\(stride)/\(table)"
+    mutating func get(
+        na: Int, stride: Int, table: Bool, rows: Int = 4,
+        parameterized: Bool = false
+    ) -> E219Pipeline {
+        let key = "\(na)/\(stride)/\(table)/\(rows)/\(parameterized)"
         if let hit = pipelines[key] { return hit }
-        let made = E219Pipeline(na: na, stride: stride, table: table)
+        let made = E219Pipeline(
+            na: na, stride: stride, table: table, rows: rows,
+            parameterized: parameterized)
         pipelines[key] = made
         return made
     }
@@ -456,7 +569,7 @@ private func e219Write(
         "active_plan_witness": qwen35QMVWidthPlanWitness,
         "qmv_arm": Qwen35CustomQMV.arm.rawValue,
         "config_cache_enabled": Qwen35KernelConfigCache.enabled,
-        "rows_per_simd": 4,
+        "shipped_rows_per_simd": 4,
         "threadgroup": [32, 2, 1],
     ]
     for (key, value) in body { report[key] = value }
@@ -477,8 +590,13 @@ private func e219Write(
     if let path = ProcessInfo.processInfo.environment["MLX_E219_OUT"],
         !path.isEmpty
     {
-        try json.write(to: URL(fileURLWithPath: path))
-        print("[e219] wrote \(path) (\(json.count) bytes)")
+        // One phase filter can hold several reports. Name the file after the
+        // report's own phase so a second report cannot overwrite the first.
+        let url = URL(fileURLWithPath: path)
+            .deletingLastPathComponent()
+            .appendingPathComponent("\(phase).json")
+        try json.write(to: url)
+        print("[e219] wrote \(url.path) (\(json.count) bytes)")
     } else {
         print(String(decoding: json, as: UTF8.self))
     }
@@ -592,6 +710,174 @@ struct E219InstrumentSanityTests {
                 "comparisons": rows,
             ], session: nil)
     }
+
+    /// E221 arms: before a `rows_per_simd` arm may be timed, it must produce
+    /// the shipped values AND cover every output row.
+    ///
+    /// Two independent gates, because neither alone is sufficient:
+    ///  - values, against the shipped-header `rows == 4` pipeline, with a
+    ///    perturbed positive control that proves the comparison can fail;
+    ///  - write coverage by launch arithmetic (RULE 403), with a mismatched
+    ///    simdgroup stride as the positive control, because MLX recycles output
+    ///    buffers and an unwritten cell can read back stale-correct.
+    @Test(.enabled(if: e219PhaseEnabled("sanity")))
+    func rowsGeometryExactness() throws {
+        var cache = E219PipelineCache()
+        var valueRows: [[String: Any]] = []
+        var censusRows: [[String: Any]] = []
+
+        let geometries: [(rows: Int, parameterized: Bool)] =
+            [(4, true), (2, true)]
+
+        // A COUNT of written rows is not enough. At rows=2 with a stale
+        // simdgroup stride of 4 the count is still exactly `n`, but the written
+        // indices are the sparse set {0,1,4,5,...} running up to 2n-3. Coverage
+        // must therefore be checked as a SET against 0 ..< n.
+        func covers(_ census: [Int: Int], _ n: Int) -> Bool {
+            census.count == n && census.keys.min() == 0
+                && census.keys.max() == n - 1
+                && census.values.allSatisfy { $0 == 1 }
+        }
+
+        for cell in e219ScoredCells {
+            for rows in [4, 2] {
+                let census = e221WriteCensus(n: cell.n, rows: rows)
+                let broken = e221WriteCensus(
+                    n: cell.n, rows: rows, sgStride: 4)
+                censusRows.append([
+                    "cell": cell.name, "n": cell.n, "rows": rows,
+                    "rows_written": census.count,
+                    "min_row": census.keys.min() ?? -1,
+                    "max_row": census.keys.max() ?? -1,
+                    "min_writes": census.values.min() ?? 0,
+                    "max_writes": census.values.max() ?? 0,
+                    "control_sg_stride": 4,
+                    "control_rows_written": broken.count,
+                    "control_max_row": broken.keys.max() ?? -1,
+                    "control_covers": covers(broken, cell.n),
+                ])
+                #expect(
+                    covers(census, cell.n),
+                    """
+                    \(cell.name) rows=\(rows): the launch writes \
+                    \(census.count) rows over \
+                    [\(census.keys.min() ?? -1), \(census.keys.max() ?? -1)], \
+                    not exactly once over [0, \(cell.n - 1)]
+                    """)
+                if rows != 4 {
+                    // The control must actually break, otherwise the coverage
+                    // gate above is vacuous.
+                    #expect(!covers(broken, cell.n))
+                }
+            }
+        }
+
+        for cell in e219ScoredCells {
+            autoreleasepool {
+                let set = e219RandomSet(k: cell.k, n: cell.n, seed: 0xE221)
+                for m in [4, 5] {
+                    autoreleasepool {
+                        let stride = e219SumsStride(m)
+                        let x = e219Activations(
+                            m: m, k: cell.k, seed: UInt64(0xE221_0000 + m))
+                        let xsums = Qwen35CustomQMV.xsumsTable(x)
+                        eval(xsums)
+                        let reference = cache.get(
+                            na: m, stride: stride, table: true, rows: 4,
+                            parameterized: false)
+                        let want = reference.call(
+                            x: x, xsums: xsums, set: set, m: m, groups: 1)
+                        eval(want)
+                        let a = want.asType(.float32).asArray(Float.self)
+                        for geometry in geometries {
+                            let probe = cache.get(
+                                na: m, stride: stride, table: true,
+                                rows: geometry.rows,
+                                parameterized: geometry.parameterized)
+                            let got = probe.call(
+                                x: x, xsums: xsums, set: set, m: m, groups: 1)
+                            eval(got)
+                            let b = got.asType(.float32).asArray(Float.self)
+                            var differing = 0
+                            var nonFinite = 0
+                            for i in 0 ..< min(a.count, b.count) {
+                                if a[i].bitPattern != b[i].bitPattern {
+                                    differing += 1
+                                }
+                                if !b[i].isFinite { nonFinite += 1 }
+                            }
+                            valueRows.append([
+                                "cell": cell.name, "k": cell.k, "n": cell.n,
+                                "m": m, "rows": geometry.rows,
+                                "parameterized": geometry.parameterized,
+                                "elements": b.count, "differing": differing,
+                                "non_finite": nonFinite,
+                            ])
+                            #expect(
+                                a.count == b.count,
+                                """
+                                \(cell.name) m=\(m) rows=\(geometry.rows): \
+                                output element count changed
+                                """)
+                            #expect(
+                                differing == 0,
+                                """
+                                \(cell.name) m=\(m) rows=\(geometry.rows): \
+                                \(differing) of \(b.count) outputs differ from \
+                                the shipped rows=4 pipeline
+                                """)
+                            #expect(nonFinite == 0)
+                        }
+
+                        // Positive control: one perturbed activation column
+                        // must move the comparison off zero.
+                        let xBad = e219Activations(
+                            m: m, k: cell.k,
+                            seed: UInt64(0xE221_9000 + m))
+                        let xsumsBad = Qwen35CustomQMV.xsumsTable(xBad)
+                        eval(xsumsBad)
+                        let control = cache.get(
+                            na: m, stride: stride, table: true, rows: 2,
+                            parameterized: true)
+                        let bad = control.call(
+                            x: xBad, xsums: xsumsBad, set: set, m: m, groups: 1)
+                        eval(bad)
+                        let c = bad.asType(.float32).asArray(Float.self)
+                        var controlDiffering = 0
+                        for i in 0 ..< min(a.count, c.count) {
+                            if a[i].bitPattern != c[i].bitPattern {
+                                controlDiffering += 1
+                            }
+                        }
+                        valueRows.append([
+                            "cell": cell.name, "k": cell.k, "n": cell.n,
+                            "m": m, "rows": 2, "parameterized": true,
+                            "positive_control": true,
+                            "elements": c.count,
+                            "differing": controlDiffering,
+                        ])
+                        #expect(
+                            controlDiffering > 0,
+                            """
+                            \(cell.name) m=\(m): the positive control did NOT \
+                            differ, so the bit-exactness gate above is vacuous
+                            """)
+                    }
+                }
+            }
+        }
+
+        #expect(!valueRows.isEmpty)
+        try e219Write(
+            "sanity_rows",
+            [
+                "deliverable":
+                    "E221 gate: every rows_per_simd arm is bit-exact against "
+                    + "the shipped rows=4 pipeline and writes every output row",
+                "value_comparisons": valueRows,
+                "write_census": censusRows,
+            ], session: nil)
+    }
 }
 
 // MARK: - Section 1: the sweeps
@@ -613,6 +899,9 @@ struct E219PassAnatomyTests {
         arms: [(na: Int, groups: Int)],
         coldArms: [Bool],
         deliverable: String,
+        /// `rows_per_simd` arms. The default is the shipped geometry compiled
+        /// from the shipped header, so every pre-E221 phase is unchanged.
+        geometries: [(rows: Int, parameterized: Bool)] = [(4, false)],
         extra: [String: Any] = [:]
     ) throws {
         var cache = E219PipelineCache()
@@ -640,40 +929,55 @@ struct E219PassAnatomyTests {
                 let m = arm.na * arm.groups
                 guard m <= 16 else { continue }
                 let stride = e219SumsStride(m)
-                let pipeline = cache.get(na: arm.na, stride: stride, table: true)
                 let x = e219Activations(
                     m: m, k: cell.k, seed: UInt64(0xE219_1000 + m))
                 let xsums = Qwen35CustomQMV.xsumsTable(x)
                 eval(xsums)
-                let bytes = E219Bytes(
-                    k: cell.k, n: cell.n, na: arm.na, stride: stride)
-                for cold in coldArms {
-                    let key = cell.name
-                    var fields: [String: Any] = [
-                        "cell": cell.name, "k": cell.k, "n": cell.n,
-                        "na": arm.na, "groups": arm.groups, "m": m,
-                        "stride": stride, "cold": cold, "dispatches": 1,
-                        "invocations_per_round": cell.invocations,
-                        "replicas": ringBox.count(key),
-                        "replica_set_bytes": ringBox.bytes(key),
-                    ]
-                    for (bk, bv) in bytes.dictionary { fields[bk] = bv }
-                    fields["pass_stream_bytes"] =
-                        (bytes.weight + bytes.scaleBias) * arm.groups
-                    units.append(
-                        E219Unit(
-                            label:
-                                "\(cell.name)/na\(arm.na)/g\(arm.groups)/"
-                                + (cold ? "cold" : "hot"),
-                            fields: fields,
-                            enqueue: {
-                                let set = ringBox.next(key, cold: cold)
-                                return [
-                                    pipeline.call(
-                                        x: x, xsums: xsums, set: set, m: m,
-                                        groups: arm.groups)
-                                ]
-                            }))
+                for geometry in geometries {
+                    guard cell.n % (2 * geometry.rows) == 0 else { continue }
+                    let pipeline = cache.get(
+                        na: arm.na, stride: stride, table: true,
+                        rows: geometry.rows,
+                        parameterized: geometry.parameterized)
+                    let bytes = E219Bytes(
+                        k: cell.k, n: cell.n, na: arm.na, stride: stride,
+                        rows: geometry.rows)
+                    let geometryTag = geometry.parameterized
+                        ? "rows\(geometry.rows)param" : "rows\(geometry.rows)"
+                    for cold in coldArms {
+                        let key = cell.name
+                        var fields: [String: Any] = [
+                            "cell": cell.name, "k": cell.k, "n": cell.n,
+                            "na": arm.na, "groups": arm.groups, "m": m,
+                            "stride": stride, "cold": cold, "dispatches": 1,
+                            "rows_per_simd": geometry.rows,
+                            "parameterized_header": geometry.parameterized,
+                            "geometry": geometryTag,
+                            "bytes_per_row_per_kblock":
+                                bytes.bytesPerRowPerKBlock,
+                            "invocations_per_round": cell.invocations,
+                            "replicas": ringBox.count(key),
+                            "replica_set_bytes": ringBox.bytes(key),
+                        ]
+                        for (bk, bv) in bytes.dictionary { fields[bk] = bv }
+                        fields["pass_stream_bytes"] =
+                            (bytes.weight + bytes.scaleBias) * arm.groups
+                        units.append(
+                            E219Unit(
+                                label:
+                                    "\(cell.name)/na\(arm.na)/g\(arm.groups)/"
+                                    + "\(geometryTag)/"
+                                    + (cold ? "cold" : "hot"),
+                                fields: fields,
+                                enqueue: {
+                                    let set = ringBox.next(key, cold: cold)
+                                    return [
+                                        pipeline.call(
+                                            x: x, xsums: xsums, set: set, m: m,
+                                            groups: arm.groups)
+                                    ]
+                                }))
+                    }
                 }
             }
         }
@@ -760,6 +1064,55 @@ struct E219PassAnatomyTests {
             deliverable:
                 "output and threadgroup coefficients: n ladder at k = 5120, "
                 + "NA = 5, G = 1")
+    }
+
+    /// E221: outputs per simdgroup. Halving `rows_per_simd` halves the
+    /// accumulator registers each lane holds AND doubles the simdgroup count,
+    /// so the activation slab and the chunk-sum table are re-read twice
+    /// (FINDING 576). The two premises therefore predict opposite signs, and
+    /// this sweep reads which one governs the NA slope.
+    ///
+    /// Three arms, so a null result cannot be blamed on the substitution:
+    /// `rows4` is the shipped header and reconciles against every earlier
+    /// phase, `rows4param` is the same geometry through the parameterized
+    /// header and must be timed-inert, and `rows2param` is the treatment.
+    @Test(.enabled(if: e219PhaseEnabled("rows")))
+    func rowsPerSimdgroupSweep() throws {
+        let nas = e219IntList("MLX_E219_ROWS_NA", [4, 5])
+        let groups = e219IntList("MLX_E219_ROWS_GROUPS", [1, 2])
+        var arms: [(na: Int, groups: Int)] = []
+        for na in nas {
+            for g in groups where na * g <= 16 {
+                arms.append((na: na, groups: g))
+            }
+        }
+        try sweep(
+            phase: "rows",
+            shapes: e219ScoredCells,
+            arms: arms,
+            coldArms: [true, false],
+            deliverable:
+                "E221 step 1: does rows_per_simd 4 -> 2 relieve the NA slope, "
+                + "or does the doubled activation and chunk-sum re-read "
+                + "dominate it (FINDING 576)?",
+            geometries: [(4, false), (4, true), (2, true)],
+            extra: [
+                "e221_write_census": e219ScoredCells.flatMap { cell in
+                    [4, 2].map { rows -> [String: Any] in
+                        let census = e221WriteCensus(n: cell.n, rows: rows)
+                        return [
+                            "cell": cell.name, "n": cell.n, "rows": rows,
+                            "rows_written": census.count,
+                            "min_row": census.keys.min() ?? -1,
+                            "max_row": census.keys.max() ?? -1,
+                            "min_writes": census.values.min() ?? 0,
+                            "max_writes": census.values.max() ?? 0,
+                        ]
+                    }
+                },
+                "e221_register_witness":
+                    "research/e221-artifacts/e221_register_probe.json",
+            ])
     }
 
     /// Identical total work in 1, 2 or 4 dispatches. Weight bytes, output

@@ -13,6 +13,9 @@
 #   kext     k ladder at n = 5120 -> weight-stream coefficient b.
 #   next     n ladder at k = 5120 -> output and threadgroup coefficients.
 #   dsplit   identical total work in 1/2/4/8 dispatches -> dispatch overhead a.
+#   rows     rows_per_simd in {4 shipped, 4 parameterized, 2} at NA in {4,5}
+#            and G in {1,2} -> E221 step 1, the register-pressure premise
+#            against the activation-re-read premise (FINDING 576).
 #
 # Each phase runs in its OWN process so the replica rings of one phase are
 # released before the next builds its own. Peak resident device memory is
@@ -60,7 +63,8 @@ esac
         MLX_E219_TARGET_US MLX_E219_REPLICA_TARGET_MB \
         MLX_E219_REPLICA_CAP_MB MLX_E219_NA MLX_E219_GROUPS \
         MLX_E219_GROUP_NA MLX_E219_K MLX_E219_N MLX_E219_SPLITS \
-        MLX_E219_DSPLIT_CELLS MLX_E219_DSPLIT_NA; do
+        MLX_E219_DSPLIT_CELLS MLX_E219_DSPLIT_NA \
+        MLX_E219_ROWS_NA MLX_E219_ROWS_GROUPS; do
         echo "${name}=${!name-}"
     done
 } > "${out_dir}/${phase}.meta.txt"
