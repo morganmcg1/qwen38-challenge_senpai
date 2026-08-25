@@ -105,7 +105,7 @@
     "Entry 386: my F2 verdict on E185 priced total idle from the powermetrics reading and declared 'even total elimination is below MUE' - falsified. The hardware idle counter is a floor (3.18x under production load); production idle is 2226 us/round = 1.52% (FINDING 481). Never price idle from powermetrics alone.",
     "Entry 438: FINDING 568 inferred 'majority cache-served' from the 694 GB/s arithmetic - refuted by E219 the same day: the 20.774 ms anchor is not a full weight pass (25.3% QMV weight-pass, ~75% per-group non-QMV work, FINDING 571), and no hot/cold bracket exists on a 47-100 MB working set. The pass is COMPUTE bound (FINDING 570). Never infer cache residency from an anchor whose composition is unmeasured."
   ],
-  "assignmentQueue": "Presumptive E221 (Edward, after E219 terminal): NA-scaling relief scored experiment - outputs-per-simdgroup 4->2 (FINDING 572 top, ceiling 23.073 pooled; also opens register headroom above FINDING 549 NA=5 wall, unblocking the single-pass arm). Dequant-value sharing held behind it pending geometry pricing. In flight: E220 (Alphonse, PR 218, dequant integer-path, rationale strengthened by FINDING 570 b-term); E218 (Askeladd, PR 216, s2 band palindrome running; FINDING 571 residual attribution added to deliverables); E219 (Edward, PR 217, s4 closing m=7/8 rows then terminal); E199 (Thorfinn, PR 196, held, receipt 5f508da5 watcher, ETA ~09:30Z). Frozen behind: 3f1065cb. Receipt-terminal desk stack: E205 Stage-B reading; FINDING 520 revalidation; pooled re-weighting of E213/E212 shipped-share.",
+  "assignmentQueue": "In flight: E221 (Edward, PR pending, NA-scaling relief compile-first: step-0 register probe rows=2 NA 2..9 + rows=4 control; step-1 standalone census screen rows=2 vs rows=4; step-2 scored only if priced >= bar; ceiling 23.066 pooled). E222 (Alphonse, PR pending, dequant-value sharing compile-first: stage-0 geometry register/spill enumeration; stage-1 census screen vs ideal-reuse ratio 1.527 on (9,5) and m=6 cells; stage-2 scored only if net >= bar after geometry cost; ceiling 11.614 pooled). E218 (Askeladd, PR 216, s2 band palindrome + per-cell curves + FINDING 571 residual attribution + priced shortlist). E199 (Thorfinn, PR 196, held, backoff watcher 489549a0, board OUT since 07:19Z). Frozen behind receipt: 3f1065cb. Parked: dispatch fusion (2.926), mlp.down cell-shape effect, m6_ipg6 occupancy, superlinear C>=3, sub-MSL extraction. Receipt-terminal desk stack: E205 Stage-B; FINDING 520 revalidation; E213/E212 pooled re-weighting.",
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
     "dominantTerm": "per-dispatch launch and synchronisation, not bandwidth. The removed 25,563,136 B at 400 GB/s is only 64 us.",
@@ -361,6 +361,11 @@
     "prefill_buildable_mechanisms": "E184/FINDING 477: every buildable local prefill mechanism fails the 0.30% published MUE (best real class chunk-parallel shape-b 0.154%); only full roofline closure (1.523%) passes and that is a general QGEMM/nax uplift, unmeasurable on the fleet (FINDING 390). Reopen only with M5-side evidence of a specific sub-roofline GEMM family.",
     "producer_fusion": "CLOSED by FINDING 359 / E160, ledger 349. mlp.down, gdn.out_proj (48 layers) and fa.o_proj (16 layers) all null: one standalone chunk-sum fill is under about 6 us at 2 sigma with a central estimate of 0; fuse - off = -0.0015 % with a 2se of 0.2044 pp.",
     "qmv_coop_implicit_l1_pairing": "Entry 435, FINDING 565: coop pairing of G==2 token-column groups in one threadgroup is -1.323 ms/round pooled-census (m=9 paired -3.256, 81 sigma below the +1.0 bar); staticThreadgroupMemoryLength=0 means nothing was shared; L1 already dedups the second stream and the 8->4 rows/TG coalescing cost is certain. Reopen only with explicit staging (that is E217, a different axis) or a hardware/register-file change.",
+    "qmv_dequant_integer_path_msl": {
+      "closedAt": "2026-08-25T08:15:00Z",
+      "reason": "E220/FINDING 575: compiler already emits minimal integer sequence (6 ops/4 nibbles); bfe/vecload byte-identical to base; alternatives spill; oracle ceiling 0.39-0.72 ms/round below bar and unreachable at MSL",
+      "reopenIf": "a sub-MSL path (AIR/metallib or handwritten AGX) is separately priced and its integration risk accepted, or the scored kernel source form changes the emitted sequence"
+    },
     "qmv_rows_per_group_retune_rows4": "Entry 426 / FINDING 548: at fixed rows_per_simd=4, every legal rows-per-group retune below m=9 keeps G=2 and removes zero weight passes; shipped table already at max legal IPG under the 128-register boundary per width. Reopen only if the kernel register footprint or the static_assert changes.",
     "qmv_single_pass_g1_via_rows": "Entry 432, FINDINGs 557-558: registers over boundary, amortization + negative G-value under it",
     "qmv_weight_sharing_family": {
@@ -842,6 +847,36 @@
       "tjrl0kzd"
     ]
   },
+  "e219QmvPassAnatomy": {
+    "coefficients": "a 45.72 us/dispatch; b 1.9292 us/MiB (dequant arithmetic); c 365.39 us/GMAC; d/e confounded",
+    "passComposition_na5": "a 11.751 / b 26.517 / c 46.81 ms/round; 169 GB/s = 62% peak; COMPUTE bound",
+    "repro": "python3 research/e219_analyze.py research/out/e219/{s0,s3,s4}",
+    "shortlist_pooled": {
+      "dequant_value_sharing": 11.614,
+      "dispatch_fusion": 2.926,
+      "na_relief": 23.066,
+      "single_pass": 11.684
+    },
+    "status": "MERGED (Entry 439, PR 217) - validated census instrument in maintained base",
+    "wandb": [
+      "42kjlmwy",
+      "6asgh6as",
+      "k2msot48",
+      "ujzgclgv",
+      "4e127m8f",
+      "v8o95ibw",
+      "vgmukqp8",
+      "d78dx4xb"
+    ]
+  },
+  "e220DequantIntegerPath": {
+    "status": "MERGED as decisive NOT-USEFUL (Entry 439, PR 218); zero GPU seconds",
+    "tool": "research/e220_census.py --variant (zero-GPU screen for MSL instruction-count hypotheses)",
+    "verdict": "MSL integer path already minimal; closedAxes.qmv_dequant_integer_path_msl",
+    "wandb": [
+      "1g59swmr"
+    ]
+  },
   "edlDefinition": {
     "boardCheck": "acceptance = (512 - rounds) / (rounds * edl) recovers FINDING 374 alpha on all 8 prompts",
     "closes": "E167-B, previously assigned to edward",
@@ -1076,7 +1111,10 @@
     "569": "E217 decisive negative (harness=local, ungated palindrome off-coop-staged-staged-coop-off, PR 215 closed, W&B tjrl0kzd): explicit TG staging of packed QMV weight bytes (8 rows/4 simdgroups, 2048 B TG memory, point-of-use reads) is much SLOWER. staged-off pooled (FINDING 564 census) -5.866 +/- 0.131 ms/round (CI [-6.122,-5.609]); public -11.406; m5 control clean +0.135 +/- 0.198 (n=11); m9 -11.06 (n=55). staged-coop pooled -4.639: staging loses even to the losing coop mapping (TG round-trip + barriers on top of L1 service the off mapping already gets). Cross-host replication: coop-off pooled -1.226 +/- 0.160 vs FINDING 565 band -1.323 +/- 0.5 (agrees); m9 -3.196 +/- 0.392 vs -3.256 -> FINDING 565 stands on two M4 Pro hosts. m=7 anomaly replicates in sign (+1.487 +/- 0.153, n=2) updating FINDING 566. Consequence: 8-rows/TG coalesced private weight streams are the measured optimum; the QMV weight-sharing family is closed.",
     "570": "E219 census instrument VALIDATED and the scored QMV pass is COMPUTE bound on M4 Pro (harness=local-microbench). Gate (a'): absolute per-round census total (3 cells = 82.60% of pass stream bytes, scaled 1/0.8260) matches FINDING 559 R_local(m) within 5.3% worst-case across a 2.4x width span (m=7/8 pending s4). Gate (b): whole-round T(G=2)/T(G=1) at NA=5 = 1.8159 inside [1.80,1.91]. Coefficients (NNLS, R2 0.9685): a_dispatch 45.76 us/dispatch; b_stream 1.9232 us/MiB; c_mac 366.99 us/GMAC; d,e ~0. NA=5 pass composition: a 11.760 (13.8%), b 26.434 (31.0%), c 47.016 (55.2%); modelled 85.210 vs measured 89.247 (-4.5%). The b term as streaming implies 545 GB/s = 2x DRAM peak (impossible) = 3.70 lane-cycles per 4-bit element = one affine group-64 dequant chain -> b IS dequantisation arithmetic. Pass moves 14.4123 GB in 85.2 ms = 169 GB/s = 62% of peak. Byte-removing mechanisms are structurally worth less than dequant- or accumulate-removing mechanisms.",
     "571": "FINDING 543 (20.774 ms/round, (m=9,IPG=3,G=3)->(IPG=5,G=2)) is mostly NOT weight-pass cost: the validated census prices both endpoints at 167.321 -> 162.068 ms/round = 5.253 ms QMV weight-pass delta = 25.3%. G=2->3 adds no QMV dispatch (G lives in grid x), so ~75% (~15.5 ms/round) is per-group work outside the weight stream: activation slicing, sums-table construction, non-QMV kernels, scheduling. mlp.down moves the wrong way (na5g2 683.4 > na3g3 585.1 us) - QMV share nonuniform across cells. Cross-check: a whole extra pass would need 694 GB/s = 2.5x DRAM peak. E218's census families (head chain, GDN, SDPA split, xsums) are the attribution tool for the residual; added to E218 deliverables.",
-    "572": "Priced mechanism CEILINGS from the validated E219 census (FINDING 564 pooled census; ceilings, not measured results): NA-scaling relief above NA=3 = 23.073 ms/round pooled (top; measured IPG ladder: NA=2->3 flat, cost/MB climbs 4.32/4.35/4.71/6.12 us/MB at NA 2/3/4/5; route = halve outputs-per-simdgroup 4->2, halving accumulators at unchanged device bytes, TG term ~0.402 us/1k, creates register headroom above the FINDING 549 NA=5 wall). Single-pass at G=2 widths 11.669 (blocked by that register wall). Dequant-VALUE sharing across token groups 11.578 [CI95u 16.276] - second group re-pays the whole b term; DISTINCT axis from the closed byte/fetch-sharing family (shares dequantised values, not nibbles); geometry change unpriced (E216 measured pairing geometry at about -1.3 pooled). QMV dispatch fusion (a term) 2.929. d/e ~0 (below bar). Transform-side scale/bias interleave unresolved by this census. Also: wide QMV dispatches (NA=5, G>=2) turn superlinear at chain depth C>=3 reproducibly - resident wide dispatches compete; excluded from fits."
+    "572": "Priced mechanism CEILINGS from the validated E219 census (FINDING 564 pooled census; ceilings, not measured results): NA-scaling relief above NA=3 = 23.073 ms/round pooled (top; measured IPG ladder: NA=2->3 flat, cost/MB climbs 4.32/4.35/4.71/6.12 us/MB at NA 2/3/4/5; route = halve outputs-per-simdgroup 4->2, halving accumulators at unchanged device bytes, TG term ~0.402 us/1k, creates register headroom above the FINDING 549 NA=5 wall). Single-pass at G=2 widths 11.669 (blocked by that register wall). Dequant-VALUE sharing across token groups 11.578 [CI95u 16.276] - second group re-pays the whole b term; DISTINCT axis from the closed byte/fetch-sharing family (shares dequantised values, not nibbles); geometry change unpriced (E216 measured pairing geometry at about -1.3 pooled). QMV dispatch fusion (a term) 2.929. d/e ~0 (below bar). Transform-side scale/bias interleave unresolved by this census. Also: wide QMV dispatches (NA=5, G>=2) turn superlinear at chain depth C>=3 reproducibly - resident wide dispatches compete; excluded from fits.",
+    "573": "Final E219 census (PR 217 MERGED; instrument in maintained base; supersedes interim numbers in FINDINGs 570/572 where they differ). Gate (a') passes ALL 8 staged widths, worst 9.30% vs 15% tolerance. Coefficients (n=53, wR2 0.9700): a_dispatch 45.72 us [34.97,61.74]; b_stream 1.9292 us/MiB [1.309,2.626]; c_mac 365.39 us/GMAC [245.1,469.7]; d/e unresolved, mutually confounded (r=0.9454) - one weakly identified geometry channel. NA=5 pass: a 11.751 (13.8%), b 26.517 (31.0%), c 46.81 (55.2%); modelled 85.077 vs 89.247 (-4.7%). Final pooled shortlist: NA-relief 23.066; single-pass 11.684; dequant-value sharing 11.614; dispatch fusion 2.926. Structure: m=7 and m=8 share (IPG=4,G=2) and price IDENTICALLY -> FINDING 559's 8.500 ms m7->m8 step is entirely non-QMV per-token work (E218 attribution hook). mlp.down under-predicted at every arm (absmax residual 23.71%) - linear form misses a cell-shape effect; do not price mlp.down mechanisms off the fit. W&B 42kjlmwy + 7 session runs.",
+    "574": "INFERRED (extrapolation off FINDING 549's rows=4-only grid): R(rows=4,NA) = 39.10 + 17.10*NA (R2 0.9916); accumulators cost exactly rows registers per NA step, so the slope splits 4.00 accumulator + 13.10 rows-INDEPENDENT. At rows=2: slope 15.10; (outputs=2, NA=5) prices 95-115 regs vs 125 measured (legal on either wall in (125,144]); NA=9 prices 155-175 (illegal). Reachable single-pass share via rows=2 = m=6,7 only = 4.30% of G>=2 mass = 0.503 ms/round pooled, BELOW the bar: single-pass and NA-relief are one candidate plus a dead end, not a composed pair. The 23.066 NA-relief ceiling is unaffected (priced from the measured IPG ladder). Decisive unknown: compiler reallocation at rows=2; settled by E221 step-0 compile-only probe. If the rows=2 slope is materially below 15.10, the single-pass refutation reopens.",
+    "575": "E220 (PR 218 MERGED, decisive NOT-USEFUL, zero GPU seconds, harness=static): the MSL-level integer path of affine 4-bit group-64 dequant in the scored QMV kernel (qwen35E120QMVHeader/qwen_e120_qmv_wide, Vendor Qwen35.swift) is already minimal: 3 lshr + 3 and + 2 zext + 1 add per 4 nibbles at every NA; redundant mask already compiler-eliminated. 6 FP-digest-identical variants: bfe and vecload byte-identical to base; word32/hoist_scalar/hoist/all spill. 0/6 carried. Perfect-extraction oracle ceiling 1.48%/2.73% of QMV machine code (g16s/g17s) = 0.39-0.72 ms/round on the b term - below bar at the low end and unreachable at MSL. Sub-MSL (AIR/metallib/handwritten AGX) is the only remaining route; price separately. Incidental: m6_ipg6 spills 16 B (g16s) and needs 114 regs (g17s) at base - occupancy lever, parked. Reusable zero-GPU screen research/e220_census.py --variant = step-0 gate for any future MSL instruction-count hypothesis. W&B 1g59swmr."
   },
   "fleetReprovision20260824": {
     "at": "2026-08-24T07:30Z",
@@ -1213,7 +1251,7 @@
     "10f3a0d1 vibecodooor",
     "8886ec88 jungjipdo"
   ],
-  "lastAdvisorUpdate": "2026-08-25T08:05:00Z",
+  "lastAdvisorUpdate": "2026-08-25T08:15:00Z",
   "lastTerminalSubmission": {
     "advisorError": "ADVISOR ERROR 215. I priced B1 from a local candidate-leg medpair of -0.4163 % and quoted 78-91 % win probability. The correct prior was about 37 %.",
     "commit": "08f811009c9628785ba2ec0f19ca2e8fb3795689",
@@ -1246,7 +1284,7 @@
     "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zhs21ryd",
     "yukonCommitShown": "a49f536c"
   },
-  "ledgerEntry": 438,
+  "ledgerEntry": 439,
   "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
   "localBaselines": {
     "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
@@ -2928,5 +2966,6 @@
     "statement": "One standalone x-sums fill dispatch plus its host kernel record costs 4.0-5.3 us of candidate MTP wall time. Lower bound o-s (identical consumer): +0.3849 % leg, 699.1 us/round, 127 cells, 5.505 us/cell. Upper bound f-r (different consumer pipelines, grade C): +0.5190 %, 981.9 us/round, 257 cells, 3.820 us/cell. Bounds cross -> bracket, not a point.",
     "wandb": "7ueick4f"
   },
+  "yukonBoardOutage20260825": "Board API failing since 07:19Z (zero bytes, empty stderr; not credential-side). Last state of record: 5f508da5 validating at 07:17:17Z. Backoff watcher 489549a0 (Thorfinn) approved. Advisor policy: no board reads (incl. ?limit=2000), no submissions, frozen 3f1065cb unchanged; guard aborts during outage are not candidate evidence. Clear this key when the board recovers.",
   "yukonTableTruncation": "Entry 436: default board pull truncates (1295 rows; receipts 90c131dc and 2c885d64 were missing, which breaks e197_refit.build_receipts). Remedy: GET /api/benchmarks/<id>/submissions?limit=2000 returns the complete table (1379 rows on 2026-08-25). Refresh /tmp/yukon-board/full.json with that query before running the receipt-anchored desk machinery."
 }
