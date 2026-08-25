@@ -1358,66 +1358,8 @@ public final class Qwen36MTPBlockSession {
     ///
     /// NO SYNCHRONIZATION IS ADDED. `asyncEval` submits and returns; the commit
     /// phase stays host-serial and never waits for the device.
-    ///
-    /// The shipped setting is unconditional. `DARKBLOOM_E204_CHAIN_ARM` exists
-    /// so ONE process can measure both arms against each other; it is a
-    /// research control, and a ranked run never sets it.
-    internal enum ChainPrefetchArm {
-        case on
-        case off
-        /// Switch arms every `window` rounds in ABBA order, inside one
-        /// process. Both arms then share the seed, the prompt, the warm
-        /// caches and the thermal ramp, so monotone drift cancels to first
-        /// order instead of loading onto whichever arm ran second.
-        ///
-        /// `inverted` is the exact complement of the same schedule, and it
-        /// exists because one alternating leg is NOT enough. A round's cost is
-        /// dominated by whether it accepts its whole chain, that outcome
-        /// sequence is fixed by the prompt, and a window landing unevenly on
-        /// it loads one arm with the expensive rejection rounds — measured at
-        /// a 0.703 / 0.854 full-accept split on the first `alt2` session.
-        /// Running the complement as a second leg gives every round index one
-        /// ON and one OFF observation of IDENTICAL difficulty, and the two
-        /// legs' session offsets enter the paired difference with opposite
-        /// signs, so they cancel instead of loading onto one arm.
-        case alternating(window: Int, inverted: Bool)
-    }
-
-    /// Parsed once. Reading the environment per round would put a dictionary
-    /// lookup in the timed tail.
-    internal static let chainPrefetchArm: ChainPrefetchArm = {
-        guard let raw = ProcessInfo.processInfo
-            .environment["DARKBLOOM_E204_CHAIN_ARM"], !raw.isEmpty
-        else { return .on }
-        if raw == "off" { return .off }
-        if raw.hasPrefix("alt") {
-            var body = raw.dropFirst(3)
-            let inverted = body.hasSuffix("i")
-            if inverted { body = body.dropLast() }
-            if let window = Int(body), window > 0 {
-                return .alternating(window: window, inverted: inverted)
-            }
-        }
-        return .on
-    }()
-
-    internal static func chainPrefetchEnabled(round: Int) -> Bool {
-        switch chainPrefetchArm {
-        case .on: return true
-        case .off: return false
-        case .alternating(let window, let inverted):
-            // A B B A over four windows: the on-arm rounds sit at both ends
-            // of the block and the off-arm rounds sit in the middle, so a
-            // linear drift across the block contributes equally to each.
-            let block = (round / window) % 4
-            let enabled = block == 0 || block == 3
-            return inverted ? !enabled : enabled
-        }
-    }
-
     private func prefetchChain(after step: HeadFlushStep, offeredDepth: Int) {
         prefetchChainPredicted = 0
-        guard Self.chainPrefetchEnabled(round: roundCount) else { return }
         let predicted = predictedNextDraftCount(offeredDepth: offeredDepth)
         prefetchChainPredicted = predicted
         guard predicted > 1 else { return }
@@ -1805,12 +1747,9 @@ public final class Qwen36MTPBlockSession {
         var chainStart = 1
         var chainTake = 0
         var chainOver = 0
-        // The arm THIS round experienced. `pf_chain` records the gate the
-        // round's own tail resolved, which is the arm the NEXT round will
-        // experience, so an alternating session cannot be attributed by it:
-        // a round's time depends on whether the PREVIOUS round prefetched.
-        // Deriving that from the previous trace line would also miss the
-        // rounds whose prefetch was handed back by `undoHeadPrefetch`.
+        // Whether a chain from the previous round was actually available to
+        // THIS round. `undoHeadPrefetch` can hand a prefetch back, so this
+        // cannot be derived from the previous round's trace line.
         var chainAvailable = false
         if usedPrefetch, let chain = pendingHeadChain {
             chainAvailable = true
@@ -2133,14 +2072,14 @@ public final class Qwen36MTPBlockSession {
                 + "pf_made=\(prefetchMadeCount) "
                 + "pf_hits=\(prefetchHitCount) "
                 + "pf_undo=\(prefetchUndoCount) "
-                // E204 deeper-chain prefetch. `pf_chain` is the ARM WITNESS
-                // read from the run itself: it is the gate this round's tail
-                // resolved, so a leg cannot be attributed to an arm it did not
-                // execute. `pf_chain_take` is how many steps this round
-                // consumed and `pf_chain_over` how many it discarded, so a
-                // mispredicted width is visible per round rather than only in
-                // the totals.
-                + "pf_chain=\(Self.chainPrefetchEnabled(round: roundCount) ? 1 : 0) "
+                // E204 deeper-chain prefetch census. `pf_chain` is a build
+                // witness like `pf`: the chain prefetch is unconditional, so a
+                // trace without it came from a build that predates the
+                // mechanism. `pf_chain_in` says this round received a chain,
+                // and `pf_chain_take` / `pf_chain_over` show how many steps it
+                // consumed and discarded, so a mispredicted width is visible
+                // per round rather than only in the totals.
+                + "pf_chain=1 "
                 + "pf_chain_in=\(chainAvailable ? 1 : 0) "
                 + "pf_chain_pred=\(prefetchChainPredicted) "
                 + "pf_chain_take=\(chainTake) "
