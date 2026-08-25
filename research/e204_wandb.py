@@ -42,6 +42,12 @@ def flatten(doc: dict, prefix: str = "") -> dict:
     return flat
 
 
+def table(rows: list) -> wandb.Table:
+    columns = sorted({key for row in rows for key in row})
+    return wandb.Table(
+        columns=columns, data=[[row.get(c) for c in columns] for row in rows])
+
+
 def seam_table(doc: dict) -> wandb.Table:
     rows = []
     for window in ("protocol_seam", "overlappable"):
@@ -96,10 +102,10 @@ def main() -> None:
         if "protocol_seam" in doc:
             run.log({f"{prefix}/seam": seam_table(doc)})
         if "arms" in doc:
-            run.log({f"{prefix}/arms": wandb.Table(
-                columns=sorted({k for row in doc["arms"] for k in row}),
-                data=[[row.get(c) for c in sorted({k for r in doc["arms"] for k in r})]
-                      for row in doc["arms"]])})
+            run.log({f"{prefix}/arms": table(doc["arms"])})
+        if "legs" in doc:
+            run.log({f"{prefix}/legs": table(
+                [flatten(leg) for leg in doc["legs"]])})
     print(run.url)
     run.finish()
 

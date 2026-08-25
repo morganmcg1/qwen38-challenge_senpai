@@ -1,0 +1,54 @@
+{
+ "e204-s1-off": [
+  {
+   "kind": "serial",
+   "rounds": 512,
+   "seed_wall_us": 1024287,
+   "round_anchored_us": 33430481,
+   "leg_us": 37513584.97142792,
+   "outside_anchors_us": 3058816.9714279175,
+   "anchored_share": 0.8911566576604769,
+   "seed_share": 0.027304428536492696,
+   "outside_share": 0.0815389138030304,
+   "outside_us_per_round": 5974.251897320151
+  },
+  {
+   "kind": "mtp",
+   "rounds": 78,
+   "seed_wall_us": 1024156,
+   "round_anchored_us": 10656143,
+   "leg_us": 14617033.958435059,
+   "outside_anchors_us": 2936734.9584350586,
+   "anchored_share": 0.7290222510464002,
+   "seed_share": 0.0700659246542278,
+   "outside_share": 0.20091182429937202,
+   "outside_us_per_round": 37650.44818506485
+  }
+ ],
+ "e204-s1-on": [
+  {
+   "kind": "serial",
+   "rounds": 512,
+   "seed_wall_us": 1023667,
+   "round_anchored_us": 33482850,
+   "leg_us": 37568595.05176544,
+   "outside_anchors_us": 3062078.051765442,
+   "anchored_share": 0.8912457320765994,
+   "seed_share": 0.027247944688628845,
+   "outside_share": 0.08150632323477178,
+   "outside_us_per_round": 5980.621194854379
+  },
+  {
+   "kind": "mtp",
+   "rounds": 78,
+   "seed_wall_us": 1024552,
+   "round_anchored_us": 10544953,
+   "leg_us": 14497880.101203918,
+   "outside_anchors_us": 2928375.1012039185,
+   "anchored_share": 0.7273444756329814,
+   "seed_share": 0.0706690904358438,
+   "outside_share": 0.20198643393117477,
+   "outside_us_per_round": 37543.270528255365
+  }
+ ]
+}

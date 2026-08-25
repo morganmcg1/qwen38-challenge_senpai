@@ -1,0 +1,102 @@
+{
+ "artifact": "stage3-leg-level-abba",
+ "experiment": "e204-round-end-seam-overlap",
+ "harness": "local",
+ "statistic": "whole-leg absolute mtp_seconds_per_token (RULE 397)",
+ "order": [
+  "off",
+  "on",
+  "on",
+  "off"
+ ],
+ "legs": [
+  {
+   "tag": "e204-abba-1-off",
+   "arm": "off",
+   "mtp_seconds_per_token": 0.02852072473615408,
+   "serial_seconds_per_token": 0.07321562711149454,
+   "ratio": 2.567102617090347,
+   "fidelity": {
+    "effective_mean_draft_len": 6.358974358974359,
+    "accepted_draft_rate": 0.8770161290322581,
+    "all_tokens_matched": true,
+    "residual_divergence_count": 0,
+    "decode_tokens": 512,
+    "mtp_depth": 8
+   }
+  },
+  {
+   "tag": "e204-abba-2-on",
+   "arm": "on",
+   "mtp_seconds_per_token": 0.028532943222671747,
+   "serial_seconds_per_token": 0.07325678318738937,
+   "ratio": 2.5674457281077436,
+   "fidelity": {
+    "effective_mean_draft_len": 6.358974358974359,
+    "accepted_draft_rate": 0.8770161290322581,
+    "all_tokens_matched": true,
+    "residual_divergence_count": 0,
+    "decode_tokens": 512,
+    "mtp_depth": 8
+   }
+  },
+  {
+   "tag": "e204-abba-3-on",
+   "arm": "on",
+   "mtp_seconds_per_token": 0.028567488305270672,
+   "serial_seconds_per_token": 0.07308229873888195,
+   "ratio": 2.55823326005872,
+   "fidelity": {
+    "effective_mean_draft_len": 6.358974358974359,
+    "accepted_draft_rate": 0.8770161290322581,
+    "all_tokens_matched": true,
+    "residual_divergence_count": 0,
+    "decode_tokens": 512,
+    "mtp_depth": 8
+   }
+  },
+  {
+   "tag": "e204-abba-4-off",
+   "arm": "off",
+   "mtp_seconds_per_token": 0.028524084016680717,
+   "serial_seconds_per_token": 0.0731242795009166,
+   "ratio": 2.563597816433087,
+   "fidelity": {
+    "effective_mean_draft_len": 6.358974358974359,
+    "accepted_draft_rate": 0.8770161290322581,
+    "all_tokens_matched": true,
+    "residual_divergence_count": 0,
+    "decode_tokens": 512,
+    "mtp_depth": 8
+   }
+  }
+ ],
+ "off_mean_mtp_seconds_per_token": 0.0285224043764174,
+ "on_mean_mtp_seconds_per_token": 0.02855021576397121,
+ "delta_on_minus_off": 2.7811387553811073e-05,
+ "delta_fraction_of_off": 0.0009750716379579065,
+ "on_faster_by_fraction": -0.0009750716379579065,
+ "pair_deltas_on_minus_off": [
+  1.221848651766777e-05,
+  4.3404288589954376e-05
+ ],
+ "pair_deltas_agree_in_sign": true,
+ "off_pair_spread_fraction": 0.00011777690556184375,
+ "on_pair_spread_fraction": 0.001209976235714429,
+ "serial_control": {
+  "off_mean": 0.07316995330620557,
+  "on_mean": 0.07316954096313566,
+  "delta_fraction": -5.635415239168017e-06
+ },
+ "fidelity_identical_across_legs": true,
+ "fidelity": {
+  "effective_mean_draft_len": 6.358974358974359,
+  "accepted_draft_rate": 0.8770161290322581,
+  "all_tokens_matched": true,
+  "residual_divergence_count": 0,
+  "decode_tokens": 512,
+  "mtp_depth": 8
+ },
+ "band": "relocation, no end-to-end value",
+ "promote": false
+}
