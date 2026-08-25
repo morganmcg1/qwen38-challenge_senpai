@@ -46,6 +46,11 @@ POOLED_CELLS = ("gdn.in_proj", "mlp.gate_up")
 ROWS_PER_SIMD = 4
 SIMD_WIDTH = 32
 BLOCK_SIZE = 512
+# RULE 410 (advisor, Entry 447, from E222 FINDING 586/587): every priced stream
+# must carry an access-regime tag, and `b_stream = 1.9292 us/MiB` prices
+# first-touch DRAM only.
+B_STREAM_US_PER_MIB = 1.9292
+CACHE_SERVED_FRACTION_BOUND = 0.36
 
 
 def lane_k_blocks(k: int, n: int, groups: int) -> int:
@@ -72,6 +77,13 @@ def main() -> None:
     ap.add_argument(
         "--desk", type=pathlib.Path,
         default=pathlib.Path("research/e223-artifacts/e223-desk-pricing.json"))
+    ap.add_argument(
+        "--base-census", type=pathlib.Path,
+        default=pathlib.Path("research/e223-artifacts/e223-census-base.json"))
+    ap.add_argument(
+        "--arm-census", type=pathlib.Path,
+        default=pathlib.Path(
+            "research/e223-artifacts/e223-census-xf32ship.json"))
     ap.add_argument("--out", type=pathlib.Path, required=True)
     args = ap.parse_args()
 
@@ -81,6 +93,31 @@ def main() -> None:
                          % args.xdtype_json)
     units = chain_slopes(blob)
     desk = json.loads(args.desk.read_text())["pricing"]["xf32flat"]["arms"]
+
+    # RULE 407: the register and spill witness for the EXACT instantiation that
+    # was timed. `xf32ship` is the source form `e223ActivationF32Header()`
+    # builds, so these are the timed kernel's own numbers.
+    base_agx = json.loads(args.base_census.read_text())["agx"]
+    arm_agx = json.loads(args.arm_census.read_text())["agx"]
+    occupancy = {}
+    for arch in sorted(arm_agx):
+        per_na = {}
+        for na in range(2, 7):
+            key = "na%d_tbl" % na
+            if key not in arm_agx[arch] or key not in base_agx[arch]:
+                continue
+            b, a = base_agx[arch][key], arm_agx[arch][key]
+            per_na["na%d" % na] = {
+                "registers_bf16": b["registers"],
+                "registers_f32": a["registers"],
+                "registers_delta": a["registers"] - b["registers"],
+                "spill_bytes_bf16": b["spill_bytes"],
+                "spill_bytes_f32": a["spill_bytes"],
+                "spill_bytes_delta": a["spill_bytes"] - b["spill_bytes"],
+                "text_bytes_bf16": b["text_bytes"],
+                "text_bytes_f32": a["text_bytes"],
+            }
+        occupancy[arch] = per_na
 
     grid: dict[tuple, dict[str, dict]] = {}
     for unit in units.values():
@@ -148,6 +185,26 @@ def main() -> None:
         if relief_ms < 0 and extra_mb:
             row["measured_us_per_issued_mb_upper_bound"] = (
                 -relief_ms * 1000.0 / inv / extra_mb)
+
+        # RULE 410 access-regime split of the extra activation bytes. The
+        # activation slab is `m * k` values and every simdgroup in the dispatch
+        # re-reads all of it, so first touch is the slab itself and the rest is
+        # cache-served/concurrent inside one dispatch.
+        first_touch_mb = f["m"] * k * 2 / 1048576.0  # bf16 -> f32 adds 2 B/value
+        row["access_regime"] = {
+            "stream": "activation re-read, extra bytes from bf16 -> f32",
+            "first_touch_mb_per_invocation": first_touch_mb,
+            "cache_served_concurrent_mb_per_invocation":
+                extra_mb - first_touch_mb,
+            "cache_served_fraction": (
+                (extra_mb - first_touch_mb) / extra_mb if extra_mb else None),
+            "tag": "cache-served/concurrent",
+            "first_touch_cost_ms_per_round_at_b":
+                first_touch_mb * B_STREAM_US_PER_MIB * inv / 1000.0,
+            "cache_served_cost_ms_per_round_at_0p36b":
+                (extra_mb - first_touch_mb) * B_STREAM_US_PER_MIB
+                * CACHE_SERVED_FRACTION_BOUND * inv / 1000.0,
+        }
 
         entry = desk.get(desk_key(cell, groups, cold, na))
         if entry is not None:
@@ -226,6 +283,17 @@ def main() -> None:
             e["meets_advance_bar"] for e in pooled.values()),
         "any_arm_meets_stop_bar": any(
             e["meets_stop_bar"] for e in pooled.values()),
+        # RULE 410 guard. The kill rests on a matched measurement of the arm
+        # itself, not on any b-priced stream term, so no value of b' can move
+        # it. Recording that explicitly is what makes the decision safe to take
+        # before E226 supplies refitted coefficients.
+        "decision_uses_b_stream": False,
+        "decision_flips_anywhere_in_b_prime": False,
+        "b_independence_note":
+            "The advance bar is +1.0 ms/round. Every pooled arm above NA=2 "
+            "measures between -1.7 and -354.8 ms/round, and the best arm is "
+            "+0.300 +/- 0.446, which does not clear the +0.3 stop bar with "
+            "separation. b' enters no term of this comparison.",
     }
 
     out = {
@@ -244,6 +312,9 @@ def main() -> None:
             "bfloat16": INSN_PER_COLUMN_BF16, "float32": INSN_PER_COLUMN_F32},
         "source": str(args.xdtype_json),
         "desk_source": str(args.desk),
+        "rule_407_occupancy_witness": occupancy,
+        "rule_410_b_stream_us_per_mib": B_STREAM_US_PER_MIB,
+        "rule_410_cache_served_fraction_bound": CACHE_SERVED_FRACTION_BOUND,
         "arms": arms,
         "pooled": pooled,
         "verdict": verdict,

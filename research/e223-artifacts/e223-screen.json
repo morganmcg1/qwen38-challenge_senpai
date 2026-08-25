@@ -1,0 +1,2550 @@
+{
+ "arms": [
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 80.44921875,
+    "cache_served_cost_ms_per_round_at_0p36b": 2.681901495,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0018086250000000001,
+    "first_touch_mb_per_invocation": 0.01953125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": true,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 80.46875,
+   "groups": 1,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 1318400,
+   "m": 2,
+   "measured_ci95_half_width_ms_per_round": 0.2643156117646995,
+   "measured_in_kernel_relief_ms_per_round": -0.01402862994652469,
+   "measured_us_per_issued_mb_upper_bound": 0.0036320077531455503,
+   "n": 16480,
+   "na": 2,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.0012098152063365,
+   "removed_instructions_per_invocation": 33223680.000000022,
+   "xbf16_ci95_us": [
+    238.85344204545447,
+    244.39577397504434
+   ],
+   "xbf16_ms_per_round": 11.59567996256684,
+   "xbf16_us_per_invocation": 241.57666588680914,
+   "xf32_ci95_us": [
+    240.0771033645276,
+    245.54792192513355
+   ],
+   "xf32_ms_per_round": 11.609708592513364,
+   "xf32_us_per_invocation": 241.86892901069507
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 80.44921875,
+    "cache_served_cost_ms_per_round_at_0p36b": 2.681901495,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0018086250000000001,
+    "first_touch_mb_per_invocation": 0.01953125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": true,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 80.46875,
+   "groups": 1,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 1318400,
+   "m": 2,
+   "measured_ci95_half_width_ms_per_round": 0.3644370322780762,
+   "measured_in_kernel_relief_ms_per_round": -0.3375468675935845,
+   "measured_us_per_issued_mb_upper_bound": 0.08739077478151054,
+   "n": 16480,
+   "na": 2,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.0294518044972651,
+   "removed_instructions_per_invocation": 33223680.000000022,
+   "xbf16_ci95_us": [
+    235.5241710882352,
+    245.99837078431366
+   ],
+   "xbf16_ms_per_round": 11.460991044705876,
+   "xbf16_us_per_invocation": 238.77064676470573,
+   "xf32_ci95_us": [
+    243.6190577985739,
+    248.32973444741526
+   ],
+   "xf32_ms_per_round": 11.79853791229946,
+   "xf32_us_per_invocation": 245.8028731729054
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 160.8984375,
+    "cache_served_cost_ms_per_round_at_0p36b": 5.36380299,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0036172500000000002,
+    "first_touch_mb_per_invocation": 0.0390625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 160.9375,
+   "groups": 2,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2636800,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.3549747000000016,
+   "measured_in_kernel_relief_ms_per_round": -0.5840765999999985,
+   "measured_us_per_issued_mb_upper_bound": 0.07560862135922311,
+   "n": 16480,
+   "na": 2,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.0333749486456045,
+   "removed_instructions_per_invocation": 66447360.000000045,
+   "xbf16_ci95_us": [
+    361.97343333333316,
+    366.9359249999999
+   ],
+   "xbf16_ms_per_round": 17.500449399999994,
+   "xbf16_us_per_invocation": 364.5926958333332,
+   "xf32_ci95_us": [
+    373.67293333333316,
+    383.5010541666665
+   ],
+   "xf32_ms_per_round": 18.08452599999999,
+   "xf32_us_per_invocation": 376.7609583333332
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 160.8984375,
+    "cache_served_cost_ms_per_round_at_0p36b": 5.36380299,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0036172500000000002,
+    "first_touch_mb_per_invocation": 0.0390625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 160.9375,
+   "groups": 2,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2636800,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.24993389999999543,
+   "measured_in_kernel_relief_ms_per_round": -0.2958751999999995,
+   "measured_us_per_issued_mb_upper_bound": 0.03830099676375398,
+   "n": 16480,
+   "na": 2,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.0166219529178973,
+   "removed_instructions_per_invocation": 66447360.000000045,
+   "xbf16_ci95_us": [
+    369.8883624999999,
+    372.84479166666654
+   ],
+   "xbf16_ms_per_round": 17.800266999999995,
+   "xbf16_us_per_invocation": 370.83889583333325,
+   "xf32_ci95_us": [
+    374.59722499999987,
+    382.05470833333305
+   ],
+   "xf32_ms_per_round": 18.096142199999996,
+   "xf32_us_per_invocation": 377.0029624999999
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 120.673828125,
+    "cache_served_cost_ms_per_round_at_0p36b": 4.0228522425,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0027129374999999996,
+    "first_touch_mb_per_invocation": 0.029296875,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 120.703125,
+   "groups": 1,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 1318400,
+   "m": 3,
+   "measured_ci95_half_width_ms_per_round": 0.3195122463636371,
+   "measured_in_kernel_relief_ms_per_round": -0.7155993994652444,
+   "measured_us_per_issued_mb_upper_bound": 0.12351230195732375,
+   "n": 16480,
+   "na": 3,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.0620162316644175,
+   "removed_instructions_per_invocation": 49835520.00000004,
+   "xbf16_ci95_us": [
+    236.9859241532976,
+    245.39050483511585
+   ],
+   "xbf16_ms_per_round": 11.538904900534755,
+   "xbf16_us_per_invocation": 240.39385209447406,
+   "xf32_ci95_us": [
+    253.1605683333332,
+    258.0689979166665
+   ],
+   "xf32_ms_per_round": 12.254504299999999,
+   "xf32_us_per_invocation": 255.30217291666665
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 120.673828125,
+    "cache_served_cost_ms_per_round_at_0p36b": 4.0228522425,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0027129374999999996,
+    "first_touch_mb_per_invocation": 0.029296875,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 120.703125,
+   "groups": 1,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 1318400,
+   "m": 3,
+   "measured_ci95_half_width_ms_per_round": 0.407731131957225,
+   "measured_in_kernel_relief_ms_per_round": -0.7395546620320833,
+   "measured_us_per_issued_mb_upper_bound": 0.1276469751080187,
+   "n": 16480,
+   "na": 3,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.0639086685684842,
+   "removed_instructions_per_invocation": 49835520.00000004,
+   "xbf16_ci95_us": [
+    236.81108794563272,
+    245.01480394385027
+   ],
+   "xbf16_ms_per_round": 11.572055537967914,
+   "xbf16_us_per_invocation": 241.08449037433152,
+   "xf32_ci95_us": [
+    253.5729174999998,
+    262.3579986666666
+   ],
+   "xf32_ms_per_round": 12.311610199999995,
+   "xf32_us_per_invocation": 256.4918791666666
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 241.34765625,
+    "cache_served_cost_ms_per_round_at_0p36b": 8.045704485,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.005425874999999999,
+    "first_touch_mb_per_invocation": 0.05859375,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 241.40625,
+   "groups": 2,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2636800,
+   "m": 6,
+   "measured_ci95_half_width_ms_per_round": 0.2127455,
+   "measured_in_kernel_relief_ms_per_round": -13.767758799999994,
+   "measured_us_per_issued_mb_upper_bound": 1.1881560992448754,
+   "n": 16480,
+   "na": 3,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.724943521550461,
+   "removed_instructions_per_invocation": 99671040.00000007,
+   "xbf16_ci95_us": [
+    394.67240416666664,
+    397.94321666666656
+   ],
+   "xbf16_ms_per_round": 18.991491599999993,
+   "xbf16_us_per_invocation": 395.6560749999999,
+   "xf32_ci95_us": [
+    680.5427249999998,
+    686.1363083333332
+   ],
+   "xf32_ms_per_round": 32.75925039999999,
+   "xf32_us_per_invocation": 682.4843833333331
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 241.34765625,
+    "cache_served_cost_ms_per_round_at_0p36b": 8.045704485,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.005425874999999999,
+    "first_touch_mb_per_invocation": 0.05859375,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 241.40625,
+   "groups": 2,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2636800,
+   "m": 6,
+   "measured_ci95_half_width_ms_per_round": 0.8429653347727253,
+   "measured_in_kernel_relief_ms_per_round": -13.266067581818172,
+   "measured_us_per_issued_mb_upper_bound": 1.1448602012356566,
+   "n": 16480,
+   "na": 3,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.6935240350497425,
+   "removed_instructions_per_invocation": 99671040.00000007,
+   "xbf16_ci95_us": [
+    396.3655624999999,
+    401.6949437405301
+   ],
+   "xbf16_ms_per_round": 19.12849001818181,
+   "xbf16_us_per_invocation": 398.5102087121211,
+   "xf32_ci95_us": [
+    656.4551999999999,
+    686.2493743749999
+   ],
+   "xf32_ms_per_round": 32.394557599999985,
+   "xf32_us_per_invocation": 674.8866166666663
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 160.8984375,
+    "cache_served_cost_ms_per_round_at_0p36b": 5.36380299,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0036172500000000002,
+    "first_touch_mb_per_invocation": 0.0390625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 0.47619999999999996,
+    "gross_relief_ms_per_round": 0.5513,
+    "predicted_in_kernel_net_ms_per_round": 0.07510000000000006,
+    "predicted_shipped_net_ms_per_round": -0.1072,
+    "slab_fill_ms_per_round": 0.18239999999999998,
+    "us_per_issued_mb": 0.06164
+   },
+   "desk_prediction_error_ms_per_round": -1.398833599999998,
+   "extra_issued_activation_mb_per_invocation": 160.9375,
+   "groups": 1,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 1318400,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.43645629999999574,
+   "measured_in_kernel_relief_ms_per_round": -1.3237335999999977,
+   "measured_shipped_net_ms_per_round": -1.5061335999999976,
+   "measured_us_per_issued_mb_upper_bound": 0.1713571003236243,
+   "n": 16480,
+   "na": 4,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.1069660527795846,
+   "removed_instructions_per_invocation": 66447360.000000045,
+   "xbf16_ci95_us": [
+    255.1402925,
+    263.3923916666666
+   ],
+   "xbf16_ms_per_round": 12.375268279999997,
+   "xbf16_us_per_invocation": 257.8180891666666,
+   "xf32_ci95_us": [
+    281.76917583333324,
+    291.70275583333313
+   ],
+   "xf32_ms_per_round": 13.699001879999994,
+   "xf32_us_per_invocation": 285.3958724999999
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 160.8984375,
+    "cache_served_cost_ms_per_round_at_0p36b": 5.36380299,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0036172500000000002,
+    "first_touch_mb_per_invocation": 0.0390625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 0.5007,
+    "gross_relief_ms_per_round": 0.5403,
+    "predicted_in_kernel_net_ms_per_round": 0.03959999999999997,
+    "predicted_shipped_net_ms_per_round": -0.1428,
+    "slab_fill_ms_per_round": 0.18239999999999998,
+    "us_per_issued_mb": 0.06482
+   },
+   "desk_prediction_error_ms_per_round": -1.441377720000001,
+   "extra_issued_activation_mb_per_invocation": 160.9375,
+   "groups": 1,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 1318400,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.4470187552941143,
+   "measured_in_kernel_relief_ms_per_round": -1.401777720000001,
+   "measured_shipped_net_ms_per_round": -1.584177720000001,
+   "measured_us_per_issued_mb_upper_bound": 0.18145989902912635,
+   "n": 16480,
+   "na": 4,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.112299098182411,
+   "removed_instructions_per_invocation": 66447360.000000045,
+   "xbf16_ci95_us": [
+    257.18925411764707,
+    263.2818080882352
+   ],
+   "xbf16_ms_per_round": 12.482537639999991,
+   "xbf16_us_per_invocation": 260.0528674999998,
+   "xf32_ci95_us": [
+    282.85369916666656,
+    295.3869266666665
+   ],
+   "xf32_ms_per_round": 13.884315359999993,
+   "xf32_us_per_invocation": 289.25656999999984
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 321.796875,
+    "cache_served_cost_ms_per_round_at_0p36b": 10.72760598,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0072345000000000005,
+    "first_touch_mb_per_invocation": 0.078125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 0.3315,
+    "gross_relief_ms_per_round": 0.9883,
+    "predicted_in_kernel_net_ms_per_round": 0.6567999999999999,
+    "predicted_shipped_net_ms_per_round": 0.4744,
+    "slab_fill_ms_per_round": 0.18239999999999998,
+    "us_per_issued_mb": 0.04291
+   },
+   "desk_prediction_error_ms_per_round": -32.53054812727271,
+   "extra_issued_activation_mb_per_invocation": 321.875,
+   "groups": 2,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2636800,
+   "m": 8,
+   "measured_ci95_half_width_ms_per_round": 1.9758436372727328,
+   "measured_in_kernel_relief_ms_per_round": -31.873748127272712,
+   "measured_shipped_net_ms_per_round": -32.056148127272714,
+   "measured_us_per_issued_mb_upper_bound": 2.0630257687555154,
+   "n": 16480,
+   "na": 4,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 2.476375066370008,
+   "removed_instructions_per_invocation": 132894720.00000009,
+   "xbf16_ci95_us": [
+    447.6579856060605,
+    451.30354132575746
+   ],
+   "xbf16_ms_per_round": 21.589194272727266,
+   "xbf16_us_per_invocation": 449.77488068181805,
+   "xf32_ci95_us": [
+    1065.9609374999998,
+    1144.6422
+   ],
+   "xf32_ms_per_round": 53.46294239999999,
+   "xf32_us_per_invocation": 1113.8112999999996
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 321.796875,
+    "cache_served_cost_ms_per_round_at_0p36b": 10.72760598,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0072345000000000005,
+    "first_touch_mb_per_invocation": 0.078125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 0.3274,
+    "gross_relief_ms_per_round": 0.925,
+    "predicted_in_kernel_net_ms_per_round": 0.5976,
+    "predicted_shipped_net_ms_per_round": 0.4152,
+    "slab_fill_ms_per_round": 0.18239999999999998,
+    "us_per_issued_mb": 0.04238
+   },
+   "desk_prediction_error_ms_per_round": -33.26736363636363,
+   "extra_issued_activation_mb_per_invocation": 321.875,
+   "groups": 2,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2636800,
+   "m": 8,
+   "measured_ci95_half_width_ms_per_round": 1.6338089000000044,
+   "measured_in_kernel_relief_ms_per_round": -32.66976363636363,
+   "measured_shipped_net_ms_per_round": -32.852163636363635,
+   "measured_us_per_issued_mb_upper_bound": 2.1145478081788758,
+   "n": 16480,
+   "na": 4,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 2.515249859063288,
+   "removed_instructions_per_invocation": 132894720.00000009,
+   "xbf16_ci95_us": [
+    446.08704507575743,
+    454.004586742424
+   ],
+   "xbf16_ms_per_round": 21.560644563636355,
+   "xbf16_us_per_invocation": 449.18009507575744,
+   "xf32_ci95_us": [
+    1093.6104124999995,
+    1153.7682416666664
+   ],
+   "xf32_ms_per_round": 54.23040819999999,
+   "xf32_us_per_invocation": 1129.8001708333331
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 201.123046875,
+    "cache_served_cost_ms_per_round_at_0p36b": 6.7047537375,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0045215624999999995,
+    "first_touch_mb_per_invocation": 0.048828125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 1.0533000000000001,
+    "gross_relief_ms_per_round": 0.6892,
+    "predicted_in_kernel_net_ms_per_round": -0.3641000000000001,
+    "predicted_shipped_net_ms_per_round": -0.5465,
+    "slab_fill_ms_per_round": 0.18239999999999998,
+    "us_per_issued_mb": 0.10908
+   },
+   "desk_prediction_error_ms_per_round": -26.62161047999997,
+   "extra_issued_activation_mb_per_invocation": 201.171875,
+   "groups": 1,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 1318400,
+   "m": 5,
+   "measured_ci95_half_width_ms_per_round": 0.20356223749999527,
+   "measured_in_kernel_relief_ms_per_round": -26.98571047999997,
+   "measured_shipped_net_ms_per_round": -27.16811047999997,
+   "measured_us_per_issued_mb_upper_bound": 2.794636684012942,
+   "n": 16480,
+   "na": 5,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 2.977783175050055,
+   "removed_instructions_per_invocation": 83059200.00000006,
+   "xbf16_ci95_us": [
+    282.76044249999995,
+    286.46115666666645
+   ],
+   "xbf16_ms_per_round": 13.644423119999999,
+   "xbf16_us_per_invocation": 284.25881499999997,
+   "xf32_ci95_us": [
+    844.8632124999997,
+    849.6442582291663
+   ],
+   "xf32_ms_per_round": 40.63013359999997,
+   "xf32_us_per_invocation": 846.461116666666
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 201.123046875,
+    "cache_served_cost_ms_per_round_at_0p36b": 6.7047537375,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.0045215624999999995,
+    "first_touch_mb_per_invocation": 0.048828125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 1.0321,
+    "gross_relief_ms_per_round": 0.6754,
+    "predicted_in_kernel_net_ms_per_round": -0.3567,
+    "predicted_shipped_net_ms_per_round": -0.5391,
+    "slab_fill_ms_per_round": 0.18239999999999998,
+    "us_per_issued_mb": 0.10689
+   },
+   "desk_prediction_error_ms_per_round": -26.871335679999998,
+   "extra_issued_activation_mb_per_invocation": 201.171875,
+   "groups": 1,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 1318400,
+   "m": 5,
+   "measured_ci95_half_width_ms_per_round": 0.34104358,
+   "measured_in_kernel_relief_ms_per_round": -27.228035679999998,
+   "measured_shipped_net_ms_per_round": -27.41043568,
+   "measured_us_per_issued_mb_upper_bound": 2.819731850355987,
+   "n": 16480,
+   "na": 5,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 2.9794329019696106,
+   "removed_instructions_per_invocation": 83059200.00000006,
+   "xbf16_ci95_us": [
+    283.22413166666655,
+    290.6009599999999
+   ],
+   "xbf16_ms_per_round": 13.75547292,
+   "xbf16_us_per_invocation": 286.5723525,
+   "xf32_ci95_us": [
+    849.9932499999998,
+    856.8265708333331
+   ],
+   "xf32_ms_per_round": 40.98350859999999,
+   "xf32_us_per_invocation": 853.8230958333332
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 402.24609375,
+    "cache_served_cost_ms_per_round_at_0p36b": 13.409507475,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.009043124999999999,
+    "first_touch_mb_per_invocation": 0.09765625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 1.0224000000000002,
+    "gross_relief_ms_per_round": 1.2353,
+    "predicted_in_kernel_net_ms_per_round": 0.21289999999999987,
+    "predicted_shipped_net_ms_per_round": 0.0305,
+    "slab_fill_ms_per_round": 0.18239999999999998,
+    "us_per_issued_mb": 0.10588
+   },
+   "desk_prediction_error_ms_per_round": -92.74598966666665,
+   "extra_issued_activation_mb_per_invocation": 402.34375,
+   "groups": 2,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2636800,
+   "m": 10,
+   "measured_ci95_half_width_ms_per_round": 0.7394340999999959,
+   "measured_in_kernel_relief_ms_per_round": -92.53308966666664,
+   "measured_shipped_net_ms_per_round": -92.71548966666664,
+   "measured_us_per_issued_mb_upper_bound": 4.791357393743256,
+   "n": 16480,
+   "na": 5,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 4.898548186943653,
+   "removed_instructions_per_invocation": 166118400.00000012,
+   "xbf16_ci95_us": [
+    491.7034249999998,
+    497.0817874999998
+   ],
+   "xbf16_ms_per_round": 23.735268933333323,
+   "xbf16_us_per_invocation": 494.4847694444442,
+   "xf32_ci95_us": [
+    2410.0498583333324,
+    2435.481249999999
+   ],
+   "xf32_ms_per_round": 116.26835859999997,
+   "xf32_us_per_invocation": 2422.2574708333327
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 402.24609375,
+    "cache_served_cost_ms_per_round_at_0p36b": 13.409507475,
+    "cache_served_fraction": 0.999757281553398,
+    "first_touch_cost_ms_per_round_at_b": 0.009043124999999999,
+    "first_touch_mb_per_invocation": 0.09765625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "gdn.in_proj",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 1.133,
+    "gross_relief_ms_per_round": 1.1562,
+    "predicted_in_kernel_net_ms_per_round": 0.023199999999999887,
+    "predicted_shipped_net_ms_per_round": -0.1591,
+    "slab_fill_ms_per_round": 0.18239999999999998,
+    "us_per_issued_mb": 0.11733
+   },
+   "desk_prediction_error_ms_per_round": -91.50755719999997,
+   "extra_issued_activation_mb_per_invocation": 402.34375,
+   "groups": 2,
+   "invocations_per_round": 48,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2636800,
+   "m": 10,
+   "measured_ci95_half_width_ms_per_round": 1.2133062124999983,
+   "measured_in_kernel_relief_ms_per_round": -91.48435719999996,
+   "measured_shipped_net_ms_per_round": -91.66675719999996,
+   "measured_us_per_issued_mb_upper_bound": 4.73705409449838,
+   "n": 16480,
+   "na": 5,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 4.845388560907326,
+   "removed_instructions_per_invocation": 166118400.00000012,
+   "xbf16_ci95_us": [
+    492.07956562499993,
+    498.95519531249977
+   ],
+   "xbf16_ms_per_round": 23.790666599999998,
+   "xbf16_us_per_invocation": 495.6388874999999,
+   "xf32_ci95_us": [
+    2385.0308833333324,
+    2428.709679166666
+   ],
+   "xf32_ms_per_round": 115.27502379999997,
+   "xf32_us_per_invocation": 2401.5629958333325
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 84.93359375,
+    "cache_served_cost_ms_per_round_at_0p36b": 3.775193604,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.008199099999999999,
+    "first_touch_mb_per_invocation": 0.06640625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": true,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 85.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 1392640,
+   "m": 2,
+   "measured_ci95_half_width_ms_per_round": 0.6777083419607843,
+   "measured_in_kernel_relief_ms_per_round": -0.01802221647059196,
+   "measured_us_per_issued_mb_upper_bound": 0.0033129074394470507,
+   "n": 5120,
+   "na": 2,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 1.001135878115217,
+   "removed_instructions_per_invocation": 35094528.00000002,
+   "xbf16_ci95_us": [
+    243.29611416666654,
+    251.96916749999997
+   ],
+   "xbf16_ms_per_round": 15.866329519999994,
+   "xbf16_us_per_invocation": 247.9113987499999,
+   "xf32_ci95_us": [
+    241.64976220588233,
+    254.1550945588234
+   ],
+   "xf32_ms_per_round": 15.884351736470586,
+   "xf32_us_per_invocation": 248.1929958823529
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 84.93359375,
+    "cache_served_cost_ms_per_round_at_0p36b": 3.775193604,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.008199099999999999,
+    "first_touch_mb_per_invocation": 0.06640625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": true,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 85.0,
+   "groups": 1,
+   "implied_removed_ops_per_second_if_pure_relief": 15447727400081.38,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 1392640,
+   "m": 2,
+   "measured_ci95_half_width_ms_per_round": 0.7329494244705848,
+   "measured_in_kernel_relief_ms_per_round": 0.1453967780392195,
+   "n": 5120,
+   "na": 2,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 0.9910155215600891,
+   "removed_instructions_per_invocation": 35094528.00000002,
+   "xbf16_ci95_us": [
+    248.29125607843136,
+    256.55179617647053
+   ],
+   "xbf16_ms_per_round": 16.1831072345098,
+   "xbf16_us_per_invocation": 252.86105053921563,
+   "xf32_ci95_us": [
+    243.358658235294,
+    258.0027876519606
+   ],
+   "xf32_ms_per_round": 16.03771045647058,
+   "xf32_us_per_invocation": 250.58922588235282
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 169.8671875,
+    "cache_served_cost_ms_per_round_at_0p36b": 7.550387208,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.016398199999999998,
+    "first_touch_mb_per_invocation": 0.1328125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 170.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.6309187063636437,
+   "measured_in_kernel_relief_ms_per_round": -2.4430345212121245,
+   "measured_us_per_issued_mb_upper_bound": 0.22454361408199675,
+   "n": 5120,
+   "na": 2,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 1.100284447300372,
+   "removed_instructions_per_invocation": 70189056.00000004,
+   "xbf16_ci95_us": [
+    374.4902638636363,
+    386.24240795454534
+   ],
+   "xbf16_ms_per_round": 24.36105086060605,
+   "xbf16_us_per_invocation": 380.64141969696954,
+   "xf32_ci95_us": [
+    415.5703227746209,
+    423.5343882575757
+   ],
+   "xf32_ms_per_round": 26.804085381818176,
+   "xf32_us_per_invocation": 418.813834090909
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 169.8671875,
+    "cache_served_cost_ms_per_round_at_0p36b": 7.550387208,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.016398199999999998,
+    "first_touch_mb_per_invocation": 0.1328125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 170.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.42509877787879125,
+   "measured_in_kernel_relief_ms_per_round": -2.8150117333333293,
+   "measured_us_per_issued_mb_upper_bound": 0.25873269607843097,
+   "n": 5120,
+   "na": 2,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 1.1155332706250447,
+   "removed_instructions_per_invocation": 70189056.00000004,
+   "xbf16_ci95_us": [
+    377.2562541666665,
+    385.62674583333325
+   ],
+   "xbf16_ms_per_round": 24.365377333333328,
+   "xbf16_us_per_invocation": 380.7090208333332,
+   "xf32_ci95_us": [
+    422.25539803977256,
+    427.16924318181805
+   ],
+   "xf32_ms_per_round": 27.180389066666656,
+   "xf32_us_per_invocation": 424.6935791666665
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 127.400390625,
+    "cache_served_cost_ms_per_round_at_0p36b": 5.662790406,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.01229865,
+    "first_touch_mb_per_invocation": 0.099609375,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 127.5,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 1392640,
+   "m": 3,
+   "measured_ci95_half_width_ms_per_round": 2.636425230457535,
+   "measured_in_kernel_relief_ms_per_round": -19.657720355555576,
+   "measured_us_per_issued_mb_upper_bound": 2.409034357298477,
+   "n": 5120,
+   "na": 3,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 2.2486303081171286,
+   "removed_instructions_per_invocation": 52641792.00000004,
+   "xbf16_ci95_us": [
+    244.52165308823524,
+    250.66522209558823
+   ],
+   "xbf16_ms_per_round": 15.74342719999999,
+   "xbf16_us_per_invocation": 245.99104999999986,
+   "xf32_ci95_us": [
+    492.28768333333323,
+    568.5324027777782
+   ],
+   "xf32_ms_per_round": 35.40114755555557,
+   "xf32_us_per_invocation": 553.1429305555557
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 127.400390625,
+    "cache_served_cost_ms_per_round_at_0p36b": 5.662790406,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.01229865,
+    "first_touch_mb_per_invocation": 0.099609375,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 127.5,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 1392640,
+   "m": 3,
+   "measured_ci95_half_width_ms_per_round": 2.9457872141176558,
+   "measured_in_kernel_relief_ms_per_round": -19.419842877908497,
+   "measured_us_per_issued_mb_upper_bound": 2.3798827056260414,
+   "n": 5120,
+   "na": 3,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 2.203031941605113,
+   "removed_instructions_per_invocation": 52641792.00000004,
+   "xbf16_ci95_us": [
+    247.73149553921553,
+    257.404695980392
+   ],
+   "xbf16_ms_per_round": 16.142416677647056,
+   "xbf16_us_per_invocation": 252.22526058823524,
+   "xf32_ci95_us": [
+    489.65726666666643,
+    572.0399166666667
+   ],
+   "xf32_ms_per_round": 35.56225955555555,
+   "xf32_us_per_invocation": 555.6603055555555
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 254.80078125,
+    "cache_served_cost_ms_per_round_at_0p36b": 11.325580812,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.0245973,
+    "first_touch_mb_per_invocation": 0.19921875,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 255.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 6,
+   "measured_ci95_half_width_ms_per_round": 0.6760195975757579,
+   "measured_in_kernel_relief_ms_per_round": -34.24935229090908,
+   "measured_us_per_issued_mb_upper_bound": 2.098612272727272,
+   "n": 5120,
+   "na": 3,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 2.2862885830060575,
+   "removed_instructions_per_invocation": 105283584.00000007,
+   "xbf16_ci95_us": [
+    412.7467026041665,
+    419.74133409090894
+   ],
+   "xbf16_ms_per_round": 26.62649170909091,
+   "xbf16_us_per_invocation": 416.0389329545455,
+   "xf32_ci95_us": [
+    943.1965374999996,
+    957.3275184374996
+   ],
+   "xf32_ms_per_round": 60.875844,
+   "xf32_us_per_invocation": 951.1850625
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 254.80078125,
+    "cache_served_cost_ms_per_round_at_0p36b": 11.325580812,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.0245973,
+    "first_touch_mb_per_invocation": 0.19921875,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 255.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 6,
+   "measured_ci95_half_width_ms_per_round": 0.3962198181818258,
+   "measured_in_kernel_relief_ms_per_round": -34.190402569696936,
+   "measured_us_per_issued_mb_upper_bound": 2.0950001574569197,
+   "n": 5120,
+   "na": 3,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 2.2705402624339097,
+   "removed_instructions_per_invocation": 105283584.00000007,
+   "xbf16_ci95_us": [
+    417.10471818181804,
+    422.7175083333331
+   ],
+   "xbf16_ms_per_round": 26.91012916363635,
+   "xbf16_us_per_invocation": 420.47076818181796,
+   "xf32_ci95_us": [
+    951.3748041666661,
+    958.1438833333331
+   ],
+   "xf32_ms_per_round": 61.100531733333284,
+   "xf32_us_per_invocation": 954.6958083333326
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 169.8671875,
+    "cache_served_cost_ms_per_round_at_0p36b": 7.550387208,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.016398199999999998,
+    "first_touch_mb_per_invocation": 0.1328125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 0.8497,
+    "gross_relief_ms_per_round": 1.5332,
+    "predicted_in_kernel_net_ms_per_round": 0.6834999999999999,
+    "predicted_shipped_net_ms_per_round": 0.4403,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.0781
+   },
+   "desk_prediction_error_ms_per_round": -29.678522637037016,
+   "extra_issued_activation_mb_per_invocation": 170.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 1392640,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.4905563555555527,
+   "measured_in_kernel_relief_ms_per_round": -28.995022637037017,
+   "measured_shipped_net_ms_per_round": -29.23822263703702,
+   "measured_us_per_issued_mb_upper_bound": 2.6649836982570787,
+   "n": 5120,
+   "na": 4,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 2.723573423609989,
+   "removed_instructions_per_invocation": 70189056.00000004,
+   "xbf16_ci95_us": [
+    258.62289652777764,
+    266.32574513888875
+   ],
+   "xbf16_ms_per_round": 16.82262109629629,
+   "xbf16_us_per_invocation": 262.85345462962954,
+   "xf32_ci95_us": [
+    711.9500125,
+    719.5770499999999
+   ],
+   "xf32_ms_per_round": 45.817643733333306,
+   "xf32_us_per_invocation": 715.900683333333
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 169.8671875,
+    "cache_served_cost_ms_per_round_at_0p36b": 7.550387208,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.016398199999999998,
+    "first_touch_mb_per_invocation": 0.1328125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 0.8541,
+    "gross_relief_ms_per_round": 1.6881,
+    "predicted_in_kernel_net_ms_per_round": 0.834,
+    "predicted_shipped_net_ms_per_round": 0.5908,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.0785
+   },
+   "desk_prediction_error_ms_per_round": -29.382941866666663,
+   "extra_issued_activation_mb_per_invocation": 170.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 1392640,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.6653938444444466,
+   "measured_in_kernel_relief_ms_per_round": -28.548941866666663,
+   "measured_shipped_net_ms_per_round": -28.792141866666665,
+   "measured_us_per_issued_mb_upper_bound": 2.62398362745098,
+   "n": 5120,
+   "na": 4,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 2.6640382035831784,
+   "removed_instructions_per_invocation": 70189056.00000004,
+   "xbf16_ci95_us": [
+    260.35774791666665,
+    272.43758333333324
+   ],
+   "xbf16_ms_per_round": 17.156422133333322,
+   "xbf16_us_per_invocation": 268.06909583333317,
+   "xf32_ci95_us": [
+    710.6640777777775,
+    719.3777999999999
+   ],
+   "xf32_ms_per_round": 45.70536399999999,
+   "xf32_us_per_invocation": 714.1463124999998
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 339.734375,
+    "cache_served_cost_ms_per_round_at_0p36b": 15.100774416,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.032796399999999996,
+    "first_touch_mb_per_invocation": 0.265625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 0.9377000000000001,
+    "gross_relief_ms_per_round": 5.5123,
+    "predicted_in_kernel_net_ms_per_round": 4.574599999999999,
+    "predicted_shipped_net_ms_per_round": 4.3314,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.08619
+   },
+   "desk_prediction_error_ms_per_round": -75.87175315555555,
+   "extra_issued_activation_mb_per_invocation": 340.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 8,
+   "measured_ci95_half_width_ms_per_round": 2.021388544444446,
+   "measured_in_kernel_relief_ms_per_round": -71.29715315555555,
+   "measured_shipped_net_ms_per_round": -71.54035315555555,
+   "measured_us_per_issued_mb_upper_bound": 3.2765235825163397,
+   "n": 5120,
+   "na": 4,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 3.4450274176668674,
+   "removed_instructions_per_invocation": 140378112.0000001,
+   "xbf16_ci95_us": [
+    450.8505694444443,
+    461.7757531249997
+   ],
+   "xbf16_ms_per_round": 29.16006284444444,
+   "xbf16_us_per_invocation": 455.6259819444444,
+   "xf32_ci95_us": [
+    1547.9755416666671,
+    1600.2187500000007
+   ],
+   "xf32_ms_per_round": 100.457216,
+   "xf32_us_per_invocation": 1569.644
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 339.734375,
+    "cache_served_cost_ms_per_round_at_0p36b": 15.100774416,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.032796399999999996,
+    "first_touch_mb_per_invocation": 0.265625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 0.9583,
+    "gross_relief_ms_per_round": 5.8368,
+    "predicted_in_kernel_net_ms_per_round": 4.8785,
+    "predicted_shipped_net_ms_per_round": 4.6353,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.08808
+   },
+   "desk_prediction_error_ms_per_round": -76.82383128888891,
+   "extra_issued_activation_mb_per_invocation": 340.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 8,
+   "measured_ci95_half_width_ms_per_round": 1.3846244888888977,
+   "measured_in_kernel_relief_ms_per_round": -71.94533128888891,
+   "measured_shipped_net_ms_per_round": -72.18853128888891,
+   "measured_us_per_issued_mb_upper_bound": 3.3063111805555563,
+   "n": 5120,
+   "na": 4,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 3.424569359027972,
+   "removed_instructions_per_invocation": 140378112.0000001,
+   "xbf16_ci95_us": [
+    457.0504541666664,
+    471.6862611111109
+   ],
+   "xbf16_ms_per_round": 29.67344737777777,
+   "xbf16_us_per_invocation": 463.6476152777777,
+   "xf32_ci95_us": [
+    1569.7777916666666,
+    1598.4115000000002
+   ],
+   "xf32_ms_per_round": 101.61877866666669,
+   "xf32_us_per_invocation": 1587.7934166666669
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 212.333984375,
+    "cache_served_cost_ms_per_round_at_0p36b": 9.437984010000001,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.02049775,
+    "first_touch_mb_per_invocation": 0.166015625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 0.42000000000000004,
+    "gross_relief_ms_per_round": 1.9165,
+    "predicted_in_kernel_net_ms_per_round": 1.4965000000000002,
+    "predicted_shipped_net_ms_per_round": 1.2533,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.03089
+   },
+   "desk_prediction_error_ms_per_round": -79.76402579047621,
+   "extra_issued_activation_mb_per_invocation": 212.5,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 1392640,
+   "m": 5,
+   "measured_ci95_half_width_ms_per_round": 1.390243828571387,
+   "measured_in_kernel_relief_ms_per_round": -78.26752579047621,
+   "measured_shipped_net_ms_per_round": -78.51072579047622,
+   "measured_us_per_issued_mb_upper_bound": 5.754965131652662,
+   "n": 5120,
+   "na": 5,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 4.7855255503236975,
+   "removed_instructions_per_invocation": 87736320.00000006,
+   "xbf16_ci95_us": [
+    321.6283857142855,
+    326.2627136904762
+   ],
+   "xbf16_ms_per_round": 20.675471542857135,
+   "xbf16_us_per_invocation": 323.05424285714275,
+   "xf32_ci95_us": [
+    1531.067625000001,
+    1569.8784166666662
+   ],
+   "xf32_ms_per_round": 98.94299733333335,
+   "xf32_us_per_invocation": 1545.9843333333336
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 212.333984375,
+    "cache_served_cost_ms_per_round_at_0p36b": 9.437984010000001,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.02049775,
+    "first_touch_mb_per_invocation": 0.166015625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 0.6735,
+    "gross_relief_ms_per_round": 2.1102,
+    "predicted_in_kernel_net_ms_per_round": 1.4366999999999999,
+    "predicted_shipped_net_ms_per_round": 1.1934,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.04952
+   },
+   "desk_prediction_error_ms_per_round": -80.30102049523808,
+   "extra_issued_activation_mb_per_invocation": 212.5,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 1392640,
+   "m": 5,
+   "measured_ci95_half_width_ms_per_round": 0.9691253333333297,
+   "measured_in_kernel_relief_ms_per_round": -78.86432049523808,
+   "measured_shipped_net_ms_per_round": -79.10752049523808,
+   "measured_us_per_issued_mb_upper_bound": 5.798847095238094,
+   "n": 5120,
+   "na": 5,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 4.795465235917013,
+   "removed_instructions_per_invocation": 87736320.00000006,
+   "xbf16_ci95_us": [
+    322.57174523809516,
+    328.63987023809517
+   ],
+   "xbf16_ms_per_round": 20.77856483809523,
+   "xbf16_us_per_invocation": 324.665075595238,
+   "xf32_ci95_us": [
+    1549.8610833333335,
+    1574.078125
+   ],
+   "xf32_ms_per_round": 99.64288533333331,
+   "xf32_us_per_invocation": 1556.920083333333
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 424.66796875,
+    "cache_served_cost_ms_per_round_at_0p36b": 18.875968020000002,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.0409955,
+    "first_touch_mb_per_invocation": 0.33203125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 4.0759,
+    "gross_relief_ms_per_round": 6.8904,
+    "predicted_in_kernel_net_ms_per_round": 2.8145,
+    "predicted_shipped_net_ms_per_round": 2.5714,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.2997
+   },
+   "desk_prediction_error_ms_per_round": -164.01745466666674,
+   "extra_issued_activation_mb_per_invocation": 425.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 10,
+   "measured_ci95_half_width_ms_per_round": 1.0441534666666195,
+   "measured_in_kernel_relief_ms_per_round": -161.20295466666673,
+   "measured_shipped_net_ms_per_round": -161.44615466666673,
+   "measured_us_per_issued_mb_upper_bound": 5.926579215686276,
+   "n": 5120,
+   "na": 5,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 4.717062053568741,
+   "removed_instructions_per_invocation": 175472640.00000012,
+   "xbf16_ci95_us": [
+    674.0658083333333,
+    680.0012291666665
+   ],
+   "xbf16_ms_per_round": 43.36837866666666,
+   "xbf16_us_per_invocation": 677.6309166666665,
+   "xf32_ci95_us": [
+    3187.1459166666677,
+    3213.8402916666664
+   ],
+   "xf32_ms_per_round": 204.57133333333337,
+   "xf32_us_per_invocation": 3196.427083333334
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 424.66796875,
+    "cache_served_cost_ms_per_round_at_0p36b": 18.875968020000002,
+    "cache_served_fraction": 0.99921875,
+    "first_touch_cost_ms_per_round_at_b": 0.0409955,
+    "first_touch_mb_per_invocation": 0.33203125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.down",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 4.1078,
+    "gross_relief_ms_per_round": 7.296,
+    "predicted_in_kernel_net_ms_per_round": 3.1882,
+    "predicted_shipped_net_ms_per_round": 2.945,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.30205
+   },
+   "desk_prediction_error_ms_per_round": -165.7242682666667,
+   "extra_issued_activation_mb_per_invocation": 425.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 17408,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 10,
+   "measured_ci95_half_width_ms_per_round": 1.7846343999999916,
+   "measured_in_kernel_relief_ms_per_round": -162.53606826666672,
+   "measured_shipped_net_ms_per_round": -162.77926826666672,
+   "measured_us_per_issued_mb_upper_bound": 5.9755907450980414,
+   "n": 5120,
+   "na": 5,
+   "pooled_cell": false,
+   "ratio_xf32_over_xbf16": 4.708551119074045,
+   "removed_instructions_per_invocation": 175472640.00000012,
+   "xbf16_ci95_us": [
+    676.6300416666663,
+    690.6916583333331
+   ],
+   "xbf16_ms_per_round": 43.827377066666656,
+   "xbf16_us_per_invocation": 684.8027666666665,
+   "xf32_ci95_us": [
+    3199.055625000001,
+    3240.763833333334
+   ],
+   "xf32_ms_per_round": 206.3634453333334,
+   "xf32_us_per_invocation": 3224.4288333333343
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 169.98046875,
+    "cache_served_cost_ms_per_round_at_0p36b": 7.55542242,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.0024115,
+    "first_touch_mb_per_invocation": 0.01953125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": true,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 170.0,
+   "groups": 1,
+   "implied_removed_ops_per_second_if_pure_relief": 14298945695768.87,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 2,
+   "measured_ci95_half_width_ms_per_round": 0.3597905333333329,
+   "measured_in_kernel_relief_ms_per_round": 0.31415600000000266,
+   "n": 34816,
+   "na": 2,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 0.9888732716658604,
+   "removed_instructions_per_invocation": 70189056.00000004,
+   "xbf16_ci95_us": [
+    438.6949458333332,
+    442.13127499999985
+   ],
+   "xbf16_ms_per_round": 28.234355199999992,
+   "xbf16_us_per_invocation": 441.16179999999986,
+   "xf32_ci95_us": [
+    432.4921791666665,
+    440.2993041666665
+   ],
+   "xf32_ms_per_round": 27.92019919999999,
+   "xf32_us_per_invocation": 436.2531124999998
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 169.98046875,
+    "cache_served_cost_ms_per_round_at_0p36b": 7.55542242,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.0024115,
+    "first_touch_mb_per_invocation": 0.01953125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 170.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 2,
+   "measured_ci95_half_width_ms_per_round": 1.0115222666666615,
+   "measured_in_kernel_relief_ms_per_round": -1.2955221333333358,
+   "measured_us_per_issued_mb_upper_bound": 0.11907372549019629,
+   "n": 34816,
+   "na": 2,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.0470500521973671,
+   "removed_instructions_per_invocation": 70189056.00000004,
+   "xbf16_ci95_us": [
+    427.76439583333325,
+    436.6375083333332
+   ],
+   "xbf16_ms_per_round": 27.534977599999984,
+   "xbf16_us_per_invocation": 430.23402499999975,
+   "xf32_ci95_us": [
+    438.3663291666665,
+    461.10328749999974
+   ],
+   "xf32_ms_per_round": 28.83049973333332,
+   "xf32_us_per_invocation": 450.4765583333331
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 339.9609375,
+    "cache_served_cost_ms_per_round_at_0p36b": 15.11084484,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.004823,
+    "first_touch_mb_per_invocation": 0.0390625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 340.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 5570560,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.18029817333332177,
+   "measured_in_kernel_relief_ms_per_round": -1.8799893333333384,
+   "measured_us_per_issued_mb_upper_bound": 0.08639656862745121,
+   "n": 34816,
+   "na": 2,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.041710238829568,
+   "removed_instructions_per_invocation": 140378112.0000001,
+   "xbf16_ci95_us": [
+    701.8854124999998,
+    705.374108333333
+   ],
+   "xbf16_ms_per_round": 45.07261013333331,
+   "xbf16_us_per_invocation": 704.259533333333,
+   "xf32_ci95_us": [
+    732.2428791666665,
+    734.3885012499996
+   ],
+   "xf32_ms_per_round": 46.952599466666655,
+   "xf32_us_per_invocation": 733.6343666666664
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 339.9609375,
+    "cache_served_cost_ms_per_round_at_0p36b": 15.11084484,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.004823,
+    "first_touch_mb_per_invocation": 0.0390625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": true,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 340.0,
+   "groups": 2,
+   "implied_removed_ops_per_second_if_pure_relief": 27492663383508.06,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 5570560,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 1.4020051999999996,
+   "measured_in_kernel_relief_ms_per_round": 0.3267853333333042,
+   "n": 34816,
+   "na": 2,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 0.9929448476782979,
+   "removed_instructions_per_invocation": 140378112.0000001,
+   "xbf16_ci95_us": [
+    715.1682458333332,
+    746.9635333333331
+   ],
+   "xbf16_ms_per_round": 46.31867866666665,
+   "xbf16_us_per_invocation": 723.7293541666664,
+   "xf32_ci95_us": [
+    710.44275,
+    722.4601250000002
+   ],
+   "xf32_ms_per_round": 45.99189333333335,
+   "xf32_us_per_invocation": 718.6233333333336
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 254.970703125,
+    "cache_served_cost_ms_per_round_at_0p36b": 11.333133629999999,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.00361725,
+    "first_touch_mb_per_invocation": 0.029296875,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 255.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 3,
+   "measured_ci95_half_width_ms_per_round": 0.2835679212121195,
+   "measured_in_kernel_relief_ms_per_round": -1.0111970181818288,
+   "measured_us_per_issued_mb_upper_bound": 0.06196060160427873,
+   "n": 34816,
+   "na": 3,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.0361379751544142,
+   "removed_instructions_per_invocation": 105283584.00000007,
+   "xbf16_ci95_us": [
+    435.58110984848463,
+    440.5282948863636
+   ],
+   "xbf16_ms_per_round": 27.9815627151515,
+   "xbf16_us_per_invocation": 437.2119174242422,
+   "xf32_ci95_us": [
+    450.86349166666673,
+    454.7778041666665
+   ],
+   "xf32_ms_per_round": 28.99275973333333,
+   "xf32_us_per_invocation": 453.01187083333326
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 254.970703125,
+    "cache_served_cost_ms_per_round_at_0p36b": 11.333133629999999,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.00361725,
+    "first_touch_mb_per_invocation": 0.029296875,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": true,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 255.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 3,
+   "measured_ci95_half_width_ms_per_round": 2.096866381144775,
+   "measured_in_kernel_relief_ms_per_round": -1.1225668309764514,
+   "measured_us_per_issued_mb_upper_bound": 0.06878473229022374,
+   "n": 34816,
+   "na": 3,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.039485423394903,
+   "removed_instructions_per_invocation": 105283584.00000007,
+   "xbf16_ci95_us": [
+    430.2086496212122,
+    453.8823814393937
+   ],
+   "xbf16_ms_per_round": 28.42990487272726,
+   "xbf16_us_per_invocation": 444.21726363636344,
+   "xf32_ci95_us": [
+    441.58417129629623,
+    483.43751388888893
+   ],
+   "xf32_ms_per_round": 29.552471703703713,
+   "xf32_us_per_invocation": 461.7573703703705
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 509.94140625,
+    "cache_served_cost_ms_per_round_at_0p36b": 22.666267259999998,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.0072345,
+    "first_touch_mb_per_invocation": 0.05859375,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "extra_issued_activation_mb_per_invocation": 510.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 5570560,
+   "m": 6,
+   "measured_ci95_half_width_ms_per_round": 0.5476710666666513,
+   "measured_in_kernel_relief_ms_per_round": -44.4429792,
+   "measured_us_per_issued_mb_upper_bound": 1.3616108823529411,
+   "n": 34816,
+   "na": 3,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.894728415463601,
+   "removed_instructions_per_invocation": 210567168.00000015,
+   "xbf16_ci95_us": [
+    772.6593833333332,
+    779.5732416666664
+   ],
+   "xbf16_ms_per_round": 49.67203279999999,
+   "xbf16_us_per_invocation": 776.1255124999998,
+   "xf32_ci95_us": [
+    1466.566845833333,
+    1476.7677083333326
+   ],
+   "xf32_ms_per_round": 94.115012,
+   "xf32_us_per_invocation": 1470.5470624999998
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 509.94140625,
+    "cache_served_cost_ms_per_round_at_0p36b": 22.666267259999998,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.0072345,
+    "first_touch_mb_per_invocation": 0.05859375,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "extra_issued_activation_mb_per_invocation": 510.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 5570560,
+   "m": 6,
+   "measured_ci95_half_width_ms_per_round": 1.6116231366666798,
+   "measured_in_kernel_relief_ms_per_round": -42.539066933333324,
+   "measured_us_per_issued_mb_upper_bound": 1.3032802369281042,
+   "n": 34816,
+   "na": 3,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.8241868339572465,
+   "removed_instructions_per_invocation": 210567168.00000015,
+   "xbf16_ci95_us": [
+    798.8617518749998,
+    832.3915998958329
+   ],
+   "xbf16_ms_per_round": 51.61337839999999,
+   "xbf16_us_per_invocation": 806.4590374999998,
+   "xf32_ci95_us": [
+    1466.0295,
+    1482.8628750000007
+   ],
+   "xf32_ms_per_round": 94.1524453333333,
+   "xf32_us_per_invocation": 1471.131958333333
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 339.9609375,
+    "cache_served_cost_ms_per_round_at_0p36b": 15.11084484,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.004823,
+    "first_touch_mb_per_invocation": 0.0390625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 1.8797,
+    "gross_relief_ms_per_round": 2.0294,
+    "predicted_in_kernel_net_ms_per_round": 0.14969999999999994,
+    "predicted_shipped_net_ms_per_round": -0.0936,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.08638
+   },
+   "desk_prediction_error_ms_per_round": -5.539865955555563,
+   "extra_issued_activation_mb_per_invocation": 340.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 0.474908694444448,
+   "measured_in_kernel_relief_ms_per_round": -5.390165955555563,
+   "measured_shipped_net_ms_per_round": -5.633365955555563,
+   "measured_us_per_issued_mb_upper_bound": 0.24770983251634024,
+   "n": 34816,
+   "na": 4,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.1856962969851794,
+   "removed_instructions_per_invocation": 140378112.0000001,
+   "xbf16_ci95_us": [
+    447.56724027777756,
+    456.16365416666645
+   ],
+   "xbf16_ms_per_round": 29.026782133333324,
+   "xbf16_us_per_invocation": 453.5434708333332,
+   "xf32_ci95_us": [
+    534.1512005208331,
+    540.3956833333332
+   ],
+   "xf32_ms_per_round": 34.41694808888889,
+   "xf32_us_per_invocation": 537.7648138888889
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 339.9609375,
+    "cache_served_cost_ms_per_round_at_0p36b": 15.11084484,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.004823,
+    "first_touch_mb_per_invocation": 0.0390625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 1.3273,
+    "gross_relief_ms_per_round": 1.6902,
+    "predicted_in_kernel_net_ms_per_round": 0.3629,
+    "predicted_shipped_net_ms_per_round": 0.1197,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.061
+   },
+   "desk_prediction_error_ms_per_round": -4.870521155555571,
+   "extra_issued_activation_mb_per_invocation": 340.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 4,
+   "measured_ci95_half_width_ms_per_round": 1.5389690855555418,
+   "measured_in_kernel_relief_ms_per_round": -4.507621155555571,
+   "measured_shipped_net_ms_per_round": -4.750821155555571,
+   "measured_us_per_issued_mb_upper_bound": 0.20715170751634057,
+   "n": 34816,
+   "na": 4,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 1.1458901079062456,
+   "removed_instructions_per_invocation": 140378112.0000001,
+   "xbf16_ci95_us": [
+    475.3322763888889,
+    498.2011853124998
+   ],
+   "xbf16_ms_per_round": 30.897373511111102,
+   "xbf16_us_per_invocation": 482.77146111111097,
+   "xf32_ci95_us": [
+    540.3853750000002,
+    565.60925
+   ],
+   "xf32_ms_per_round": 35.404994666666674,
+   "xf32_us_per_invocation": 553.2030416666668
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 679.921875,
+    "cache_served_cost_ms_per_round_at_0p36b": 30.22168968,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.009646,
+    "first_touch_mb_per_invocation": 0.078125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 2.0593000000000004,
+    "gross_relief_ms_per_round": 3.8331,
+    "predicted_in_kernel_net_ms_per_round": 1.7737999999999996,
+    "predicted_shipped_net_ms_per_round": 1.5306,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.09463
+   },
+   "desk_prediction_error_ms_per_round": -97.22670106666665,
+   "extra_issued_activation_mb_per_invocation": 680.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 5570560,
+   "m": 8,
+   "measured_ci95_half_width_ms_per_round": 0.8261551999999756,
+   "measured_in_kernel_relief_ms_per_round": -95.45290106666666,
+   "measured_shipped_net_ms_per_round": -95.69610106666666,
+   "measured_us_per_issued_mb_upper_bound": 2.193311145833333,
+   "n": 34816,
+   "na": 4,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 2.6839571388979966,
+   "removed_instructions_per_invocation": 280756224.0000002,
+   "xbf16_ci95_us": [
+    881.8044916666663,
+    887.820295833333
+   ],
+   "xbf16_ms_per_round": 56.68368799999998,
+   "xbf16_us_per_invocation": 885.6826249999997,
+   "xf32_ci95_us": [
+    2372.8288291666663,
+    2392.630374999999
+   ],
+   "xf32_ms_per_round": 152.13658906666663,
+   "xf32_us_per_invocation": 2377.134204166666
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 679.921875,
+    "cache_served_cost_ms_per_round_at_0p36b": 30.22168968,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.009646,
+    "first_touch_mb_per_invocation": 0.078125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 2.0864000000000003,
+    "gross_relief_ms_per_round": 3.3495,
+    "predicted_in_kernel_net_ms_per_round": 1.2630999999999997,
+    "predicted_shipped_net_ms_per_round": 1.0199,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.09588
+   },
+   "desk_prediction_error_ms_per_round": -98.90698799999997,
+   "extra_issued_activation_mb_per_invocation": 680.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 5570560,
+   "m": 8,
+   "measured_ci95_half_width_ms_per_round": 1.8475560000000004,
+   "measured_in_kernel_relief_ms_per_round": -97.64388799999998,
+   "measured_shipped_net_ms_per_round": -97.88708799999998,
+   "measured_us_per_issued_mb_upper_bound": 2.243655514705882,
+   "n": 34816,
+   "na": 4,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 2.7165506632775482,
+   "removed_instructions_per_invocation": 280756224.0000002,
+   "xbf16_ci95_us": [
+    875.35075,
+    900.774375
+   ],
+   "xbf16_ms_per_round": 56.8837786666667,
+   "xbf16_us_per_invocation": 888.8090416666672,
+   "xf32_ci95_us": [
+    2400.000000000001,
+    2432.312500000001
+   ],
+   "xf32_ms_per_round": 154.52766666666668,
+   "xf32_us_per_invocation": 2414.494791666667
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 424.951171875,
+    "cache_served_cost_ms_per_round_at_0p36b": 18.88855605,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.00602875,
+    "first_touch_mb_per_invocation": 0.048828125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 2.8054,
+    "gross_relief_ms_per_round": 2.5367,
+    "predicted_in_kernel_net_ms_per_round": -0.26869999999999994,
+    "predicted_shipped_net_ms_per_round": -0.5119,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.10314
+   },
+   "desk_prediction_error_ms_per_round": -77.74687706666666,
+   "extra_issued_activation_mb_per_invocation": 425.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 5,
+   "measured_ci95_half_width_ms_per_round": 0.798201066666672,
+   "measured_in_kernel_relief_ms_per_round": -78.01557706666665,
+   "measured_shipped_net_ms_per_round": -78.25877706666665,
+   "measured_us_per_issued_mb_upper_bound": 2.8682197450980387,
+   "n": 34816,
+   "na": 5,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 3.3076827827031643,
+   "removed_instructions_per_invocation": 175472640.00000012,
+   "xbf16_ci95_us": [
+    520.8093833333331,
+    532.1531625
+   ],
+   "xbf16_ms_per_round": 33.80688959999999,
+   "xbf16_us_per_invocation": 528.2326499999998,
+   "xf32_ci95_us": [
+    1739.914937499999,
+    1753.5149416666657
+   ],
+   "xf32_ms_per_round": 111.82246666666663,
+   "xf32_us_per_invocation": 1747.226041666666
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 424.951171875,
+    "cache_served_cost_ms_per_round_at_0p36b": 18.88855605,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.00602875,
+    "first_touch_mb_per_invocation": 0.048828125,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 5.0548,
+    "gross_relief_ms_per_round": 2.1128,
+    "predicted_in_kernel_net_ms_per_round": -2.942,
+    "predicted_shipped_net_ms_per_round": -3.1852,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.18584
+   },
+   "desk_prediction_error_ms_per_round": -74.88011466666669,
+   "extra_issued_activation_mb_per_invocation": 425.0,
+   "groups": 1,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 2785280,
+   "m": 5,
+   "measured_ci95_half_width_ms_per_round": 1.5265245333333295,
+   "measured_in_kernel_relief_ms_per_round": -77.82211466666669,
+   "measured_shipped_net_ms_per_round": -78.0653146666667,
+   "measured_us_per_issued_mb_upper_bound": 2.861107156862746,
+   "n": 34816,
+   "na": 5,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 3.2646625397241253,
+   "removed_instructions_per_invocation": 175472640.00000012,
+   "xbf16_ci95_us": [
+    525.0237093750004,
+    552.0123093750001
+   ],
+   "xbf16_ms_per_round": 34.363669333333334,
+   "xbf16_us_per_invocation": 536.9323333333333,
+   "xf32_ci95_us": [
+    1745.60425,
+    1766.319541666667
+   ],
+   "xf32_ms_per_round": 112.18578400000003,
+   "xf32_us_per_invocation": 1752.9028750000004
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 849.90234375,
+    "cache_served_cost_ms_per_round_at_0p36b": 37.7771121,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.0120575,
+    "first_touch_mb_per_invocation": 0.09765625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": false,
+   "desk": {
+    "byte_cost_ms_per_round": 2.7044,
+    "gross_relief_ms_per_round": 4.7913,
+    "predicted_in_kernel_net_ms_per_round": 2.0868999999999995,
+    "predicted_shipped_net_ms_per_round": 1.8438,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.09942
+   },
+   "desk_prediction_error_ms_per_round": -262.5936658666666,
+   "extra_issued_activation_mb_per_invocation": 850.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 5570560,
+   "m": 10,
+   "measured_ci95_half_width_ms_per_round": 1.5192619833333156,
+   "measured_in_kernel_relief_ms_per_round": -260.50676586666657,
+   "measured_shipped_net_ms_per_round": -260.74996586666657,
+   "measured_us_per_issued_mb_upper_bound": 4.788727313725488,
+   "n": 34816,
+   "na": 5,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 4.91846475756441,
+   "removed_instructions_per_invocation": 350945280.00000024,
+   "xbf16_ci95_us": [
+    1036.474946354166,
+    1040.7269166666663
+   ],
+   "xbf16_ms_per_round": 66.48184479999996,
+   "xbf16_us_per_invocation": 1038.7788249999994,
+   "xf32_ci95_us": [
+    5095.163020833333,
+    5138.387987499998
+   ],
+   "xf32_ms_per_round": 326.98861066666655,
+   "xf32_us_per_invocation": 5109.1970416666645
+  },
+  {
+   "access_regime": {
+    "cache_served_concurrent_mb_per_invocation": 849.90234375,
+    "cache_served_cost_ms_per_round_at_0p36b": 37.7771121,
+    "cache_served_fraction": 0.9998851102941176,
+    "first_touch_cost_ms_per_round_at_b": 0.0120575,
+    "first_touch_mb_per_invocation": 0.09765625,
+    "stream": "activation re-read, extra bytes from bf16 -> f32",
+    "tag": "cache-served/concurrent"
+   },
+   "cell": "mlp.gate_up",
+   "ci95_overlaps_xbf16": false,
+   "cold": true,
+   "desk": {
+    "byte_cost_ms_per_round": 2.9837000000000002,
+    "gross_relief_ms_per_round": 4.1869,
+    "predicted_in_kernel_net_ms_per_round": 1.2031999999999994,
+    "predicted_shipped_net_ms_per_round": 0.96,
+    "slab_fill_ms_per_round": 0.2432,
+    "us_per_issued_mb": 0.10969
+   },
+   "desk_prediction_error_ms_per_round": -264.5083093333332,
+   "extra_issued_activation_mb_per_invocation": 850.0,
+   "groups": 2,
+   "invocations_per_round": 64,
+   "k": 5120,
+   "lane_k_blocks_per_dispatch": 5570560,
+   "m": 10,
+   "measured_ci95_half_width_ms_per_round": 4.0420115666666865,
+   "measured_in_kernel_relief_ms_per_round": -263.30510933333323,
+   "measured_shipped_net_ms_per_round": -263.54830933333324,
+   "measured_us_per_issued_mb_upper_bound": 4.84016745098039,
+   "n": 34816,
+   "na": 5,
+   "pooled_cell": true,
+   "ratio_xf32_over_xbf16": 4.981929659203841,
+   "removed_instructions_per_invocation": 350945280.00000024,
+   "xbf16_ci95_us": [
+    1015.7812916666668,
+    1038.5552958333335
+   ],
+   "xbf16_ms_per_round": 66.1250026666667,
+   "xbf16_us_per_invocation": 1033.2031666666671,
+   "xf32_ci95_us": [
+    5096.980309375001,
+    5200.519166666668
+   ],
+   "xf32_ms_per_round": 329.4301119999999,
+   "xf32_us_per_invocation": 5147.3454999999985
+  }
+ ],
+ "cool_gate_passed_real_gate": false,
+ "desk_source": "research/e223-artifacts/e223-desk-pricing.json",
+ "experiment": "e223-percolumn-inner-loop",
+ "gate_qualified_for_timing": false,
+ "gpu_temperature_c": {
+  "after_warmup": 37.02761459350586,
+  "block_0_entry": 38.319007873535156,
+  "block_0_exit": 41.98659133911133,
+  "block_1_entry": 40.74588394165039,
+  "block_1_exit": 45.380943298339844,
+  "block_2_entry": 42.5750732421875,
+  "block_2_exit": 46.398738861083984,
+  "block_3_entry": 43.709774017333984,
+  "block_3_exit": 47.50349426269531,
+  "block_4_entry": 44.57325744628906,
+  "block_4_exit": 46.6064338684082,
+  "block_5_entry": 45.17637634277344,
+  "block_5_exit": 48.53433609008789,
+  "session_entry": 33.706050872802734,
+  "session_exit": 45.57804870605469
+ },
+ "harness": "local-microbench",
+ "host_chip": "Apple M4 Pro",
+ "local_arch": "applegpu_g16s",
+ "official_or_ranked_score": false,
+ "per_column_instructions_g17s": {
+  "bfloat16": 123.2,
+  "float32": 110.6
+ },
+ "pooled": {
+  "na2/g1/cold": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 1.0751705197121582,
+   "measured_in_kernel_relief_ms_per_round": -1.6330690009269202,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 38.99596864470586
+  },
+  "na2/g1/hot": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 0.44644369241689535,
+   "measured_in_kernel_relief_ms_per_round": 0.30012737005347795,
+   "meets_advance_bar": false,
+   "meets_stop_bar": true,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": false,
+   "xbf16_ms_per_round": 39.83003516256683
+  },
+  "na2/g2/cold": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 1.4241086809637271,
+   "measured_in_kernel_relief_ms_per_round": 0.030910133333304668,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": false,
+   "xbf16_ms_per_round": 64.11894566666665
+  },
+  "na2/g2/hot": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 0.3981387558972671,
+   "measured_in_kernel_relief_ms_per_round": -2.464065933333337,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 62.57305953333331
+  },
+  "na3/g1/cold": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 2.136139811983828,
+   "measured_in_kernel_relief_ms_per_round": -1.8621214930085346,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": false,
+   "xbf16_ms_per_round": 40.001960410695176
+  },
+  "na3/g1/hot": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 0.42719883136181486,
+   "measured_in_kernel_relief_ms_per_round": -1.7267964176470731,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 39.52046761568626
+  },
+  "na3/g2/cold": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 1.81876872918682,
+   "measured_in_kernel_relief_ms_per_round": -55.805134515151494,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 70.7418684181818
+  },
+  "na3/g2/hot": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 0.5875408454176081,
+   "measured_in_kernel_relief_ms_per_round": -58.210738,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 68.66352439999999
+  },
+  "na4/g1/cold": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 1.6025765547643456,
+   "desk_gross_relief_ms_per_round": 2.2305,
+   "desk_predicted_in_kernel_net_ms_per_round": 0.40249999999999997,
+   "measured_in_kernel_relief_ms_per_round": -5.909398875555572,
+   "measured_shipped_net_ms_per_round": -6.334998875555572,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 43.379911151111095
+  },
+  "na4/g1/hot": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 0.6450057130511453,
+   "desk_gross_relief_ms_per_round": 2.5806999999999998,
+   "desk_predicted_in_kernel_net_ms_per_round": 0.2248,
+   "measured_in_kernel_relief_ms_per_round": -6.713899555555561,
+   "measured_shipped_net_ms_per_round": -7.1394995555555605,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 41.40205041333332
+  },
+  "na4/g2/cold": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 2.466332235294999,
+   "desk_gross_relief_ms_per_round": 4.2745,
+   "desk_predicted_in_kernel_net_ms_per_round": 1.8606999999999996,
+   "measured_in_kernel_relief_ms_per_round": -130.3136516363636,
+   "measured_shipped_net_ms_per_round": -130.7392516363636,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 78.44442323030306
+  },
+  "na4/g2/hot": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 2.141609323251592,
+   "desk_gross_relief_ms_per_round": 4.8214,
+   "desk_predicted_in_kernel_net_ms_per_round": 2.4305999999999996,
+   "measured_in_kernel_relief_ms_per_round": -127.32664919393937,
+   "measured_shipped_net_ms_per_round": -127.75224919393938,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 78.27288227272724
+  },
+  "na5/g1/cold": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 1.5641572409216906,
+   "desk_gross_relief_ms_per_round": 2.7882,
+   "desk_predicted_in_kernel_net_ms_per_round": -3.2987,
+   "measured_in_kernel_relief_ms_per_round": -105.0501503466667,
+   "measured_shipped_net_ms_per_round": -105.4757503466667,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 48.11914225333334
+  },
+  "na5/g1/hot": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 0.8237490682020936,
+   "desk_gross_relief_ms_per_round": 3.2259,
+   "desk_predicted_in_kernel_net_ms_per_round": -0.6328,
+   "measured_in_kernel_relief_ms_per_round": -105.00128754666662,
+   "measured_shipped_net_ms_per_round": -105.42688754666662,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 47.45131271999999
+  },
+  "na5/g2/cold": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 4.220185952106657,
+   "desk_gross_relief_ms_per_round": 5.3431,
+   "desk_predicted_in_kernel_net_ms_per_round": 1.2263999999999993,
+   "measured_in_kernel_relief_ms_per_round": -354.7894665333332,
+   "measured_shipped_net_ms_per_round": -355.2150665333332,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 89.9156692666667
+  },
+  "na5/g2/hot": {
+   "cells": [
+    "gdn.in_proj",
+    "mlp.gate_up"
+   ],
+   "ci95_half_width_ms_per_round": 1.6896507811511479,
+   "desk_gross_relief_ms_per_round": 6.0266,
+   "desk_predicted_in_kernel_net_ms_per_round": 2.2997999999999994,
+   "measured_in_kernel_relief_ms_per_round": -353.0398555333332,
+   "measured_shipped_net_ms_per_round": -353.4654555333332,
+   "meets_advance_bar": false,
+   "meets_stop_bar": false,
+   "relief_ceiling_ms_per_round": 23.066,
+   "separated_from_zero": true,
+   "xbf16_ms_per_round": 90.21711373333329
+  }
+ },
+ "ranked_arch": "applegpu_g17s",
+ "rule_407_occupancy_witness": {
+  "g16s": {
+   "na2": {
+    "registers_bf16": 74,
+    "registers_delta": 15,
+    "registers_f32": 89,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 0,
+    "spill_bytes_f32": 0,
+    "text_bytes_bf16": 4222,
+    "text_bytes_f32": 3772
+   },
+   "na3": {
+    "registers_bf16": 84,
+    "registers_delta": 12,
+    "registers_f32": 96,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 16,
+    "spill_bytes_f32": 16,
+    "text_bytes_bf16": 5328,
+    "text_bytes_f32": 4656
+   },
+   "na4": {
+    "registers_bf16": 93,
+    "registers_delta": 1,
+    "registers_f32": 94,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 0,
+    "spill_bytes_f32": 0,
+    "text_bytes_bf16": 6488,
+    "text_bytes_f32": 5518
+   },
+   "na5": {
+    "registers_bf16": 96,
+    "registers_delta": 0,
+    "registers_f32": 96,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 176,
+    "spill_bytes_f32": 176,
+    "text_bytes_bf16": 7662,
+    "text_bytes_f32": 6826
+   },
+   "na6": {
+    "registers_bf16": 96,
+    "registers_delta": 0,
+    "registers_f32": 96,
+    "spill_bytes_bf16": 16,
+    "spill_bytes_delta": 48,
+    "spill_bytes_f32": 64,
+    "text_bytes_bf16": 4842,
+    "text_bytes_f32": 4780
+   }
+  },
+  "g17s": {
+   "na2": {
+    "registers_bf16": 87,
+    "registers_delta": 8,
+    "registers_f32": 95,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 0,
+    "spill_bytes_f32": 0,
+    "text_bytes_bf16": 4444,
+    "text_bytes_f32": 4036
+   },
+   "na3": {
+    "registers_bf16": 90,
+    "registers_delta": 9,
+    "registers_f32": 99,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 0,
+    "spill_bytes_f32": 0,
+    "text_bytes_bf16": 5576,
+    "text_bytes_f32": 5048
+   },
+   "na4": {
+    "registers_bf16": 94,
+    "registers_delta": 4,
+    "registers_f32": 98,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 0,
+    "spill_bytes_f32": 0,
+    "text_bytes_bf16": 6728,
+    "text_bytes_f32": 5986
+   },
+   "na5": {
+    "registers_bf16": 102,
+    "registers_delta": 5,
+    "registers_f32": 107,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 0,
+    "spill_bytes_f32": 0,
+    "text_bytes_bf16": 7862,
+    "text_bytes_f32": 7136
+   },
+   "na6": {
+    "registers_bf16": 114,
+    "registers_delta": 12,
+    "registers_f32": 126,
+    "spill_bytes_bf16": 0,
+    "spill_bytes_delta": 0,
+    "spill_bytes_f32": 0,
+    "text_bytes_bf16": 4930,
+    "text_bytes_f32": 4740
+   }
+  }
+ },
+ "rule_410_b_stream_us_per_mib": 1.9292,
+ "rule_410_cache_served_fraction_bound": 0.36,
+ "source": "research/out/e219/e223-xdtype/xdtype.json",
+ "stage": "1 - standalone census screen",
+ "verdict": {
+  "advance_bar_ms_per_round": 1.0,
+  "any_arm_meets_advance_bar": false,
+  "any_arm_meets_stop_bar": true,
+  "b_independence_note": "The advance bar is +1.0 ms/round. Every pooled arm above NA=2 measures between -1.7 and -354.8 ms/round, and the best arm is +0.300 +/- 0.446, which does not clear the +0.3 stop bar with separation. b' enters no term of this comparison.",
+  "best_pooled_arm": "na2/g1/hot",
+  "best_pooled_in_kernel_relief_ms_per_round": 0.30012737005347795,
+  "decision_flips_anywhere_in_b_prime": false,
+  "decision_uses_b_stream": false,
+  "stop_bar_ms_per_round": 0.3
+ },
+ "whole_leg_or_ranked_number": false
+}

@@ -81,7 +81,7 @@ kernel void {name}(
     const device uint32_t* w [[buffer(0)]],
     const device bfloat16_t* scales [[buffer(1)]],
     const device bfloat16_t* biases [[buffer(2)]],
-    const device bfloat16_t* x [[buffer(3)]],
+    const device {xtype}* x [[buffer(3)]],
     const device float* xsums [[buffer(4)]],
     device bfloat16_t* y [[buffer(5)]],
     constant int& qmv_k [[buffer(6)]],
@@ -534,13 +534,15 @@ def main() -> int:
     out_path = args.out or ARTIFACTS / f"e223-census-{args.variant}.json"
 
     header = e223_variants.apply(live_header(), args.variant)
-    # `xtf32` reads the transposed slab through the `xsums` argument and no
-    # longer recomputes chunk sums, so only the table path is meaningful.
-    tables = (True,) if args.variant == "xtf32" else (True, False)
+    # `xtf32` and `xf32ship` drop the in-kernel chunk-sum branch, so only the
+    # table path is meaningful for them.
+    tables = ((True,) if args.variant in ("xtf32", "xf32ship")
+              else (True, False))
     arms = [(na, table) for na in NAS for table in tables]
     source = PREAMBLE + header + "".join(
         ENTRY.format(name=f"qmv_na{na}_{'tbl' if table else 'plain'}", na=na,
-                     table="true" if table else "false")
+                     table="true" if table else "false",
+                     xtype=e223_variants.activation_type(args.variant))
         for na, table in arms)
 
     result = {
@@ -605,7 +607,7 @@ def main() -> int:
 
     # Family slopes over NA, per path.
     result["fits"] = {}
-    for path in ("tbl",) if args.variant == "xtf32" else ("tbl", "plain"):
+    for path in ["tbl" if table else "plain" for table in tables]:
         families = set()
         for na in NAS:
             families |= set(result["air"][f"na{na}_{path}"]["ops_per_k_block"])
@@ -639,7 +641,7 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n")
     print(f"e223: wrote {out_path}  (variant {args.variant})")
-    for path in ("tbl",) if args.variant == "xtf32" else ("tbl", "plain"):
+    for path in ["tbl" if table else "plain" for table in tables]:
         fit = result["fits"][f"air/{path}/ops_per_k_block/TOTAL"]
         print(f"  air {path}: lane ops/k-block = {fit['intercept']:.1f}"
               f" + {fit['slope']:.1f}*NA (R2 {fit['r_squared']})")

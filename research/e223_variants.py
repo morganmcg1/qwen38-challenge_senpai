@@ -43,7 +43,16 @@ any GPU second is spent.
 
 from __future__ import annotations
 
-NAMES = ("base", "hoistbase", "wideload", "xtf32", "narrowload", "xf32flat")
+NAMES = ("base", "hoistbase", "wideload", "xtf32", "narrowload", "xf32flat",
+         "xf32ship")
+
+# Which type the `x` argument has, per variant. Only `xf32ship` moves it: the
+# other float32 probes borrow the `xsums` argument instead.
+ACTIVATION_TYPE = {"xf32ship": "float"}
+
+
+def activation_type(variant: str) -> str:
+    return ACTIVATION_TYPE.get(variant, "bfloat16_t")
 
 # The shipped gather, verbatim. Every transform below replaces this exact text,
 # and the replacement count is asserted, so a base move breaks the variant
@@ -187,6 +196,24 @@ XF32FLAT_GATHER = """            for (int i = 0; i < 4; i++) {
                     a3[m] = xv[3];
                 }"""
 
+# The TIMED form of the convert lever: identical to `xf32flat` except that it
+# reads the real `x` argument, whose type moves to `float`. This is the exact
+# text `e223ActivationF32Header()` builds, so the witness below describes the
+# kernel the `xdtype` phase actually times.
+XF32SHIP_GATHER = """            for (int i = 0; i < 4; i++) {
+                VF a0, a1, a2, a3;
+                for (int m = 0; m < NA; m++) {
+                    const device float* xm =
+                        x + (first_m + m) * in_vec_size + k +
+                        simd_lid * values_per_thread + 4 * i;
+                    const vec<float, 4> xv =
+                        *reinterpret_cast<const device vec<float, 4>*>(xm);
+                    a0[m] = xv[0];
+                    a1[m] = xv[1];
+                    a2[m] = xv[2];
+                    a3[m] = xv[3];
+                }"""
+
 
 def apply(header: str, variant: str) -> str:
     """The header with one activation-access transform applied."""
@@ -214,4 +241,12 @@ def apply(header: str, variant: str) -> str:
         return swap(header, SHIPPED_GATHER, NARROWLOAD_GATHER)
     if variant == "xf32flat":
         return swap(header, SHIPPED_GATHER, XF32FLAT_GATHER)
+    if variant == "xf32ship":
+        out = swap(header, SHIPPED_GATHER, XF32SHIP_GATHER)
+        old = "const device bfloat16_t* x,\n"
+        if out.count(old) != 2:
+            raise SystemExit(
+                f"e223: variant {variant} expected two activation pointer "
+                f"declarations, found {out.count(old)}")
+        return out.replace(old, "const device float* x,\n")
     return swap(header, SHIPPED_GATHER, XTF32_GATHER)
