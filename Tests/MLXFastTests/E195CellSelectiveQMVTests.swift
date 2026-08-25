@@ -251,10 +251,16 @@ struct E195CellSelectiveQMVTests {
                 if m == 6 {
                     let expected: Qwen35QMVKernelVariant =
                         (cell == .mlpDown || cell == .unlisted)
-                        ? .staged : .singlePass
+                        ? qwen35E208StagedVariant : .singlePass
                     #expect(variant == expected, "m=6 cell=\(cell)")
                 } else {
-                    #expect(variant == .staged, "m=\(m) cell=\(cell)")
+                    // E208 put the m = 9 group partition behind a runtime arm,
+                    // so the staged family is named by the arm rather than by
+                    // the case. Single-pass must still never appear here.
+                    #expect(
+                        variant == qwen35E208StagedVariant, "m=\(m) cell=\(cell)"
+                    )
+                    #expect(variant != .singlePass, "m=\(m) cell=\(cell)")
                 }
             }
         }
@@ -265,11 +271,17 @@ struct E195CellSelectiveQMVTests {
             Qwen35CustomQMV.kernelVariant((m: 6, k: 5120, n: 248_320))
                 == .singlePass)
         #expect(
-            Qwen35CustomQMV.kernelVariant((m: 6, k: 17408, n: 5120)) == .staged)
+            Qwen35CustomQMV.kernelVariant((m: 6, k: 17408, n: 5120))
+                == qwen35E208StagedVariant)
         #expect(
             Qwen35CustomQMV.kernelVariant((m: 7, k: 5120, n: 248_320))
-                == .staged)
-        #expect(qwen35QMVWidthPlanWitness == "selective-m6")
+                == qwen35E208StagedVariant)
+        let armOn =
+            ProcessInfo.processInfo.environment["DARKBLOOM_E208_QMV_ARM"] == "on"
+        #expect(qwen35E208StagedVariant == (armOn ? .stagedWide9 : .staged))
+        #expect(
+            qwen35QMVWidthPlanWitness
+                == (armOn ? "selective-m6+ipg9-5" : "selective-m6+ipg9-3"))
 
         // The launch witness must follow the compiled variant, not the width
         // alone.
