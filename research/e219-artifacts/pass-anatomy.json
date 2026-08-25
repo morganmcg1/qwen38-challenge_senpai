@@ -1,0 +1,7758 @@
+{
+ "bytes_accounting": [
+  {
+   "activation_read_bytes": 84377600,
+   "activation_unique_bytes": 20480,
+   "cell": "gdn.in_proj",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 720.7541951816781,
+   "implied_stream_gb_per_s": 196.49489607376304,
+   "k": 5120,
+   "n": 16480,
+   "na": 2,
+   "output_bytes": 65920,
+   "scale_bias_bytes": 5273600,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 241.54520523618532,
+   "threadgroups": 2060,
+   "weight_bytes": 42188800,
+   "xsums_read_bytes": 42188800
+  },
+  {
+   "activation_read_bytes": 126566400,
+   "activation_unique_bytes": 30720,
+   "cell": "gdn.in_proj",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 886.5265620856685,
+   "implied_stream_gb_per_s": 194.5144369043673,
+   "k": 5120,
+   "n": 16480,
+   "na": 3,
+   "output_bytes": 98880,
+   "scale_bias_bytes": 5273600,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 244.00451069518715,
+   "threadgroups": 2060,
+   "weight_bytes": 42188800,
+   "xsums_read_bytes": 42188800
+  },
+  {
+   "activation_read_bytes": 253132800,
+   "activation_unique_bytes": 61440,
+   "cell": "gdn.in_proj",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1081.8843471595155,
+   "implied_stream_gb_per_s": 237.37825078618044,
+   "k": 5120,
+   "n": 16480,
+   "na": 3,
+   "output_bytes": 197760,
+   "scale_bias_bytes": 10547200,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 399.88836249999986,
+   "threadgroups": 4120,
+   "weight_bytes": 84377600,
+   "xsums_read_bytes": 84377600
+  },
+  {
+   "activation_read_bytes": 379699200,
+   "activation_unique_bytes": 92160,
+   "cell": "gdn.in_proj",
+   "groups": 3,
+   "implied_all_traffic_gb_per_s": 1390.0356435440074,
+   "implied_stream_gb_per_s": 255.21501041736207,
+   "k": 5120,
+   "n": 16480,
+   "na": 3,
+   "output_bytes": 296640,
+   "scale_bias_bytes": 15820800,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 557.9107583333332,
+   "threadgroups": 6180,
+   "weight_bytes": 126566400,
+   "xsums_read_bytes": 253132800
+  },
+  {
+   "activation_read_bytes": 168755200,
+   "activation_unique_bytes": 40960,
+   "cell": "gdn.in_proj",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 992.3748393227082,
+   "implied_stream_gb_per_s": 182.17998070177202,
+   "k": 5120,
+   "n": 16480,
+   "na": 4,
+   "output_bytes": 131840,
+   "scale_bias_bytes": 5273600,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 260.5247833333333,
+   "threadgroups": 2060,
+   "weight_bytes": 42188800,
+   "xsums_read_bytes": 42188800
+  },
+  {
+   "activation_read_bytes": 337510400,
+   "activation_unique_bytes": 81920,
+   "cell": "gdn.in_proj",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1149.8176195444698,
+   "implied_stream_gb_per_s": 211.08329578582823,
+   "k": 5120,
+   "n": 16480,
+   "na": 4,
+   "output_bytes": 263680,
+   "scale_bias_bytes": 10547200,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 449.7030409090907,
+   "threadgroups": 4120,
+   "weight_bytes": 84377600,
+   "xsums_read_bytes": 84377600
+  },
+  {
+   "activation_read_bytes": 210944000,
+   "activation_unique_bytes": 51200,
+   "cell": "gdn.in_proj",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 1053.4362723608535,
+   "implied_stream_gb_per_s": 166.24090215886346,
+   "k": 5120,
+   "n": 16480,
+   "na": 5,
+   "output_bytes": 164800,
+   "scale_bias_bytes": 5273600,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 285.50374416666654,
+   "threadgroups": 2060,
+   "weight_bytes": 42188800,
+   "xsums_read_bytes": 42188800
+  },
+  {
+   "activation_read_bytes": 421888000,
+   "activation_unique_bytes": 102400,
+   "cell": "gdn.in_proj",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1368.1577132916145,
+   "implied_stream_gb_per_s": 189.34619001825322,
+   "k": 5120,
+   "n": 16480,
+   "na": 5,
+   "output_bytes": 329600,
+   "scale_bias_bytes": 10547200,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 501.32933749999995,
+   "threadgroups": 4120,
+   "weight_bytes": 84377600,
+   "xsums_read_bytes": 168755200
+  },
+  {
+   "activation_read_bytes": 632832000,
+   "activation_unique_bytes": 153600,
+   "cell": "gdn.in_proj",
+   "groups": 3,
+   "implied_all_traffic_gb_per_s": 1370.924708507588,
+   "implied_stream_gb_per_s": 189.72912832781614,
+   "k": 5120,
+   "n": 16480,
+   "na": 5,
+   "output_bytes": 494400,
+   "scale_bias_bytes": 15820800,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 750.4762249999999,
+   "threadgroups": 6180,
+   "weight_bytes": 126566400,
+   "xsums_read_bytes": 253132800
+  },
+  {
+   "activation_read_bytes": 157286400,
+   "activation_unique_bytes": 122880,
+   "cell": "kext.k12288",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 903.8032590695692,
+   "implied_stream_gb_per_s": 142.67318610260955,
+   "k": 12288,
+   "n": 5120,
+   "na": 5,
+   "output_bytes": 51200,
+   "scale_bias_bytes": 3932160,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 248.04548749999992,
+   "threadgroups": 640,
+   "weight_bytes": 31457280,
+   "xsums_read_bytes": 31457280
+  },
+  {
+   "activation_read_bytes": 222822400,
+   "activation_unique_bytes": 174080,
+   "cell": "kext.k17408",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 974.6417951530412,
+   "implied_stream_gb_per_s": 153.8659990671425,
+   "k": 17408,
+   "n": 5120,
+   "na": 5,
+   "output_bytes": 51200,
+   "scale_bias_bytes": 5570560,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 325.8357291666665,
+   "threadgroups": 640,
+   "weight_bytes": 44564480,
+   "xsums_read_bytes": 44564480
+  },
+  {
+   "activation_read_bytes": 26214400,
+   "activation_unique_bytes": 20480,
+   "cell": "kext.k2048",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 609.4626104223418,
+   "implied_stream_gb_per_s": 96.09922354318886,
+   "k": 2048,
+   "n": 5120,
+   "na": 5,
+   "output_bytes": 51200,
+   "scale_bias_bytes": 655360,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 61.37656249999998,
+   "threadgroups": 640,
+   "weight_bytes": 5242880,
+   "xsums_read_bytes": 5242880
+  },
+  {
+   "activation_read_bytes": 52428800,
+   "activation_unique_bytes": 40960,
+   "cell": "kext.k4096",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 832.3971990755134,
+   "implied_stream_gb_per_s": 131.34112769962903,
+   "k": 4096,
+   "n": 5120,
+   "na": 5,
+   "output_bytes": 51200,
+   "scale_bias_bytes": 1310720,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 89.8155833333333,
+   "threadgroups": 640,
+   "weight_bytes": 10485760,
+   "xsums_read_bytes": 10485760
+  },
+  {
+   "activation_read_bytes": 104857600,
+   "activation_unique_bytes": 81920,
+   "cell": "kext.k8192",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 774.2124088292568,
+   "implied_stream_gb_per_s": 122.20219154227635,
+   "k": 8192,
+   "n": 5120,
+   "na": 5,
+   "output_bytes": 51200,
+   "scale_bias_bytes": 2621440,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 193.06494999999995,
+   "threadgroups": 640,
+   "weight_bytes": 20971520,
+   "xsums_read_bytes": 20971520
+  },
+  {
+   "activation_read_bytes": 89128960,
+   "activation_unique_bytes": 69632,
+   "cell": "mlp.down",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 733.0365015084508,
+   "implied_stream_gb_per_s": 199.89677572604296,
+   "k": 17408,
+   "n": 5120,
+   "na": 2,
+   "output_bytes": 20480,
+   "scale_bias_bytes": 5570560,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 250.80464563725482,
+   "threadgroups": 640,
+   "weight_bytes": 44564480,
+   "xsums_read_bytes": 44564480
+  },
+  {
+   "activation_read_bytes": 133693440,
+   "activation_unique_bytes": 104448,
+   "cell": "mlp.down",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 908.8872710935161,
+   "implied_stream_gb_per_s": 199.4850082608085,
+   "k": 17408,
+   "n": 5120,
+   "na": 3,
+   "output_bytes": 30720,
+   "scale_bias_bytes": 5570560,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 251.3223446568626,
+   "threadgroups": 640,
+   "weight_bytes": 44564480,
+   "xsums_read_bytes": 44564480
+  },
+  {
+   "activation_read_bytes": 267386880,
+   "activation_unique_bytes": 208896,
+   "cell": "mlp.down",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1091.265449679449,
+   "implied_stream_gb_per_s": 239.51385850318655,
+   "k": 17408,
+   "n": 5120,
+   "na": 3,
+   "output_bytes": 61440,
+   "scale_bias_bytes": 11141120,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 418.63999280303017,
+   "threadgroups": 1280,
+   "weight_bytes": 89128960,
+   "xsums_read_bytes": 89128960
+  },
+  {
+   "activation_read_bytes": 401080320,
+   "activation_unique_bytes": 313344,
+   "cell": "mlp.down",
+   "groups": 3,
+   "implied_all_traffic_gb_per_s": 1399.6426854047288,
+   "implied_stream_gb_per_s": 257.0482984261057,
+   "k": 17408,
+   "n": 5120,
+   "na": 3,
+   "output_bytes": 92160,
+   "scale_bias_bytes": 16711680,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 585.1239666666664,
+   "threadgroups": 1920,
+   "weight_bytes": 133693440,
+   "xsums_read_bytes": 267386880
+  },
+  {
+   "activation_read_bytes": 178257920,
+   "activation_unique_bytes": 139264,
+   "cell": "mlp.down",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 1027.2921708494735,
+   "implied_stream_gb_per_s": 188.6580070697308,
+   "k": 17408,
+   "n": 5120,
+   "na": 4,
+   "output_bytes": 40960,
+   "scale_bias_bytes": 5570560,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 265.7456249999999,
+   "threadgroups": 640,
+   "weight_bytes": 44564480,
+   "xsums_read_bytes": 44564480
+  },
+  {
+   "activation_read_bytes": 356515840,
+   "activation_unique_bytes": 278528,
+   "cell": "mlp.down",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1185.2461367700553,
+   "implied_stream_gb_per_s": 217.6656071127603,
+   "k": 17408,
+   "n": 5120,
+   "na": 4,
+   "output_bytes": 81920,
+   "scale_bias_bytes": 11141120,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 460.6611091666664,
+   "threadgroups": 1280,
+   "weight_bytes": 89128960,
+   "xsums_read_bytes": 89128960
+  },
+  {
+   "activation_read_bytes": 222822400,
+   "activation_unique_bytes": 174080,
+   "cell": "mlp.down",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 969.9384680472531,
+   "implied_stream_gb_per_s": 153.12348820041117,
+   "k": 17408,
+   "n": 5120,
+   "na": 5,
+   "output_bytes": 51200,
+   "scale_bias_bytes": 5570560,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 327.415738690476,
+   "threadgroups": 640,
+   "weight_bytes": 44564480,
+   "xsums_read_bytes": 44564480
+  },
+  {
+   "activation_read_bytes": 445644800,
+   "activation_unique_bytes": 348160,
+   "cell": "mlp.down",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1059.8796276675228,
+   "implied_stream_gb_per_s": 146.7318155538015,
+   "k": 17408,
+   "n": 5120,
+   "na": 5,
+   "output_bytes": 102400,
+   "scale_bias_bytes": 11141120,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 683.3560916666665,
+   "threadgroups": 1280,
+   "weight_bytes": 89128960,
+   "xsums_read_bytes": 178257920
+  },
+  {
+   "activation_read_bytes": 668467200,
+   "activation_unique_bytes": 522240,
+   "cell": "mlp.down",
+   "groups": 3,
+   "implied_all_traffic_gb_per_s": 1040.7635698435654,
+   "implied_stream_gb_per_s": 144.0853509954502,
+   "k": 17408,
+   "n": 5120,
+   "na": 5,
+   "output_bytes": 153600,
+   "scale_bias_bytes": 16711680,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 1043.8612874999997,
+   "threadgroups": 1920,
+   "weight_bytes": 133693440,
+   "xsums_read_bytes": 267386880
+  },
+  {
+   "activation_read_bytes": 178257920,
+   "activation_unique_bytes": 20480,
+   "cell": "mlp.gate_up",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 848.7815977198746,
+   "implied_stream_gb_per_s": 231.39823943896621,
+   "k": 5120,
+   "n": 34816,
+   "na": 2,
+   "output_bytes": 139264,
+   "scale_bias_bytes": 11141120,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 433.3225708333331,
+   "threadgroups": 4352,
+   "weight_bytes": 89128960,
+   "xsums_read_bytes": 89128960
+  },
+  {
+   "activation_read_bytes": 267386880,
+   "activation_unique_bytes": 30720,
+   "cell": "mlp.gate_up",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 1044.108782975549,
+   "implied_stream_gb_per_s": 229.08984420002903,
+   "k": 5120,
+   "n": 34816,
+   "na": 3,
+   "output_bytes": 208896,
+   "scale_bias_bytes": 11141120,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 437.68889166666645,
+   "threadgroups": 4352,
+   "weight_bytes": 89128960,
+   "xsums_read_bytes": 89128960
+  },
+  {
+   "activation_read_bytes": 534773760,
+   "activation_unique_bytes": 61440,
+   "cell": "mlp.gate_up",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1157.896996609365,
+   "implied_stream_gb_per_s": 254.05632715488125,
+   "k": 5120,
+   "n": 34816,
+   "na": 3,
+   "output_bytes": 417792,
+   "scale_bias_bytes": 22282240,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 789.3531416666667,
+   "threadgroups": 8704,
+   "weight_bytes": 178257920,
+   "xsums_read_bytes": 178257920
+  },
+  {
+   "activation_read_bytes": 802160640,
+   "activation_unique_bytes": 92160,
+   "cell": "mlp.gate_up",
+   "groups": 3,
+   "implied_all_traffic_gb_per_s": 1417.463534216999,
+   "implied_stream_gb_per_s": 260.25085927227826,
+   "k": 5120,
+   "n": 34816,
+   "na": 3,
+   "output_bytes": 626688,
+   "scale_bias_bytes": 33423360,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 1155.8472500000005,
+   "threadgroups": 13056,
+   "weight_bytes": 267386880,
+   "xsums_read_bytes": 534773760
+  },
+  {
+   "activation_read_bytes": 356515840,
+   "activation_unique_bytes": 40960,
+   "cell": "mlp.gate_up",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 1161.6394729941926,
+   "implied_stream_gb_per_s": 213.2535493513051,
+   "k": 5120,
+   "n": 34816,
+   "na": 4,
+   "output_bytes": 278528,
+   "scale_bias_bytes": 11141120,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 470.1918458333334,
+   "threadgroups": 4352,
+   "weight_bytes": 89128960,
+   "xsums_read_bytes": 89128960
+  },
+  {
+   "activation_read_bytes": 713031680,
+   "activation_unique_bytes": 81920,
+   "cell": "mlp.gate_up",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1209.0938435666155,
+   "implied_stream_gb_per_s": 221.965213505345,
+   "k": 5120,
+   "n": 34816,
+   "na": 4,
+   "output_bytes": 557056,
+   "scale_bias_bytes": 22282240,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 903.4756249999999,
+   "threadgroups": 8704,
+   "weight_bytes": 178257920,
+   "xsums_read_bytes": 178257920
+  },
+  {
+   "activation_read_bytes": 445644800,
+   "activation_unique_bytes": 51200,
+   "cell": "mlp.gate_up",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 1041.1849017621778,
+   "implied_stream_gb_per_s": 164.30753518219572,
+   "k": 5120,
+   "n": 34816,
+   "na": 5,
+   "output_bytes": 348160,
+   "scale_bias_bytes": 11141120,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 610.258561111111,
+   "threadgroups": 4352,
+   "weight_bytes": 89128960,
+   "xsums_read_bytes": 89128960
+  },
+  {
+   "activation_read_bytes": 891289600,
+   "activation_unique_bytes": 102400,
+   "cell": "mlp.gate_up",
+   "groups": 2,
+   "implied_all_traffic_gb_per_s": 1403.7609209528994,
+   "implied_stream_gb_per_s": 194.27349602808027,
+   "k": 5120,
+   "n": 34816,
+   "na": 5,
+   "output_bytes": 696320,
+   "scale_bias_bytes": 22282240,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 1032.2569166666665,
+   "threadgroups": 8704,
+   "weight_bytes": 178257920,
+   "xsums_read_bytes": 356515840
+  },
+  {
+   "activation_read_bytes": 1336934400,
+   "activation_unique_bytes": 153600,
+   "cell": "mlp.gate_up",
+   "groups": 3,
+   "implied_all_traffic_gb_per_s": 1384.2542823099677,
+   "implied_stream_gb_per_s": 191.57387472622332,
+   "k": 5120,
+   "n": 34816,
+   "na": 5,
+   "output_bytes": 1044480,
+   "scale_bias_bytes": 33423360,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 1570.204916666667,
+   "threadgroups": 13056,
+   "weight_bytes": 267386880,
+   "xsums_read_bytes": 534773760
+  },
+  {
+   "activation_read_bytes": 210944000,
+   "activation_unique_bytes": 51200,
+   "cell": "next.n16480",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 1048.3139154572093,
+   "implied_stream_gb_per_s": 165.4325521379048,
+   "k": 5120,
+   "n": 16480,
+   "na": 5,
+   "output_bytes": 164800,
+   "scale_bias_bytes": 5273600,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 286.8987958333332,
+   "threadgroups": 2060,
+   "weight_bytes": 42188800,
+   "xsums_read_bytes": 42188800
+  },
+  {
+   "activation_read_bytes": 314572800,
+   "activation_unique_bytes": 51200,
+   "cell": "next.n24576",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 1068.6940732104356,
+   "implied_stream_gb_per_s": 168.64870853950987,
+   "k": 5120,
+   "n": 24576,
+   "na": 5,
+   "output_bytes": 245760,
+   "scale_bias_bytes": 7864320,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 419.6823125000001,
+   "threadgroups": 3072,
+   "weight_bytes": 62914560,
+   "xsums_read_bytes": 62914560
+  },
+  {
+   "activation_read_bytes": 445644800,
+   "activation_unique_bytes": 51200,
+   "cell": "next.n34816",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 1177.2043930804866,
+   "implied_stream_gb_per_s": 185.77252888064666,
+   "k": 5120,
+   "n": 34816,
+   "na": 5,
+   "output_bytes": 348160,
+   "scale_bias_bytes": 11141120,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 539.7465416666668,
+   "threadgroups": 4352,
+   "weight_bytes": 89128960,
+   "xsums_read_bytes": 89128960
+  },
+  {
+   "activation_read_bytes": 52428800,
+   "activation_unique_bytes": 51200,
+   "cell": "next.n4096",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 840.0200700428766,
+   "implied_stream_gb_per_s": 132.56207132731421,
+   "k": 5120,
+   "n": 4096,
+   "na": 5,
+   "output_bytes": 40960,
+   "scale_bias_bytes": 1310720,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 88.98834999999998,
+   "threadgroups": 512,
+   "weight_bytes": 10485760,
+   "xsums_read_bytes": 10485760
+  },
+  {
+   "activation_read_bytes": 104857600,
+   "activation_unique_bytes": 51200,
+   "cell": "next.n8192",
+   "groups": 1,
+   "implied_all_traffic_gb_per_s": 988.1386601247835,
+   "implied_stream_gb_per_s": 155.9364022553083,
+   "k": 5120,
+   "n": 8192,
+   "na": 5,
+   "output_bytes": 81920,
+   "scale_bias_bytes": 2621440,
+   "scale_bias_share_of_stream": 0.1111111111111111,
+   "slope_us": 151.29860416666668,
+   "threadgroups": 1024,
+   "weight_bytes": 20971520,
+   "xsums_read_bytes": 20971520
+  }
+ ],
+ "composition_fit": {
+  "coefficients": {
+   "a_dispatch_us": {
+    "bootstrap_fraction_dropped_or_zero": 0.0,
+    "ci95": [
+     34.969497245379046,
+     61.737182652456454
+    ],
+    "column": "dispatches",
+    "resolved_away_from_zero": true,
+    "value": 45.72389431885516
+   },
+   "b_stream_us_per_mib": {
+    "bootstrap_fraction_dropped_or_zero": 0.0,
+    "ci95": [
+     1.30939028555332,
+     2.626288617951622
+    ],
+    "column": "stream_mib",
+    "implied_gb_per_s": 543.5226636518491,
+    "resolved_away_from_zero": true,
+    "value": 1.9292222203850187
+   },
+   "c_mac_us_per_gmac": {
+    "bootstrap_fraction_dropped_or_zero": 0.001,
+    "ci95": [
+     245.09249646091587,
+     469.6959792478448
+    ],
+    "column": "mac_gmac",
+    "resolved_away_from_zero": true,
+    "value": 365.385273524234
+   },
+   "d_output_us_per_mib": {
+    "bootstrap_fraction_dropped_or_zero": 0.953,
+    "ci95": [
+     0.0,
+     103.8187196060853
+    ],
+    "column": "output_mib",
+    "resolved_away_from_zero": false,
+    "value": 0.0
+   },
+   "e_threadgroup_us_per_1k": {
+    "bootstrap_fraction_dropped_or_zero": 0.498,
+    "ci95": [
+     0.0,
+     9.2586355975779
+    ],
+    "column": "threadgroups_k",
+    "resolved_away_from_zero": false,
+    "value": 0.3080830943310405
+   }
+  },
+  "design_columns": 5,
+  "design_rank": 5,
+  "estimator": "weighted least squares, coefficients constrained >= 0",
+  "identifiable": true,
+  "n_units": 53,
+  "pairwise_design_correlation": [
+   {
+    "a": "output_mib",
+    "b": "threadgroups_k",
+    "pearson_r": 0.9454125277333467
+   },
+   {
+    "a": "stream_mib",
+    "b": "mac_gmac",
+    "pearson_r": 0.9248833811115914
+   },
+   {
+    "a": "stream_mib",
+    "b": "threadgroups_k",
+    "pearson_r": 0.9164163904138894
+   },
+   {
+    "a": "mac_gmac",
+    "b": "output_mib",
+    "pearson_r": 0.9152212489332532
+   },
+   {
+    "a": "stream_mib",
+    "b": "output_mib",
+    "pearson_r": 0.86280889477958
+   },
+   {
+    "a": "mac_gmac",
+    "b": "threadgroups_k",
+    "pearson_r": 0.8465430782671469
+   },
+   {
+    "a": "dispatches",
+    "b": "threadgroups_k",
+    "pearson_r": -0.16910661910496338
+   },
+   {
+    "a": "dispatches",
+    "b": "output_mib",
+    "pearson_r": -0.14416743005992877
+   },
+   {
+    "a": "dispatches",
+    "b": "stream_mib",
+    "pearson_r": -0.14356779390043198
+   },
+   {
+    "a": "dispatches",
+    "b": "mac_gmac",
+    "pearson_r": -0.09400460413243443
+   }
+  ],
+  "residuals": [
+   {
+    "label": "mlp.down/d1",
+    "measured_us": 327.3057166666665,
+    "predicted_us": 300.99405205403826,
+    "residual_pct": 8.03886497327038,
+    "residual_us": 26.31166461262825
+   },
+   {
+    "label": "mlp.down/d2",
+    "measured_us": 351.6527833333333,
+    "predicted_us": 346.71794637289344,
+    "residual_pct": 1.4033265750557373,
+    "residual_us": 4.9348369604398385
+   },
+   {
+    "label": "mlp.down/d4",
+    "measured_us": 403.29686249999986,
+    "predicted_us": 438.1657350106037,
+    "residual_pct": -8.645956800768287,
+    "residual_us": -34.868872510603865
+   },
+   {
+    "label": "mlp.down/d8",
+    "measured_us": 539.9296999999999,
+    "predicted_us": 621.0613122860243,
+    "residual_pct": -15.026328850964191,
+    "residual_us": -81.13161228602439
+   },
+   {
+    "label": "gdn.in_proj/d1",
+    "measured_us": 289.16681893939386,
+    "predicted_us": 287.8338893272355,
+    "residual_pct": 0.460955242737487,
+    "residual_us": 1.3329296121583525
+   },
+   {
+    "label": "gdn.in_proj/d2",
+    "measured_us": 318.13486185897426,
+    "predicted_us": 333.5577836460907,
+    "residual_pct": -4.847919431713597,
+    "residual_us": -15.422921787116422
+   },
+   {
+    "label": "gdn.in_proj/d4",
+    "measured_us": 378.10520833333317,
+    "predicted_us": 425.005572283801,
+    "residual_pct": -12.404051284350729,
+    "residual_us": -46.900363950467806
+   },
+   {
+    "label": "mlp.gate_up/na3/g1/cold",
+    "measured_us": 436.46527916666656,
+    "predicted_us": 426.9450033408843,
+    "residual_pct": 2.1812218016423044,
+    "residual_us": 9.520275825782278
+   },
+   {
+    "label": "mlp.gate_up/na3/g2/cold",
+    "measured_us": 789.3531416666667,
+    "predicted_us": 808.1661123629134,
+    "residual_pct": -2.3833401937850454,
+    "residual_us": -18.81297069624668
+   },
+   {
+    "label": "mlp.gate_up/na3/g3/cold",
+    "measured_us": 1155.8472500000005,
+    "predicted_us": 1189.3872213849427,
+    "residual_pct": -2.901765037286906,
+    "residual_us": -33.53997138494219
+   },
+   {
+    "label": "mlp.gate_up/na5/g1/cold",
+    "measured_us": 613.7758916666666,
+    "predicted_us": 557.2106410550064,
+    "residual_pct": 9.215945327872216,
+    "residual_us": 56.56525061166019
+   },
+   {
+    "label": "mlp.gate_up/na5/g2/cold",
+    "measured_us": 1032.2569166666665,
+    "predicted_us": 1068.6973877911576,
+    "residual_pct": -3.5301745656656447,
+    "residual_us": -36.44047112449107
+   },
+   {
+    "label": "mlp.gate_up/na5/g3/cold",
+    "measured_us": 1570.204916666667,
+    "predicted_us": 1580.1841345273087,
+    "residual_pct": -0.6355360217458905,
+    "residual_us": -9.979217860641711
+   },
+   {
+    "label": "mlp.down/na3/g1/cold",
+    "measured_us": 251.3842216666666,
+    "predicted_us": 235.86123319697725,
+    "residual_pct": 6.175005084556464,
+    "residual_us": 15.522988469689352
+   },
+   {
+    "label": "mlp.down/na3/g2/cold",
+    "measured_us": 418.63999280303017,
+    "predicted_us": 425.99857207509933,
+    "residual_pct": -1.7577344254186844,
+    "residual_us": -7.358579272069164
+   },
+   {
+    "label": "mlp.down/na3/g3/cold",
+    "measured_us": 585.1239666666664,
+    "predicted_us": 616.1359109532214,
+    "residual_pct": -5.300063927174908,
+    "residual_us": -31.01194428655492
+   },
+   {
+    "label": "mlp.down/na5/g1/cold",
+    "measured_us": 325.0176619047618,
+    "predicted_us": 300.99405205403826,
+    "residual_pct": 7.391478269191115,
+    "residual_us": 24.023609850723517
+   },
+   {
+    "label": "mlp.down/na5/g2/cold",
+    "measured_us": 683.3560916666665,
+    "predicted_us": 556.2642097892215,
+    "residual_pct": 18.598192571529616,
+    "residual_us": 127.09188187744508
+   },
+   {
+    "label": "mlp.down/na5/g3/cold",
+    "measured_us": 1043.8612874999997,
+    "predicted_us": 811.5343675244046,
+    "residual_pct": 22.256493535842054,
+    "residual_us": 232.32691997559505
+   },
+   {
+    "label": "gdn.in_proj/na3/g1/cold",
+    "measured_us": 244.03937410873434,
+    "predicted_us": 226.1732244165987,
+    "residual_pct": 7.321011110352696,
+    "residual_us": 17.86614969213562
+   },
+   {
+    "label": "gdn.in_proj/na3/g2/cold",
+    "measured_us": 399.88836249999986,
+    "predicted_us": 406.6225545143423,
+    "residual_pct": -1.6840180024849953,
+    "residual_us": -6.7341920143424545
+   },
+   {
+    "label": "gdn.in_proj/na3/g3/cold",
+    "measured_us": 557.9107583333332,
+    "predicted_us": 587.0718846120859,
+    "residual_pct": -5.226844229687698,
+    "residual_us": -29.161126278752704
+   },
+   {
+    "label": "gdn.in_proj/na5/g1/cold",
+    "measured_us": 291.7521166666666,
+    "predicted_us": 287.8338893272355,
+    "residual_pct": 1.3429987703937591,
+    "residual_us": 3.9182273394310982
+   },
+   {
+    "label": "gdn.in_proj/na5/g2/cold",
+    "measured_us": 501.32933749999995,
+    "predicted_us": 529.943884335616,
+    "residual_pct": -5.70773435648298,
+    "residual_us": -28.61454683561601
+   },
+   {
+    "label": "gdn.in_proj/na5/g3/cold",
+    "measured_us": 750.4762249999999,
+    "predicted_us": 772.0538793439963,
+    "residual_pct": -2.8751949262611776,
+    "residual_us": -21.577654343996414
+   },
+   {
+    "label": "mlp.gate_up/na2/g1/cold",
+    "measured_us": 433.3225708333331,
+    "predicted_us": 361.8121844838233,
+    "residual_pct": 16.502806722480777,
+    "residual_us": 71.51038634950982
+   },
+   {
+    "label": "mlp.gate_up/na3/g1/cold",
+    "measured_us": 437.68889166666645,
+    "predicted_us": 426.9450033408843,
+    "residual_pct": 2.454686086473599,
+    "residual_us": 10.743888325782166
+   },
+   {
+    "label": "mlp.gate_up/na4/g1/cold",
+    "measured_us": 471.8609499999998,
+    "predicted_us": 492.0778221979453,
+    "residual_pct": -4.284497837328037,
+    "residual_us": -20.21687219794552
+   },
+   {
+    "label": "mlp.gate_up/na5/g1/cold",
+    "measured_us": 610.258561111111,
+    "predicted_us": 557.2106410550064,
+    "residual_pct": 8.692695758256821,
+    "residual_us": 53.04792005610466
+   },
+   {
+    "label": "mlp.down/na2/g1/cold",
+    "measured_us": 250.80464563725482,
+    "predicted_us": 203.29482376844675,
+    "residual_pct": 18.94295926939198,
+    "residual_us": 47.509821868808075
+   },
+   {
+    "label": "mlp.down/na3/g1/cold",
+    "measured_us": 251.3223446568626,
+    "predicted_us": 235.86123319697725,
+    "residual_pct": 6.1519048300280845,
+    "residual_us": 15.461111459885359
+   },
+   {
+    "label": "mlp.down/na4/g1/cold",
+    "measured_us": 265.66092916666656,
+    "predicted_us": 268.42764262550776,
+    "residual_pct": -1.0414453745682166,
+    "residual_us": -2.7667134588411955
+   },
+   {
+    "label": "mlp.down/na5/g1/cold",
+    "measured_us": 327.415738690476,
+    "predicted_us": 300.99405205403826,
+    "residual_pct": 8.069766817598104,
+    "residual_us": 26.421686636437755
+   },
+   {
+    "label": "gdn.in_proj/na2/g1/cold",
+    "measured_us": 241.54520523618532,
+    "predicted_us": 195.34289196128032,
+    "residual_pct": 19.127812216238333,
+    "residual_us": 46.20231327490501
+   },
+   {
+    "label": "gdn.in_proj/na3/g1/cold",
+    "measured_us": 244.00451069518715,
+    "predicted_us": 226.1732244165987,
+    "residual_pct": 7.307769117786292,
+    "residual_us": 17.831286278588436
+   },
+   {
+    "label": "gdn.in_proj/na4/g1/cold",
+    "measured_us": 258.86108374999986,
+    "predicted_us": 257.0035568719171,
+    "residual_pct": 0.717576721527093,
+    "residual_us": 1.8575268780827514
+   },
+   {
+    "label": "gdn.in_proj/na5/g1/cold",
+    "measured_us": 285.50374416666654,
+    "predicted_us": 287.8338893272355,
+    "residual_pct": -0.8161522250330707,
+    "residual_us": -2.330145160568975
+   },
+   {
+    "label": "kext.k2048/na5/g1/cold",
+    "measured_us": 61.37656249999998,
+    "predicted_us": 75.9296539174401,
+    "residual_pct": -23.711154265832555,
+    "residual_us": -14.553091417440129
+   },
+   {
+    "label": "kext.k4096/na5/g1/cold",
+    "measured_us": 89.8155833333333,
+    "predicted_us": 105.9382403356532,
+    "residual_pct": -17.95084594895272,
+    "residual_us": -16.12265700231991
+   },
+   {
+    "label": "kext.k8192/na5/g1/cold",
+    "measured_us": 193.06494999999995,
+    "predicted_us": 165.95541317207937,
+    "residual_pct": 14.041666717817286,
+    "residual_us": 27.10953682792058
+   },
+   {
+    "label": "kext.k12288/na5/g1/cold",
+    "measured_us": 248.04548749999992,
+    "predicted_us": 225.97258600850554,
+    "residual_pct": 8.898731323017671,
+    "residual_us": 22.072901491494378
+   },
+   {
+    "label": "kext.k17408/na5/g1/cold",
+    "measured_us": 325.8357291666665,
+    "predicted_us": 300.99405205403826,
+    "residual_pct": 7.623988067902036,
+    "residual_us": 24.841677112628247
+   },
+   {
+    "label": "next.n4096/na5/g1/cold",
+    "measured_us": 88.98834999999998,
+    "predicted_us": 105.89880569957883,
+    "residual_pct": -19.002999493280694,
+    "residual_us": -16.910455699578847
+   },
+   {
+    "label": "next.n8192/na5/g1/cold",
+    "measured_us": 151.29860416666668,
+    "predicted_us": 166.0737170803025,
+    "residual_pct": -9.765531542749674,
+    "residual_us": -14.775112913635809
+   },
+   {
+    "label": "next.n16480/na5/g1/cold",
+    "measured_us": 286.8987958333332,
+    "predicted_us": 287.8338893272355,
+    "residual_pct": -0.3259314808855126,
+    "residual_us": -0.9350934939022864
+   },
+   {
+    "label": "next.n24576/na5/g1/cold",
+    "measured_us": 419.6823125000001,
+    "predicted_us": 406.7733626031972,
+    "residual_pct": 3.0758860958198895,
+    "residual_us": 12.90894989680288
+   },
+   {
+    "label": "next.n34816/na5/g1/cold",
+    "measured_us": 539.7465416666668,
+    "predicted_us": 557.2106410550064,
+    "residual_pct": -3.235611169348626,
+    "residual_us": -17.464099388339605
+   },
+   {
+    "label": "mlp.gate_up/na4/g1/cold",
+    "measured_us": 470.1918458333334,
+    "predicted_us": 492.0778221979453,
+    "residual_pct": -4.654690751989289,
+    "residual_us": -21.885976364611906
+   },
+   {
+    "label": "mlp.gate_up/na4/g2/cold",
+    "measured_us": 903.4756249999999,
+    "predicted_us": 938.4317500770354,
+    "residual_pct": -3.86907229257408,
+    "residual_us": -34.956125077035495
+   },
+   {
+    "label": "mlp.down/na4/g1/cold",
+    "measured_us": 265.7456249999999,
+    "predicted_us": 268.42764262550776,
+    "residual_pct": -1.009242438330962,
+    "residual_us": -2.6820176255078536
+   },
+   {
+    "label": "mlp.down/na4/g2/cold",
+    "measured_us": 460.6611091666664,
+    "predicted_us": 491.13139093216034,
+    "residual_pct": -6.6144680241435045,
+    "residual_us": -30.47028176549395
+   },
+   {
+    "label": "gdn.in_proj/na4/g1/cold",
+    "measured_us": 260.5247833333333,
+    "predicted_us": 257.0035568719171,
+    "residual_pct": 1.3515898243396207,
+    "residual_us": 3.521226461416177
+   },
+   {
+    "label": "gdn.in_proj/na4/g2/cold",
+    "measured_us": 449.7030409090907,
+    "predicted_us": 468.28321942497917,
+    "residual_pct": -4.131655075831369,
+    "residual_us": -18.580178515888463
+   }
+  ],
+  "scaled_condition_number": 58.736036757210925,
+  "weighted_r2": 0.9700245860661874
+ },
+ "cool_gate_passed_real_gate": false,
+ "gate_qualified_for_timing": false,
+ "harness": "local-microbench",
+ "hot_vs_cold": [
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 196.49489607376304,
+   "cold_us": 241.54520523618532,
+   "groups": 1,
+   "hot_implied_gb_per_s": 197.854333545062,
+   "hot_minus_cold_pct": -0.6870900661821048,
+   "hot_us": 239.88557212566832,
+   "na": 2,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 194.5144369043673,
+   "cold_us": 244.00451069518715,
+   "groups": 1,
+   "hot_implied_gb_per_s": 195.48208895193991,
+   "hot_minus_cold_pct": -0.49500803514049624,
+   "hot_us": 242.79666876114072,
+   "na": 3,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 237.37825078618044,
+   "cold_us": 399.88836249999986,
+   "groups": 2,
+   "hot_implied_gb_per_s": 239.62461970082248,
+   "hot_minus_cold_pct": -0.9374533040247198,
+   "hot_us": 396.13959583333326,
+   "na": 3,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 255.21501041736207,
+   "cold_us": 557.9107583333332,
+   "groups": 3,
+   "hot_implied_gb_per_s": 256.30425185596545,
+   "hot_minus_cold_pct": -0.4249798552758722,
+   "hot_us": 555.5397499999997,
+   "na": 3,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 182.17998070177202,
+   "cold_us": 260.5247833333333,
+   "groups": 1,
+   "hot_implied_gb_per_s": 180.94324822753805,
+   "hot_minus_cold_pct": 0.6834919160281617,
+   "hot_us": 262.3054491666665,
+   "na": 4,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 211.08329578582823,
+   "cold_us": 449.7030409090907,
+   "groups": 2,
+   "hot_implied_gb_per_s": 210.7933230518668,
+   "hot_minus_cold_pct": 0.1375625801440115,
+   "hot_us": 450.3216640151513,
+   "na": 4,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 166.24090215886346,
+   "cold_us": 285.50374416666654,
+   "groups": 1,
+   "hot_implied_gb_per_s": 166.8796336170508,
+   "hot_minus_cold_pct": -0.3827497965707785,
+   "hot_us": 284.41097916666666,
+   "na": 5,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 189.34619001825322,
+   "cold_us": 501.32933749999995,
+   "groups": 2,
+   "hot_implied_gb_per_s": 189.6777661696828,
+   "hot_minus_cold_pct": -0.17481023639477505,
+   "hot_us": 500.45296249999984,
+   "na": 5,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "gdn.in_proj",
+   "cold_implied_gb_per_s": 189.72912832781614,
+   "cold_us": 750.4762249999999,
+   "groups": 3,
+   "hot_implied_gb_per_s": 190.43045838980964,
+   "hot_minus_cold_pct": -0.36828670577363887,
+   "hot_us": 747.712320833333,
+   "na": 5,
+   "replica_set_bytes": 237312000,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 199.89677572604296,
+   "cold_us": 250.80464563725482,
+   "groups": 1,
+   "hot_implied_gb_per_s": 200.62418290264654,
+   "hot_minus_cold_pct": -0.3625720319850885,
+   "hot_us": 249.89529813725483,
+   "na": 2,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 199.4850082608085,
+   "cold_us": 251.3223446568626,
+   "groups": 1,
+   "hot_implied_gb_per_s": 201.8121454285953,
+   "hot_minus_cold_pct": -1.1531204739162615,
+   "hot_us": 248.42429524509794,
+   "na": 3,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 239.51385850318655,
+   "cold_us": 418.63999280303017,
+   "groups": 2,
+   "hot_implied_gb_per_s": 239.3271074547006,
+   "hot_minus_cold_pct": 0.07803171586875365,
+   "hot_us": 418.9666647727272,
+   "na": 3,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 257.0482984261057,
+   "cold_us": 585.1239666666664,
+   "groups": 3,
+   "hot_implied_gb_per_s": 259.4255592573611,
+   "hot_minus_cold_pct": -0.9163556736894484,
+   "hot_us": 579.7621499999997,
+   "na": 3,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 188.6580070697308,
+   "cold_us": 265.7456249999999,
+   "groups": 1,
+   "hot_implied_gb_per_s": 191.58515989706927,
+   "hot_minus_cold_pct": -1.5278598973486035,
+   "hot_us": 261.6854041666665,
+   "na": 4,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 217.6656071127603,
+   "cold_us": 460.6611091666664,
+   "groups": 2,
+   "hot_implied_gb_per_s": 221.46966044311057,
+   "hot_minus_cold_pct": -1.7176408374579117,
+   "hot_us": 452.74860583333316,
+   "na": 4,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 153.12348820041117,
+   "cold_us": 327.415738690476,
+   "groups": 1,
+   "hot_implied_gb_per_s": 155.76037733397868,
+   "hot_minus_cold_pct": -1.692913935303053,
+   "hot_us": 321.8728720238095,
+   "na": 5,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 146.7318155538015,
+   "cold_us": 683.3560916666665,
+   "groups": 2,
+   "hot_implied_gb_per_s": 148.07991913280404,
+   "hot_minus_cold_pct": -0.9103891917941223,
+   "hot_us": 677.1348916666665,
+   "na": 5,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.down",
+   "cold_implied_gb_per_s": 144.0853509954502,
+   "cold_us": 1043.8612874999997,
+   "groups": 3,
+   "hot_implied_gb_per_s": 145.27233895567437,
+   "hot_minus_cold_pct": -0.8170777511790113,
+   "hot_us": 1035.3321291666664,
+   "na": 5,
+   "replica_set_bytes": 250675200,
+   "replicas": 5
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 231.39823943896621,
+   "cold_us": 433.3225708333331,
+   "groups": 1,
+   "hot_implied_gb_per_s": 227.84833554759277,
+   "hot_minus_cold_pct": 1.5580117725424028,
+   "hot_us": 440.0737874999998,
+   "na": 2,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 229.08984420002903,
+   "cold_us": 437.68889166666645,
+   "groups": 1,
+   "hot_implied_gb_per_s": 229.2206836354177,
+   "hot_minus_cold_pct": -0.05708011742814953,
+   "hot_us": 437.43905833333315,
+   "na": 3,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 254.05632715488125,
+   "cold_us": 789.3531416666667,
+   "groups": 2,
+   "hot_implied_gb_per_s": 259.4273855028603,
+   "hot_minus_cold_pct": -2.0703513384171286,
+   "hot_us": 773.0107583333332,
+   "na": 3,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 260.25085927227826,
+   "cold_us": 1155.8472500000005,
+   "groups": 3,
+   "hot_implied_gb_per_s": 260.9383596073797,
+   "hot_minus_cold_pct": -0.26347231435647234,
+   "hot_us": 1152.8019124999998,
+   "na": 3,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 213.2535493513051,
+   "cold_us": 470.1918458333334,
+   "groups": 1,
+   "hot_implied_gb_per_s": 217.53370053068872,
+   "hot_minus_cold_pct": -1.9675807329815513,
+   "hot_us": 460.9404416666664,
+   "na": 4,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 221.965213505345,
+   "cold_us": 903.4756249999999,
+   "groups": 2,
+   "hot_implied_gb_per_s": 226.40469350381352,
+   "hot_minus_cold_pct": -1.9608604087501886,
+   "hot_us": 885.7597291666666,
+   "na": 4,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 164.30753518219572,
+   "cold_us": 610.258561111111,
+   "groups": 1,
+   "hot_implied_gb_per_s": 190.19977188185595,
+   "hot_minus_cold_pct": -13.613179681279224,
+   "hot_us": 527.1829666666663,
+   "na": 5,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 194.27349602808027,
+   "cold_us": 1032.2569166666665,
+   "groups": 2,
+   "hot_implied_gb_per_s": 192.987738442142,
+   "hot_minus_cold_pct": 0.6662379674052366,
+   "hot_us": 1039.1342041666664,
+   "na": 5,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  },
+  {
+   "cell": "mlp.gate_up",
+   "cold_implied_gb_per_s": 191.57387472622332,
+   "cold_us": 1570.204916666667,
+   "groups": 3,
+   "hot_implied_gb_per_s": 192.51438296840746,
+   "hot_minus_cold_pct": -0.4885392081787849,
+   "hot_us": 1562.5338499999993,
+   "na": 5,
+   "replica_set_bytes": 300810240,
+   "replicas": 3
+  }
+ ],
+ "identity": {
+  "base_sha": "44d2d60dee0841b47bd032e3e42e4c70e0ddc22c",
+  "campaign_base_sha": "66af0086288cda7f676935a512d8c9c1e4e5e17f",
+  "host": "aws-mac ec2 Apple M4 Pro, 48 GiB",
+  "reference_source": "self-generated random affine-4/group-64 cells at scored shapes; no model checkpoint is loaded",
+  "sessions": [
+   "research/out/e219/s0",
+   "research/out/e219/s3",
+   "research/out/e219/s4"
+  ]
+ },
+ "official_or_ranked_score": false,
+ "phases": {
+  "s0/sanity": {
+   "blocks": null,
+   "chains": null,
+   "comparisons": [
+    {
+     "cell": "mlp.gate_up",
+     "differing": 0,
+     "elements": 139264,
+     "groups": 1,
+     "ipg": 4,
+     "k": 5120,
+     "m": 4,
+     "n": 34816,
+     "non_finite": 0,
+     "variant": "staged"
+    },
+    {
+     "cell": "mlp.gate_up",
+     "differing": 0,
+     "elements": 174080,
+     "groups": 1,
+     "ipg": 5,
+     "k": 5120,
+     "m": 5,
+     "n": 34816,
+     "non_finite": 0,
+     "variant": "staged"
+    },
+    {
+     "cell": "mlp.gate_up",
+     "differing": 0,
+     "elements": 278528,
+     "groups": 2,
+     "ipg": 4,
+     "k": 5120,
+     "m": 8,
+     "n": 34816,
+     "non_finite": 0,
+     "variant": "staged"
+    },
+    {
+     "cell": "mlp.down",
+     "differing": 0,
+     "elements": 20480,
+     "groups": 1,
+     "ipg": 4,
+     "k": 17408,
+     "m": 4,
+     "n": 5120,
+     "non_finite": 0,
+     "variant": "staged"
+    },
+    {
+     "cell": "mlp.down",
+     "differing": 0,
+     "elements": 25600,
+     "groups": 1,
+     "ipg": 5,
+     "k": 17408,
+     "m": 5,
+     "n": 5120,
+     "non_finite": 0,
+     "variant": "staged"
+    },
+    {
+     "cell": "mlp.down",
+     "differing": 0,
+     "elements": 40960,
+     "groups": 2,
+     "ipg": 4,
+     "k": 17408,
+     "m": 8,
+     "n": 5120,
+     "non_finite": 0,
+     "variant": "staged"
+    },
+    {
+     "cell": "gdn.in_proj",
+     "differing": 0,
+     "elements": 65920,
+     "groups": 1,
+     "ipg": 4,
+     "k": 5120,
+     "m": 4,
+     "n": 16480,
+     "non_finite": 0,
+     "variant": "staged"
+    },
+    {
+     "cell": "gdn.in_proj",
+     "differing": 0,
+     "elements": 82400,
+     "groups": 1,
+     "ipg": 5,
+     "k": 5120,
+     "m": 5,
+     "n": 16480,
+     "non_finite": 0,
+     "variant": "staged"
+    },
+    {
+     "cell": "gdn.in_proj",
+     "differing": 0,
+     "elements": 131840,
+     "groups": 2,
+     "ipg": 4,
+     "k": 5120,
+     "m": 8,
+     "n": 16480,
+     "non_finite": 0,
+     "variant": "staged"
+    }
+   ],
+   "cool_gate_passed_real_gate": false,
+   "deliverable": "prove the E219 launch shim is bit-exact against Qwen35CustomQMV.matmulWithTable",
+   "gate_qualified_for_timing": false,
+   "gpu_temperature_c": null,
+   "harness": "local-microbench",
+   "phase": "sanity",
+   "replica_rings": null
+  },
+  "s3/dsplit": {
+   "blocks": 6,
+   "chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "cool_gate_passed_real_gate": false,
+   "deliverable": "dispatch-overhead coefficient a: identical total work in 1, 2, 4 or 8 dispatches",
+   "gate_qualified_for_timing": false,
+   "gpu_temperature_c": {
+    "after_warmup": 34.725730895996094,
+    "block_0_entry": 34.51327133178711,
+    "block_0_exit": 34.85336685180664,
+    "block_1_entry": 34.27146530151367,
+    "block_1_exit": 34.74979782104492,
+    "block_2_entry": 34.188514709472656,
+    "block_2_exit": 34.52071762084961,
+    "block_3_entry": 34.21298599243164,
+    "block_3_exit": 34.40010070800781,
+    "block_4_entry": 34.12466049194336,
+    "block_4_exit": 34.27846908569336,
+    "block_5_entry": 34.07317352294922,
+    "block_5_exit": 34.618892669677734,
+    "session_entry": 34.94746398925781,
+    "session_exit": 33.96918869018555
+   },
+   "harness": "local-microbench",
+   "phase": "dsplit",
+   "replica_rings": [
+    {
+     "cell": "mlp.down",
+     "chunk_n": 5120,
+     "dispatches": 1,
+     "replica_set_bytes": 200540160,
+     "replicas": 4
+    },
+    {
+     "cell": "mlp.down",
+     "chunk_n": 2560,
+     "dispatches": 2,
+     "replica_set_bytes": 200540160,
+     "replicas": 8
+    },
+    {
+     "cell": "mlp.down",
+     "chunk_n": 1280,
+     "dispatches": 4,
+     "replica_set_bytes": 200540160,
+     "replicas": 16
+    },
+    {
+     "cell": "mlp.down",
+     "chunk_n": 640,
+     "dispatches": 8,
+     "replica_set_bytes": 200540160,
+     "replicas": 32
+    },
+    {
+     "cell": "gdn.in_proj",
+     "chunk_n": 16480,
+     "dispatches": 1,
+     "replica_set_bytes": 189849600,
+     "replicas": 4
+    },
+    {
+     "cell": "gdn.in_proj",
+     "chunk_n": 8240,
+     "dispatches": 2,
+     "replica_set_bytes": 189849600,
+     "replicas": 8
+    },
+    {
+     "cell": "gdn.in_proj",
+     "chunk_n": 4120,
+     "dispatches": 4,
+     "replica_set_bytes": 189849600,
+     "replicas": 16
+    }
+   ]
+  },
+  "s3/groups": {
+   "blocks": 6,
+   "chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "cool_gate_passed_real_gate": false,
+   "deliverable": "per-pass fixed cost from G at fixed NA; the G=2/G=1 ratio is the FINDING 559 reconciliation gate",
+   "gate_qualified_for_timing": false,
+   "gpu_temperature_c": {
+    "after_warmup": 34.9400520324707,
+    "block_0_entry": 35.65760040283203,
+    "block_0_exit": 38.97681427001953,
+    "block_1_entry": 36.831459045410156,
+    "block_1_exit": 40.197383880615234,
+    "block_2_entry": 38.09891891479492,
+    "block_2_exit": 41.202518463134766,
+    "block_3_entry": 39.012489318847656,
+    "block_3_exit": 41.91402816772461,
+    "block_4_entry": 39.69168472290039,
+    "block_4_exit": 42.2952766418457,
+    "block_5_entry": 40.16929626464844,
+    "block_5_exit": 42.64724349975586,
+    "session_entry": 33.70194625854492,
+    "session_exit": 40.61898422241211
+   },
+   "harness": "local-microbench",
+   "phase": "groups",
+   "replica_rings": [
+    {
+     "bytes_per_replica": 100270080,
+     "cell": "mlp.gate_up",
+     "k": 5120,
+     "n": 34816,
+     "replica_set_bytes": 300810240,
+     "replicas": 3
+    },
+    {
+     "bytes_per_replica": 50135040,
+     "cell": "mlp.down",
+     "k": 17408,
+     "n": 5120,
+     "replica_set_bytes": 250675200,
+     "replicas": 5
+    },
+    {
+     "bytes_per_replica": 47462400,
+     "cell": "gdn.in_proj",
+     "k": 5120,
+     "n": 16480,
+     "replica_set_bytes": 237312000,
+     "replicas": 5
+    }
+   ]
+  },
+  "s3/ipg": {
+   "blocks": 6,
+   "chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "cool_gate_passed_real_gate": false,
+   "deliverable": "standalone f(IPG) at G = 1, rows = 4, and the hot-vs-cold delta that bounds the cacheable share of the stream",
+   "gate_qualified_for_timing": false,
+   "gpu_temperature_c": {
+    "after_warmup": 38.40642547607422,
+    "block_0_entry": 38.16912078857422,
+    "block_0_exit": 39.00687789916992,
+    "block_1_entry": 37.73506546020508,
+    "block_1_exit": 38.641883850097656,
+    "block_2_entry": 37.77485656738281,
+    "block_2_exit": 39.3068962097168,
+    "block_3_entry": 37.62715148925781,
+    "block_3_exit": 38.89604568481445,
+    "block_4_entry": 37.44997787475586,
+    "block_4_exit": 38.58120346069336,
+    "block_5_entry": 37.286407470703125,
+    "block_5_exit": 38.287078857421875,
+    "session_entry": 38.93756103515625,
+    "session_exit": 37.15226745605469
+   },
+   "harness": "local-microbench",
+   "phase": "ipg",
+   "replica_rings": [
+    {
+     "bytes_per_replica": 100270080,
+     "cell": "mlp.gate_up",
+     "k": 5120,
+     "n": 34816,
+     "replica_set_bytes": 300810240,
+     "replicas": 3
+    },
+    {
+     "bytes_per_replica": 50135040,
+     "cell": "mlp.down",
+     "k": 17408,
+     "n": 5120,
+     "replica_set_bytes": 250675200,
+     "replicas": 5
+    },
+    {
+     "bytes_per_replica": 47462400,
+     "cell": "gdn.in_proj",
+     "k": 5120,
+     "n": 16480,
+     "replica_set_bytes": 237312000,
+     "replicas": 5
+    }
+   ]
+  },
+  "s3/kext": {
+   "blocks": 6,
+   "chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "cool_gate_passed_real_gate": false,
+   "deliverable": "weight-stream coefficient b: k ladder at n = 5120, NA = 5, G = 1",
+   "gate_qualified_for_timing": false,
+   "gpu_temperature_c": {
+    "after_warmup": 36.505096435546875,
+    "block_0_entry": 36.129634857177734,
+    "block_0_exit": 35.92695617675781,
+    "block_1_entry": 35.68289566040039,
+    "block_1_exit": 35.58621597290039,
+    "block_2_entry": 35.19563674926758,
+    "block_2_exit": 35.18220138549805,
+    "block_3_entry": 34.80940246582031,
+    "block_3_exit": 34.72737503051758,
+    "block_4_entry": 34.59690856933594,
+    "block_4_exit": 34.58211898803711,
+    "block_5_entry": 34.23491668701172,
+    "block_5_exit": 34.21998977661133,
+    "session_entry": 37.041481018066406,
+    "session_exit": 34.15573501586914
+   },
+   "harness": "local-microbench",
+   "phase": "kext",
+   "replica_rings": [
+    {
+     "bytes_per_replica": 5898240,
+     "cell": "kext.k2048",
+     "k": 2048,
+     "n": 5120,
+     "replica_set_bytes": 206438400,
+     "replicas": 35
+    },
+    {
+     "bytes_per_replica": 11796480,
+     "cell": "kext.k4096",
+     "k": 4096,
+     "n": 5120,
+     "replica_set_bytes": 212336640,
+     "replicas": 18
+    },
+    {
+     "bytes_per_replica": 23592960,
+     "cell": "kext.k8192",
+     "k": 8192,
+     "n": 5120,
+     "replica_set_bytes": 212336640,
+     "replicas": 9
+    },
+    {
+     "bytes_per_replica": 35389440,
+     "cell": "kext.k12288",
+     "k": 12288,
+     "n": 5120,
+     "replica_set_bytes": 212336640,
+     "replicas": 6
+    },
+    {
+     "bytes_per_replica": 50135040,
+     "cell": "kext.k17408",
+     "k": 17408,
+     "n": 5120,
+     "replica_set_bytes": 250675200,
+     "replicas": 5
+    }
+   ]
+  },
+  "s3/next": {
+   "blocks": 6,
+   "chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "cool_gate_passed_real_gate": false,
+   "deliverable": "output and threadgroup coefficients: n ladder at k = 5120, NA = 5, G = 1",
+   "gate_qualified_for_timing": false,
+   "gpu_temperature_c": {
+    "after_warmup": 34.91896438598633,
+    "block_0_entry": 34.72296142578125,
+    "block_0_exit": 34.81692123413086,
+    "block_1_entry": 34.35673141479492,
+    "block_1_exit": 34.50973892211914,
+    "block_2_entry": 34.26753234863281,
+    "block_2_exit": 34.64807891845703,
+    "block_3_entry": 34.09598922729492,
+    "block_3_exit": 34.3251953125,
+    "block_4_entry": 33.91413116455078,
+    "block_4_exit": 34.10744094848633,
+    "block_5_entry": 33.800071716308594,
+    "block_5_exit": 33.93144226074219,
+    "session_entry": 35.26961898803711,
+    "session_exit": 33.78140640258789
+   },
+   "harness": "local-microbench",
+   "phase": "next",
+   "replica_rings": [
+    {
+     "bytes_per_replica": 11796480,
+     "cell": "next.n4096",
+     "k": 5120,
+     "n": 4096,
+     "replica_set_bytes": 212336640,
+     "replicas": 18
+    },
+    {
+     "bytes_per_replica": 23592960,
+     "cell": "next.n8192",
+     "k": 5120,
+     "n": 8192,
+     "replica_set_bytes": 212336640,
+     "replicas": 9
+    },
+    {
+     "bytes_per_replica": 47462400,
+     "cell": "next.n16480",
+     "k": 5120,
+     "n": 16480,
+     "replica_set_bytes": 237312000,
+     "replicas": 5
+    },
+    {
+     "bytes_per_replica": 70778880,
+     "cell": "next.n24576",
+     "k": 5120,
+     "n": 24576,
+     "replica_set_bytes": 212336640,
+     "replicas": 3
+    },
+    {
+     "bytes_per_replica": 100270080,
+     "cell": "next.n34816",
+     "k": 5120,
+     "n": 34816,
+     "replica_set_bytes": 300810240,
+     "replicas": 3
+    }
+   ]
+  },
+  "s4/groups": {
+   "blocks": 6,
+   "chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "cool_gate_passed_real_gate": false,
+   "deliverable": "per-pass fixed cost from G at fixed NA; the G=2/G=1 ratio is the FINDING 559 reconciliation gate",
+   "gate_qualified_for_timing": false,
+   "gpu_temperature_c": {
+    "after_warmup": 33.75468444824219,
+    "block_0_entry": 33.801151275634766,
+    "block_0_exit": 35.10940933227539,
+    "block_1_entry": 34.049739837646484,
+    "block_1_exit": 34.92585372924805,
+    "block_2_entry": 34.49129867553711,
+    "block_2_exit": 35.264225006103516,
+    "block_3_entry": 34.73297119140625,
+    "block_3_exit": 35.597198486328125,
+    "block_4_entry": 34.795555114746094,
+    "block_4_exit": 35.97274398803711,
+    "block_5_entry": 35.01677322387695,
+    "block_5_exit": 35.57963943481445,
+    "session_entry": 33.958980560302734,
+    "session_exit": 35.13056564331055
+   },
+   "harness": "local-microbench",
+   "phase": "groups",
+   "replica_rings": [
+    {
+     "bytes_per_replica": 100270080,
+     "cell": "mlp.gate_up",
+     "k": 5120,
+     "n": 34816,
+     "replica_set_bytes": 300810240,
+     "replicas": 3
+    },
+    {
+     "bytes_per_replica": 50135040,
+     "cell": "mlp.down",
+     "k": 17408,
+     "n": 5120,
+     "replica_set_bytes": 250675200,
+     "replicas": 5
+    },
+    {
+     "bytes_per_replica": 47462400,
+     "cell": "gdn.in_proj",
+     "k": 5120,
+     "n": 16480,
+     "replica_set_bytes": 237312000,
+     "replicas": 5
+    }
+   ]
+  }
+ },
+ "priced_shortlist": [
+  {
+   "assumption": "the NA=2 to NA=3 step is the cheap marginal rate, because the extra activation row only adds a fused multiply-add on weights already held in registers. The ceiling is the excess of the measured NA=4 and NA=5 cost over that rate, extended across groups linearly. Linear extension across groups is conservative, because the widest arms measured here turn superlinear at chain depth 3 and above",
+   "clears_1ms_bar": true,
+   "clears_1ms_bar_pooled": true,
+   "decision_ms_per_round": 23.065872024963124,
+   "discount_basis": "keeps the same device bytes, so it cannot pass the host DRAM floor for those bytes; capped by the pooled distance from the measured cost down to that floor",
+   "dram_residual_fraction_applied": 1.0,
+   "implementation_route": "the accumulator count per thread is outputs_per_simdgroup x NA. The shipped geometry gives 4 outputs per simdgroup, so NA=5 holds 20 accumulators and FINDING 549 measures 125 registers. Halving outputs per simdgroup from 4 to 2 halves the accumulator count at UNCHANGED device bytes, because each output column owns its own weight column. The only cost is twice as many threadgroups in n, and the fitted threadgroup term is 0.3080830943310405 us per 1000 threadgroups, which is negligible. This also creates register headroom above the FINDING 549 NA=5 legality wall, which is the same wall that blocks the single-pass arm listed below",
+   "layout_headroom_fraction": 0.3485155353500401,
+   "mechanism": "NA-scaling relief above NA=3 (measured IPG ladder)",
+   "phi_cache_served_fraction": null,
+   "phi_identifiable": false,
+   "pooled_layout_ceiling_ms_per_round": 38.45184699298298,
+   "pooled_ms_per_round": 23.065872024963124,
+   "pooled_ms_per_round_ci_upper": 23.065872024963124,
+   "public_ms_per_round": 34.82348517775651,
+   "term": "measured"
+  },
+  {
+   "assumption": "extrapolates the fitted model to NA > 5, which FINDING 549 marks register-illegal at rows=4. Reported ONLY as a cross-check against the measured FINDING 543 value, never as a candidate.",
+   "clears_1ms_bar": true,
+   "clears_1ms_bar_pooled": true,
+   "decision_ms_per_round": 11.684024461460185,
+   "discount_basis": "no traffic assumption enters; census price used directly",
+   "dram_residual_fraction_applied": 1.0,
+   "mechanism": "single-pass at the G=2 widths (model cross-check)",
+   "phi_cache_served_fraction": null,
+   "phi_identifiable": false,
+   "pooled_ms_per_round": 11.684024461460185,
+   "pooled_ms_per_round_ci_upper": 11.684024461460185,
+   "public_ms_per_round": 21.92586081084641,
+   "term": "all"
+  },
+  {
+   "assumption": "every token group after the first re-pays the whole b term today. A shared dequantised tile removes it. The ceiling assumes perfect sharing and charges nothing for the geometry needed to co-locate the groups. In the shipped kernel the token groups occupy DIFFERENT threadgroups along grid x, so they cannot share threadgroup memory without a geometry change, and that geometry change is the whole risk of the mechanism",
+   "clears_1ms_bar": true,
+   "clears_1ms_bar_pooled": true,
+   "decision_ms_per_round": 11.613986597749342,
+   "discount_basis": "keeps the same device bytes, so it cannot pass the host DRAM floor for those bytes; capped by the pooled distance from the measured cost down to that floor",
+   "dram_residual_fraction_applied": 1.0,
+   "layout_headroom_fraction": 0.3485155353500401,
+   "mechanism": "dequantisation sharing across token groups (E217 axis)",
+   "phi_cache_served_fraction": null,
+   "phi_identifiable": false,
+   "pooled_layout_ceiling_ms_per_round": 38.45184699298298,
+   "pooled_ms_per_round": 11.613986597749342,
+   "pooled_ms_per_round_ci_upper": 15.810351181122362,
+   "public_ms_per_round": 21.794430030614965,
+   "term": "b_stream_us_per_mib"
+  },
+  {
+   "assumption": "one dispatch per layer is removed by fusing cells that already share an activation read; no byte term changes",
+   "clears_1ms_bar": true,
+   "clears_1ms_bar_pooled": true,
+   "decision_ms_per_round": 2.92632923640673,
+   "discount_basis": "no traffic assumption enters; census price used directly",
+   "dram_residual_fraction_applied": 1.0,
+   "mechanism": "QMV dispatch fusion (a term)",
+   "phi_cache_served_fraction": null,
+   "phi_identifiable": false,
+   "pooled_ms_per_round": 2.92632923640673,
+   "pooled_ms_per_round_ci_upper": 3.9511796897572125,
+   "public_ms_per_round": 2.92632923640673,
+   "term": "a_dispatch_us"
+  },
+  {
+   "assumption": "rows_per_simd 4 -> 8 halves the threadgroup count at conserved bytes; the FINDING 549 register grid must be re-proved before this is implementable",
+   "clears_1ms_bar": false,
+   "clears_1ms_bar_pooled": false,
+   "decision_ms_per_round": 0.11497265649621197,
+   "discount_basis": "keeps the same device bytes, so it cannot pass the host DRAM floor for those bytes; capped by the pooled distance from the measured cost down to that floor",
+   "dram_residual_fraction_applied": 1.0,
+   "layout_headroom_fraction": 0.3485155353500401,
+   "mechanism": "wider output-row slice per threadgroup (e term)",
+   "phi_cache_served_fraction": null,
+   "phi_identifiable": false,
+   "pooled_layout_ceiling_ms_per_round": 38.45184699298298,
+   "pooled_ms_per_round": 0.11497265649621197,
+   "pooled_ms_per_round_ci_upper": 3.455203968576451,
+   "public_ms_per_round": 0.14566911475651081,
+   "term": "e_threadgroup_us_per_1k"
+  },
+  {
+   "assumption": "the fitted output cost is removable in full by a coalesced store; an upper bound, since some of it is unavoidable write traffic",
+   "clears_1ms_bar": false,
+   "clears_1ms_bar_pooled": false,
+   "decision_ms_per_round": 0.0,
+   "discount_basis": "keeps the same device bytes, so it cannot pass the host DRAM floor for those bytes; capped by the pooled distance from the measured cost down to that floor",
+   "dram_residual_fraction_applied": 1.0,
+   "layout_headroom_fraction": 0.3485155353500401,
+   "mechanism": "output store coalescing (d term)",
+   "phi_cache_served_fraction": null,
+   "phi_identifiable": false,
+   "pooled_layout_ceiling_ms_per_round": 38.45184699298298,
+   "pooled_ms_per_round": 0.0,
+   "pooled_ms_per_round_ci_upper": 5.507814619235477,
+   "public_ms_per_round": 0.0,
+   "term": "d_output_us_per_mib"
+  },
+  {
+   "assumption": "the bf16 scale and bias stream is 1/9 of device bytes. This ceiling is the host DRAM time of those bytes, which is only realizable if the pass were DRAM bound. The census says it is not: the pass runs at about two thirds of peak and its byte-proportional term is dequantisation arithmetic, not fetch. The census therefore CANNOT resolve a separate fetch term, and the realizable value of better metadata locality is well below this number",
+   "clears_1ms_bar": true,
+   "clears_1ms_bar_pooled": true,
+   "decision_ms_per_round": 8.435007884096702,
+   "discount_basis": "removes device bytes; full census price, no phi discount because phi is not identifiable on this instrument",
+   "dram_residual_fraction_applied": 1.0,
+   "mechanism": "transform-side scale/bias interleave (fetch bytes)",
+   "not_resolved_by_this_census": true,
+   "phi_cache_served_fraction": null,
+   "phi_identifiable": false,
+   "pooled_ms_per_round": 8.435007884096702,
+   "pooled_ms_per_round_ci_upper": 8.435007884096702,
+   "public_ms_per_round": 10.687063940990516,
+   "term": "fetch_bytes"
+  }
+ ],
+ "probe": "e219-qmv-pass-anatomy",
+ "reconciliation": {
+  "bandwidth_argument": {
+   "conclusion": "the in-situ 20.774 ms figure implies 694 GB/s over 14.4123 GB, which is 2.5x host DRAM peak, so it cannot be the price of a whole extra weight pass. The census confirms this directly: the measured (3,3)->(5,2) weight-pass delta is far smaller, and the hot arm does not undercut the cold arm, so the excess is not cache residency. FINDING 543 therefore measured mostly per-group work outside the QMV weight stream",
+   "finding_536_cell_sum_ms": 43.300999999999995,
+   "finding_536_headline_ms": 40.051,
+   "fully_streamed_floor_ms": 52.79248879120879,
+   "host_dram_peak_gb_per_s": 273.0,
+   "insitu_implied_gb_per_s": 693.7686261673244,
+   "insitu_marginal_pass_ms": 20.774,
+   "one_pass_bytes": 14412349440
+  },
+  "cells": {
+   "gdn.in_proj": {
+    "byte_share_of_one_pass": 0.15807243707796195,
+    "invocations_per_round": 48,
+    "na2": {
+     "cold_g1_us": 241.54520523618532,
+     "cold_g2_us": null,
+     "cold_g3_us": null,
+     "hot_g1_us": 239.88557212566832,
+     "hot_g2_us": null,
+     "hot_g3_us": null
+    },
+    "na3": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      7.360460499465241,
+      7.48242488663101
+     ],
+     "cold_g1_us": 244.00451069518715,
+     "cold_g2_us": 399.88836249999986,
+     "cold_g3_us": 557.9107583333332,
+     "cold_marginal_pass_ms_per_round": 7.48242488663101,
+     "cold_marginal_pass_sd_ms_per_round": 0.12446196872960036,
+     "cold_marginal_pass_us": 155.8838518048127,
+     "cold_ratio_g2_over_g1": 1.6388564349105184,
+     "cold_third_pass_ms_per_round": 7.585075000000001,
+     "cold_whole_dispatch_ms_per_round": 11.712216513368983,
+     "finding_543_byte_share_ms": 3.283796807857582,
+     "hot_g1_us": 242.79666876114072,
+     "hot_g2_us": 396.13959583333326,
+     "hot_g3_us": 555.5397499999997,
+     "hot_marginal_pass_ms_per_round": 7.360460499465241,
+     "hot_marginal_pass_sd_ms_per_round": 0.11930014329321907,
+     "hot_marginal_pass_us": 153.34292707219254,
+     "hot_ratio_g2_over_g1": 1.631569320347837,
+     "hot_third_pass_ms_per_round": 7.651207399999988,
+     "hot_whole_dispatch_ms_per_round": 11.654240100534755,
+     "phi_cache_served_fraction": 34.42503321126704
+    },
+    "na4": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      9.024778312727271,
+      9.080556363636354
+     ],
+     "cold_g1_us": 260.5247833333333,
+     "cold_g2_us": 449.7030409090907,
+     "cold_g3_us": null,
+     "cold_marginal_pass_ms_per_round": 9.080556363636354,
+     "cold_marginal_pass_sd_ms_per_round": 0.1113514312884291,
+     "cold_marginal_pass_us": 189.1782575757574,
+     "cold_ratio_g2_over_g1": 1.726143037738217,
+     "cold_whole_dispatch_ms_per_round": 12.505189599999998,
+     "finding_543_byte_share_ms": 3.283796807857582,
+     "hot_g1_us": 262.3054491666665,
+     "hot_g2_us": 450.3216640151513,
+     "hot_g3_us": null,
+     "hot_marginal_pass_ms_per_round": 9.024778312727271,
+     "hot_marginal_pass_sd_ms_per_round": 0.09513762778802502,
+     "hot_marginal_pass_us": 188.01621484848482,
+     "hot_ratio_g2_over_g1": 1.716783488279807,
+     "hot_whole_dispatch_ms_per_round": 12.590661559999994,
+     "phi_cache_served_fraction": 103.92545923175649
+    },
+    "na5": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      10.359628480000003,
+      10.370015199999992
+     ],
+     "cold_g1_us": 285.50374416666654,
+     "cold_g2_us": 501.32933749999995,
+     "cold_g3_us": 750.4762249999999,
+     "cold_marginal_pass_ms_per_round": 10.359628480000003,
+     "cold_marginal_pass_sd_ms_per_round": 0.11872997677659715,
+     "cold_marginal_pass_us": 215.82559333333342,
+     "cold_ratio_g2_over_g1": 1.7559466302737607,
+     "cold_third_pass_ms_per_round": 11.959050599999998,
+     "cold_whole_dispatch_ms_per_round": 13.704179719999992,
+     "finding_543_byte_share_ms": 3.283796807857582,
+     "hot_g1_us": 284.41097916666666,
+     "hot_g2_us": 500.45296249999984,
+     "hot_g3_us": 747.712320833333,
+     "hot_marginal_pass_ms_per_round": 10.370015199999992,
+     "hot_marginal_pass_sd_ms_per_round": 0.08190752148435607,
+     "hot_marginal_pass_us": 216.04198333333318,
+     "hot_ratio_g2_over_g1": 1.759611967042704,
+     "hot_third_pass_ms_per_round": 11.868449199999992,
+     "hot_whole_dispatch_ms_per_round": 13.651727,
+     "phi_cache_served_fraction": -681.2383189447617
+    }
+   },
+   "mlp.down": {
+    "byte_share_of_one_pass": 0.22263147125025579,
+    "invocations_per_round": 64,
+    "na2": {
+     "cold_g1_us": 250.80464563725482,
+     "cold_g2_us": null,
+     "cold_g3_us": null,
+     "hot_g1_us": 249.89529813725483,
+     "hot_g2_us": null,
+     "hot_g3_us": null
+    },
+    "na3": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      10.708329481354724,
+      10.914711649768273
+     ],
+     "cold_g1_us": 251.3223446568626,
+     "cold_g2_us": 418.63999280303017,
+     "cold_g3_us": 585.1239666666664,
+     "cold_marginal_pass_ms_per_round": 10.708329481354724,
+     "cold_marginal_pass_sd_ms_per_round": 0.13215743140124264,
+     "cold_marginal_pass_us": 167.31764814616756,
+     "cold_ratio_g2_over_g1": 1.6657491930318054,
+     "cold_third_pass_ms_per_round": 10.65497432727272,
+     "cold_whole_dispatch_ms_per_round": 16.084630058039206,
+     "finding_543_byte_share_ms": 4.624946183752814,
+     "hot_g1_us": 248.42429524509794,
+     "hot_g2_us": 418.9666647727272,
+     "hot_g3_us": 579.7621499999997,
+     "hot_marginal_pass_ms_per_round": 10.914711649768273,
+     "hot_marginal_pass_sd_ms_per_round": 0.21224045140483663,
+     "hot_marginal_pass_us": 170.54236952762926,
+     "hot_ratio_g2_over_g1": 1.686496340301058,
+     "hot_third_pass_ms_per_round": 10.290911054545438,
+     "hot_whole_dispatch_ms_per_round": 15.899154895686268,
+     "phi_cache_served_fraction": -29.476302843237903
+    },
+    "na4": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      12.228044906666666,
+      12.474590986666655
+     ],
+     "cold_g1_us": 265.7456249999999,
+     "cold_g2_us": 460.6611091666664,
+     "cold_g3_us": null,
+     "cold_marginal_pass_ms_per_round": 12.474590986666655,
+     "cold_marginal_pass_sd_ms_per_round": 0.26010285748705003,
+     "cold_marginal_pass_us": 194.9154841666665,
+     "cold_ratio_g2_over_g1": 1.7334663897728009,
+     "cold_whole_dispatch_ms_per_round": 17.007719999999996,
+     "finding_543_byte_share_ms": 4.624946183752814,
+     "hot_g1_us": 261.6854041666665,
+     "hot_g2_us": 452.74860583333316,
+     "hot_g3_us": null,
+     "hot_marginal_pass_ms_per_round": 12.228044906666666,
+     "hot_marginal_pass_sd_ms_per_round": 0.18449792504398915,
+     "hot_marginal_pass_us": 191.06320166666666,
+     "hot_ratio_g2_over_g1": 1.7301255577287726,
+     "hot_whole_dispatch_ms_per_round": 16.747865866666658,
+     "phi_cache_served_fraction": 31.838449035223693
+    },
+    "na5": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      22.736769257142846,
+      22.780182590476194
+     ],
+     "cold_g1_us": 327.415738690476,
+     "cold_g2_us": 683.3560916666665,
+     "cold_g3_us": 1043.8612874999997,
+     "cold_marginal_pass_ms_per_round": 22.780182590476194,
+     "cold_marginal_pass_sd_ms_per_round": 0.40381144875393554,
+     "cold_marginal_pass_us": 355.9403529761905,
+     "cold_ratio_g2_over_g1": 2.087120473804347,
+     "cold_third_pass_ms_per_round": 23.07233253333332,
+     "cold_whole_dispatch_ms_per_round": 20.954607276190465,
+     "finding_543_byte_share_ms": 4.624946183752814,
+     "hot_g1_us": 321.8728720238095,
+     "hot_g2_us": 677.1348916666665,
+     "hot_g3_us": 1035.3321291666664,
+     "hot_marginal_pass_ms_per_round": 22.736769257142846,
+     "hot_marginal_pass_sd_ms_per_round": 0.12959685709811603,
+     "hot_marginal_pass_us": 355.26201964285696,
+     "hot_ratio_g2_over_g1": 2.103733959960992,
+     "hot_third_pass_ms_per_round": 22.924623199999996,
+     "hot_whole_dispatch_ms_per_round": 20.59986380952381,
+     "phi_cache_served_fraction": 418.19494180092187
+    }
+   },
+   "mlp.gate_up": {
+    "byte_share_of_one_pass": 0.44526294250051157,
+    "invocations_per_round": 64,
+    "na2": {
+     "cold_g1_us": 433.3225708333331,
+     "cold_g2_us": null,
+     "cold_g3_us": null,
+     "hot_g1_us": 440.0737874999998,
+     "hot_g2_us": null,
+     "hot_g3_us": null
+    },
+    "na3": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      21.476588800000005,
+      22.50651200000002
+     ],
+     "cold_g1_us": 437.68889166666645,
+     "cold_g2_us": 789.3531416666667,
+     "cold_g3_us": 1155.8472500000005,
+     "cold_marginal_pass_ms_per_round": 22.50651200000002,
+     "cold_marginal_pass_sd_ms_per_round": 0.4701014457179715,
+     "cold_marginal_pass_us": 351.66425000000027,
+     "cold_ratio_g2_over_g1": 1.8034571054817161,
+     "cold_third_pass_ms_per_round": 23.455622933333363,
+     "cold_whole_dispatch_ms_per_round": 28.012089066666654,
+     "finding_543_byte_share_ms": 9.249892367505629,
+     "hot_g1_us": 437.43905833333315,
+     "hot_g2_us": 773.0107583333332,
+     "hot_g3_us": 1152.8019124999998,
+     "hot_marginal_pass_ms_per_round": 21.476588800000005,
+     "hot_marginal_pass_sd_ms_per_round": 0.14760505982333677,
+     "hot_marginal_pass_us": 335.5717000000001,
+     "hot_ratio_g2_over_g1": 1.7671278858329356,
+     "hot_third_pass_ms_per_round": 24.30663386666666,
+     "hot_whole_dispatch_ms_per_round": 27.99609973333332,
+     "phi_cache_served_fraction": 12.871464233929501
+    },
+    "na4": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      27.188434400000013,
+      27.73016186666666
+     ],
+     "cold_g1_us": 470.1918458333334,
+     "cold_g2_us": 903.4756249999999,
+     "cold_g3_us": null,
+     "cold_marginal_pass_ms_per_round": 27.73016186666666,
+     "cold_marginal_pass_sd_ms_per_round": 0.685955331841831,
+     "cold_marginal_pass_us": 433.28377916666653,
+     "cold_ratio_g2_over_g1": 1.9215042391871902,
+     "cold_whole_dispatch_ms_per_round": 30.092278133333338,
+     "finding_543_byte_share_ms": 9.249892367505629,
+     "hot_g1_us": 460.9404416666664,
+     "hot_g2_us": 885.7597291666666,
+     "hot_g3_us": null,
+     "hot_marginal_pass_ms_per_round": 27.188434400000013,
+     "hot_marginal_pass_sd_ms_per_round": 0.21740152755897632,
+     "hot_marginal_pass_us": 424.8192875000002,
+     "hot_ratio_g2_over_g1": 1.9216359622599841,
+     "hot_whole_dispatch_ms_per_round": 29.50018826666665,
+     "phi_cache_served_fraction": 34.113591494397895
+    },
+    "na5": {
+     "bracket_contains_543_share": false,
+     "bracket_ms_per_round": [
+      27.00789475555555,
+      32.76487920000001
+     ],
+     "cold_g1_us": 610.258561111111,
+     "cold_g2_us": 1032.2569166666665,
+     "cold_g3_us": 1570.204916666667,
+     "cold_marginal_pass_ms_per_round": 27.00789475555555,
+     "cold_marginal_pass_sd_ms_per_round": 2.6169891242615253,
+     "cold_marginal_pass_us": 421.99835555555546,
+     "cold_ratio_g2_over_g1": 1.691507473139277,
+     "cold_third_pass_ms_per_round": 34.428672000000034,
+     "cold_whole_dispatch_ms_per_round": 39.0565479111111,
+     "finding_543_byte_share_ms": 9.249892367505629,
+     "hot_g1_us": 527.1829666666663,
+     "hot_g2_us": 1039.1342041666664,
+     "hot_g3_us": 1562.5338499999993,
+     "hot_marginal_pass_ms_per_round": 32.76487920000001,
+     "hot_marginal_pass_sd_ms_per_round": 0.09971873066613206,
+     "hot_marginal_pass_us": 511.95123750000016,
+     "hot_ratio_g2_over_g1": 1.97110731922358,
+     "hot_third_pass_ms_per_round": 33.497577333333304,
+     "hot_whole_dispatch_ms_per_round": 33.739709866666644,
+     "phi_cache_served_fraction": -3.0846014192702143
+    }
+   }
+  },
+  "finding_536_context": [
+   {
+    "cell": "gdn.in_proj",
+    "cold_marginal_pass_ms_per_round": 10.359628480000003,
+    "finding_536_published_ms": 8.652,
+    "hot_marginal_pass_ms_per_round": 10.370015199999992,
+    "ratio_cold_vs_536": 1.1973680628756362,
+    "within_15pct_of_536": false
+   },
+   {
+    "cell": "mlp.down",
+    "cold_marginal_pass_ms_per_round": 22.780182590476194,
+    "finding_536_published_ms": 9.129,
+    "hot_marginal_pass_ms_per_round": 22.736769257142846,
+    "ratio_cold_vs_536": 2.495364507665264,
+    "within_15pct_of_536": false
+   },
+   {
+    "cell": "mlp.gate_up",
+    "cold_marginal_pass_ms_per_round": 27.00789475555555,
+    "finding_536_published_ms": 17.58,
+    "hot_marginal_pass_ms_per_round": 32.76487920000001,
+    "ratio_cold_vs_536": 1.5362852534445708,
+    "within_15pct_of_536": false
+   }
+  ],
+  "finding_543_decomposition": {
+   "census_ipg3_g3_ms_per_round": 167.32133272419173,
+   "census_ipg5_g2_ms_per_round": 162.0682968075808,
+   "census_weight_pass_delta_ms_per_round": 5.253035916610941,
+   "finding_543_measured_ms_per_round": 20.774,
+   "finding_543_move": "(m=9, IPG=3, G=3) -> (m=9, IPG=5, G=2)",
+   "interpretation": "the QMV weight pass explains only part of FINDING 543. G=2->3 adds no extra QMV dispatch, because G lives in the grid x dimension, so the remainder is per-group work outside the QMV kernels: activation slicing, sums-table construction, non-QMV kernels and extra graph or scheduling cost",
+   "residual_non_qmv_ms_per_round": 15.52096408338906,
+   "weight_pass_share_of_543": 0.25286588604076926
+  },
+  "gate_a": {
+   "anchor_ci95_ms_per_round": [
+    20.396,
+    21.152
+   ],
+   "anchor_ms_per_round": 20.774,
+   "bracket_ms_per_round": [
+    72.82096825760365,
+    79.75097740430003
+   ],
+   "bracket_noise_2sigma_ms_per_round": 6.433486136586029,
+   "cold": {
+    "byte_share_covered": 0.8259668508287293,
+    "measured_cells_ms_per_round": 60.147705826031746,
+    "per_cell_ms_per_round": {
+     "gdn.in_proj": 10.359628480000003,
+     "mlp.down": 22.780182590476194,
+     "mlp.gate_up": 27.00789475555555
+    },
+    "scaled_sd_ms_per_round": 3.2091132521454977,
+    "scaled_to_all_cells_ms_per_round": 72.82096825760365
+   },
+   "cold_minus_hot_ms_per_round": -6.930009146696378,
+   "cold_minus_hot_pct_of_cold": -9.516502337872685,
+   "cold_over_insitu": 3.5053898265911068,
+   "contains_point_anchor": false,
+   "form": "bracket containment",
+   "governing_reference": "FINDING 543",
+   "hot": {
+    "byte_share_covered": 0.8259668508287293,
+    "measured_cells_ms_per_round": 65.87166365714285,
+    "per_cell_ms_per_round": {
+     "gdn.in_proj": 10.370015199999992,
+     "mlp.down": 22.736769257142846,
+     "mlp.gate_up": 32.76487920000001
+    },
+    "scaled_sd_ms_per_round": 0.2214229037730821,
+    "scaled_to_all_cells_ms_per_round": 79.75097740430003
+   },
+   "hot_over_insitu": 3.8389803313902005,
+   "outcome": "phi non-identifiable, gate inconclusive",
+   "pass": false,
+   "phi_cache_served_fraction": null,
+   "phi_identifiable": false,
+   "phi_non_identifiable_reason": "the hot arm does not undercut the cold arm: cold minus hot is -6.930 ms per round, -9.52 % of the cold value, against a 6.433 ms 2-sigma band. Re-touching the same replica does not create a cache-resident condition, because one pass over a single fused cell already streams 47-100 MB and exceeds every cache level on this host. The bracket therefore has no usable width and cannot resolve phi. Both ends of it also sit about 3.5x above the 20.774 ms in-situ anchor, so no orientation of the bracket can contain that anchor. This REFUTES the hypothesis that a repeated weight pass is majority cache-served on a 48 GiB M4 Pro, and it refutes reading FINDING 543 as the price of a whole extra weight pass."
+  },
+  "gate_a_pass": false,
+  "gate_a_prime": {
+   "form": "absolute per-round cost within 15 % at each staged width",
+   "governing_reference": "FINDING 559 R_local(m)",
+   "pass": true,
+   "rows": [
+    {
+     "byte_share_covered": 0.8259668508287293,
+     "census_ms_per_round": 67.04665163001516,
+     "error_pct": -1.0001600171059666,
+     "finding_559_r_local_ms_per_round": 67.724,
+     "groups": 1,
+     "ipg": 2,
+     "m": 2,
+     "measured_cells": [
+      "gdn.in_proj",
+      "mlp.down",
+      "mlp.gate_up"
+     ],
+     "missing_cells": [],
+     "per_cell_ms_per_round": {
+      "gdn.in_proj": 11.594169851336895,
+      "mlp.down": 16.051497320784307,
+      "mlp.gate_up": 27.732644533333318
+     },
+     "ratio_census_over_559": 0.9899983998289403,
+     "within_15pct": true
+    },
+    {
+     "byte_share_covered": 0.8259668508287293,
+     "census_ms_per_round": 67.56800903338826,
+     "error_pct": -2.8427506889233456,
+     "finding_559_r_local_ms_per_round": 69.545,
+     "groups": 1,
+     "ipg": 3,
+     "m": 3,
+     "measured_cells": [
+      "gdn.in_proj",
+      "mlp.down",
+      "mlp.gate_up"
+     ],
+     "missing_cells": [],
+     "per_cell_ms_per_round": {
+      "gdn.in_proj": 11.712216513368983,
+      "mlp.down": 16.084630058039206,
+      "mlp.gate_up": 28.012089066666654
+     },
+     "ratio_census_over_559": 0.9715724931107665,
+     "within_15pct": true
+    },
+    {
+     "byte_share_covered": 0.8259668508287293,
+     "census_ms_per_round": 72.16414033266443,
+     "error_pct": -5.298889356362779,
+     "finding_559_r_local_ms_per_round": 76.202,
+     "groups": 1,
+     "ipg": 4,
+     "m": 4,
+     "measured_cells": [
+      "gdn.in_proj",
+      "mlp.down",
+      "mlp.gate_up"
+     ],
+     "missing_cells": [],
+     "per_cell_ms_per_round": {
+      "gdn.in_proj": 12.505189599999998,
+      "mlp.down": 17.007719999999996,
+      "mlp.gate_up": 30.092278133333338
+     },
+     "ratio_census_over_559": 0.9470111064363722,
+     "within_15pct": true
+    },
+    {
+     "byte_share_covered": 0.8259668508287293,
+     "census_ms_per_round": 89.24732854997713,
+     "error_pct": -0.24664846651638594,
+     "finding_559_r_local_ms_per_round": 89.468,
+     "groups": 1,
+     "ipg": 5,
+     "m": 5,
+     "measured_cells": [
+      "gdn.in_proj",
+      "mlp.down",
+      "mlp.gate_up"
+     ],
+     "missing_cells": [],
+     "per_cell_ms_per_round": {
+      "gdn.in_proj": 13.704179719999992,
+      "mlp.down": 20.954607276190465,
+      "mlp.gate_up": 39.0565479111111
+     },
+     "ratio_census_over_559": 0.9975335153348361,
+     "within_15pct": true
+    },
+    {
+     "byte_share_covered": 0.8259668508287293,
+     "census_ms_per_round": 116.84028470298973,
+     "error_pct": -0.9735782971381002,
+     "finding_559_r_local_ms_per_round": 117.989,
+     "groups": 2,
+     "ipg": 3,
+     "m": 6,
+     "measured_cells": [
+      "gdn.in_proj",
+      "mlp.down",
+      "mlp.gate_up"
+     ],
+     "missing_cells": [],
+     "per_cell_ms_per_round": {
+      "gdn.in_proj": 19.194641399999995,
+      "mlp.down": 26.79295953939393,
+      "mlp.gate_up": 50.51860106666667
+     },
+     "ratio_census_over_559": 0.990264217028619,
+     "within_15pct": true
+    },
+    {
+     "byte_share_covered": 0.8259668508287293,
+     "census_ms_per_round": 131.83397958531668,
+     "error_pct": -3.662526061911431,
+     "finding_559_r_local_ms_per_round": 136.846,
+     "groups": 2,
+     "ipg": 4,
+     "m": 7,
+     "measured_cells": [
+      "gdn.in_proj",
+      "mlp.down",
+      "mlp.gate_up"
+     ],
+     "missing_cells": [],
+     "per_cell_ms_per_round": {
+      "gdn.in_proj": 21.585745963636352,
+      "mlp.down": 29.48231098666665,
+      "mlp.gate_up": 57.82243999999999
+     },
+     "ratio_census_over_559": 0.9633747393808857,
+     "within_15pct": true
+    },
+    {
+     "byte_share_covered": 0.8259668508287293,
+     "census_ms_per_round": 131.83397958531668,
+     "error_pct": -9.296451512035642,
+     "finding_559_r_local_ms_per_round": 145.346,
+     "groups": 2,
+     "ipg": 4,
+     "m": 8,
+     "measured_cells": [
+      "gdn.in_proj",
+      "mlp.down",
+      "mlp.gate_up"
+     ],
+     "missing_cells": [],
+     "per_cell_ms_per_round": {
+      "gdn.in_proj": 21.585745963636352,
+      "mlp.down": 29.48231098666665,
+      "mlp.gate_up": 57.82243999999999
+     },
+     "ratio_census_over_559": 0.9070354848796436,
+     "within_15pct": true
+    },
+    {
+     "byte_share_covered": 0.8259668508287293,
+     "census_ms_per_round": 162.0682968075808,
+     "error_pct": -1.4536773253024826,
+     "finding_559_r_local_ms_per_round": 164.459,
+     "groups": 2,
+     "ipg": 5,
+     "m": 9,
+     "measured_cells": [
+      "gdn.in_proj",
+      "mlp.down",
+      "mlp.gate_up"
+     ],
+     "missing_cells": [],
+     "per_cell_ms_per_round": {
+      "gdn.in_proj": 24.0638082,
+      "mlp.down": 43.73478986666666,
+      "mlp.gate_up": 66.06444266666665
+     },
+     "ratio_census_over_559": 0.9854632267469752,
+     "within_15pct": true
+    }
+   ],
+   "same_geometry_width_pairs": [
+    {
+     "census_ms_per_round": 131.83397958531668,
+     "census_spread_ms_per_round": 0.0,
+     "finding_559_ms_per_round": [
+      136.846,
+      145.346
+     ],
+     "finding_559_spread_ms_per_round": 8.5,
+     "groups": 2,
+     "ipg": 4,
+     "reading": "these widths pad into one QMV dispatch shape, so the census prices them identically by construction. The FINDING 559 spread across them is non-QMV per-token work",
+     "widths": [
+      7,
+      8
+     ]
+    }
+   ],
+   "tolerance_pct": 15.0,
+   "widths_checked": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "widths_missing": [],
+   "worst_error_pct": 9.296451512035642
+  },
+  "gate_a_prime_pass": true,
+  "gate_b": {
+   "band": [
+    1.8,
+    1.91
+   ],
+   "band_note": "the advisor ruling wrote this band as 0.80-0.91; FINDING 559's published second-pass ratios are 1.796, 1.907 and 1.838, so the band applied here is [1.80, 1.91]. The two forms agree in fact: 0.80-0.91 is the marginal increment, 1.80-1.91 is the total ratio",
+   "cold_g1_ms_per_round": 89.24732854997713,
+   "cold_g2_ms_per_round": 162.0682968075808,
+   "cold_whole_round_ratio": 1.8159456360290387,
+   "form": "the byte-weighted whole-round T(G=2)/T(G=1) at NA=5 must lie inside the FINDING 559 in-situ band",
+   "hot_g1_ms_per_round": 82.3172269056219,
+   "hot_g2_ms_per_round": 162.06820430992192,
+   "hot_whole_round_ratio": 1.9688248790953065,
+   "pass": true,
+   "per_cell_rows_are_context": true,
+   "rows": [
+    {
+     "arm": "na3",
+     "bracket": [
+      1.631569320347837,
+      1.6388564349105184
+     ],
+     "cell": "gdn.in_proj",
+     "cold_ratio": 1.6388564349105184,
+     "contains_559_band": false,
+     "hot_ratio": 1.631569320347837,
+     "overlaps_559_band": false
+    },
+    {
+     "arm": "na4",
+     "bracket": [
+      1.716783488279807,
+      1.726143037738217
+     ],
+     "cell": "gdn.in_proj",
+     "cold_ratio": 1.726143037738217,
+     "contains_559_band": false,
+     "hot_ratio": 1.716783488279807,
+     "overlaps_559_band": false
+    },
+    {
+     "arm": "na5",
+     "bracket": [
+      1.7559466302737607,
+      1.759611967042704
+     ],
+     "cell": "gdn.in_proj",
+     "cold_ratio": 1.7559466302737607,
+     "contains_559_band": false,
+     "hot_ratio": 1.759611967042704,
+     "overlaps_559_band": false
+    },
+    {
+     "arm": "na3",
+     "bracket": [
+      1.6657491930318054,
+      1.686496340301058
+     ],
+     "cell": "mlp.down",
+     "cold_ratio": 1.6657491930318054,
+     "contains_559_band": false,
+     "hot_ratio": 1.686496340301058,
+     "overlaps_559_band": false
+    },
+    {
+     "arm": "na4",
+     "bracket": [
+      1.7301255577287726,
+      1.7334663897728009
+     ],
+     "cell": "mlp.down",
+     "cold_ratio": 1.7334663897728009,
+     "contains_559_band": false,
+     "hot_ratio": 1.7301255577287726,
+     "overlaps_559_band": false
+    },
+    {
+     "arm": "na5",
+     "bracket": [
+      2.087120473804347,
+      2.103733959960992
+     ],
+     "cell": "mlp.down",
+     "cold_ratio": 2.087120473804347,
+     "contains_559_band": false,
+     "hot_ratio": 2.103733959960992,
+     "overlaps_559_band": false
+    },
+    {
+     "arm": "na3",
+     "bracket": [
+      1.7671278858329356,
+      1.8034571054817161
+     ],
+     "cell": "mlp.gate_up",
+     "cold_ratio": 1.8034571054817161,
+     "contains_559_band": false,
+     "hot_ratio": 1.7671278858329356,
+     "overlaps_559_band": true
+    },
+    {
+     "arm": "na4",
+     "bracket": [
+      1.9215042391871902,
+      1.9216359622599841
+     ],
+     "cell": "mlp.gate_up",
+     "cold_ratio": 1.9215042391871902,
+     "contains_559_band": false,
+     "hot_ratio": 1.9216359622599841,
+     "overlaps_559_band": false
+    },
+    {
+     "arm": "na5",
+     "bracket": [
+      1.691507473139277,
+      1.97110731922358
+     ],
+     "cell": "mlp.gate_up",
+     "cold_ratio": 1.691507473139277,
+     "contains_559_band": true,
+     "hot_ratio": 1.97110731922358,
+     "overlaps_559_band": true
+    }
+   ],
+   "scored_ratio": 1.8159456360290387
+  },
+  "gate_b_pass": true,
+  "layout_headroom": {
+   "achieved_gb_per_s": 177.85525884943905,
+   "bytes_per_round": 28824698880,
+   "ceiling_ms_per_round": 56.483319225163214,
+   "census_ms_per_round": 162.0682968075808,
+   "fraction_of_peak": 0.6514844646499599,
+   "headroom_fraction": 0.3485155353500401,
+   "host_peak_gb_per_s": 273.0,
+   "note": "this bounds mechanisms that only reorder or coalesce existing traffic. A mechanism that REMOVES bytes is not bounded by it, and because phi is not identifiable here (hot == cold) a byte-removing mechanism takes no cache-residency discount",
+   "per_width": [
+    {
+     "ceiling_ms_per_round": 14.254162838806373,
+     "census_ms_per_round": 67.04665163001516,
+     "dram_floor_ms_per_round": 52.79248879120879,
+     "m": 2,
+     "pooled_weight": 0.00471
+    },
+    {
+     "ceiling_ms_per_round": 14.775520242179475,
+     "census_ms_per_round": 67.56800903338826,
+     "dram_floor_ms_per_round": 52.79248879120879,
+     "m": 3,
+     "pooled_weight": 0.09576
+    },
+    {
+     "ceiling_ms_per_round": 19.37165154145564,
+     "census_ms_per_round": 72.16414033266443,
+     "dram_floor_ms_per_round": 52.79248879120879,
+     "m": 4,
+     "pooled_weight": 0.20094
+    },
+    {
+     "ceiling_ms_per_round": 36.45483975876834,
+     "census_ms_per_round": 89.24732854997713,
+     "dram_floor_ms_per_round": 52.79248879120879,
+     "m": 5,
+     "pooled_weight": 0.2606
+    },
+    {
+     "ceiling_ms_per_round": 11.255307120572155,
+     "census_ms_per_round": 116.84028470298973,
+     "dram_floor_ms_per_round": 105.58497758241758,
+     "m": 6,
+     "pooled_weight": 0.00785
+    },
+    {
+     "ceiling_ms_per_round": 26.249002002899104,
+     "census_ms_per_round": 131.83397958531668,
+     "dram_floor_ms_per_round": 105.58497758241758,
+     "m": 7,
+     "pooled_weight": 0.01099
+    },
+    {
+     "ceiling_ms_per_round": 26.249002002899104,
+     "census_ms_per_round": 131.83397958531668,
+     "dram_floor_ms_per_round": 105.58497758241758,
+     "m": 8,
+     "pooled_weight": 0.0157
+    },
+    {
+     "ceiling_ms_per_round": 56.483319225163214,
+     "census_ms_per_round": 162.0682968075808,
+     "dram_floor_ms_per_round": 105.58497758241758,
+     "m": 9,
+     "pooled_weight": 0.40345
+    }
+   ],
+   "pooled_ceiling_ms_per_round": 38.45184699298298,
+   "pooled_weight_covered": 1.0,
+   "reference_width_m": 9
+  },
+  "phi_cache_served_fraction": null,
+  "phi_identifiable": false
+ },
+ "term_interpretation": {
+  "a_dispatch": {
+   "dispatches_per_round": 257,
+   "ms_per_round": 11.751040839945775,
+   "reading": "pipelined marginal cost of one extra QMV dispatch at conserved bytes, measured directly by the dispatch split phase",
+   "us_per_dispatch": 45.72389431885516
+  },
+  "b_stream": {
+   "exceeds_dram_peak": true,
+   "host_dram_peak_gb_per_s": 273.0,
+   "implied_stream_gb_per_s": 543.5226636518491,
+   "ms_per_pass_all_cells": 26.516556537248213,
+   "nominal_lane_cycles_per_weight_element": 3.709136959358404,
+   "reading": "this term is byte-proportional and NA-independent. Taken as pure streaming it implies 544 GB/s, which is 2.0x host DRAM peak and therefore impossible. It is per-byte WORK that the device fetch hides under. At nominal lane throughput it is 3.7 lane-cycles per 4-bit weight element, which matches the shift, mask, scale-multiply and bias-add of one affine group-64 dequantisation. The b term is dequantisation arithmetic, not the fetch.",
+   "us_per_mib": 1.9292222203850187
+  },
+  "c_activation_row": {
+   "implied_tmac_per_s": 2.736837175605753,
+   "ms_per_pass_per_na": 9.361884875131095,
+   "reading": "cost of one more activation row over the same weights. It is the accumulate work plus the register pressure that FINDING 549 records at NA=5 (125 registers).",
+   "us_per_gmac": 365.385273524234
+  },
+  "whole_pass_5_1": {
+   "achieved_gb_per_s": 169.4035491964937,
+   "bytes_per_round": 14412349440,
+   "fraction_of_dram_peak": 0.6205258212325777,
+   "modelled_ms_per_round": 85.07702175284946,
+   "reading": "one pass at NA=5, G=1 moves its bytes at 169 GB/s, 62 % of host DRAM peak. The scored QMV pass is COMPUTE bound on this host, not DRAM bound. Mechanisms that remove device bytes are therefore worth less than mechanisms that remove dequantisation or per-row accumulate work."
+  }
+ },
+ "units": [
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "chunk_n": 16480,
+    "chunk_weight_bytes": 42188800,
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 5,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "replica_set_bytes": 189849600,
+    "replicas": 4,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 132.5724090909092,
+   "label": "gdn.in_proj/d1",
+   "phase": "s3/dsplit",
+   "robust_us_per_unit_by_chain": {
+    "1": 402.58457575757575,
+    "2": 367.9800208333333,
+    "3": 335.8096111111111,
+    "4": 318.99609375
+   },
+   "slope_ci95": [
+    286.61559889204534,
+    291.5150401515151
+   ],
+   "slope_sd": 1.2871107104455337,
+   "slope_us": 289.16681893939386
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 102400,
+    "cell": "gdn.in_proj",
+    "chunk_n": 8240,
+    "chunk_weight_bytes": 21094400,
+    "cold": true,
+    "dispatches": 2,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 5,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "replica_set_bytes": 189849600,
+    "replicas": 8,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 137.97697435897422,
+   "label": "gdn.in_proj/d2",
+   "phase": "s3/dsplit",
+   "robust_us_per_unit_by_chain": {
+    "1": 431.35897435897436,
+    "2": 404.3333125,
+    "3": 365.9334305555555,
+    "4": 348.85765625
+   },
+   "slope_ci95": [
+    315.7185599358975,
+    320.3555727323716
+   ],
+   "slope_sd": 1.2332147502225124,
+   "slope_us": 318.13486185897426
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 204800,
+    "cell": "gdn.in_proj",
+    "chunk_n": 4120,
+    "chunk_weight_bytes": 10547200,
+    "cold": true,
+    "dispatches": 4,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 5,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "replica_set_bytes": 189849600,
+    "replicas": 16,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 40960
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 129.3590833333337,
+   "label": "gdn.in_proj/d4",
+   "phase": "s3/dsplit",
+   "robust_us_per_unit_by_chain": {
+    "1": 487.80091666666664,
+    "2": 454.7126666666666,
+    "3": 424.984388888889,
+    "4": 406.57725
+   },
+   "slope_ci95": [
+    373.11802916666653,
+    390.6268999999998
+   ],
+   "slope_sd": 8.71993433833908,
+   "slope_us": 378.10520833333317
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 84377600,
+    "activation_unique_bytes": 20480,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 2,
+    "n": 16480,
+    "na": 2,
+    "output_bytes": 65920,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 101.85764416221055,
+   "label": "gdn.in_proj/na2/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 346.67811764705885,
+    "2": 282.7203181818182,
+    "3": 285.22743055555554,
+    "4": 263.77039583333334
+   },
+   "slope_ci95": [
+    236.59835815508018,
+    246.1647463892603
+   ],
+   "slope_sd": 2.530605815307451,
+   "slope_us": 241.54520523618532
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 84377600,
+    "activation_unique_bytes": 20480,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 2,
+    "n": 16480,
+    "na": 2,
+    "output_bytes": 65920,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 105.98869329322666,
+   "label": "gdn.in_proj/na2/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 347.33005882352944,
+    "2": 284.5978636363636,
+    "3": 284.8020833333333,
+    "4": 262.96961458333334
+   },
+   "slope_ci95": [
+    236.6069904634581,
+    245.67444864081986
+   ],
+   "slope_sd": 2.4806667153889936,
+   "slope_us": 239.88557212566832
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 126566400,
+    "activation_unique_bytes": 30720,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 3,
+    "n": 16480,
+    "na": 3,
+    "output_bytes": 98880,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 100.50113680926933,
+   "label": "gdn.in_proj/na3/g1/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 348.421568627451,
+    "2": 284.3364848484849,
+    "3": 286.9299722222222,
+    "4": 266.12845833333336
+   },
+   "slope_ci95": [
+    239.574561252228,
+    248.87912542335104
+   ],
+   "slope_sd": 2.363679164319718,
+   "slope_us": 244.03937410873434
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 126566400,
+    "activation_unique_bytes": 30720,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 3,
+    "n": 16480,
+    "na": 3,
+    "output_bytes": 98880,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 100.08154578877,
+   "label": "gdn.in_proj/na3/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 348.60784313725486,
+    "2": 283.1395151515151,
+    "3": 287.38426388888894,
+    "4": 265.83290625
+   },
+   "slope_ci95": [
+    241.94221555258457,
+    249.184782731729
+   ],
+   "slope_sd": 1.9526585015258466,
+   "slope_us": 244.00451069518715
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 126566400,
+    "activation_unique_bytes": 30720,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 3,
+    "n": 16480,
+    "na": 3,
+    "output_bytes": 98880,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 102.002249442959,
+   "label": "gdn.in_proj/na3/g1/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 347.89870588235294,
+    "2": 281.84660606060606,
+    "3": 278.3425833333334,
+    "4": 263.87153125000003
+   },
+   "slope_ci95": [
+    236.63628344474137,
+    243.71233799019606
+   ],
+   "slope_sd": 1.856827501288792,
+   "slope_us": 239.40967952317283
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 126566400,
+    "activation_unique_bytes": 30720,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 3,
+    "n": 16480,
+    "na": 3,
+    "output_bytes": 98880,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 100.51945766488431,
+   "label": "gdn.in_proj/na3/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 350.4926470588235,
+    "2": 283.68306060606056,
+    "3": 281.62441666666666,
+    "4": 266.828125
+   },
+   "slope_ci95": [
+    240.94063923796773,
+    246.77030917112288
+   ],
+   "slope_sd": 1.574789487539718,
+   "slope_us": 242.79666876114072
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 126566400,
+    "activation_unique_bytes": 30720,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 6,
+    "n": 16480,
+    "na": 3,
+    "output_bytes": 98880,
+    "pass_stream_bytes": 94924800,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 136.1256111111114,
+   "label": "gdn.in_proj/na3/g2/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 518.5544444444445,
+    "2": 479.22047916666673,
+    "3": 447.6973472222223,
+    "4": 430.82465625000003
+   },
+   "slope_ci95": [
+    397.0914874999998,
+    403.38316249999986
+   ],
+   "slope_sd": 1.706034676192202,
+   "slope_us": 399.88836249999986
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 126566400,
+    "activation_unique_bytes": 30720,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 6,
+    "n": 16480,
+    "na": 3,
+    "output_bytes": 98880,
+    "pass_stream_bytes": 94924800,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 145.9302430555559,
+   "label": "gdn.in_proj/na3/g2/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 522.9085555555556,
+    "2": 482.3098958333333,
+    "3": 446.3373888888889,
+    "4": 429.6441041666667
+   },
+   "slope_ci95": [
+    392.9590333333333,
+    400.03567958333315
+   ],
+   "slope_sd": 1.9228491662619307,
+   "slope_us": 396.13959583333326
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 126566400,
+    "activation_unique_bytes": 30720,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 9,
+    "n": 16480,
+    "na": 3,
+    "output_bytes": 98880,
+    "pass_stream_bytes": 142387200,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 16,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 84377600,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 195.95922916666677,
+   "label": "gdn.in_proj/na3/g3/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 757.052125,
+    "2": 654.6935833333333,
+    "3": 621.6440833333334,
+    "4": 607.8932395833334
+   },
+   "slope_ci95": [
+    553.7250124999999,
+    560.6001583333332
+   ],
+   "slope_sd": 1.7962660239306374,
+   "slope_us": 557.9107583333332
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 126566400,
+    "activation_unique_bytes": 30720,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 9,
+    "n": 16480,
+    "na": 3,
+    "output_bytes": 98880,
+    "pass_stream_bytes": 142387200,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 16,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 84377600,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 196.58335416666725,
+   "label": "gdn.in_proj/na3/g3/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 751.3854166666666,
+    "2": 655.4218958333332,
+    "3": 619.6845972222221,
+    "4": 605.1119791666666
+   },
+   "slope_ci95": [
+    552.2369666666664,
+    557.6855916666665
+   ],
+   "slope_sd": 1.4016333596952266,
+   "slope_us": 555.5397499999997
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 168755200,
+    "activation_unique_bytes": 40960,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 4,
+    "n": 16480,
+    "na": 4,
+    "output_bytes": 131840,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 106.43544583333345,
+   "label": "gdn.in_proj/na4/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 367.7925625,
+    "2": 301.8138833333333,
+    "3": 305.53009722222225,
+    "4": 281.58549999999997
+   },
+   "slope_ci95": [
+    257.98005999999987,
+    262.3339375
+   ],
+   "slope_sd": 1.1626540451508323,
+   "slope_us": 258.86108374999986
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 168755200,
+    "activation_unique_bytes": 40960,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 4,
+    "n": 16480,
+    "na": 4,
+    "output_bytes": 131840,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 104.11216666666661,
+   "label": "gdn.in_proj/na4/g1/cold",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 367.6840416666667,
+    "2": 303.81875,
+    "3": 303.86456944444444,
+    "4": 283.6953125
+   },
+   "slope_ci95": [
+    258.41562833333325,
+    264.2189324999999
+   ],
+   "slope_sd": 1.516409677082508,
+   "slope_us": 260.5247833333333
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 168755200,
+    "activation_unique_bytes": 40960,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 4,
+    "n": 16480,
+    "na": 4,
+    "output_bytes": 131840,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 111.25083750000022,
+   "label": "gdn.in_proj/na4/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 367.28210416666667,
+    "2": 302.2187333333333,
+    "3": 297.649875,
+    "4": 279.125
+   },
+   "slope_ci95": [
+    252.14602833333322,
+    258.8791458333332
+   ],
+   "slope_sd": 1.6888978662692855,
+   "slope_us": 253.61658458333324
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 168755200,
+    "activation_unique_bytes": 40960,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 4,
+    "n": 16480,
+    "na": 4,
+    "output_bytes": 131840,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 98.63506666666697,
+   "label": "gdn.in_proj/na4/g1/hot",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 366.9479166666667,
+    "2": 301.58123333333333,
+    "3": 302.56540277777776,
+    "4": 284.9470416666666
+   },
+   "slope_ci95": [
+    260.6089220833332,
+    265.80738666666656
+   ],
+   "slope_sd": 1.352165366687737,
+   "slope_us": 262.3054491666665
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 168755200,
+    "activation_unique_bytes": 40960,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 8,
+    "n": 16480,
+    "na": 4,
+    "output_bytes": 131840,
+    "pass_stream_bytes": 94924800,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 143.33740530303024,
+   "label": "gdn.in_proj/na4/g2/cold",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 569.6073636363636,
+    "2": 537.362875,
+    "3": 499.59375,
+    "4": 481.8164166666666
+   },
+   "slope_ci95": [
+    447.39846060606044,
+    454.2265026515151
+   ],
+   "slope_sd": 1.7555834968274449,
+   "slope_us": 449.7030409090907
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 168755200,
+    "activation_unique_bytes": 40960,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 8,
+    "n": 16480,
+    "na": 4,
+    "output_bytes": 131840,
+    "pass_stream_bytes": 94924800,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 139.39710606060606,
+   "label": "gdn.in_proj/na4/g2/hot",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 568.6262727272727,
+    "2": 534.1397499999999,
+    "3": 499.0538194444444,
+    "4": 481.68445833333334
+   },
+   "slope_ci95": [
+    447.2427181818181,
+    452.98762651515136
+   ],
+   "slope_sd": 1.4491746790643723,
+   "slope_us": 450.3216640151513
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 5,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 130.01755555555556,
+   "label": "gdn.in_proj/na5/g1/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 404.15555555555557,
+    "2": 368.55470833333334,
+    "3": 336.9803333333333,
+    "4": 321.3463541666667
+   },
+   "slope_ci95": [
+    289.96922749999976,
+    294.27503249999984
+   ],
+   "slope_sd": 1.094807847644979,
+   "slope_us": 291.7521166666666
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 5,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 141.366276388889,
+   "label": "gdn.in_proj/na5/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 403.08242222222225,
+    "2": 373.3046875,
+    "3": 333.58969444444443,
+    "4": 317.5104166666667
+   },
+   "slope_ci95": [
+    283.1801441666665,
+    289.5199508333332
+   ],
+   "slope_sd": 1.7829691025425172,
+   "slope_us": 285.50374416666654
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 5,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 141.4913833333332,
+   "label": "gdn.in_proj/na5/g1/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 403.81946666666664,
+    "2": 369.69272916666665,
+    "3": 340.35475,
+    "4": 316.01040624999996
+   },
+   "slope_ci95": [
+    283.9758374791665,
+    288.9502108333333
+   ],
+   "slope_sd": 1.2233901617422758,
+   "slope_us": 286.2345266666666
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 5,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 143.4393958333333,
+   "label": "gdn.in_proj/na5/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 402.64166666666665,
+    "2": 372.5338541666667,
+    "3": 335.56191666666666,
+    "4": 315.8680625
+   },
+   "slope_ci95": [
+    283.2386333333332,
+    286.5360133333333
+   ],
+   "slope_sd": 0.8882106612186274,
+   "slope_us": 284.41097916666666
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 10,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 94924800,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 16,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 84377600,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 211.6684374999998,
+   "label": "gdn.in_proj/na5/g2/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 718.1892916666666,
+    "2": 603.7022499999999,
+    "3": 571.3090416666668,
+    "4": 555.1115520833333
+   },
+   "slope_ci95": [
+    497.3782728124999,
+    503.97497083333326
+   ],
+   "slope_sd": 1.714475769036355,
+   "slope_us": 501.32933749999995
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 10,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 94924800,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 16,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 84377600,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 208.87235416666672,
+   "label": "gdn.in_proj/na5/g2/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 712.229125,
+    "2": 603.3723958333334,
+    "3": 569.1955972222222,
+    "4": 553.3645833333334
+   },
+   "slope_ci95": [
+    497.8571208333331,
+    503.20781249999993
+   ],
+   "slope_sd": 1.4570194366857783,
+   "slope_us": 500.45296249999984
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 15,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 142387200,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 16,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 84377600,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 194.50170833333314,
+   "label": "gdn.in_proj/na5/g3/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 949.1753333333332,
+    "2": 845.2578125,
+    "3": 814.4050833333332,
+    "4": 799.9657187500001
+   },
+   "slope_ci95": [
+    745.2566041666665,
+    753.8751958333332
+   ],
+   "slope_sd": 2.3600372230119024,
+   "slope_us": 750.4762249999999
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "gdn.in_proj",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 48,
+    "k": 5120,
+    "m": 15,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 142387200,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 16,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 84377600,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 194.46183333333352,
+   "label": "gdn.in_proj/na5/g3/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 946.0937916666667,
+    "2": 842.5407916666667,
+    "3": 811.8165555555556,
+    "4": 797.086375
+   },
+   "slope_ci95": [
+    746.2185624999997,
+    750.7538208333331
+   ],
+   "slope_sd": 1.2169716908834955,
+   "slope_us": 747.712320833333
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 157286400,
+    "activation_unique_bytes": 122880,
+    "cell": "kext.k12288",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 12288,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 35389440,
+    "replica_set_bytes": 212336640,
+    "replicas": 6,
+    "scale_bias_bytes": 3932160,
+    "stream_bytes": 35389440,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 31457280,
+    "xsums_read_bytes": 31457280,
+    "xsums_unique_bytes": 24576
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 152.5833333333335,
+   "label": "kext.k12288/na5/g1/cold",
+   "phase": "s3/kext",
+   "robust_us_per_unit_by_chain": {
+    "1": 384.9860833333334,
+    "2": 330.5408125000001,
+    "3": 306.2777916666667,
+    "4": 281.47178125
+   },
+   "slope_ci95": [
+    227.55521249999993,
+    322.2376469791666
+   ],
+   "slope_sd": 25.158283985405824,
+   "slope_us": 248.04548749999992
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "kext.k17408",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 152.9210833333336,
+   "label": "kext.k17408/na5/g1/cold",
+   "phase": "s3/kext",
+   "robust_us_per_unit_by_chain": {
+    "1": 452.82295833333336,
+    "2": 419.95399999999995,
+    "3": 379.19963888888884,
+    "4": 359.9279374999999
+   },
+   "slope_ci95": [
+    323.7454541666666,
+    688.5450833333335
+   ],
+   "slope_sd": 124.79748197743083,
+   "slope_us": 325.8357291666665
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 26214400,
+    "activation_unique_bytes": 20480,
+    "cell": "kext.k2048",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 2048,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 5898240,
+    "replica_set_bytes": 206438400,
+    "replicas": 35,
+    "scale_bias_bytes": 655360,
+    "stream_bytes": 5898240,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 5242880,
+    "xsums_read_bytes": 5242880,
+    "xsums_unique_bytes": 4096
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 127.6953125,
+   "label": "kext.k2048/na5/g1/cold",
+   "phase": "s3/kext",
+   "robust_us_per_unit_by_chain": {
+    "1": 188.8819583333333,
+    "2": 124.561625,
+    "3": 105.01504166666668,
+    "4": 92.87413541666666
+   },
+   "slope_ci95": [
+    60.939241666666646,
+    135.2432291666666
+   ],
+   "slope_sd": 23.945245047879197,
+   "slope_us": 61.37656249999998
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 52428800,
+    "activation_unique_bytes": 40960,
+    "cell": "kext.k4096",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 4096,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 11796480,
+    "replica_set_bytes": 212336640,
+    "replicas": 18,
+    "scale_bias_bytes": 1310720,
+    "stream_bytes": 11796480,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 10485760,
+    "xsums_read_bytes": 10485760,
+    "xsums_unique_bytes": 8192
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 130.39077777777774,
+   "label": "kext.k4096/na5/g1/cold",
+   "phase": "s3/kext",
+   "robust_us_per_unit_by_chain": {
+    "1": 220.62344444444443,
+    "2": 154.7239375,
+    "3": 133.24480555555556,
+    "4": 122.47830208333333
+   },
+   "slope_ci95": [
+    89.30705138888887,
+    125.53709444444438
+   ],
+   "slope_sd": 15.723112450875307,
+   "slope_us": 89.8155833333333
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 104857600,
+    "activation_unique_bytes": 81920,
+    "cell": "kext.k8192",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 8192,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 23592960,
+    "replica_set_bytes": 212336640,
+    "replicas": 9,
+    "scale_bias_bytes": 2621440,
+    "stream_bytes": 23592960,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 20971520,
+    "xsums_read_bytes": 20971520,
+    "xsums_unique_bytes": 16384
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 70.59543750000012,
+   "label": "kext.k8192/na5/g1/cold",
+   "phase": "s3/kext",
+   "robust_us_per_unit_by_chain": {
+    "1": 284.69616666666667,
+    "2": 217.46266666666665,
+    "3": 210.09431944444444,
+    "4": 215.78169791666667
+   },
+   "slope_ci95": [
+    153.78906250000003,
+    207.8338583333333
+   ],
+   "slope_sd": 20.84805092713986,
+   "slope_us": 193.06494999999995
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "chunk_n": 5120,
+    "chunk_weight_bytes": 44564480,
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "replica_set_bytes": 200540160,
+    "replicas": 4,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 133.0373541666669,
+   "label": "mlp.down/d1",
+   "phase": "s3/dsplit",
+   "robust_us_per_unit_by_chain": {
+    "1": 440.1180833333333,
+    "2": 408.8532916666666,
+    "3": 371.8379583333333,
+    "4": 357.96701041666665
+   },
+   "slope_ci95": [
+    322.6458249999999,
+    330.7560625
+   ],
+   "slope_sd": 2.114941847081509,
+   "slope_us": 327.3057166666665
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 348160,
+    "cell": "mlp.down",
+    "chunk_n": 2560,
+    "chunk_weight_bytes": 22282240,
+    "cold": true,
+    "dispatches": 2,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "replica_set_bytes": 200540160,
+    "replicas": 8,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 69632
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 136.96091666666695,
+   "label": "mlp.down/d2",
+   "phase": "s3/dsplit",
+   "robust_us_per_unit_by_chain": {
+    "1": 461.75,
+    "2": 436.53383333333335,
+    "3": 402.3026666666667,
+    "4": 380.6614583333333
+   },
+   "slope_ci95": [
+    348.07969999999995,
+    356.5574791666666
+   ],
+   "slope_sd": 2.3025215615209507,
+   "slope_us": 351.6527833333333
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 696320,
+    "cell": "mlp.down",
+    "chunk_n": 1280,
+    "chunk_weight_bytes": 11141120,
+    "cold": true,
+    "dispatches": 4,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "replica_set_bytes": 200540160,
+    "replicas": 16,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 139264
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 145.61027083333335,
+   "label": "mlp.down/d4",
+   "phase": "s3/dsplit",
+   "robust_us_per_unit_by_chain": {
+    "1": 517.361125,
+    "2": 496.1293333333333,
+    "3": 456.6765138888889,
+    "4": 433.94009374999996
+   },
+   "slope_ci95": [
+    399.3028438541665,
+    408.1184208333332
+   ],
+   "slope_sd": 2.2610508418701896,
+   "slope_us": 403.29686249999986
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 1392640,
+    "cell": "mlp.down",
+    "chunk_n": 640,
+    "chunk_weight_bytes": 5570560,
+    "cold": true,
+    "dispatches": 8,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "replica_set_bytes": 200540160,
+    "replicas": 32,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 278528
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 98.47133333333323,
+   "label": "mlp.down/d8",
+   "phase": "s3/dsplit",
+   "robust_us_per_unit_by_chain": {
+    "1": 628.4444583333333,
+    "2": 600.466125,
+    "3": 567.642375,
+    "4": 565.2196250000001
+   },
+   "slope_ci95": [
+    531.2029499999999,
+    548.8213749999999
+   ],
+   "slope_sd": 4.528960768535091,
+   "slope_us": 539.9296999999999
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 89128960,
+    "activation_unique_bytes": 69632,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 2,
+    "n": 5120,
+    "na": 2,
+    "output_bytes": 20480,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 104.17960759803924,
+   "label": "mlp.down/na2/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 357.58741176470585,
+    "2": 294.2944666666667,
+    "3": 294.3946666666667,
+    "4": 273.8511354166667
+   },
+   "slope_ci95": [
+    249.65731485294106,
+    254.1765021776959
+   ],
+   "slope_sd": 1.1630078120817924,
+   "slope_us": 250.80464563725482
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 89128960,
+    "activation_unique_bytes": 69632,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 2,
+    "n": 5120,
+    "na": 2,
+    "output_bytes": 20480,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 102.39799093137263,
+   "label": "mlp.down/na2/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 356.1797450980392,
+    "2": 291.1756833333333,
+    "3": 293.36631944444446,
+    "4": 272.47871875000004
+   },
+   "slope_ci95": [
+    247.45945867647058,
+    253.4472125980392
+   ],
+   "slope_sd": 1.527961349235449,
+   "slope_us": 249.89529813725483
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 133693440,
+    "activation_unique_bytes": 104448,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 3,
+    "n": 5120,
+    "na": 3,
+    "output_bytes": 30720,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 107.21166250000006,
+   "label": "mlp.down/na3/g1/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 362.0,
+    "2": 296.9521,
+    "3": 294.43459722222224,
+    "4": 275.87021875
+   },
+   "slope_ci95": [
+    248.87259088235282,
+    253.7679040196076
+   ],
+   "slope_sd": 1.2962311496119696,
+   "slope_us": 251.3842216666666
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 133693440,
+    "activation_unique_bytes": 104448,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 3,
+    "n": 5120,
+    "na": 3,
+    "output_bytes": 30720,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 105.22087475490228,
+   "label": "mlp.down/na3/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 361.14380392156863,
+    "2": 294.64304999999996,
+    "3": 294.1816944444445,
+    "4": 275.28298958333335
+   },
+   "slope_ci95": [
+    247.6868282843136,
+    255.1964970098038
+   ],
+   "slope_sd": 1.969768393966445,
+   "slope_us": 251.3223446568626
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 133693440,
+    "activation_unique_bytes": 104448,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 3,
+    "n": 5120,
+    "na": 3,
+    "output_bytes": 30720,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 112.86899411764712,
+   "label": "mlp.down/na3/g1/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 363.90196078431364,
+    "2": 297.40278333333333,
+    "3": 297.2719722222222,
+    "4": 274.217875
+   },
+   "slope_ci95": [
+    248.453015735294,
+    252.61436632352934
+   ],
+   "slope_sd": 0.9990834380139128,
+   "slope_us": 249.59189676470578
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 133693440,
+    "activation_unique_bytes": 104448,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 3,
+    "n": 5120,
+    "na": 3,
+    "output_bytes": 30720,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 109.00769779411758,
+   "label": "mlp.down/na3/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 360.5212352941176,
+    "2": 293.2659833333333,
+    "3": 294.55383333333333,
+    "4": 272.38976041666666
+   },
+   "slope_ci95": [
+    243.0157865196078,
+    254.02632828431365
+   ],
+   "slope_sd": 2.856388619800705,
+   "slope_us": 248.42429524509794
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 133693440,
+    "activation_unique_bytes": 104448,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 6,
+    "n": 5120,
+    "na": 3,
+    "output_bytes": 30720,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 143.68062121212108,
+   "label": "mlp.down/na3/g2/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 538.8724545454546,
+    "2": 506.8420208333334,
+    "3": 468.1660694444445,
+    "4": 451.0169270833333
+   },
+   "slope_ci95": [
+    416.88605643939377,
+    419.1719863636361
+   ],
+   "slope_sd": 0.6197352022057953,
+   "slope_us": 418.63999280303017
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 133693440,
+    "activation_unique_bytes": 104448,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 6,
+    "n": 5120,
+    "na": 3,
+    "output_bytes": 30720,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 138.82438825757578,
+   "label": "mlp.down/na3/g2/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 541.3409090909091,
+    "2": 500.3411458333333,
+    "3": 465.7418888888888,
+    "4": 451.42883333333333
+   },
+   "slope_ci95": [
+    415.11692424242403,
+    421.6372439393938
+   ],
+   "slope_sd": 1.684815982704214,
+   "slope_us": 418.9666647727272
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 133693440,
+    "activation_unique_bytes": 104448,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 9,
+    "n": 5120,
+    "na": 3,
+    "output_bytes": 30720,
+    "pass_stream_bytes": 150405120,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 16,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 69632
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 206.32027083333375,
+   "label": "mlp.down/na3/g3/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 794.43225,
+    "2": 686.545125,
+    "3": 653.2280138888889,
+    "4": 637.3285520833333
+   },
+   "slope_ci95": [
+    583.4227624999997,
+    586.6859416666663
+   ],
+   "slope_sd": 0.8355174023714037,
+   "slope_us": 585.1239666666664
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 133693440,
+    "activation_unique_bytes": 104448,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 9,
+    "n": 5120,
+    "na": 3,
+    "output_bytes": 30720,
+    "pass_stream_bytes": 150405120,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 16,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 69632
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 217.1909791666672,
+   "label": "mlp.down/na3/g3/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 799.2864583333334,
+    "2": 687.8637083333333,
+    "3": 650.4843888888889,
+    "4": 634.9795937499999
+   },
+   "slope_ci95": [
+    577.2573039583331,
+    581.2994666666663
+   ],
+   "slope_sd": 1.085890930769234,
+   "slope_us": 579.7621499999997
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 178257920,
+    "activation_unique_bytes": 139264,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 4,
+    "n": 5120,
+    "na": 4,
+    "output_bytes": 40960,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 137.90627083333356,
+   "label": "mlp.down/na4/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 385.4166666666667,
+    "2": 347.5191041666667,
+    "3": 312.5735,
+    "4": 297.51475
+   },
+   "slope_ci95": [
+    263.89217499999995,
+    269.45147916666656
+   ],
+   "slope_sd": 1.5121597046317057,
+   "slope_us": 265.66092916666656
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 178257920,
+    "activation_unique_bytes": 139264,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 4,
+    "n": 5120,
+    "na": 4,
+    "output_bytes": 40960,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 139.3519583333336,
+   "label": "mlp.down/na4/g1/cold",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 385.3953333333334,
+    "2": 347.87674999999996,
+    "3": 315.2916666666667,
+    "4": 296.9600625
+   },
+   "slope_ci95": [
+    264.23464390224365,
+    267.632596153846
+   ],
+   "slope_sd": 0.9059106689915684,
+   "slope_us": 265.7456249999999
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 178257920,
+    "activation_unique_bytes": 139264,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 4,
+    "n": 5120,
+    "na": 4,
+    "output_bytes": 40960,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 146.57070370370366,
+   "label": "mlp.down/na4/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 384.3385416666667,
+    "2": 348.6705370370371,
+    "3": 313.03472222222223,
+    "4": 293.21918750000003
+   },
+   "slope_ci95": [
+    256.3391958333332,
+    264.0196199074073
+   ],
+   "slope_sd": 2.010349778857575,
+   "slope_us": 260.7377717592592
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 178257920,
+    "activation_unique_bytes": 139264,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 4,
+    "n": 5120,
+    "na": 4,
+    "output_bytes": 40960,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 142.17016666666697,
+   "label": "mlp.down/na4/g1/hot",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 384.265625,
+    "2": 345.48872916666664,
+    "3": 311.70775,
+    "4": 293.79209375
+   },
+   "slope_ci95": [
+    258.70137499999987,
+    265.52821666666654
+   ],
+   "slope_sd": 1.8133171180603735,
+   "slope_us": 261.6854041666665
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 178257920,
+    "activation_unique_bytes": 139264,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 8,
+    "n": 5120,
+    "na": 4,
+    "output_bytes": 40960,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 182.96702500000015,
+   "label": "mlp.down/na4/g2/cold",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 636.1180666666667,
+    "2": 556.984375,
+    "3": 522.7071805555555,
+    "4": 505.0677083333333
+   },
+   "slope_ci95": [
+    453.2171641666665,
+    468.4748958333332
+   ],
+   "slope_sd": 3.9618547136591653,
+   "slope_us": 460.6611091666664
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 178257920,
+    "activation_unique_bytes": 139264,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 8,
+    "n": 5120,
+    "na": 4,
+    "output_bytes": 40960,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 198.15192499999995,
+   "label": "mlp.down/na4/g2/hot",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 641.1319666666667,
+    "2": 559.6996458333333,
+    "3": 518.0677083333334,
+    "4": 501.33984375
+   },
+   "slope_ci95": [
+    448.3075666666665,
+    457.40419166666663
+   ],
+   "slope_sd": 2.24104931051203,
+   "slope_us": 452.74860583333316
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 136.7160089285717,
+   "label": "mlp.down/na5/g1/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 434.8879047619048,
+    "2": 412.11543750000004,
+    "3": 372.44906944444443,
+    "4": 355.14366666666666
+   },
+   "slope_ci95": [
+    321.90671249999997,
+    332.5380714285713
+   ],
+   "slope_sd": 2.9909190450855463,
+   "slope_us": 325.0176619047618
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 128.60148214285732,
+   "label": "mlp.down/na5/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 434.3531904761905,
+    "2": 408.9670416666667,
+    "3": 368.9461805555556,
+    "4": 357.359375
+   },
+   "slope_ci95": [
+    325.58818452380933,
+    329.6141607142856
+   ],
+   "slope_sd": 1.0660890077546383,
+   "slope_us": 327.415738690476
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 139.54944345238118,
+   "label": "mlp.down/na5/g1/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 435.09721428571424,
+    "2": 409.34285416666665,
+    "3": 371.7204583333333,
+    "4": 352.4453125
+   },
+   "slope_ci95": [
+    319.36266488095225,
+    326.4815220238094
+   ],
+   "slope_sd": 1.834837288163202,
+   "slope_us": 322.05277738095225
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 5,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 50135040,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 8,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 44564480,
+    "xsums_unique_bytes": 34816
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 139.97641964285717,
+   "label": "mlp.down/na5/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 434.5406904761905,
+    "2": 411.19875,
+    "3": 370.0567222222223,
+    "4": 352.8815104166667
+   },
+   "slope_ci95": [
+    319.89609940476186,
+    325.7045452380953
+   ],
+   "slope_sd": 1.4625533074553008,
+   "slope_us": 321.8728720238095
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 10,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 16,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 69632
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 133.20047916666655,
+   "label": "mlp.down/na5/g2/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 825.982625,
+    "2": 744.8446041666666,
+    "3": 725.1458333333334,
+    "4": 718.8133750000001
+   },
+   "slope_ci95": [
+    673.1324958333333,
+    696.7295249999999
+   ],
+   "slope_sd": 6.218836263942668,
+   "slope_us": 683.3560916666665
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 10,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 16,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 69632
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 149.96356250000073,
+   "label": "mlp.down/na5/g2/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 838.1458333333334,
+    "2": 746.033,
+    "3": 724.1869305555556,
+    "4": 717.1076354166667
+   },
+   "slope_ci95": [
+    674.3195999999996,
+    679.6494999999998
+   ],
+   "slope_sd": 1.400487036178235,
+   "slope_us": 677.1348916666665
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 15,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 150405120,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 16,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 69632
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 124.00085416666735,
+   "label": "mlp.down/na5/g3/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1178.5382083333334,
+    "2": 1099.4713333333332,
+    "3": 1083.0393472222222,
+    "4": 1077.00434375
+   },
+   "slope_ci95": [
+    1037.9918541666664,
+    1047.478291666666
+   ],
+   "slope_sd": 2.601171737589967,
+   "slope_us": 1043.8612874999997
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 222822400,
+    "activation_unique_bytes": 174080,
+    "cell": "mlp.down",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 64,
+    "k": 17408,
+    "m": 15,
+    "n": 5120,
+    "na": 5,
+    "output_bytes": 51200,
+    "pass_stream_bytes": 150405120,
+    "replica_set_bytes": 250675200,
+    "replicas": 5,
+    "scale_bias_bytes": 5570560,
+    "stream_bytes": 50135040,
+    "stride": 16,
+    "threadgroups_per_pass": 640,
+    "weight_bytes": 44564480,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 69632
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 140.82720833333377,
+   "label": "mlp.down/na5/g3/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1182.4669999999999,
+    "2": 1104.3749791666667,
+    "3": 1077.7945416666666,
+    "4": 1073.0073854166667
+   },
+   "slope_ci95": [
+    1032.2444541666662,
+    1038.6439374999998
+   ],
+   "slope_sd": 1.5859957537675309,
+   "slope_us": 1035.3321291666664
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 178257920,
+    "activation_unique_bytes": 20480,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 2,
+    "n": 34816,
+    "na": 2,
+    "output_bytes": 139264,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 141.24041666666687,
+   "label": "mlp.gate_up/na2/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 558.3645416666667,
+    "2": 526.9861041666667,
+    "3": 465.8767222222222,
+    "4": 472.0551145833333
+   },
+   "slope_ci95": [
+    430.8834888541665,
+    436.25432083333317
+   ],
+   "slope_sd": 1.3612308094588255,
+   "slope_us": 433.3225708333331
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 178257920,
+    "activation_unique_bytes": 20480,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 2,
+    "n": 34816,
+    "na": 2,
+    "output_bytes": 139264,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 138.91666666666686,
+   "label": "mlp.gate_up/na2/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 557.0260416666666,
+    "2": 524.954875,
+    "3": 487.7800833333333,
+    "4": 471.532125
+   },
+   "slope_ci95": [
+    437.2661583333332,
+    441.86370833333314
+   ],
+   "slope_sd": 1.133613953452359,
+   "slope_us": 440.0737874999998
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 267386880,
+    "activation_unique_bytes": 30720,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 3,
+    "n": 34816,
+    "na": 3,
+    "output_bytes": 208896,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 142.53037500000016,
+   "label": "mlp.gate_up/na3/g1/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 563.609375,
+    "2": 528.5893958333332,
+    "3": 471.5497777777778,
+    "4": 474.83419791666665
+   },
+   "slope_ci95": [
+    433.8760333333332,
+    439.23157499999974
+   ],
+   "slope_sd": 1.3599607065849741,
+   "slope_us": 436.46527916666656
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 267386880,
+    "activation_unique_bytes": 30720,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 3,
+    "n": 34816,
+    "na": 3,
+    "output_bytes": 208896,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 138.20312500000009,
+   "label": "mlp.gate_up/na3/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 559.3090416666668,
+    "2": 529.7395833333334,
+    "3": 469.7407361111111,
+    "4": 475.42275
+   },
+   "slope_ci95": [
+    436.37673749999976,
+    441.55206249999986
+   ],
+   "slope_sd": 1.3532912750503963,
+   "slope_us": 437.68889166666645
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 267386880,
+    "activation_unique_bytes": 30720,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 3,
+    "n": 34816,
+    "na": 3,
+    "output_bytes": 208896,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 151.296854166667,
+   "label": "mlp.gate_up/na3/g1/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 562.2916666666666,
+    "2": 529.1154583333333,
+    "3": 488.8107638888889,
+    "4": 470.0551354166667
+   },
+   "slope_ci95": [
+    433.4107624999998,
+    440.9671833333332
+   ],
+   "slope_sd": 1.920455627772821,
+   "slope_us": 436.1987999999998
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 267386880,
+    "activation_unique_bytes": 30720,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 3,
+    "n": 34816,
+    "na": 3,
+    "output_bytes": 208896,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 144.29950000000034,
+   "label": "mlp.gate_up/na3/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 558.1962083333333,
+    "2": 524.8046875,
+    "3": 488.79340277777777,
+    "4": 469.35069791666666
+   },
+   "slope_ci95": [
+    433.7506749999999,
+    442.9414708333332
+   ],
+   "slope_sd": 2.2110858986939603,
+   "slope_us": 437.43905833333315
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 267386880,
+    "activation_unique_bytes": 30720,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 6,
+    "n": 34816,
+    "na": 3,
+    "output_bytes": 208896,
+    "pass_stream_bytes": 200540160,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 184.67964583333313,
+   "label": "mlp.gate_up/na3/g2/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 976.1440833333332,
+    "2": 878.9626666666667,
+    "3": 852.442125,
+    "4": 835.2135520833334
+   },
+   "slope_ci95": [
+    785.5778201041664,
+    810.3498333333331
+   ],
+   "slope_sd": 7.2195948847293705,
+   "slope_us": 789.3531416666667
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 267386880,
+    "activation_unique_bytes": 30720,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 6,
+    "n": 34816,
+    "na": 3,
+    "output_bytes": 208896,
+    "pass_stream_bytes": 200540160,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 210.46962499999978,
+   "label": "mlp.gate_up/na3/g2/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 988.232625,
+    "2": 875.7925416666667,
+    "3": 841.6857638888888,
+    "4": 826.7777708333333
+   },
+   "slope_ci95": [
+    771.5952356249999,
+    774.2098833333332
+   ],
+   "slope_sd": 0.6559366435839973,
+   "slope_us": 773.0107583333332
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 267386880,
+    "activation_unique_bytes": 30720,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 9,
+    "n": 34816,
+    "na": 3,
+    "output_bytes": 208896,
+    "pass_stream_bytes": 300810240,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 16,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 178257920,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2
+   ],
+   "intercept_us": 189.1075833333325,
+   "label": "mlp.gate_up/na3/g3/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1344.9548333333332,
+    "2": 1250.4010416666667,
+    "3": 1384.4340277777776,
+    "4": 1369.6727395833332
+   },
+   "slope_ci95": [
+    1146.8142916666668,
+    1166.0156250000002
+   ],
+   "slope_sd": 4.993495314113455,
+   "slope_us": 1155.8472500000005
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 267386880,
+    "activation_unique_bytes": 30720,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 9,
+    "n": 34816,
+    "na": 3,
+    "output_bytes": 208896,
+    "pass_stream_bytes": 300810240,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 16,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 178257920,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 187.89845833333328,
+   "label": "mlp.gate_up/na3/g3/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1343.500041666667,
+    "2": 1244.0668333333333,
+    "3": 1216.214138888889,
+    "4": 1199.8342083333334
+   },
+   "slope_ci95": [
+    1148.9148264583325,
+    1156.0996708333332
+   ],
+   "slope_sd": 1.8297298507100581,
+   "slope_us": 1152.8019124999998
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 356515840,
+    "activation_unique_bytes": 40960,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 4,
+    "n": 34816,
+    "na": 4,
+    "output_bytes": 278528,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 184.2265208333338,
+   "label": "mlp.gate_up/na4/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 669.229125,
+    "2": 561.4114583333334,
+    "3": 523.5451388888889,
+    "4": 523.20703125
+   },
+   "slope_ci95": [
+    454.1050416666669,
+    492.7880208333329
+   ],
+   "slope_sd": 11.099325070654809,
+   "slope_us": 471.8609499999998
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 356515840,
+    "activation_unique_bytes": 40960,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 4,
+    "n": 34816,
+    "na": 4,
+    "output_bytes": 278528,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 181.01387499999956,
+   "label": "mlp.gate_up/na4/g1/cold",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 664.267375,
+    "2": 557.7812291666667,
+    "3": 521.3582222222223,
+    "4": 520.5173645833333
+   },
+   "slope_ci95": [
+    461.49907260416643,
+    490.6366674999999
+   ],
+   "slope_sd": 7.5265141263198565,
+   "slope_us": 470.1918458333334
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 356515840,
+    "activation_unique_bytes": 40960,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 4,
+    "n": 34816,
+    "na": 4,
+    "output_bytes": 278528,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 196.05466666666734,
+   "label": "mlp.gate_up/na4/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 657.3454583333333,
+    "2": 553.5216875,
+    "3": 524.2048611111111,
+    "4": 507.4062395833333
+   },
+   "slope_ci95": [
+    453.0301999999999,
+    462.3193124999996
+   ],
+   "slope_sd": 2.376377491095642,
+   "slope_us": 458.2409708333331
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 356515840,
+    "activation_unique_bytes": 40960,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 4,
+    "n": 34816,
+    "na": 4,
+    "output_bytes": 278528,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 193.38543750000008,
+   "label": "mlp.gate_up/na4/g1/hot",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 652.6684166666668,
+    "2": 558.967,
+    "3": 525.2812638888889,
+    "4": 509.1249895833333
+   },
+   "slope_ci95": [
+    454.33089583333316,
+    465.6919451041667
+   ],
+   "slope_sd": 2.9521386669139504,
+   "slope_us": 460.9404416666664
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 356515840,
+    "activation_unique_bytes": 40960,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 8,
+    "n": 34816,
+    "na": 4,
+    "output_bytes": 278528,
+    "pass_stream_bytes": 200540160,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2
+   ],
+   "intercept_us": 159.5435000000004,
+   "label": "mlp.gate_up/na4/g2/cold",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1063.019125,
+    "2": 983.2473749999999,
+    "3": 1071.8205833333334,
+    "4": 1030.84375
+   },
+   "slope_ci95": [
+    880.6995416666668,
+    906.21525
+   ],
+   "slope_sd": 7.630742104657394,
+   "slope_us": 903.4756249999999
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 356515840,
+    "activation_unique_bytes": 40960,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 8,
+    "n": 34816,
+    "na": 4,
+    "output_bytes": 278528,
+    "pass_stream_bytes": 200540160,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 198.08158333333336,
+   "label": "mlp.gate_up/na4/g2/hot",
+   "phase": "s4/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1085.9114583333333,
+    "2": 984.0390625,
+    "3": 950.7320555555556,
+    "4": 935.9344687500001
+   },
+   "slope_ci95": [
+    882.6840374999995,
+    888.9130166666663
+   ],
+   "slope_sd": 1.6804163803866479,
+   "slope_us": 885.7597291666666
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 5,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 95.74906250000012,
+   "label": "mlp.gate_up/na5/g1/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 735.1179999999999,
+    "2": 637.4192708333334,
+    "3": 652.4074027777777,
+    "4": 638.3941041666667
+   },
+   "slope_ci95": [
+    521.0087500000001,
+    633.751908333333
+   ],
+   "slope_sd": 29.410364527239516,
+   "slope_us": 613.7758916666666
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 5,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 99.74836574074072,
+   "label": "mlp.gate_up/na5/g1/cold",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 733.9784074074074,
+    "2": 635.96875,
+    "3": 651.7551944444443,
+    "4": 635.0993958333333
+   },
+   "slope_ci95": [
+    510.6428240740743,
+    614.7341563541665
+   ],
+   "slope_sd": 40.78485055032302,
+   "slope_us": 610.258561111111
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 5,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 202.7718078703706,
+   "label": "mlp.gate_up/na5/g1/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 731.0200370370371,
+    "2": 632.2396041666667,
+    "3": 599.9340277777777,
+    "4": 580.2439166666667
+   },
+   "slope_ci95": [
+    524.4995416666665,
+    534.7596999999996
+   ],
+   "slope_sd": 2.8042550626276777,
+   "slope_us": 530.5189763888887
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 5,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 212.35160416666704,
+   "label": "mlp.gate_up/na5/g1/hot",
+   "phase": "s3/ipg",
+   "robust_us_per_unit_by_chain": {
+    "1": 736.361125,
+    "2": 637.2925416666667,
+    "3": 595.8952499999999,
+    "4": 580.65103125
+   },
+   "slope_ci95": [
+    524.7640333333333,
+    529.3537749999998
+   ],
+   "slope_sd": 1.1614618664785872,
+   "slope_us": 527.1829666666663
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 10,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 200540160,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 16,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 178257920,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2
+   ],
+   "intercept_us": 211.4323333333336,
+   "label": "mlp.gate_up/na5/g2/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1243.6892500000001,
+    "2": 1137.9730833333333,
+    "3": 1556.5491944444445,
+    "4": 1515.7513020833333
+   },
+   "slope_ci95": [
+    1023.9461249999996,
+    1035.97575
+   ],
+   "slope_sd": 2.9368828952363346,
+   "slope_us": 1032.2569166666665
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 2,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 10,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 200540160,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 16,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 178257920,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 196.3714999999993,
+   "label": "mlp.gate_up/na5/g2/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1237.262125,
+    "2": 1136.6996458333333,
+    "3": 1103.6620277777777,
+    "4": 1088.7951354166667
+   },
+   "slope_ci95": [
+    1036.8250208333327,
+    1040.3694541666662
+   ],
+   "slope_sd": 1.0386038913288391,
+   "slope_us": 1039.1342041666664
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "mlp.gate_up",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 15,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 300810240,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 16,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 178257920,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2
+   ],
+   "intercept_us": 170.47733333333227,
+   "label": "mlp.gate_up/na5/g3/cold",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1740.6822499999998,
+    "2": 1655.4435833333334,
+    "3": 2519.6782222222223,
+    "4": 2173.5711875
+   },
+   "slope_ci95": [
+    1563.9774583333342,
+    1573.7066250000005
+   ],
+   "slope_sd": 2.450875936350572,
+   "slope_us": 1570.204916666667
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "mlp.gate_up",
+    "cold": false,
+    "dispatches": 1,
+    "groups": 3,
+    "invocations_per_round": 64,
+    "k": 5120,
+    "m": 15,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 300810240,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 16,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 178257920,
+    "xsums_unique_bytes": 20480
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 176.70312500000037,
+   "label": "mlp.gate_up/na5/g3/hot",
+   "phase": "s3/groups",
+   "robust_us_per_unit_by_chain": {
+    "1": 1736.5294999999999,
+    "2": 1652.7725625,
+    "3": 1621.6261666666667,
+    "4": 1606.2994687500002
+   },
+   "slope_ci95": [
+    1557.6579791666659,
+    1565.8821374999995
+   ],
+   "slope_sd": 2.0221695150035477,
+   "slope_us": 1562.5338499999993
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 210944000,
+    "activation_unique_bytes": 51200,
+    "cell": "next.n16480",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 5120,
+    "m": 5,
+    "n": 16480,
+    "na": 5,
+    "output_bytes": 164800,
+    "pass_stream_bytes": 47462400,
+    "replica_set_bytes": 237312000,
+    "replicas": 5,
+    "scale_bias_bytes": 5273600,
+    "stream_bytes": 47462400,
+    "stride": 8,
+    "threadgroups_per_pass": 2060,
+    "weight_bytes": 42188800,
+    "xsums_read_bytes": 42188800,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 137.75693750000025,
+   "label": "next.n16480/na5/g1/cold",
+   "phase": "s3/next",
+   "robust_us_per_unit_by_chain": {
+    "1": 403.57987499999996,
+    "2": 369.578125,
+    "3": 335.4924861111111,
+    "4": 317.70053125
+   },
+   "slope_ci95": [
+    282.56528749999984,
+    290.11665416666654
+   ],
+   "slope_sd": 1.9301938489386372,
+   "slope_us": 286.8987958333332
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 314572800,
+    "activation_unique_bytes": 51200,
+    "cell": "next.n24576",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 5120,
+    "m": 5,
+    "n": 24576,
+    "na": 5,
+    "output_bytes": 245760,
+    "pass_stream_bytes": 70778880,
+    "replica_set_bytes": 212336640,
+    "replicas": 3,
+    "scale_bias_bytes": 7864320,
+    "stream_bytes": 70778880,
+    "stride": 8,
+    "threadgroups_per_pass": 3072,
+    "weight_bytes": 62914560,
+    "xsums_read_bytes": 62914560,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3
+   ],
+   "intercept_us": 110.7685000000002,
+   "label": "next.n24576/na5/g1/cold",
+   "phase": "s3/next",
+   "robust_us_per_unit_by_chain": {
+    "1": 523.2239583333334,
+    "2": 482.2934166666667,
+    "3": 454.1961944444445,
+    "4": 479.6462604166666
+   },
+   "slope_ci95": [
+    411.66841666666676,
+    424.89325000000014
+   ],
+   "slope_sd": 3.268994401700314,
+   "slope_us": 419.6823125000001
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 445644800,
+    "activation_unique_bytes": 51200,
+    "cell": "next.n34816",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 5120,
+    "m": 5,
+    "n": 34816,
+    "na": 5,
+    "output_bytes": 348160,
+    "pass_stream_bytes": 100270080,
+    "replica_set_bytes": 300810240,
+    "replicas": 3,
+    "scale_bias_bytes": 11141120,
+    "stream_bytes": 100270080,
+    "stride": 8,
+    "threadgroups_per_pass": 4352,
+    "weight_bytes": 89128960,
+    "xsums_read_bytes": 89128960,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2
+   ],
+   "intercept_us": 192.16316666666643,
+   "label": "next.n34816/na5/g1/cold",
+   "phase": "s3/next",
+   "robust_us_per_unit_by_chain": {
+    "1": 731.9097083333332,
+    "2": 635.828125,
+    "3": 655.4947916666666,
+    "4": 661.8498333333333
+   },
+   "slope_ci95": [
+    522.9479583333334,
+    622.7998458333332
+   ],
+   "slope_sd": 38.8534719783351,
+   "slope_us": 539.7465416666668
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 52428800,
+    "activation_unique_bytes": 51200,
+    "cell": "next.n4096",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 5120,
+    "m": 5,
+    "n": 4096,
+    "na": 5,
+    "output_bytes": 40960,
+    "pass_stream_bytes": 11796480,
+    "replica_set_bytes": 212336640,
+    "replicas": 18,
+    "scale_bias_bytes": 1310720,
+    "stream_bytes": 11796480,
+    "stride": 8,
+    "threadgroups_per_pass": 512,
+    "weight_bytes": 10485760,
+    "xsums_read_bytes": 10485760,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "intercept_us": 134.36547916666657,
+   "label": "next.n4096/na5/g1/cold",
+   "phase": "s3/next",
+   "robust_us_per_unit_by_chain": {
+    "1": 221.316,
+    "2": 157.19529166666666,
+    "3": 134.44906944444443,
+    "4": 122.07290625
+   },
+   "slope_ci95": [
+    88.89946249999997,
+    125.7657958333333
+   ],
+   "slope_sd": 10.464954168081698,
+   "slope_us": 88.98834999999998
+  },
+  {
+   "blocks": 6,
+   "chains_offered": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "fields": {
+    "activation_read_bytes": 104857600,
+    "activation_unique_bytes": 51200,
+    "cell": "next.n8192",
+    "cold": true,
+    "dispatches": 1,
+    "groups": 1,
+    "invocations_per_round": 0,
+    "k": 5120,
+    "m": 5,
+    "n": 8192,
+    "na": 5,
+    "output_bytes": 81920,
+    "pass_stream_bytes": 23592960,
+    "replica_set_bytes": 212336640,
+    "replicas": 9,
+    "scale_bias_bytes": 2621440,
+    "stream_bytes": 23592960,
+    "stride": 8,
+    "threadgroups_per_pass": 1024,
+    "weight_bytes": 20971520,
+    "xsums_read_bytes": 20971520,
+    "xsums_unique_bytes": 10240
+   },
+   "fitted_chains": [
+    1,
+    2,
+    3
+   ],
+   "intercept_us": 130.42765277777778,
+   "label": "next.n8192/na5/g1/cold",
+   "phase": "s3/next",
+   "robust_us_per_unit_by_chain": {
+    "1": 282.2569166666667,
+    "2": 215.98177083333334,
+    "3": 194.95137499999998,
+    "4": 200.84201041666665
+   },
+   "slope_ci95": [
+    149.7951250000001,
+    183.97076468749992
+   ],
+   "slope_sd": 13.799223966092809,
+   "slope_us": 151.29860416666668
+  }
+ ],
+ "whole_leg_or_ranked_number": false
+}
