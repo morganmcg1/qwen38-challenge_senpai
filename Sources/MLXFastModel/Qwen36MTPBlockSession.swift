@@ -1790,7 +1790,15 @@ public final class Qwen36MTPBlockSession {
         var chainStart = 1
         var chainTake = 0
         var chainOver = 0
+        // The arm THIS round experienced. `pf_chain` records the gate the
+        // round's own tail resolved, which is the arm the NEXT round will
+        // experience, so an alternating session cannot be attributed by it:
+        // a round's time depends on whether the PREVIOUS round prefetched.
+        // Deriving that from the previous trace line would also miss the
+        // rounds whose prefetch was handed back by `undoHeadPrefetch`.
+        var chainAvailable = false
         if usedPrefetch, let chain = pendingHeadChain {
+            chainAvailable = true
             pendingHeadChain = nil
             let take = Swift.min(chain.draftIds.count, draftCount - 1)
             if take > 0 {
@@ -2118,6 +2126,7 @@ public final class Qwen36MTPBlockSession {
                 // mispredicted width is visible per round rather than only in
                 // the totals.
                 + "pf_chain=\(Self.chainPrefetchEnabled(round: roundCount) ? 1 : 0) "
+                + "pf_chain_in=\(chainAvailable ? 1 : 0) "
                 + "pf_chain_pred=\(prefetchChainPredicted) "
                 + "pf_chain_take=\(chainTake) "
                 + "pf_chain_over=\(chainOver) "

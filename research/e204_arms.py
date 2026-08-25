@@ -285,11 +285,22 @@ def cmd_alt(args: argparse.Namespace) -> int:
         print("no rounds")
         return 2
 
+    # ATTRIBUTION. A round is attributed to the arm IT EXPERIENCED, which is
+    # `pf_chain_in` — whether a prefetched chain was waiting for it. It is NOT
+    # `pf_chain`, which records the gate this round's own tail resolved and so
+    # describes the NEXT round. Attributing by `pf_chain` would shift every
+    # measurement one round and smear the two arms into each other at every
+    # window boundary.
+    rounds = [r for r in rounds if "pf_chain_in" in r]
+    if not rounds:
+        print("trace has no pf_chain_in witness; rebuild before measuring")
+        return 2
+    on_rounds = [r for r in rounds if r["pf_chain_in"] == "1"]
+    off_rounds = [r for r in rounds if r["pf_chain_in"] == "0"]
+
     # RULE 394. The decision statistic is the round's own wall-clock endpoint.
-    on_us = [float(r["round_us"]) for r in rounds if r.get("pf_chain") == "1"]
-    off_us = [float(r["round_us"]) for r in rounds if r.get("pf_chain") == "0"]
-    on = summarise(on_us)
-    off = summarise(off_us)
+    on = summarise([float(r["round_us"]) for r in on_rounds])
+    off = summarise([float(r["round_us"]) for r in off_rounds])
 
     delta = None
     sigma = None
@@ -300,13 +311,27 @@ def cmd_alt(args: argparse.Namespace) -> int:
             on["stdev"] ** 2 / on["n"] + off["stdev"] ** 2 / off["n"])
 
     # Attribution only, never the decision (RULE 394).
-    def phase(name: str, key: str) -> dict:
+    def phase(name: str) -> dict:
         return {
-            "on": summarise([float(r[name]) for r in rounds
-                             if r.get("pf_chain") == "1" and name in r]),
-            "off": summarise([float(r[name]) for r in rounds
-                              if r.get("pf_chain") == "0" and name in r]),
+            "on": summarise([float(r[name]) for r in on_rounds if name in r]),
+            "off": summarise([float(r[name]) for r in off_rounds if name in r]),
         }
+
+    # BALANCE CHECK. The arms must see the same mix of round difficulty. The
+    # emitted tokens are arm-independent, so the (d, acc) sequence is fixed by
+    # the prompt; an alternating window could still land unevenly on it, and a
+    # difference in mix would confound the round-time comparison.
+    def mix(rows: list[dict]) -> dict:
+        hist: dict[str, int] = {}
+        for r in rows:
+            key = "%s/%s" % (r["acc"], r["d"])
+            hist[key] = hist.get(key, 0) + 1
+        return hist
+
+    def full_accept_share(rows: list[dict]) -> float:
+        if not rows:
+            return 0.0
+        return sum(1 for r in rows if r["acc"] == r["d"]) / len(rows)
 
     report = {
         "experiment": "e204-round-end-seam-overlap",
@@ -326,16 +351,19 @@ def cmd_alt(args: argparse.Namespace) -> int:
         "delta_sigma_ratio": (delta / sigma) if delta and sigma else None,
         "promote_threshold_us": 200.0,
         "attribution_only": {
-            name: phase(name, name)
+            name: phase(name)
             for name in ("d_chain_us", "eval_wall_us", "commit_us",
-                         "upkeep_us", "draft_build_us")
+                         "upkeep_us", "draft_build_us", "verify_build_us",
+                         "host_thread_cpu_ns")
         },
-        "accept_ledger_on": [
-            (int(r["d"]), int(r["acc"])) for r in rounds
-            if r.get("pf_chain") == "1"],
-        "accept_ledger_off": [
-            (int(r["d"]), int(r["acc"])) for r in rounds
-            if r.get("pf_chain") == "0"],
+        "round_mix_on": mix(on_rounds),
+        "round_mix_off": mix(off_rounds),
+        "full_accept_share_on": full_accept_share(on_rounds),
+        "full_accept_share_off": full_accept_share(off_rounds),
+        "chain_steps_used": max(
+            (int(r.get("pf_chain_used", 0)) for r in rounds), default=0),
+        "chain_steps_overshoot": max(
+            (int(r.get("pf_chain_overs", 0)) for r in rounds), default=0),
     }
     if delta is not None and sigma:
         report["promote"] = delta >= 200.0 and delta - 2.0 * sigma > 0.0
@@ -350,9 +378,16 @@ def cmd_alt(args: argparse.Namespace) -> int:
               "promote at >= 200 us with 2 sigma clear of zero: %s"
               % (delta, sigma, (delta / sigma) if sigma else float("nan"),
                  report.get("promote")))
-    print("  attribution only: d_chain_us on %.1f / off %.1f"
-          % (report["attribution_only"]["d_chain_us"]["on"].get("mean", 0.0),
-             report["attribution_only"]["d_chain_us"]["off"].get("mean", 0.0)))
+    print("  balance: full-accept share on %.3f / off %.3f"
+          % (report["full_accept_share_on"], report["full_accept_share_off"]))
+    print("  chain steps used %d, overshoot %d"
+          % (report["chain_steps_used"], report["chain_steps_overshoot"]))
+    print("  -- attribution only, never the decision --")
+    for name, block in report["attribution_only"].items():
+        print("     %-20s on %12.1f  off %12.1f  delta %10.1f"
+              % (name, block["on"].get("mean", 0.0),
+                 block["off"].get("mean", 0.0),
+                 block["on"].get("mean", 0.0) - block["off"].get("mean", 0.0)))
 
     if args.json_path:
         Path(args.json_path).write_text(json.dumps(report, indent=2) + "\n")
