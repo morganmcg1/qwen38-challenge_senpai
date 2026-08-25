@@ -119,28 +119,57 @@ def law_summary(blob, key):
 
 def proof_summary(blob):
     proof = blob["receipt_proof"]
+    guarded = proof["guarded"]
+    env = blob["validated_envelope"]
     out = {
         "harness": "ranked", "law": "minimax-over-all-three",
         "worstDeltaPct": proof["worst_delta_pct"],
         "worstLooHonestDeltaPct": proof["worst_loo_honest_delta_pct"],
+        "worstSinglePromptDeltaPct": proof["worst_prompt_delta_pct"],
         "greedyTableAgreement": proof["greedy_agreement"],
         "greedyTableMismatches": proof["greedy_mismatches"],
         "worstCrossLawTransferOfPerLawTablePct":
             blob["cross_law"]["worst_transfer_delta_pct"],
         "worstRoundMassRelocated":
             proof["anchor_distance"]["worst_round_mass_relocated"],
+        "guardedWorstDeltaPct": guarded["worst_delta_pct"],
+        "guardedWorstLooHonestDeltaPct":
+            guarded["worst_loo_honest_delta_pct"],
+        "guardedWorstSinglePromptDeltaPct":
+            guarded["worst_prompt_delta_pct"],
+        "guardedGreedyTableAgreement": guarded["greedy_agreement"],
+        "validatedEnvelopeBar": env["validated_bar"],
     }
     for d, value in enumerate(proof["price_marginal"]):
         out["proofPrice/row%d" % d] = value
         out["proofThreshold/row%d" % d] = proof["thresholds"][d]
+        out["guardedPrice/row%d" % d] = guarded["price_marginal"][d]
+        out["guardedThreshold/row%d" % d] = guarded["thresholds"][d]
     for key in LAW_KEYS:
         out["paidUnder/%s/publishedMedian" % key] = \
             proof["per_law"][key]["published_median"]
         out["paidUnder/%s/deltaPct" % key] = proof["per_law"][key]["delta_pct"]
         out["paidUnder/%s/looHonestDeltaPct" % key] = \
             proof["loo_honest"][key]["delta_pct"]
+        out["paidUnder/%s/worstPromptDeltaPct" % key] = \
+            proof["per_law"][key]["worst_prompt_delta_pct"]
+        out["guardedPaidUnder/%s/publishedMedian" % key] = \
+            guarded["per_law"][key]["published_median"]
+        out["guardedPaidUnder/%s/deltaPct" % key] = \
+            guarded["per_law"][key]["delta_pct"]
+        out["guardedPaidUnder/%s/looHonestDeltaPct" % key] = \
+            guarded["loo_honest"][key]["delta_pct"]
+        out["guardedPaidUnder/%s/worstPromptDeltaPct" % key] = \
+            guarded["per_law"][key]["worst_prompt_delta_pct"]
     for name, value in proof["edl"].items():
         out["prompt/%s/proofEdl" % name] = value
+    for name, arm in env["arms"].items():
+        out["envelope/%s/relocationVsCap7" % name] = arm["relocation_vs_cap7"]
+        out["envelope/%s/envelopeRatio" % name] = arm["envelope_ratio"]
+        out["envelope/%s/insideValidatedEnvelope" % name] = \
+            arm["inside_validated_envelope"]
+    for name, value in env["validated_relocation"].items():
+        out["envelope/validated/%s" % name] = value
     return out
 
 

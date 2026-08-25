@@ -199,6 +199,29 @@ E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
      paid under step_e208      3.843387   +1.745% in-sample    +1.829% LOO-honest
      worst reading +1.678% in-sample, +1.249% LOO-honest
      worst-prompt round mass relocated 0.926
+     WORST SINGLE PROMPT -5.151% (plutarch under smooth). The published median does not
+     see a prompt that loses, but the hidden pool is not the proxy pool.
+
+  NO-REGRESSION GUARDED MINIMAX TABLE (no prompt may fall below its shipped raw)
+     d           0       1       2       3       4       5       6       7
+     price   0.180   0.032   0.032   0.105   0.176   0.153   0.134   0.145
+     Q_(d+1)0.1800  0.1800  0.3367  0.6728  0.8723  0.8723  0.8723  0.9105
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+     paid under smooth         3.892111   +1.638% in-sample    +1.805% LOO-honest   worst prompt  +0.015%
+     paid under step           3.741678   +1.638% in-sample    +1.321% LOO-honest   worst prompt  +0.015%
+     paid under step_e208      3.839823   +1.651% in-sample    +1.716% LOO-honest   worst prompt  +0.015%
+     worst reading +1.638% in-sample, +1.321% LOO-honest; worst single prompt +0.015%
+
+  VALIDATED EXTRAPOLATION ENVELOPE (round mass moved away from the PAID cap-7 anchor)
+   the instrument was checked against a paid receipt at caps 4 and 5 only, so
+   their relocation is the largest the instrument is known to survive.
+     cap4             0.890  <- validated
+     cap5             0.757  <- validated
+     cap8             0.547
+     validated bar    0.890
+     free_step_e208   0.940   1.06x the bar   OUTSIDE the validated envelope
+     minimax          0.926   1.04x the bar   OUTSIDE the validated envelope
+     minimax_guarded  0.752   0.85x the bar   inside
 ==============================================================================
   DECISION
    law           in-sample   LOO-honest   level-only    structure
@@ -209,4 +232,5 @@ E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
    ASSIGNED RULE: IMPLEMENT under every law. Weakest law step_e208 at +2.312% LOO-honest.
    STRUCTURE READING: the step-aware SHAPE is worth +2.544% LOO-honest over a refitted level control.
    TRANSFER: worst cross-law transfer of a per-law fitted table is -1.271%. A table fitted under a guessed reading can lose.
-   RECOMMENDED TABLE: the receipt-proof minimax table, +1.678% under its WORST reading (+1.249% LOO-honest). It needs no branch and does not wait for the receipt.
+   RECOMMENDED TABLE: the no-regression guarded minimax table, +1.638% under its WORST reading (+1.321% LOO-honest) with no prompt below +0.015%. The unguarded minimax table pays +1.678% but costs one prompt -5.151%, and the hidden pool is not the proxy pool.
+   ENVELOPE: free_step_e208, minimax sit outside the paid cap-4/cap-5 extrapolation envelope (bar 0.890). The predicted gain is a desk prediction that a paid receipt has not yet covered; an implementation must measure it.
