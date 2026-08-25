@@ -1593,9 +1593,9 @@ let qwen35E120QMVHeader = """
 /// pattern. A column-major `[row][column]` tile would give every lane a
 /// 64-byte stride and serialize on two banks.
 let qwen35E217StagedHeader = """
-    template <int NA_ACC, int NA, bool USE_TABLE>
+    template <int NA_ACC, int NA, bool USE_TABLE, typename TW>
     inline void qwen_e217_consume_block(
-        const threadgroup float* tile,
+        const threadgroup TW* tile,
         const device bfloat16_t* scales,
         const device bfloat16_t* biases,
         const device bfloat16_t* x,
@@ -1653,9 +1653,9 @@ let qwen35E217StagedHeader = """
                 }
             }
             for (int r = 0; r < rows_per_simd; r++) {
-                const vec<float, 4> wq =
-                    *reinterpret_cast<const threadgroup vec<float, 4>*>(
-                        tile + ((r * 4 + i) * 32 + int(simd_lid)) * 4);
+                const vec<float, 4> wq = static_cast<vec<float, 4>>(
+                    *reinterpret_cast<const threadgroup vec<TW, 4>*>(
+                        tile + ((r * 4 + i) * 32 + int(simd_lid)) * 4));
                 partial[r] += (a0 * wq[0] + a1 * wq[1] + a2 * wq[2] +
                                a3 * wq[3]);
             }
@@ -1668,7 +1668,7 @@ let qwen35E217StagedHeader = """
         }
     }
 
-    template <int M, int IPG, bool USE_TABLE>
+    template <int M, int IPG, bool USE_TABLE, typename TW>
     inline void qwen_e217_qmv_staged(
         const device uint32_t* w,
         const device bfloat16_t* scales,
@@ -1676,7 +1676,7 @@ let qwen35E217StagedHeader = """
         const device bfloat16_t* x,
         const device float* xsums,
         device bfloat16_t* y,
-        threadgroup float* tile,
+        threadgroup TW* tile,
         const int in_vec_size,
         const int out_vec_size,
         const int sums_stride,
@@ -1711,21 +1711,22 @@ let qwen35E217StagedHeader = """
                         simd_lid * bytes_per_lane);
                 for (int i = 0; i < 4; i++) {
                     const uint16_t pw = ws[i];
-                    threadgroup float* dst =
-                        tile + ((r * 4 + i) * 32 + int(simd_lid)) * 4;
-                    dst[0] = static_cast<float>(pw & 0x000f);
-                    dst[1] = static_cast<float>((pw >> 4) & 0x000f);
-                    dst[2] = static_cast<float>((pw >> 8) & 0x000f);
-                    dst[3] = static_cast<float>((pw >> 12) & 0x000f);
+                    *reinterpret_cast<threadgroup vec<TW, 4>*>(
+                        tile + ((r * 4 + i) * 32 + int(simd_lid)) * 4) =
+                        vec<TW, 4>(
+                            static_cast<TW>(pw & 0x000f),
+                            static_cast<TW>((pw >> 4) & 0x000f),
+                            static_cast<TW>((pw >> 8) & 0x000f),
+                            static_cast<TW>((pw >> 12) & 0x000f));
                 }
             }
             threadgroup_barrier(mem_flags::mem_threadgroup);
             if (sgid == 0) {
-                qwen_e217_consume_block<IPG, IPG, USE_TABLE>(
+                qwen_e217_consume_block<IPG, IPG, USE_TABLE, TW>(
                     tile, scales, biases, x, xsums, in_vec_size, sums_stride,
                     first_m, out_row, k, simd_lid, acc);
             } else {
-                qwen_e217_consume_block<IPG, TAIL, USE_TABLE>(
+                qwen_e217_consume_block<IPG, TAIL, USE_TABLE, TW>(
                     tile, scales, biases, x, xsums, in_vec_size, sums_stride,
                     first_m, out_row, k, simd_lid, acc);
             }
@@ -2093,13 +2094,33 @@ public enum Qwen35QMVGroupMapping: String, Sendable, CaseIterable {
     case staged
 }
 
+/// The element type of the staged tile. Every nibble is an integer in
+/// `[0, 15]`, which all three types hold exactly, so the choice moves
+/// threadgroup bytes and the consumer's load form and nothing else: 8 KiB per
+/// threadgroup for `float`, 4 KiB for `half`, 2 KiB for `uchar`, against a
+/// pool that decides how many threadgroups stay resident.
+public enum Qwen35QMVStageType: String, Sendable, CaseIterable {
+    case float
+    case half
+    case uchar
+
+    var bytesPerTile: Int {
+        switch self {
+        case .float: return 8192
+        case .half: return 4096
+        case .uchar: return 2048
+        }
+    }
+}
+
 /// Geometry and width switch for the two E217 mappings. Only the `G == 2`
 /// staged pairs compile here: every other width keeps the shipped mapping, so
 /// routing one to this source would launch a second column group that owns no
 /// token and, under `staged`, would still be required to produce its half of
 /// the tile.
 func qwen35E217QMVSource(
-    table: Bool, mapping: Qwen35QMVGroupMapping
+    table: Bool, mapping: Qwen35QMVGroupMapping,
+    stage: Qwen35QMVStageType = .float
 ) -> String {
     precondition(mapping != .split, "the shipped mapping has its own source")
     let sums = table ? "xsums" : "qmv_null_sums"
@@ -2120,7 +2141,8 @@ func qwen35E217QMVSource(
                 """
                 : """
                         case \(m):
-                            qwen_e217_qmv_staged<\(m), \(ipg), \(flag)>(
+                            qwen_e217_qmv_staged<\(m), \(ipg), \(flag),
+                                \(stage.rawValue)>(
                                 w, scales, biases, x, \(sums), y, qmv_tile,
                                 qmv_k, qmv_n, qmv_stride,
                                 qmv_out_row, qmv_sgid, qmv_lid);
@@ -2132,7 +2154,7 @@ func qwen35E217QMVSource(
     let mappingDecl =
         mapping == .coop
         ? "\n        const int qmv_gx = int(qmv_sgid);"
-        : "\n        threadgroup float qmv_tile[2048];"
+        : "\n        threadgroup \(stage.rawValue) qmv_tile[2048];"
     return """
             const int qmv_m = x_shape[x_ndim - 2];
             const int qmv_k = x_shape[x_ndim - 1];
@@ -2169,18 +2191,22 @@ private let qwen35CachedAffine4QMVTableKernelCoop = Qwen35CachedKernel(
 )
 
 private let qwen35CachedAffine4QMVKernelStaged = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_staged",
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_staged_"
+        + Qwen35CustomQMV.stageType.rawValue,
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
-    source: qwen35E217QMVSource(table: false, mapping: .staged),
+    source: qwen35E217QMVSource(
+        table: false, mapping: .staged, stage: Qwen35CustomQMV.stageType),
     header: qwen35E217Header
 )
 
 private let qwen35CachedAffine4QMVTableKernelStaged = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_staged",
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_staged_"
+        + Qwen35CustomQMV.stageType.rawValue,
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
-    source: qwen35E217QMVSource(table: true, mapping: .staged),
+    source: qwen35E217QMVSource(
+        table: true, mapping: .staged, stage: Qwen35CustomQMV.stageType),
     header: qwen35E217Header
 )
 
@@ -2216,19 +2242,23 @@ private let qwen35CustomAffine4QMVTableKernelCoop = MLXFast.metalKernel(
 )
 
 private let qwen35CustomAffine4QMVKernelStaged = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_staged",
+    name: "qwen35_custom_affine4_g64_qmv_wide_v1_staged_"
+        + Qwen35CustomQMV.stageType.rawValue,
     inputNames: ["w", "scales", "biases", "x"],
     outputNames: ["y"],
-    source: qwen35E217QMVSource(table: false, mapping: .staged),
+    source: qwen35E217QMVSource(
+        table: false, mapping: .staged, stage: Qwen35CustomQMV.stageType),
     header: qwen35E217Header,
     ensureRowContiguous: true
 )
 
 private let qwen35CustomAffine4QMVTableKernelStaged = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_staged",
+    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_staged_"
+        + Qwen35CustomQMV.stageType.rawValue,
     inputNames: ["w", "scales", "biases", "x", "xsums"],
     outputNames: ["y"],
-    source: qwen35E217QMVSource(table: true, mapping: .staged),
+    source: qwen35E217QMVSource(
+        table: true, mapping: .staged, stage: Qwen35CustomQMV.stageType),
     header: qwen35E217Header,
     ensureRowContiguous: true
 )
@@ -2401,6 +2431,16 @@ public enum Qwen35CustomQMV {
         let raw = ProcessInfo.processInfo.environment["MLX_E217_QMV_MAP"]
         guard let raw, !raw.isEmpty else { return .split }
         return Qwen35QMVGroupMapping(rawValue: raw) ?? .split
+    }()
+
+    /// The staged tile's element type, read once at process start beside
+    /// `groupMapping`. It only matters under `staged`; the register census
+    /// picks one value before any timing, because the tile competes with the
+    /// threadgroup pool that decides residency.
+    public static let stageType: Qwen35QMVStageType = {
+        let raw = ProcessInfo.processInfo.environment["MLX_E217_QMV_TILE"]
+        guard let raw, !raw.isEmpty else { return .float }
+        return Qwen35QMVStageType(rawValue: raw) ?? .float
     }()
 
     /// The mapping one launch will use, and the witness counter for it. Only a
