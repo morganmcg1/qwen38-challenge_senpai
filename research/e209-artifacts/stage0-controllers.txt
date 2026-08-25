@@ -1,0 +1,93 @@
+E209 stage 0: online depth controllers (harness=local, cap 7, 400 draws)
+corpus E168 p7; whole-leg replay to exactly 512 tokens; paired round orders
+
+HINDSIGHT CEILING re-measured under this leg runner (prose median):
+  best fixed depth per prompt : +3.206%   (FINDING 540 rate-based: +2.589%)
+  variance-only (shipped level): +3.206%   (FINDING 540 rate-based: +2.460%)
+
+controller     prose med prose min prose max     bench    ms/rd   switch    frac
+A1-ema-W16        -2.241    -2.965    -1.441    -0.348   -1.665     10.3   -0.70
+A1-ema-W32        -2.029    -3.133    -0.311    -0.168   -1.404     18.4   -0.63
+A1-ema-W64        -2.209    -2.855    -0.828    -0.049   -1.602     34.9   -0.69
+A2-mode-W16       +2.180    +1.112    +3.044    -1.356   +1.676      9.7    0.68
+A2-mode-W32       +1.437    +0.605    +2.435    -0.168   +1.186     17.9    0.45
+A2-mode-W64       +1.198    +0.714    +2.029    -0.049   +0.891     34.5    0.37
+OWN-mean-W16      +2.307    +1.659    +3.660    -5.759   +1.728     10.0    0.72
+OWN-mean-W32      +2.305    +1.887    +3.598    -2.560   +1.738     18.1    0.72
+OWN-mean-W64      +1.996    +1.462    +3.419    -0.144   +1.550     34.7    0.62
+B-h4              -1.775    -2.815    -0.163    -0.671   -1.232     18.8   -0.55
+B-h8              -3.031    -4.357    -1.546    -0.191   -2.163      8.4   -0.95
+B-h16             -1.781    -2.995    -0.931    -0.207   -1.275      3.8   -0.56
+C-p0.005          -0.589    -1.558    +0.023    -0.707   -0.427     78.6   -0.18
+C-p0.02           -0.761    -2.007    +0.012    -1.027   -0.528     32.3   -0.24
+DIAG-p0.02        +2.500    +1.472    +3.962    +4.343   +1.872     13.5    0.78  DIAG
+
+shipped rule depth switches per leg (prose mean): 125.2
+
+BEST PROMOTION-ELIGIBLE: OWN-mean-W16  prose median +2.307%  prose min +1.659%
+  fraction of the hindsight ceiling captured: 0.72
+
+PER-PROMPT DELTAS for OWN-mean-W16
+  benchfixture      -5.759%  (sd over draws 2.634) (benchfixture, reported separately)
+  dramatic          +2.902%  (sd over draws 1.749)
+  english           +2.227%  (sd over draws 2.454)
+  medicine          +3.660%  (sd over draws 4.375)
+  narrative         +1.945%  (sd over draws 2.429)
+  natural_history   +3.359%  (sd over draws 5.922)
+  philosophy        +1.659%  (sd over draws 3.101)
+  technical         +2.258%  (sd over draws 1.360)
+  travel            +2.356%  (sd over draws 1.016)
+
+LEAVE-ONE-PROMPT-OUT (configuration chosen on 7 prose prompts, scored on the 8th)
+  hold out dramatic         pick OWN-mean-W16   ->  +2.902%
+  hold out english          pick OWN-mean-W16   ->  +2.227%
+  hold out medicine         pick OWN-mean-W16   ->  +3.660%
+  hold out narrative        pick OWN-mean-W32   ->  +1.995%
+  hold out natural_history  pick OWN-mean-W16   ->  +3.359%
+  hold out philosophy       pick OWN-mean-W32   ->  +1.968%
+  hold out technical        pick OWN-mean-W32   ->  +1.887%
+  hold out travel           pick OWN-mean-W32   ->  +2.182%
+  held-out median +2.204%   held-out min +1.887%
+
+CONSTANT-DEPTH NULL (is the value the LEVEL or the CONTROLLER?)
+  arm          prose med  prose min benchfixture
+  fixed-d0       -94.800   -100.256     -227.723
+  fixed-d1       -18.001    -21.494      -71.012
+  fixed-d2        +2.611     +0.909      -18.988
+  fixed-d3        +2.605     +1.022       -0.170
+  fixed-d4        -9.919    -12.895       +4.407
+  fixed-d5       -49.783    -55.093      -11.834
+  fixed-d6       -60.709    -67.565       -5.352
+  fixed-d7       -70.723    -78.374       +0.259
+  OWN-mean-W16      +2.307     +1.659       -5.759
+
+COST-TABLE SENSITIVITY for OWN-mean-W16 (prose median)
+  measured                    +2.307%  (prose min  +1.659%)
+  m5_at_cell_mean             +2.978%  (prose min  +2.235%)
+  m5_at_linear_continuation   +1.787%  (prose min  +1.160%)
+  m2_at_cell_mean             +2.366%  (prose min  +1.699%)
+  linear                      +0.857%  (prose min  +0.409%)
+  linear fit used: 47.410 + 7.873 * width ms
+  sign survives a curvature-free cost table: True
+
+WIDTH HISTOGRAMS (which cost cells are actually paid)
+  shipped                      m1:0.002 m2:0.054 m3:0.469 m4:0.353 m5:0.111 m6:0.011
+  OWN-mean-W16                 m1:0.001 m2:0.003 m3:0.191 m4:0.796 m5:0.009 m6:0.000
+  shipped_benchfixture         m1:0.001 m2:0.001 m3:0.004 m4:0.010 m5:0.028 m6:0.053 m7:0.067 m8:0.835
+  OWN-mean-W16_benchfixture    m1:0.001 m2:0.003 m3:0.005 m4:0.008 m5:0.022 m6:0.221 m7:0.664 m8:0.077
+
+SETTLE-WINDOW BIAS (is a shorter window better estimation, or an upward bias?)
+  W    prompt               prefix  whole leg     bias  locks
+  16   english               2.488      2.241   +0.247  d2:0.45 d3:0.55
+  16   medicine              2.772      2.574   +0.199  d2:0.15 d3:0.83 d4:0.02
+  16   benchfixture          5.838      6.649   -0.811  d5:0.22 d6:0.78
+  32   english               2.365      2.241   +0.125  d2:0.79 d3:0.21
+  32   medicine              2.696      2.574   +0.122  d2:0.24 d3:0.76
+  32   benchfixture          6.372      6.649   -0.277  d6:0.63 d7:0.37
+  64   english               2.300      2.241   +0.060  d2:0.91 d3:0.09
+  64   medicine              2.657      2.574   +0.083  d2:0.18 d3:0.82
+  64   benchfixture          6.657      6.649   +0.008  d6:0.07 d7:0.93
+
+BENCHFIXTURE SIGN vs PROSE SIGN: INVERTED
+
+PRE-REGISTERED DECISION: STAGE 1: promote to the candidate surface behind an arm

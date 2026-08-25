@@ -1,0 +1,952 @@
+{
+ "cap": 7,
+ "harness": "local",
+ "note": "desk replay of the assignment's worse-branch deliverable; explains a predicted sign, does not measure one",
+ "per_prompt": {
+  "benchfixture": {
+   "depth_divergence": {
+    "disagreement_rate": 0.9583333333333334,
+    "disagreements_in_first_20_rounds": 19,
+    "first_disagreement_round": 1,
+    "mean_signed_depth_gap": 2.763888888888889,
+    "rounds": 72,
+    "rounds_disagreeing": 69,
+    "signed_gap_histogram": {
+     "0": 3,
+     "1": 5,
+     "2": 4,
+     "3": 55,
+     "4": 4,
+     "5": 1
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": 0.1443993818164745,
+     "final": 0.9943993818164745,
+     "max": 0.999734888014725,
+     "mean": 0.9469685671718514,
+     "min": 0.6743411962537507,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 65
+    },
+    {
+     "delta_from_prior": 0.15313123009923013,
+     "final": 0.9861312300992301,
+     "max": 0.9996527552820319,
+     "mean": 0.9397826414535609,
+     "min": 0.7414117483375777,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 68
+    },
+    {
+     "delta_from_prior": 0.16310708408382935,
+     "final": 0.9794470840838293,
+     "max": 0.9997654742495782,
+     "mean": 0.9374643966070241,
+     "min": 0.6743495307129449,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 66
+    },
+    {
+     "delta_from_prior": 0.1766387296757298,
+     "final": 0.9766519296757297,
+     "max": 0.9998666929897329,
+     "mean": 0.9516565695958759,
+     "min": 0.7415431328323197,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 70
+    },
+    {
+     "delta_from_prior": 0.20689677832580278,
+     "final": 0.9909097143258027,
+     "max": 0.9997129267498494,
+     "mean": 0.9596922972679311,
+     "min": 0.8089109955999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 72
+    },
+    {
+     "delta_from_prior": 0.23113146734863899,
+     "final": 0.9994641446286389,
+     "max": 0.9994641446286389,
+     "mean": 0.9617743091203879,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 71
+    },
+    {
+     "delta_from_prior": 0.2467580542882034,
+     "final": 0.9997240780226033,
+     "max": 0.9997240780226033,
+     "mean": 0.9523893955773333,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 69
+    },
+    {
+     "delta_from_prior": 0.21201949709018675,
+     "final": 0.9499262003498987,
+     "max": 0.9499262003498987,
+     "mean": 0.9144418106935477,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 66
+    }
+   ],
+   "frozen_mean_depth": 3.8333333333333335,
+   "frozen_minus_live_pct": -4.2670307380545,
+   "frozen_ms_per_token": 19.673727842477653,
+   "live_mean_depth": 6.597222222222222,
+   "live_ms_per_token": 20.550629521002534,
+   "position0_settle_round": 65
+  },
+  "dramatic": {
+   "depth_divergence": {
+    "disagreement_rate": 0.5235602094240838,
+    "disagreements_in_first_20_rounds": 9,
+    "first_disagreement_round": 7,
+    "mean_signed_depth_gap": -0.49214659685863876,
+    "rounds": 191,
+    "rounds_disagreeing": 100,
+    "signed_gap_histogram": {
+     "-1": 72,
+     "-2": 14,
+     "-3": 2,
+     "0": 91,
+     "1": 12
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": -0.12799832011056655,
+     "final": 0.7220016798894334,
+     "max": 0.9919530385291666,
+     "mean": 0.7053681875076433,
+     "min": 0.38665267977646317,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 29
+    },
+    {
+     "delta_from_prior": -0.043068480571381906,
+     "final": 0.7899315194286181,
+     "max": 0.8344091503010268,
+     "mean": 0.5988735426205057,
+     "min": 0.3647315244859359,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 2
+    },
+    {
+     "delta_from_prior": 0.10638603136261804,
+     "final": 0.922726031362618,
+     "max": 0.922726031362618,
+     "mean": 0.8039762054198002,
+     "min": 0.6583101235837635,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 86
+    },
+    {
+     "delta_from_prior": 0.05783723648023076,
+     "final": 0.8578504364802306,
+     "max": 0.8733154086368333,
+     "mean": 0.7908017682813954,
+     "min": 0.7058063392499305,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 69
+    },
+    {
+     "delta_from_prior": 0.06405025832099998,
+     "final": 0.8480631943209999,
+     "max": 0.8480631943209999,
+     "mean": 0.8182454867141726,
+     "min": 0.7840129359999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 187
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7683326772799999,
+     "max": 0.7683326772799999,
+     "mean": 0.76833267728,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7529660237343999,
+     "max": 0.7529660237343999,
+     "mean": 0.7529660237343999,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.737906703259712,
+     "max": 0.737906703259712,
+     "mean": 0.737906703259712,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 0
+    }
+   ],
+   "frozen_mean_depth": 2.9895287958115184,
+   "frozen_minus_live_pct": -0.1958688231332939,
+   "frozen_ms_per_token": 33.41075021436409,
+   "live_mean_depth": 2.4973821989528795,
+   "live_ms_per_token": 33.47631988815736,
+   "position0_settle_round": 190
+  },
+  "english": {
+   "depth_divergence": {
+    "disagreement_rate": 0.5488372093023256,
+    "disagreements_in_first_20_rounds": 11,
+    "first_disagreement_round": 3,
+    "mean_signed_depth_gap": -0.5813953488372093,
+    "rounds": 215,
+    "rounds_disagreeing": 118,
+    "signed_gap_histogram": {
+     "-1": 88,
+     "-2": 21,
+     "-3": 1,
+     "0": 97,
+     "1": 8
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": -0.012756461019281295,
+     "final": 0.8372435389807187,
+     "max": 0.90788125,
+     "mean": 0.6840571470346166,
+     "min": 0.3778386853063813,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 13
+    },
+    {
+     "delta_from_prior": -0.35436991416492114,
+     "final": 0.4786300858350788,
+     "max": 0.8955575767626296,
+     "mean": 0.5699799639279671,
+     "min": 0.34474618478062546,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 9
+    },
+    {
+     "delta_from_prior": -0.057451757040033025,
+     "final": 0.7588882429599669,
+     "max": 0.9243523706759532,
+     "mean": 0.7731976851167307,
+     "min": 0.6109671315480589,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 50
+    },
+    {
+     "delta_from_prior": -0.0764775990667872,
+     "final": 0.7235356009332127,
+     "max": 0.8828056155831441,
+     "mean": 0.7936637254510445,
+     "min": 0.6800112199999999,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 116
+    },
+    {
+     "delta_from_prior": 0.04606141025999999,
+     "final": 0.8300743462599999,
+     "max": 0.8300743462599999,
+     "mean": 0.8069307313248371,
+     "min": 0.7840129359999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 135
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7683326772799999,
+     "max": 0.7683326772799999,
+     "mean": 0.7683326772799999,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7529660237343999,
+     "max": 0.7529660237343999,
+     "mean": 0.7529660237343999,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.737906703259712,
+     "max": 0.737906703259712,
+     "mean": 0.737906703259712,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 0
+    }
+   ],
+   "frozen_mean_depth": 2.9069767441860463,
+   "frozen_minus_live_pct": 1.4877128335152978,
+   "frozen_ms_per_token": 36.33881617209007,
+   "live_mean_depth": 2.3255813953488373,
+   "live_ms_per_token": 35.806123872061036,
+   "position0_settle_round": 214
+  },
+  "medicine": {
+   "depth_divergence": {
+    "disagreement_rate": 0.5527638190954773,
+    "disagreements_in_first_20_rounds": 5,
+    "first_disagreement_round": 5,
+    "mean_signed_depth_gap": -0.41708542713567837,
+    "rounds": 199,
+    "rounds_disagreeing": 110,
+    "signed_gap_histogram": {
+     "-1": 69,
+     "-2": 16,
+     "-3": 2,
+     "0": 89,
+     "1": 22,
+     "2": 1
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": -0.19259711626813625,
+     "final": 0.6574028837318637,
+     "max": 0.9634649462764764,
+     "mean": 0.6738260485369486,
+     "min": 0.36185812835443676,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 17
+    },
+    {
+     "delta_from_prior": -0.3305812119213556,
+     "final": 0.5024187880786444,
+     "max": 0.881188179766523,
+     "mean": 0.6176874464988701,
+     "min": 0.37742232559254607,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 11
+    },
+    {
+     "delta_from_prior": 0.003424822842105546,
+     "final": 0.8197648228421055,
+     "max": 0.9457039954857046,
+     "mean": 0.8096088729748318,
+     "min": 0.6067044827390661,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 88
+    },
+    {
+     "delta_from_prior": 0.001382469381671858,
+     "final": 0.8013956693816717,
+     "max": 0.9119663244036978,
+     "mean": 0.8065973413710489,
+     "min": 0.6697947385298562,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 148
+    },
+    {
+     "delta_from_prior": 0.07934077917284998,
+     "final": 0.8633537151728499,
+     "max": 0.8633537151728499,
+     "mean": 0.818276200533136,
+     "min": 0.7840129359999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 166
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7683326772799999,
+     "max": 0.7683326772799999,
+     "mean": 0.7683326772799998,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7529660237343999,
+     "max": 0.7529660237343999,
+     "mean": 0.7529660237343999,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.737906703259712,
+     "max": 0.737906703259712,
+     "mean": 0.737906703259712,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 0
+    }
+   ],
+   "frozen_mean_depth": 2.9346733668341707,
+   "frozen_minus_live_pct": -2.4631018623153755,
+   "frozen_ms_per_token": 34.15384667409039,
+   "live_mean_depth": 2.5175879396984926,
+   "live_ms_per_token": 35.01633466534714,
+   "position0_settle_round": 198
+  },
+  "narrative": {
+   "depth_divergence": {
+    "disagreement_rate": 0.49767441860465117,
+    "disagreements_in_first_20_rounds": 8,
+    "first_disagreement_round": 5,
+    "mean_signed_depth_gap": -0.48372093023255813,
+    "rounds": 215,
+    "rounds_disagreeing": 107,
+    "signed_gap_histogram": {
+     "-1": 80,
+     "-2": 17,
+     "0": 108,
+     "1": 10
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": -0.302312710344538,
+     "final": 0.547687289655462,
+     "max": 0.9752452241538797,
+     "mean": 0.6963400249238095,
+     "min": 0.3502621658791917,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 29
+    },
+    {
+     "delta_from_prior": -0.08492200112413384,
+     "final": 0.7480779988758661,
+     "max": 0.8800917633833719,
+     "mean": 0.6031929257115484,
+     "min": 0.38652973688577374,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 11
+    },
+    {
+     "delta_from_prior": -0.03303150963956469,
+     "final": 0.7833084903604353,
+     "max": 0.9077072501819823,
+     "mean": 0.7885555123521444,
+     "min": 0.6413935183251842,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 78
+    },
+    {
+     "delta_from_prior": -0.016898627440691705,
+     "final": 0.7831145725593082,
+     "max": 0.8459020110878211,
+     "mean": 0.7832115084599829,
+     "min": 0.7153893564499999,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 85
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7840129359999999,
+     "max": 0.7840129359999999,
+     "mean": 0.7840129359999999,
+     "min": 0.7840129359999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7683326772799999,
+     "max": 0.7683326772799999,
+     "mean": 0.7683326772799999,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7529660237343999,
+     "max": 0.7529660237343999,
+     "mean": 0.7529660237343999,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.737906703259712,
+     "max": 0.737906703259712,
+     "mean": 0.737906703259712,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 0
+    }
+   ],
+   "frozen_mean_depth": 2.7674418604651163,
+   "frozen_minus_live_pct": 0.7838494456736234,
+   "frozen_ms_per_token": 35.18447387496884,
+   "live_mean_depth": 2.2837209302325583,
+   "live_ms_per_token": 34.91082556231852,
+   "position0_settle_round": 214
+  },
+  "natural_history": {
+   "depth_divergence": {
+    "disagreement_rate": 0.5324675324675324,
+    "disagreements_in_first_20_rounds": 15,
+    "first_disagreement_round": 3,
+    "mean_signed_depth_gap": -0.6320346320346321,
+    "rounds": 231,
+    "rounds_disagreeing": 123,
+    "signed_gap_histogram": {
+     "-1": 82,
+     "-2": 31,
+     "-3": 3,
+     "0": 108,
+     "1": 7
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": -0.024583008123474026,
+     "final": 0.825416991876526,
+     "max": 0.94342757265625,
+     "mean": 0.6326376784099554,
+     "min": 0.1929193441649815,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 12
+    },
+    {
+     "delta_from_prior": -0.2697777731760962,
+     "final": 0.5632222268239038,
+     "max": 0.8424075098226574,
+     "mean": 0.5776047167538364,
+     "min": 0.36335660375390816,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 1
+    },
+    {
+     "delta_from_prior": 0.03393939745182073,
+     "final": 0.8502793974518207,
+     "max": 0.9050089457415624,
+     "mean": 0.7941766869170888,
+     "min": 0.5489246862031247,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 103
+    },
+    {
+     "delta_from_prior": 0.026537209877374623,
+     "final": 0.8265504098773745,
+     "max": 0.9166300181190711,
+     "mean": 0.8404375993653291,
+     "min": 0.7791355154012104,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 199
+    },
+    {
+     "delta_from_prior": 0.024898059600000022,
+     "final": 0.8089109955999999,
+     "max": 0.8089109955999999,
+     "mean": 0.7851985578857141,
+     "min": 0.7840129359999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 11
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7683326772799999,
+     "max": 0.7683326772799999,
+     "mean": 0.7683326772799999,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7529660237343999,
+     "max": 0.7529660237343999,
+     "mean": 0.7529660237343999,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.737906703259712,
+     "max": 0.737906703259712,
+     "mean": 0.737906703259712,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 0
+    }
+   ],
+   "frozen_mean_depth": 2.813852813852814,
+   "frozen_minus_live_pct": 0.36229790745001544,
+   "frozen_ms_per_token": 37.44825895361322,
+   "live_mean_depth": 2.1818181818181817,
+   "live_ms_per_token": 37.31307446561902,
+   "position0_settle_round": 230
+  },
+  "philosophy": {
+   "depth_divergence": {
+    "disagreement_rate": 0.5209302325581395,
+    "disagreements_in_first_20_rounds": 2,
+    "first_disagreement_round": 2,
+    "mean_signed_depth_gap": -0.5395348837209303,
+    "rounds": 215,
+    "rounds_disagreeing": 112,
+    "signed_gap_histogram": {
+     "-1": 96,
+     "-2": 12,
+     "0": 103,
+     "1": 4
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": -0.25964833122510633,
+     "final": 0.5903516687748936,
+     "max": 0.9655720707862274,
+     "mean": 0.6952155374121346,
+     "min": 0.37263139630944686,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 28
+    },
+    {
+     "delta_from_prior": -0.2359970716088282,
+     "final": 0.5970029283911717,
+     "max": 0.91282495625,
+     "mean": 0.6329843099983017,
+     "min": 0.4392107338431833,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 10
+    },
+    {
+     "delta_from_prior": -0.14950794155732505,
+     "final": 0.6668320584426749,
+     "max": 0.8926531092502852,
+     "mean": 0.7302684758622927,
+     "min": 0.4984247199910857,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 29
+    },
+    {
+     "delta_from_prior": 0.12458111227621049,
+     "final": 0.9245943122762104,
+     "max": 0.9245943122762104,
+     "mean": 0.8569153837697722,
+     "min": 0.8000131999999999,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 183
+    },
+    {
+     "delta_from_prior": 0.04606141025999999,
+     "final": 0.8300743462599999,
+     "max": 0.8300743462599999,
+     "mean": 0.7950144041953486,
+     "min": 0.7840129359999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 61
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7683326772799999,
+     "max": 0.7683326772799999,
+     "mean": 0.7683326772799999,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7529660237343999,
+     "max": 0.7529660237343999,
+     "mean": 0.7529660237343999,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.737906703259712,
+     "max": 0.737906703259712,
+     "mean": 0.737906703259712,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 0
+    }
+   ],
+   "frozen_mean_depth": 2.9209302325581397,
+   "frozen_minus_live_pct": 2.7013681902240627,
+   "frozen_ms_per_token": 35.29193087102978,
+   "live_mean_depth": 2.3813953488372093,
+   "live_ms_per_token": 34.36364236712198,
+   "position0_settle_round": 214
+  },
+  "technical": {
+   "depth_divergence": {
+    "disagreement_rate": 0.4416243654822335,
+    "disagreements_in_first_20_rounds": 6,
+    "first_disagreement_round": 4,
+    "mean_signed_depth_gap": -0.39593908629441626,
+    "rounds": 197,
+    "rounds_disagreeing": 87,
+    "signed_gap_histogram": {
+     "-1": 67,
+     "-2": 9,
+     "-3": 1,
+     "0": 110,
+     "1": 10
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": -0.027180201308018126,
+     "final": 0.8228197986919819,
+     "max": 0.9705836552564027,
+     "mean": 0.6860610210190125,
+     "min": 0.3483924686071627,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 23
+    },
+    {
+     "delta_from_prior": -0.016904644203011077,
+     "final": 0.8160953557969889,
+     "max": 0.8964657033609016,
+     "mean": 0.6413681164163451,
+     "min": 0.38565915423253905,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 12
+    },
+    {
+     "delta_from_prior": -0.037184948152396924,
+     "final": 0.779155051847603,
+     "max": 0.9298655738943651,
+     "mean": 0.7986681844658624,
+     "min": 0.5992660048475745,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 84
+    },
+    {
+     "delta_from_prior": 0.05009456946895785,
+     "final": 0.8501077694689577,
+     "max": 0.8717059529824999,
+     "mean": 0.8212679106834844,
+     "min": 0.6294108720995867,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 141
+    },
+    {
+     "delta_from_prior": 0.024898059600000022,
+     "final": 0.8089109955999999,
+     "max": 0.8089109955999999,
+     "mean": 0.7841393220893399,
+     "min": 0.7840129359999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 1
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7683326772799999,
+     "max": 0.7683326772799999,
+     "mean": 0.7683326772799998,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7529660237343999,
+     "max": 0.7529660237343999,
+     "mean": 0.7529660237343998,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.737906703259712,
+     "max": 0.737906703259712,
+     "mean": 0.737906703259712,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 0
+    }
+   ],
+   "frozen_mean_depth": 2.8984771573604062,
+   "frozen_minus_live_pct": 1.1109879733212535,
+   "frozen_ms_per_token": 33.91725689500243,
+   "live_mean_depth": 2.50253807106599,
+   "live_ms_per_token": 33.54458063840866,
+   "position0_settle_round": 196
+  },
+  "travel": {
+   "depth_divergence": {
+    "disagreement_rate": 0.4223300970873786,
+    "disagreements_in_first_20_rounds": 5,
+    "first_disagreement_round": 4,
+    "mean_signed_depth_gap": -0.45145631067961167,
+    "rounds": 206,
+    "rounds_disagreeing": 87,
+    "signed_gap_histogram": {
+     "-1": 73,
+     "-2": 10,
+     "-3": 1,
+     "0": 119,
+     "1": 3
+    }
+   },
+   "divergence_profile": [
+    {
+     "delta_from_prior": -0.06336879144453167,
+     "final": 0.7866312085554683,
+     "max": 0.94342757265625,
+     "mean": 0.7153353874669208,
+     "min": 0.4125153868922381,
+     "position": 0,
+     "prior": 0.85,
+     "rounds_above_prior": 21
+    },
+    {
+     "delta_from_prior": -0.2522555660054586,
+     "final": 0.5807444339945413,
+     "max": 0.8216349084477705,
+     "mean": 0.5869316063087278,
+     "min": 0.3644473258037335,
+     "position": 1,
+     "prior": 0.833,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.034548177215480536,
+     "final": 0.8508881772154805,
+     "max": 0.8873915069843601,
+     "mean": 0.7736526018415064,
+     "min": 0.6411403637962002,
+     "position": 2,
+     "prior": 0.81634,
+     "rounds_above_prior": 48
+    },
+    {
+     "delta_from_prior": 0.07617380513509242,
+     "final": 0.8761870051350923,
+     "max": 0.8761870051350923,
+     "mean": 0.8126886608503316,
+     "min": 0.6791172056190711,
+     "position": 3,
+     "prior": 0.8000131999999999,
+     "rounds_above_prior": 145
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7840129359999999,
+     "max": 0.7840129359999999,
+     "mean": 0.7840129359999999,
+     "min": 0.7840129359999999,
+     "position": 4,
+     "prior": 0.7840129359999999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7683326772799999,
+     "max": 0.7683326772799999,
+     "mean": 0.7683326772799999,
+     "min": 0.7683326772799999,
+     "position": 5,
+     "prior": 0.7683326772799999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.7529660237343999,
+     "max": 0.7529660237343999,
+     "mean": 0.7529660237343999,
+     "min": 0.7529660237343999,
+     "position": 6,
+     "prior": 0.7529660237343999,
+     "rounds_above_prior": 0
+    },
+    {
+     "delta_from_prior": 0.0,
+     "final": 0.737906703259712,
+     "max": 0.737906703259712,
+     "mean": 0.737906703259712,
+     "min": 0.737906703259712,
+     "position": 7,
+     "prior": 0.737906703259712,
+     "rounds_above_prior": 0
+    }
+   ],
+   "frozen_mean_depth": 2.8640776699029127,
+   "frozen_minus_live_pct": 1.0661324504213532,
+   "frozen_ms_per_token": 34.456942854009476,
+   "live_mean_depth": 2.412621359223301,
+   "live_ms_per_token": 34.09346139856747,
+   "position0_settle_round": 205
+  }
+ }
+}
