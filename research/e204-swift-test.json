@@ -1,0 +1,55 @@
+{
+ "artifact": "swift-test-gate",
+ "experiment": "e204-round-end-seam-overlap",
+ "harness": "local",
+ "command": "swift test --force-resolved-versions",
+ "candidate_commit": "65afaf12",
+ "base_sha": "136ab8a480e877f67d28264887162067a4d321f2",
+ "tests": 754,
+ "suites": 79,
+ "issues": 41,
+ "exit_code": 1,
+ "distinct_failing_tests": [
+  "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+  "participantDocsExposeDefaultCLIInstallDirectory",
+  "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+  "startupMemoryPolicyKeepsRanked128GiBProfile",
+  "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+  "theCheckedInDeclarationSelectsThePinnedHead",
+  "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+  "theQwenMTPTrackIsArmedOnQwen38",
+  "theSeededCalibrationExpectationMatchesItsRecordedProvenance",
+  "theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax"
+ ],
+ "per_test_issue_counts": {
+  "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen": 1,
+  "participantDocsExposeDefaultCLIInstallDirectory": 2,
+  "qwen36ConfigContractDigestMatchesTheReferenceManifest": 2,
+  "startupMemoryPolicyKeepsRanked128GiBProfile": 2,
+  "submissionStaticReviewPromptCoversMeasurementStructureExploitation": 11,
+  "theCheckedInDeclarationSelectsThePinnedHead": 6,
+  "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues": 3,
+  "theQwenMTPTrackIsArmedOnQwen38": 11,
+  "theSeededCalibrationExpectationMatchesItsRecordedProvenance": 2,
+  "theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax": 1
+ },
+ "recorded_floor": {
+  "source": "research/e145-result.md",
+  "issues": 41,
+  "tests": [
+   "contestantDocsCommandBlocksKeepTheDependencyGraphFrozen",
+   "participantDocsExposeDefaultCLIInstallDirectory",
+   "qwen36ConfigContractDigestMatchesTheReferenceManifest",
+   "startupMemoryPolicyKeepsRanked128GiBProfile",
+   "submissionStaticReviewPromptCoversMeasurementStructureExploitation",
+   "theCheckedInDeclarationSelectsThePinnedHead",
+   "theEvenMedianRuleIsTheMeanOfTheTwoCentralValues",
+   "theQwenMTPTrackIsArmedOnQwen38",
+   "theSeededCalibrationExpectationMatchesItsRecordedProvenance",
+   "theWiredSlackCoversTheMeasuredGrowthAndItsPageRoundingTax"
+  ]
+ },
+ "new_failures": [],
+ "fixed_failures": [],
+ "no_regression": true
+}
