@@ -14,7 +14,7 @@
 # removes the second weight pass at the widths that carry 76 % of cap-8 rounds.
 # It buys that pass by holding the live accumulator set under the Apple
 # 128-register boundary the AIR proxy located between NA = 5 at rows 4 (125
-# lane-weighted live values) and NA = 6 at rows 4 (144): (rows 2, NA 7) is 117,
+# lane-weighted live values) and NA = 6 at rows 4 (144): (rows 1, NA 7) is 94,
 # (rows 1, NA 8) is 104 and (rows 1, NA 9) is 114. The cost side is real: a
 # lower rows_per_simd launches more threadgroups and re-reads the activation
 # rows more often, so the paired session decides.
