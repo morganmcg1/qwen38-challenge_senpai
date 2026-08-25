@@ -63,6 +63,15 @@ PHASES = [
 ]
 COUNTERS = ["acc", "band_fwd", "xs_fill", "xs_hit", "cfg_miss"]
 
+# The layer-family device bands, emitted only by a band-sync arm.
+BANDS = [
+    "band_pre_us",
+    "band_gdn_mixer_us",
+    "band_gdn_mlp_us",
+    "band_fa_mixer_us",
+    "band_fa_mlp_us",
+]
+
 # Fused routed QMV cells of one decode round: (name, k, n, invocations).
 # Same table as research/e206_width_map.py.
 CELLS = [
@@ -283,6 +292,118 @@ def aggregate(legs: list[dict]) -> dict:
     return table
 
 
+def aggregate_band(legs: list[dict]) -> dict:
+    """Per-width band medians from the band-sync arms.
+
+    ATTRIBUTION ONLY. A band arm drains the device at every mixer and MLP
+    boundary, so its round total is inflated and is never a round cost. Only
+    the SHARE of a step across bands is read, and only after the bands are
+    checked to account for the band-arm round they were measured in.
+    """
+    widths: dict[int, list[dict]] = {}
+    for leg in legs:
+        if leg["band_sync"] and leg["width_m"] is not None:
+            widths.setdefault(leg["width_m"], []).append(leg)
+
+    table = {}
+    for m, bucket in sorted(widths.items()):
+        entry: dict = {"legs": [leg["leg"] for leg in bucket],
+                       "n_legs": len(bucket)}
+        for phase in PHASES:
+            medians = [leg["phases_ms"][phase]["median"]
+                       for leg in bucket if phase in leg["phases_ms"]]
+            if not medians:
+                continue
+            entry.setdefault("phase_ms", {})[phase] = {
+                "value": statistics.fmean(medians),
+                "legs": medians,
+                "leg_spread": max(medians) - min(medians),
+            }
+        bands = {b: entry["phase_ms"][b]["value"]
+                 for b in BANDS if b in entry.get("phase_ms", {})}
+        entry["band_sum_ms"] = sum(bands.values())
+        round_ms = entry.get("phase_ms", {}).get("round_us", {}).get("value")
+        if round_ms:
+            entry["band_arm_round_ms"] = round_ms
+            entry["band_unaccounted_ms"] = round_ms - entry["band_sum_ms"]
+        table[m] = entry
+    return table
+
+
+def band_steps(band_table: dict) -> list[dict]:
+    """Split each adjacent band-arm step across the traced bands."""
+    out = []
+    ms = sorted(band_table)
+    for lo, hi in zip(ms, ms[1:]):
+        if hi != lo + 1:
+            continue
+        a, b = band_table[lo], band_table[hi]
+        per_band = {}
+        for band in BANDS:
+            av = a.get("phase_ms", {}).get(band, {}).get("value")
+            bv = b.get("phase_ms", {}).get(band, {}).get("value")
+            if av is None or bv is None:
+                continue
+            per_band[band] = bv - av
+        total = sum(per_band.values())
+        out.append({
+            "boundary": f"{lo}->{hi}",
+            "band_arm_round_step_ms": (b.get("band_arm_round_ms", 0.0)
+                                       - a.get("band_arm_round_ms", 0.0)),
+            "band_step_total_ms": total,
+            "band_step_ms": per_band,
+            "band_share": {k: (v / total if total else 0.0)
+                           for k, v in per_band.items()},
+        })
+    return out
+
+
+def ipg_law(table: dict) -> dict:
+    """Read R(m) as (weight passes) x (per-pass cost at that group width).
+
+    Every width except m = 6 dispatches one staged `(m, IPG)` pair for all
+    seven decode cells, so `(G, IPG)` is a scalar there and two widths that
+    share an IPG differ only in pass count. m = 6 is excluded: the shipped
+    plan is per cell there, so no single `(G, IPG)` describes it.
+    """
+    uniform = {}
+    for m, entry in table.items():
+        if m < 2 or m == 6 or "round_ms" not in entry:
+            continue
+        ipg = STAGED_IPG[m]
+        uniform[m] = {"ipg": ipg, "groups": (m + ipg - 1) // ipg,
+                      "round_ms": entry["round_ms"]}
+
+    ladder = {str(v["ipg"]): v["round_ms"]
+              for m, v in sorted(uniform.items()) if v["groups"] == 1}
+    pairs = []
+    for m_hi, hi in sorted(uniform.items()):
+        if hi["groups"] != 2:
+            continue
+        for m_lo, lo in sorted(uniform.items()):
+            if lo["groups"] == 1 and lo["ipg"] == hi["ipg"]:
+                # R = c + G(f - c) at fixed IPG gives c from the pair.
+                implied_c = 2.0 * lo["round_ms"] - hi["round_ms"]
+                pairs.append({
+                    "ipg": hi["ipg"],
+                    "m_one_pass": m_lo, "m_two_pass": m_hi,
+                    "round_ms_one_pass": lo["round_ms"],
+                    "round_ms_two_pass": hi["round_ms"],
+                    "ratio": hi["round_ms"] / lo["round_ms"],
+                    "implied_fixed_overhead_ms": implied_c,
+                })
+    return {
+        "excluded_widths": [6],
+        "single_pass_ipg_ladder_ms": ladder,
+        "ipg_ladder_steps_ms": {
+            f"{a}->{b}": ladder[str(b)] - ladder[str(a)]
+            for a, b in zip(sorted(int(k) for k in ladder),
+                            sorted(int(k) for k in ladder)[1:])
+        },
+        "fixed_ipg_pass_doubling": pairs,
+    }
+
+
 def served_distribution(legs: list[dict]) -> dict:
     total: dict[int, int] = {}
     for leg in legs:
@@ -409,6 +530,7 @@ def main() -> int:
     distribution = served_distribution(reference_legs)
     table = aggregate(legs)
     band_legs = [leg for leg in legs if leg["band_sync"]]
+    band_table = aggregate_band(legs)
 
     report = {
         "harness": "local",
@@ -424,6 +546,9 @@ def main() -> int:
         "shape_fit": fit(table),
         "dated_table_e182_round_ms": E182_ROUND_MS,
         "band_arm_legs": [leg["leg"] for leg in band_legs],
+        "band_table": {str(k): v for k, v in band_table.items()},
+        "band_steps": band_steps(band_table),
+        "ipg_law": ipg_law(table),
     }
     pathlib.Path(args.out).write_text(json.dumps(report, indent=1) + "\n")
 
@@ -443,6 +568,41 @@ def main() -> int:
         print(f"  {step['boundary']:>6}  raw {step['raw_step_ms']:8.3f} ms  "
               f"share>= {step['shipped_share_at_or_above_m']:5.3f}  "
               f"weighted {step['round_weighted_step_ms']:7.3f} ms/round")
+
+    if band_table:
+        short = {b: b[len("band_"):-len("_us")] for b in BANDS}
+        print("\nband arms (ATTRIBUTION ONLY, syncs inflate every round)")
+        print(f"{'m':>3} {'armround':>9} {'bandsum':>8} {'unacct':>7} "
+              + " ".join(f"{short[b]:>10}" for b in BANDS))
+        for m, entry in sorted(band_table.items()):
+            vals = entry.get("phase_ms", {})
+            print(f"{m:>3} {entry.get('band_arm_round_ms', 0.0):9.3f} "
+                  f"{entry['band_sum_ms']:8.3f} "
+                  f"{entry.get('band_unaccounted_ms', 0.0):7.3f} "
+                  + " ".join(f"{vals.get(b, {}).get('value', 0.0):10.3f}"
+                             for b in BANDS))
+        print("\nband split of each step (share of the band-measured step)")
+        for step in report["band_steps"]:
+            parts = " ".join(
+                f"{short[b]} {step['band_step_ms'][b]:+7.3f} "
+                f"({step['band_share'][b]:+.0%})"
+                for b in BANDS if b in step["band_step_ms"])
+            print(f"  {step['boundary']:>5} total {step['band_step_total_ms']:7.3f} ms  "
+                  f"armround {step['band_arm_round_step_ms']:7.3f} ms")
+            print(f"        {parts}")
+
+    law = report["ipg_law"]
+    print("\nsingle-pass cost against group width IPG (m=6 excluded, mixed plan)")
+    for ipg, ms in sorted(law["single_pass_ipg_ladder_ms"].items(), key=lambda kv: int(kv[0])):
+        print(f"  IPG {ipg}  f = {ms:8.3f} ms/round")
+    for k, v in law["ipg_ladder_steps_ms"].items():
+        print(f"  IPG {k:>4}  step {v:7.3f} ms/round")
+    print("\nsecond weight pass at fixed IPG")
+    for p in law["fixed_ipg_pass_doubling"]:
+        print(f"  IPG {p['ipg']}  m={p['m_one_pass']} (G=1) {p['round_ms_one_pass']:8.3f} -> "
+              f"m={p['m_two_pass']} (G=2) {p['round_ms_two_pass']:8.3f}  "
+              f"ratio {p['ratio']:5.3f}  implied fixed overhead "
+              f"{p['implied_fixed_overhead_ms']:6.2f} ms")
     return 0
 
 

@@ -120,6 +120,32 @@ def band_table(report: dict) -> wandb.Table:
     return wandb.Table(columns=columns, data=rows)
 
 
+def band_step_table(report: dict) -> wandb.Table:
+    bands = ["band_pre_us", "band_gdn_mixer_us", "band_gdn_mlp_us",
+             "band_fa_mixer_us", "band_fa_mlp_us"]
+    columns = (["boundary", "band_arm_round_step_ms", "band_step_total_ms"]
+               + [f"{b[len('band_'):-len('_us')]}_step_ms" for b in bands]
+               + [f"{b[len('band_'):-len('_us')]}_share" for b in bands])
+    rows = []
+    for step in report.get("band_steps", []):
+        rows.append([step["boundary"], step["band_arm_round_step_ms"],
+                     step["band_step_total_ms"]]
+                    + [step["band_step_ms"].get(b) for b in bands]
+                    + [step["band_share"].get(b) for b in bands])
+    return wandb.Table(columns=columns, data=rows)
+
+
+def ipg_table(report: dict) -> wandb.Table:
+    law = report.get("ipg_law") or {}
+    columns = ["ipg", "m_one_pass", "round_ms_one_pass", "m_two_pass",
+               "round_ms_two_pass", "ratio", "implied_fixed_overhead_ms"]
+    rows = [[p["ipg"], p["m_one_pass"], p["round_ms_one_pass"],
+             p["m_two_pass"], p["round_ms_two_pass"], p["ratio"],
+             p["implied_fixed_overhead_ms"]]
+            for p in law.get("fixed_ipg_pass_doubling", [])]
+    return wandb.Table(columns=columns, data=rows)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("report")
@@ -165,11 +191,24 @@ def main() -> None:
     run.summary["all_tokens_matched_every_leg"] = all(
         leg["all_tokens_matched"] is True for leg in report["legs"])
 
+    law = report.get("ipg_law") or {}
+    for ipg, ms in (law.get("single_pass_ipg_ladder_ms") or {}).items():
+        run.summary[f"single_pass_cost_ms/ipg{ipg}"] = ms
+    for pair in law.get("fixed_ipg_pass_doubling", []):
+        run.summary[
+            f"pass_doubling_ratio/ipg{pair['ipg']}_m{pair['m_two_pass']}"
+        ] = pair["ratio"]
+    for step in report.get("band_steps", []):
+        for band, share in step["band_share"].items():
+            run.summary[f"band_share/{step['boundary']}/{band}"] = share
+
     run.log({"width_table": width_table(report),
              "legs": leg_table(report),
              "steps": step_table(report),
              "served_width_distribution": served_table(report),
-             "band_arms": band_table(report)})
+             "band_arms": band_table(report),
+             "band_steps": band_step_table(report),
+             "ipg_pass_doubling": ipg_table(report)})
     print(run.url)
     run.finish()
 
