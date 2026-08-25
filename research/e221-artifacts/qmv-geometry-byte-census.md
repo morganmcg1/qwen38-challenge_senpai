@@ -114,7 +114,45 @@ work: E76 measured the `rps2` variant at **+14.16% per verify round** at NA=5 on
 gated GPU time, and ranked receipts `afb688fe`, `e617ef07` and `60a5ac1f`
 shipped rows=2 and lost +1.79, +1.33 and +2.38 pp respectively.
 
-## 5. How to use this census
+## 5. What the measurement added
+
+E221 step 1 timed the route. `rows=2` is slower in **24 of 24** timed cells,
+CI95 disjoint in 20 of them, and pooled relief is between **-2.83 and -17.81
+ms/round** against a +23.066 ms/round ceiling. The direction the census
+predicted is correct.
+
+The **magnitude** is not, and the difference is the useful part. Issued bytes
+rise by x1.75 to x1.79, but measured time rises by only x1.02 to x1.21. Convert
+each route to time per extra issued megabyte, cold:
+
+| cell / G | geometry rows 4->2 | width NA 4->5 at rows=4 | width rate / geometry rate |
+| --- | --- | --- | --- |
+| gdn.in_proj / G=1 | 0.1069 us/MB | 0.6079 us/MB | 5.7x |
+| gdn.in_proj / G=2 | 0.1173 | 0.5204 | 4.4x |
+| mlp.down / G=1 | 0.0495 | 1.3485 | 27.2x |
+| mlp.down / G=2 | 0.3020 | 2.3313 | 7.7x |
+| mlp.gate_up / G=1 | 0.1858 | 0.6751 | 3.6x |
+| mlp.gate_up / G=2 | 0.1097 | 0.6689 | 6.1x |
+
+**The same issued byte costs 3.6x to 27x more when it is added by widening `NA`
+than when it is added by launching more simdgroups.** So the census term is real
+and priced, but the `NA` slope is **not** an activation-byte volume effect.
+Adding activation bytes through extra simdgroups is cheap, because those reads
+hit cache; adding them through another activation column is expensive, because
+it also widens `VF = vec<float, NA>`, the `a0..a3` gathers and the `partial[]`
+FMA chain in the inner loop (lines 1494-1511).
+
+Two caveats on that ratio. The geometry route also doubles the threadgroup
+count, so some of its measured cost is launch and occupancy rather than bytes;
+that makes 3.6x to 27x an **under**statement. The width route also adds `n * NA`
+output elements, so a small part of its cost is the `y` write, not the inner
+loop.
+
+Use this to price future work: a route that only moves activation or chunk-sum
+**bytes** is worth little, and a route that reduces per-column inner-loop
+**work** at fixed `NA` is worth much more per byte moved.
+
+## 6. How to use this census
 
 Before pricing any QMV geometry route:
 
