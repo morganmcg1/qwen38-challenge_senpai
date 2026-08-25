@@ -40,6 +40,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from e212_report import (  # noqa: E402
+    BYTES_PER_ELEMENT,
     CELLS,
     NOISE_FLOOR_MS,
     boot_ci,
@@ -527,92 +528,163 @@ def cell_decomposition(e186: dict) -> dict:
     return out
 
 
-# Which isolated cells the scored forward runs inside each in-situ band, and
-# how many times per forward. 64 decoder layers: 48 gated-DeltaNet and 16 full
-# attention, each with its own fused MLP.
-BAND_QMV_CELLS = {
-    "band_gdn_mixer_us": [("gdn.in_proj", 48), ("gdn.out_proj", 48)],
-    "band_gdn_mlp_us": [("mlp.gate_up", 48), ("mlp.down", 48)],
-    "band_fa_mixer_us": [("fa.qkv", 16), ("fa.o_proj", 16)],
-    "band_fa_mlp_us": [("mlp.gate_up", 16), ("mlp.down", 16)],
-    "lm_head_readout": [("lm_head", 1)],
+# Which isolated WHOLE-LAYER curve each in-situ band runs, and how many times
+# per forward. 64 decoder layers: 48 gated-DeltaNet and 16 full attention, each
+# with its own fused MLP. The layer curve is the unit of reconciliation because
+# a per-cell sum charges the fixed per-`eval` submit floor once for every cell,
+# while the layer runs all of its cells inside one graph.
+BAND_LAYER_CURVES = {
+    "band_gdn_mixer_us": ("gdn_layer:nConfirmed=1", 48),
+    "band_gdn_mlp_us": ("mlp:fused", 48),
+    "band_fa_mixer_us": ("fa_layer:kv={kv}", 16),
+    "band_fa_mlp_us": ("mlp:fused", 16),
+    "lm_head_readout": ("qmv_inpath:lm_head", 1),
 }
-# Non-QMV cells this census can measure in isolation.
-BAND_NON_QMV = {
-    "band_gdn_mixer_us": [("gdn_recurrence:T=m", 48)],
-    "band_fa_mixer_us": [("sdpa:kv={kv}", 16)],
+# The cells inside each isolated layer curve, split by whether they stream
+# quantized weights through the QMV path.
+LAYER_CELLS = {
+    "gdn_layer:nConfirmed=1": (
+        ["qmv_inpath:gdn.in_proj", "qmv_inpath:gdn.out_proj"],
+        ["gdn_recurrence:T=m"]),
+    "fa_layer:kv={kv}": (
+        ["qmv_inpath:fa.qkv", "qmv_inpath:fa.o_proj"], ["sdpa:kv={kv}"]),
+    "mlp:fused": (["qmv_inpath:mlp.gate_up", "qmv_inpath:mlp.down"], []),
+    "qmv_inpath:lm_head": (["qmv_inpath:lm_head"], []),
 }
 
 
 def insitu_reconciliation(e186: dict, b_table: dict, w_table: dict,
                           kv: str = "1024") -> dict:
-    """Absolute-level closure: isolated cells scaled to the whole forward.
+    """Absolute-level closure: isolated layers scaled to the whole forward.
 
     RULE 405 v2 wants absolute levels, not a hot/cold bracket. Each band's
-    modeled level is the sum of its isolated cells at whole-model counts. The
+    modeled level is its isolated whole-layer curve times the layer count. The
     in-situ level comes from the band arm at the same width, and the forward
     total is checked against the untraced w leg, which is the only unperturbed
     instrument here.
+
+    Inside a layer, the isolated per-cell times are corrected by one additive
+    per-call submit floor `phi_call = (cell_sum - layer_total) / n_cells`, so
+    the corrected cells sum exactly to the measured layer. When the cells
+    already sum to less than the layer, the shortfall is in-layer work this
+    census does not measure separately (norms, convolution, gating, activation).
     """
     curves = {k: {int(m): v for m, v in by_m.items()}
               for k, by_m in e186["curves_ms"].items()}
 
     def cell(key: str, m: int) -> float | None:
-        return curves.get(key, {}).get(m)
+        return curves.get(key.format(kv=kv), {}).get(m)
 
     rows = []
     for key in sorted(b_table, key=int):
         m = int(key)
         band_rows = {}
         modeled_total = 0.0
-        for band, cells in BAND_QMV_CELLS.items():
-            qmv = 0.0
-            missing = []
-            for name, count in cells:
-                v = cell(f"qmv_inpath:{name}", m)
-                if v is None:
-                    missing.append(name)
-                else:
-                    qmv += count * v
-            non_qmv = 0.0
-            non_qmv_terms = {}
-            for name, count in BAND_NON_QMV.get(band, []):
-                v = cell(name.format(kv=kv), m)
-                if v is None:
-                    missing.append(name)
-                else:
-                    non_qmv += count * v
-                    non_qmv_terms[name.format(kv=kv)] = count * v
+        for band, (layer_key, count) in BAND_LAYER_CURVES.items():
+            layer = cell(layer_key, m)
+            qmv_keys, non_qmv_keys = LAYER_CELLS[layer_key]
+            qmv_raw = [cell(k, m) for k in qmv_keys]
+            non_raw = [cell(k, m) for k in non_qmv_keys]
+            named = [k.format(kv=kv) for k in qmv_keys + non_qmv_keys]
+            values = qmv_raw + non_raw
+            if layer is None or any(v is None for v in values):
+                continue
+            cell_sum = sum(values)
+            n_cells = len(values)
+            phi = max((cell_sum - layer) / n_cells, 0.0) if n_cells else 0.0
+            corrected = [max(v - phi, 0.0) for v in values]
+            in_layer_other = layer - sum(corrected)
+            qmv = sum(corrected[:len(qmv_keys)]) * count
+            non_qmv = sum(corrected[len(qmv_keys):]) * count
             insitu = b_table[key]["phase_ms"].get(band, {}).get("value")
             if insitu is None and band == "lm_head_readout":
                 insitu = post_band_ms(b_table[key])
-            modeled = qmv + non_qmv
+            modeled = layer * count
             modeled_total += modeled
             band_rows[band] = {
+                "layer_curve": layer_key.format(kv=kv),
+                "layer_count": count,
+                "isolated_layer_ms": layer,
+                "phi_call_ms": phi,
+                "modeled_ms": modeled,
                 "modeled_qmv_ms": qmv,
                 "modeled_non_qmv_ms": non_qmv,
-                "modeled_non_qmv_terms_ms": non_qmv_terms,
-                "modeled_total_ms": modeled,
+                "modeled_in_layer_other_ms": in_layer_other * count,
+                "corrected_cells_ms": dict(zip(named, corrected)),
                 "insitu_ms": insitu,
-                "unmodeled_ms": (None if insitu is None else insitu - modeled),
-                "modeled_over_insitu": (None if not insitu else modeled / insitu),
-                "missing_cells": missing,
+                "insitu_minus_modeled_ms": (
+                    None if insitu is None else insitu - modeled),
+                "modeled_over_insitu": (
+                    None if not insitu else modeled / insitu),
             }
-        forward_insitu = (w_table[key]["phase_ms"]["verify_build_us"]["value"]
-                          + w_table[key]["phase_ms"]["eval_wall_us"]["value"]) \
+        # The band arm is the only in-situ instrument that reports band levels,
+        # so it is the comparator for the modeled total. The unperturbed w leg
+        # is reported beside it: their ratio is the band-drain perturbation
+        # already measured in `perturbation`, not a modeling error.
+        band_forward = (b_table[key]["phase_ms"]["verify_build_us"]["value"]
+                        + b_table[key]["phase_ms"]["eval_wall_us"]["value"])
+        w_forward = (w_table[key]["phase_ms"]["verify_build_us"]["value"]
+                     + w_table[key]["phase_ms"]["eval_wall_us"]["value"]) \
             if key in w_table else None
         rows.append({
             "m": m,
             "bands": band_rows,
             "modeled_forward_ms": modeled_total,
-            "insitu_forward_ms": forward_insitu,
-            "modeled_over_insitu_forward": (
-                None if not forward_insitu else modeled_total / forward_insitu),
-            "within_15pct": (
-                None if not forward_insitu
-                else abs(modeled_total / forward_insitu - 1.0) <= 0.15),
+            "insitu_forward_band_arm_ms": band_forward,
+            "modeled_over_insitu_band_arm": modeled_total / band_forward,
+            "within_15pct": abs(modeled_total / band_forward - 1.0) <= 0.15,
+            "unperturbed_w_forward_ms": w_forward,
+            "band_arm_over_w_forward": (
+                None if not w_forward else band_forward / w_forward),
         })
-    return {"kv_used": kv, "per_width": rows}
+    return {
+        "kv_used": kv,
+        "unit": "isolated whole-layer curve x layer count",
+        "eval_floor_ms": (e186.get("eval_floor_us") or 0.0) / 1000.0,
+        "per_width": rows,
+    }
+
+
+def slope_closure(reconciliation: dict, w_table: dict,
+                  tolerance_ms: float = 2.0) -> list[dict]:
+    """Do the ISOLATED family slopes sum to the TRUE R_local(m) step?
+
+    This is the independent closure test. `slope_census` distributes the true
+    step by in-situ band share, so it closes by construction. Here the modeled
+    step comes only from the isolated layer curves and the layer counts, and it
+    is compared with the unperturbed w-leg forward step. A residual above
+    `tolerance_ms` at any boundary is itself a finding: it names a boundary
+    where in-situ behaviour differs from the sum of its isolated parts.
+    """
+    rows = reconciliation["per_width"]
+    out = []
+    for lo, hi in zip(rows, rows[1:]):
+        key_lo, key_hi = str(lo["m"]), str(hi["m"])
+        if key_lo not in w_table or key_hi not in w_table:
+            continue
+        modeled = hi["modeled_forward_ms"] - lo["modeled_forward_ms"]
+
+        def forward(key: str) -> float:
+            phases = w_table[key]["phase_ms"]
+            return (phases["verify_build_us"]["value"]
+                    + phases["eval_wall_us"]["value"])
+
+        true_step = forward(key_hi) - forward(key_lo)
+        per_band = {}
+        for band in hi["bands"]:
+            if band in lo["bands"]:
+                per_band[band] = (hi["bands"][band]["modeled_ms"]
+                                  - lo["bands"][band]["modeled_ms"])
+        residual = modeled - true_step
+        out.append({
+            "boundary": f"{lo['m']}->{hi['m']}",
+            "modeled_forward_step_ms": modeled,
+            "true_w_leg_forward_step_ms": true_step,
+            "residual_ms": residual,
+            "residual_over_tolerance": abs(residual) > tolerance_ms,
+            "modeled_band_step_ms": per_band,
+        })
+    return out
 
 
 def post_band_ms(entry: dict) -> float | None:
@@ -624,49 +696,153 @@ def post_band_ms(entry: dict) -> float | None:
     return forward - sum(phases[b]["value"] for b in BANDS if b in phases)
 
 
-def finding571_allocation(reconciliation: dict, families: dict,
+def finding571_allocation(reconciliation: dict, e186: dict,
                           total_ms: float, weight_pass_ms: float,
-                          m: int = 9) -> dict:
+                          m: int = 9, kv: str = "1024") -> dict:
     """Allocate FINDING 571's non-QMV residual across census families.
 
     FINDING 543 measured +20.774 ms/round at m=9 for the third weight pass the
-    staged (9,5) entry removes. FINDING 570's QMV decomposition prices only
-    `weight_pass_ms` of that as weight-stream work, so the rest must land on
-    per-row accumulate, dispatch, and non-QMV work that the extra pass carried
-    with it. This census cannot rerun the (9,3) plan, so it does not claim a
-    causal split. It reports, for each family, the measured capacity that could
-    hold the residual and allocates the residual in proportion to that
-    capacity. A residual larger than the total capacity is itself the finding.
+    staged (9,5) entry removes; FINDING 570 prices only `weight_pass_ms` of it
+    as weight-stream work. The residual is charged here against two disjoint
+    inventories at fixed m=9:
+
+      * PASS-PLAN SENSITIVE work, which is inside the QMV kernels. Its cost
+        depends on the group plan at the same width.
+      * PASS-PLAN INVARIANT work: the GDN recurrence, SDPA, and the in-layer
+        norm, convolution, gating, and activation remainder. Every one of those
+        is a function of `m` and the KV length only. None of them is reached a
+        different number of times when the group plan changes at fixed `m`.
+
+    Whatever a census family can be charged must come from the first inventory.
+    The invariant inventory is reported as the falsifiable bound: if any part of
+    the residual really sat in a non-QMV family, that family's cost would have
+    to depend on the group plan, which nothing in this census shows.
     """
     row = next((r for r in reconciliation["per_width"] if r["m"] == m), None)
     if row is None:
         return {}
     residual = total_ms - weight_pass_ms
-    # Capacity = everything in the band that is NOT modeled weight-stream QMV
-    # work: the isolated non-QMV cells plus the unmodeled band remainder.
-    capacity = {}
+    sensitive, invariant, allocation = {}, {}, {}
     for band, entry in row["bands"].items():
-        if entry["insitu_ms"] is None:
-            continue
-        cap = entry["insitu_ms"] - entry["modeled_qmv_ms"]
-        capacity[band] = max(cap, 0.0)
-    total_capacity = sum(capacity.values())
-    alloc = {b: (residual * c / total_capacity if total_capacity else None)
-             for b, c in capacity.items()}
+        sensitive[band] = entry["modeled_qmv_ms"]
+        inv = entry["modeled_non_qmv_ms"] + entry["modeled_in_layer_other_ms"]
+        if entry["insitu_minus_modeled_ms"] is not None:
+            inv += entry["insitu_minus_modeled_ms"]
+        invariant[band] = inv
+        allocation[band] = 0.0
+    sensitive_total = sum(sensitive.values())
+    qmv_share = {b: (residual * v / sensitive_total if sensitive_total else None)
+                 for b, v in sensitive.items()}
     return {
-        "shape": f"m={m}, G-boundary, harness=local",
+        "shape": f"m={m}, G-boundary, kv={kv}, harness=local",
         "finding_543_total_ms_per_round": total_ms,
         "finding_570_weight_pass_ms_per_round": weight_pass_ms,
         "non_qmv_residual_ms_per_round": residual,
-        "band_capacity_ms": capacity,
-        "total_capacity_ms": total_capacity,
-        "capacity_covers_residual": total_capacity >= residual,
-        "allocation_ms": alloc,
-        "allocation_basis": (
-            "in-situ band level minus modeled weight-stream QMV time at the "
-            "same width; proportional, NOT causal"),
-        "uncovered_ms": max(residual - total_capacity, 0.0),
+        "pass_plan_sensitive_ms": sensitive,
+        "pass_plan_sensitive_total_ms": sensitive_total,
+        "pass_plan_invariant_ms": invariant,
+        "pass_plan_invariant_total_ms": sum(invariant.values()),
+        "allocation_to_non_qmv_families_ms": allocation,
+        "allocated_to_non_qmv_total_ms": 0.0,
+        "uncovered_by_non_qmv_families_ms": residual,
+        "residual_placed_in": "QMV kernel internals at fixed width",
+        "if_inside_qmv_by_band_ms": qmv_share,
+        "basis": (
+            "the invariant inventory is a function of m and kv only, so it "
+            "cannot change when the group plan changes at fixed m; the band "
+            "split of the residual under the QMV hypothesis is proportional, "
+            "NOT causal"),
+        "pass_count_contrast": pass_count_contrast(e186),
     }
+
+
+def pass_count_contrast(e186: dict) -> dict:
+    """What one extra weight pass costs, read across the 6->7 plan change.
+
+    At m=6 the shipped plan runs every decode cell except `mlp.down` in the
+    single-pass IPG=6 variant, so those six cells pay ONE weight pass. At m=7
+    they return to the staged IPG=4 variant and pay TWO. The 6->7 isolated step
+    therefore contains one extra weight pass plus one extra row, which upper
+    bounds the pass alone. The nominal extra bytes are the second stream of the
+    same weight tile.
+    """
+    curves = {k: {int(m): v for m, v in by_m.items()}
+              for k, by_m in e186["curves_ms"].items()}
+    rows = []
+    for name, k, n, count in CELLS:
+        curve = curves.get(f"qmv_inpath:{name}", {})
+        if 6 not in curve or 7 not in curve:
+            continue
+        step = curve[7] - curve[6]
+        rows.append({
+            "cell": name,
+            "count_per_forward": count,
+            "groups_m6": cell_groups(6, name),
+            "groups_m7": cell_groups(7, name),
+            "adds_a_pass": cell_groups(7, name) > cell_groups(6, name),
+            "isolated_step_ms": step,
+            "round_scaled_step_ms": step * count,
+            "extra_pass_weight_gb": k * n * BYTES_PER_ELEMENT / 1e9,
+        })
+    added = [r for r in rows if r["adds_a_pass"]]
+    return {
+        "cells": rows,
+        "round_scaled_step_ms_cells_adding_a_pass": sum(
+            r["round_scaled_step_ms"] for r in added),
+        "extra_pass_weight_gb_cells_adding_a_pass": sum(
+            r["extra_pass_weight_gb"] * r["count_per_forward"] for r in added),
+    }
+
+
+def cap7_truncated(rounds_by_width: dict) -> dict:
+    """Model a cap-7 schedule from a cap-8 round census.
+
+    At `segmentedVerifyDepthCap = 7` the widest legal round serves 8 rows, so
+    m=9 has ZERO exposure. A round that served 9 rows at cap 8 serves 8 at cap
+    7 and commits one token fewer, so the same generated text needs 9/8 as many
+    such rounds. MODEL, not a measurement: the acceptance pattern inside the
+    truncated round is assumed unchanged.
+    """
+    rounds = {int(m): float(v) for m, v in rounds_by_width.items()}
+    moved = rounds.pop(9, 0.0) * 9.0 / 8.0
+    rounds[8] = rounds.get(8, 0.0) + moved
+    total = sum(rounds.values())
+    return {str(m): v / total for m, v in sorted(rounds.items()) if total}
+
+
+def cap7_median_lens(census: dict, targets: tuple[float, float] = (5.38, 6.09),
+                     ) -> dict:
+    """Model the cap-7 central order-statistic pair (FINDING 582).
+
+    The published median is the mean of the two central raw ratios. The advisor
+    reports the cap-7 central pair at mean served widths near `targets`. This
+    census holds no hidden prompt, so each target is reproduced as the mixture
+    of two locally measured cap-7-truncated prompt shapes whose means bracket
+    it, and the lens is the equal average of the two mixtures. MODEL of an
+    advisor-supplied central pair using local shape, not a measurement.
+    """
+    shapes = {}
+    for name, prompt in census["prompts"].items():
+        share = cap7_truncated(prompt["rounds_by_served_width"])
+        mean = sum(int(m) * w for m, w in share.items())
+        shapes[name] = (mean, share)
+    lens: dict[str, float] = {}
+    for target in targets:
+        below = max((s for s in shapes.values() if s[0] <= target),
+                    key=lambda s: s[0], default=None)
+        above = min((s for s in shapes.values() if s[0] >= target),
+                    key=lambda s: s[0], default=None)
+        if below is None or above is None:
+            continue
+        if above[0] == below[0]:
+            weight = 1.0
+        else:
+            weight = (above[0] - target) / (above[0] - below[0])
+        for m in set(below[1]) | set(above[1]):
+            lens[m] = lens.get(m, 0.0) + 0.5 * (
+                weight * below[1].get(m, 0.0)
+                + (1.0 - weight) * above[1].get(m, 0.0))
+    return dict(sorted(lens.items(), key=lambda kv: int(kv[0])))
 
 
 def census_pricing(families: dict, w_table: dict, census_path: pathlib.Path) -> dict:
@@ -681,6 +857,9 @@ def census_pricing(families: dict, w_table: dict, census_path: pathlib.Path) -> 
     shares = {
         "pooled": census["pooled_all_prompts"]["share_by_served_width"],
         "public": census["prompts"]["public"]["share_by_served_width"],
+        "cap7_pooled": cap7_truncated(
+            census["pooled_all_prompts"]["rounds_by_served_width"]),
+        "cap7_median_lens": cap7_median_lens(census),
     }
     anchor = "1"
     if anchor not in families:
@@ -721,6 +900,72 @@ def census_pricing(families: dict, w_table: dict, census_path: pathlib.Path) -> 
             entry["weighted_tax_ms"][label] = total
         out["families"][extra] = entry
     return out
+
+
+def priced_shortlist(pricing: dict, e186: dict, kv: str = "1024") -> dict:
+    """The three mechanisms this census nominates, priced under every weighting.
+
+    Each entry is the round-weighted cost the mechanism carries ABOVE the m=1
+    level, so it is the local screening ceiling of removing that whole width
+    tax. NOT-A-PRICE for ranked value (RULE 79): no ranked leg is measured here,
+    and the local serial-to-MTP ratio is not used at all.
+    """
+    fam = pricing["families"]
+    labels = list(pricing["round_total"])
+    shares = pricing["shares"]
+    curves = {k: {int(m): v for m, v in by_m.items()}
+              for k, by_m in e186["curves_ms"].items()}
+    sdpa = curves.get(f"sdpa:kv={kv}", {})
+    split_step = (sdpa.get(6, 0.0) - sdpa.get(5, 0.0)) * 16
+
+    def combine(names: list[str]) -> dict:
+        return {label: sum(fam[n]["weighted_tax_ms"][label] for n in names)
+                for label in labels}
+
+    items = [
+        {
+            "rank": 1,
+            "mechanism": "fused MLP QMV width tax, all 64 layers",
+            "families": ["band_gdn_mlp_us", "band_fa_mlp_us"],
+            "cells": ["mlp.gate_up", "mlp.down"],
+            "shape": "slope in m, f(IPG) convexity, one extra pass for "
+                     "mlp.down only at the G boundary",
+            "weighted_tax_ms": combine(["band_gdn_mlp_us", "band_fa_mlp_us"]),
+        },
+        {
+            "rank": 2,
+            "mechanism": "GDN mixer projection QMV width tax, 48 layers",
+            "families": ["band_gdn_mixer_us"],
+            "cells": ["gdn.in_proj", "gdn.out_proj"],
+            "shape": "slope in m; the recurrence itself is nearly flat",
+            "weighted_tax_ms": combine(["band_gdn_mixer_us"]),
+        },
+        {
+            "rank": 3,
+            "mechanism": f"SDPA two-call split at width>=6 (kv={kv}), 16 layers",
+            "families": ["band_fa_mixer_us"],
+            "cells": ["sdpa"],
+            "shape": "pure STEP at m=6 and flat above it; no weight traffic",
+            "isolated_step_ms_per_round": split_step,
+            "weighted_tax_ms": {
+                label: split_step * sum(
+                    w for m, w in shares[label].items() if int(m) >= 6)
+                for label in labels},
+            "exposure_share_m_ge_6": {
+                label: sum(w for m, w in shares[label].items() if int(m) >= 6)
+                for label in labels},
+        },
+    ]
+    return {
+        "not_a_price_for_ranked_value": True,
+        "rule": "RULE 79: local kernel-cost contrast at fixed schedule",
+        "weightings": {label: {
+            "mean_served_width": sum(int(m) * w for m, w in shares[label].items()),
+            "share_m_ge_6": sum(w for m, w in shares[label].items()
+                                if int(m) >= 6),
+        } for label in labels},
+        "items": items,
+    }
 
 
 def main() -> int:
@@ -804,9 +1049,13 @@ def main() -> int:
         report["e186_decomposition"] = cell_decomposition(e186)
         recon = insitu_reconciliation(e186, b_table, w_table, kv=args.kv)
         report["insitu_reconciliation"] = recon
+        report["slope_closure"] = slope_closure(recon, w_table)
         report["finding571_allocation"] = finding571_allocation(
-            recon, report["family_census"],
-            total_ms=args.f543_ms, weight_pass_ms=args.f570_weight_pass_ms)
+            recon, e186, total_ms=args.f543_ms,
+            weight_pass_ms=args.f570_weight_pass_ms, kv=args.kv)
+        if "census_pricing" in report:
+            report["priced_shortlist"] = priced_shortlist(
+                report["census_pricing"], e186, kv=args.kv)
 
     out_path = pathlib.Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -852,32 +1101,95 @@ def main() -> int:
 
     recon = report.get("insitu_reconciliation")
     if recon:
-        print(f"\nabsolute-level reconciliation (isolated cells scaled to the "
-              f"forward, kv={recon['kv_used']})")
-        print(f"{'m':>3} {'modeled':>9} {'in-situ w':>10} {'ratio':>7} "
-              f"{'<=15%':>6}   per-band modeled/in-situ")
+        print(f"\nabsolute-level reconciliation ({recon['unit']}, "
+              f"kv={recon['kv_used']})")
+        print(f"{'m':>3} {'modeled':>9} {'band arm':>9} {'ratio':>7} {'<=15%':>6} "
+              f"{'w leg':>8} {'b/w':>6}   per-band modeled/in-situ")
         for row in recon["per_width"]:
             bands = " ".join(
                 f"{b.replace('band_', '').replace('_us', '')}="
-                f"{(e['modeled_over_insitu'] or float('nan')):.2f}"
+                f"{(e['modeled_over_insitu'] or float('nan')):.3f}"
                 for b, e in row["bands"].items())
             print(f"{row['m']:>3} {row['modeled_forward_ms']:9.3f} "
-                  f"{(row['insitu_forward_ms'] or float('nan')):10.3f} "
-                  f"{(row['modeled_over_insitu_forward'] or float('nan')):7.3f} "
-                  f"{str(row['within_15pct']):>6}   {bands}")
+                  f"{row['insitu_forward_band_arm_ms']:9.3f} "
+                  f"{row['modeled_over_insitu_band_arm']:7.3f} "
+                  f"{str(row['within_15pct']):>6} "
+                  f"{(row['unperturbed_w_forward_ms'] or float('nan')):8.3f} "
+                  f"{(row['band_arm_over_w_forward'] or float('nan')):6.3f}   {bands}")
+
+    closure = report.get("slope_closure")
+    if closure:
+        print("\nindependent slope closure: isolated layer model vs the true "
+              "w-leg forward step (tolerance 2 ms/round)")
+        print(f"  {'boundary':>8} {'modeled':>9} {'true':>9} {'residual':>9} "
+              f"{'over':>5}   per-band modeled step")
+        for row in closure:
+            bands = " ".join(
+                f"{b.replace('band_', '').replace('_us', '')}={v:6.2f}"
+                for b, v in row["modeled_band_step_ms"].items())
+            print(f"  {row['boundary']:>8} {row['modeled_forward_step_ms']:9.3f} "
+                  f"{row['true_w_leg_forward_step_ms']:9.3f} "
+                  f"{row['residual_ms']:9.3f} "
+                  f"{str(row['residual_over_tolerance']):>5}   {bands}")
 
     alloc = report.get("finding571_allocation")
     if alloc:
         print(f"\nFINDING 571 allocation at {alloc['shape']}: "
               f"{alloc['non_qmv_residual_ms_per_round']:.3f} ms/round "
               f"non-QMV residual of {alloc['finding_543_total_ms_per_round']:.3f}")
-        for band, ms in alloc["allocation_ms"].items():
-            cap = alloc["band_capacity_ms"][band]
-            print(f"  {band.replace('band_', '').replace('_us', ''):>16} "
-                  f"allocated {(ms or float('nan')):7.3f} ms  "
-                  f"(capacity {cap:8.3f} ms)")
-        print(f"  total capacity {alloc['total_capacity_ms']:.3f} ms, "
-              f"uncovered {alloc['uncovered_ms']:.3f} ms")
+        print(f"  {'family':>14} {'pass-sensitive':>15} {'pass-invariant':>15} "
+              f"{'allocated':>10} {'if in QMV':>10}")
+        for band in alloc["pass_plan_sensitive_ms"]:
+            print(f"  {band.replace('band_', '').replace('_us', ''):>14} "
+                  f"{alloc['pass_plan_sensitive_ms'][band]:15.3f} "
+                  f"{alloc['pass_plan_invariant_ms'][band]:15.3f} "
+                  f"{alloc['allocation_to_non_qmv_families_ms'][band]:10.3f} "
+                  f"{(alloc['if_inside_qmv_by_band_ms'][band] or float('nan')):10.3f}")
+        print(f"  sensitive total {alloc['pass_plan_sensitive_total_ms']:.3f} ms, "
+              f"invariant total {alloc['pass_plan_invariant_total_ms']:.3f} ms, "
+              f"non-QMV families cover "
+              f"{alloc['allocated_to_non_qmv_total_ms']:.3f} ms, uncovered "
+              f"{alloc['uncovered_by_non_qmv_families_ms']:.3f} ms")
+        pc = alloc["pass_count_contrast"]
+        print("\n  6->7 plan contrast: one extra weight pass plus one row")
+        for r in pc["cells"]:
+            print(f"    {r['cell']:>14} G {r['groups_m6']}->{r['groups_m7']} "
+                  f"x{r['count_per_forward']:>3}  isolated step "
+                  f"{r['isolated_step_ms']:7.4f} ms  round-scaled "
+                  f"{r['round_scaled_step_ms']:7.3f} ms  extra pass "
+                  f"{r['extra_pass_weight_gb']:.4f} GB")
+        print(f"    cells adding a pass: "
+              f"{pc['round_scaled_step_ms_cells_adding_a_pass']:.3f} ms/round "
+              f"for {pc['extra_pass_weight_gb_cells_adding_a_pass']:.3f} GB "
+              f"of extra nominal weight traffic")
+
+    pricing = report.get("census_pricing")
+    if pricing:
+        print("\ncensus-weighted width tax above the m=1 level (NOT A PRICE for "
+              "ranked value, RULE 79)")
+        keys = list(next(iter(pricing["families"].values()))["weighted_tax_ms"])
+        print(f"  {'family':>16} {'m=1 ms':>9} "
+              + " ".join(f"{k:>12}" for k in keys))
+        for fam, entry in pricing["families"].items():
+            print(f"  {fam.replace('band_', '').replace('_us', ''):>16} "
+                  f"{entry['m1_ms']:9.3f} "
+                  + " ".join(f"{entry['weighted_tax_ms'][k]:12.3f}" for k in keys))
+        print(f"  {'ROUND TOTAL':>16} {'':>9} "
+              + " ".join(f"{pricing['round_total'][k]:12.3f}" for k in keys))
+        print(f"  {'mean served m':>16} {'':>9} "
+              + " ".join(
+                  f"{sum(int(m) * w for m, w in pricing['shares'][k].items()):12.3f}"
+                  for k in keys))
+
+    shortlist = report.get("priced_shortlist")
+    if shortlist:
+        print("\npriced shortlist (NOT A PRICE for ranked value, RULE 79)")
+        for item in shortlist["items"]:
+            print(f"  {item['rank']}. {item['mechanism']}")
+            print(f"     {item['shape']}")
+            print("     " + "  ".join(
+                f"{label}={value:.3f} ms/round"
+                for label, value in item["weighted_tax_ms"].items()))
     return 0
 
 

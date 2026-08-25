@@ -156,6 +156,123 @@ def cell_table(report: dict) -> wandb.Table | None:
     return wandb.Table(columns=columns, data=rows)
 
 
+def reconciliation_table(report: dict) -> wandb.Table | None:
+    recon = report.get("insitu_reconciliation")
+    if not recon:
+        return None
+    columns = ["m", "modeled_forward_ms", "insitu_forward_band_arm_ms",
+               "modeled_over_insitu_band_arm", "within_15pct",
+               "unperturbed_w_forward_ms", "band_arm_over_w_forward",
+               "band", "layer_curve", "layer_count", "isolated_layer_ms",
+               "phi_call_ms", "modeled_ms", "modeled_qmv_ms",
+               "modeled_non_qmv_ms", "modeled_in_layer_other_ms", "insitu_ms",
+               "modeled_over_insitu"]
+    rows = []
+    for row in recon["per_width"]:
+        for band, entry in row["bands"].items():
+            rows.append([
+                row["m"], row["modeled_forward_ms"],
+                row["insitu_forward_band_arm_ms"],
+                row["modeled_over_insitu_band_arm"], row["within_15pct"],
+                row["unperturbed_w_forward_ms"], row["band_arm_over_w_forward"],
+                band, entry["layer_curve"], entry["layer_count"],
+                entry["isolated_layer_ms"], entry["phi_call_ms"],
+                entry["modeled_ms"], entry["modeled_qmv_ms"],
+                entry["modeled_non_qmv_ms"],
+                entry["modeled_in_layer_other_ms"], entry["insitu_ms"],
+                entry["modeled_over_insitu"],
+            ])
+    return wandb.Table(columns=columns, data=rows)
+
+
+def slope_closure_table(report: dict) -> wandb.Table | None:
+    closure = report.get("slope_closure")
+    if not closure:
+        return None
+    columns = ["boundary", "modeled_forward_step_ms",
+               "true_w_leg_forward_step_ms", "residual_ms",
+               "residual_over_tolerance", "gdn_mixer_step_ms",
+               "gdn_mlp_step_ms", "fa_mixer_step_ms", "fa_mlp_step_ms",
+               "lm_head_readout_step_ms"]
+    rows = []
+    for row in closure:
+        band = row["modeled_band_step_ms"]
+        rows.append([
+            row["boundary"], row["modeled_forward_step_ms"],
+            row["true_w_leg_forward_step_ms"], row["residual_ms"],
+            row["residual_over_tolerance"],
+            band.get("band_gdn_mixer_us"), band.get("band_gdn_mlp_us"),
+            band.get("band_fa_mixer_us"), band.get("band_fa_mlp_us"),
+            band.get("lm_head_readout"),
+        ])
+    return wandb.Table(columns=columns, data=rows)
+
+
+def finding571_table(report: dict) -> wandb.Table | None:
+    alloc = report.get("finding571_allocation")
+    if not alloc:
+        return None
+    columns = ["band", "pass_plan_sensitive_ms", "pass_plan_invariant_ms",
+               "allocated_to_non_qmv_ms", "if_inside_qmv_ms",
+               "residual_ms", "weight_pass_ms", "total_ms"]
+    rows = []
+    for band, sensitive in alloc["pass_plan_sensitive_ms"].items():
+        rows.append([
+            band, sensitive, alloc["pass_plan_invariant_ms"][band],
+            alloc["allocation_to_non_qmv_families_ms"][band],
+            alloc["if_inside_qmv_by_band_ms"][band],
+            alloc["non_qmv_residual_ms_per_round"],
+            alloc["finding_570_weight_pass_ms_per_round"],
+            alloc["finding_543_total_ms_per_round"],
+        ])
+    return wandb.Table(columns=columns, data=rows)
+
+
+def pass_contrast_table(report: dict) -> wandb.Table | None:
+    alloc = report.get("finding571_allocation")
+    if not alloc or "pass_count_contrast" not in alloc:
+        return None
+    columns = ["cell", "count_per_forward", "groups_m6", "groups_m7",
+               "adds_a_pass", "isolated_step_ms", "round_scaled_step_ms",
+               "extra_pass_weight_gb"]
+    rows = [[r["cell"], r["count_per_forward"], r["groups_m6"], r["groups_m7"],
+             r["adds_a_pass"], r["isolated_step_ms"],
+             r["round_scaled_step_ms"], r["extra_pass_weight_gb"]]
+            for r in alloc["pass_count_contrast"]["cells"]]
+    return wandb.Table(columns=columns, data=rows)
+
+
+def pricing_table(report: dict) -> wandb.Table | None:
+    pricing = report.get("census_pricing")
+    if not pricing:
+        return None
+    labels = list(pricing["round_total"])
+    columns = ["family", "m1_ms"] + [f"tax_{label}_ms" for label in labels]
+    rows = [[family, entry["m1_ms"]]
+            + [entry["weighted_tax_ms"][label] for label in labels]
+            for family, entry in pricing["families"].items()]
+    rows.append(["ROUND_TOTAL", None]
+                + [pricing["round_total"][label] for label in labels])
+    rows.append(["MEAN_SERVED_WIDTH", None]
+                + [sum(int(m) * w for m, w in pricing["shares"][label].items())
+                   for label in labels])
+    return wandb.Table(columns=columns, data=rows)
+
+
+def shortlist_table(report: dict) -> wandb.Table | None:
+    shortlist = report.get("priced_shortlist")
+    if not shortlist:
+        return None
+    labels = list(shortlist["items"][0]["weighted_tax_ms"])
+    columns = (["rank", "mechanism", "shape", "cells"]
+               + [f"tax_{label}_ms" for label in labels])
+    rows = [[item["rank"], item["mechanism"], item["shape"],
+             ",".join(item["cells"])]
+            + [item["weighted_tax_ms"][label] for label in labels]
+            for item in shortlist["items"]]
+    return wandb.Table(columns=columns, data=rows)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("report")
@@ -206,10 +323,35 @@ def main() -> int:
         "family_slopes": slope_table(report),
         "perturbation": perturbation_table(report),
     }
-    cells = cell_table(report)
-    if cells is not None:
-        tables["isolated_cells"] = cells
+    optional = {
+        "isolated_cells": cell_table(report),
+        "insitu_reconciliation": reconciliation_table(report),
+        "slope_closure": slope_closure_table(report),
+        "finding571_allocation": finding571_table(report),
+        "pass_count_contrast": pass_contrast_table(report),
+        "census_pricing": pricing_table(report),
+        "priced_shortlist": shortlist_table(report),
+    }
+    tables.update({k: v for k, v in optional.items() if v is not None})
     run.log(tables)
+    if "e186" in report:
+        recurrence = report["e186_decomposition"].get("recurrence_fit", {})
+        alloc = report.get("finding571_allocation", {})
+        run.summary.update({
+            "recurrence_ms_per_row_per_layer":
+                recurrence.get("linear", {}).get("slope_per_row"),
+            "recurrence_ms_per_round_per_row":
+                (recurrence.get("linear", {}).get("slope_per_row") or 0) * 48,
+            "reconciliation_max_abs_deviation": max(
+                abs(row["modeled_over_insitu_band_arm"] - 1.0)
+                for row in report["insitu_reconciliation"]["per_width"]),
+            "slope_closure_max_abs_residual_ms": max(
+                abs(row["residual_ms"]) for row in report["slope_closure"]),
+            "finding571_pass_plan_invariant_total_ms":
+                alloc.get("pass_plan_invariant_total_ms"),
+            "finding571_uncovered_ms":
+                alloc.get("uncovered_by_non_qmv_families_ms"),
+        })
 
     artifact = wandb.Artifact("e218-width-tax-census", type="census")
     artifact.add_file(args.report)
