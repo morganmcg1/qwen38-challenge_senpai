@@ -2161,6 +2161,36 @@
    "xf32_us_per_invocation": 5147.3454999999985
   }
  ],
+ "coefficient": {
+  "collinear": true,
+  "identified_quantity": "sum of the instruction-relief and extra-byte terms, not either term alone",
+  "min_byte_arms": {
+   "arm": "na2/g1",
+   "arms_overlapping_zero": 5,
+   "arms_total": 6,
+   "removed_instructions_per_round_pooled": 12173672448.000008
+  },
+  "na2/g1/cold": {
+   "ci95_half_width_ms_per_round": 1.0751705197121582,
+   "measured_ms_per_round": -1.6330690009269202,
+   "measured_upper_bound_ms_per_round": -0.557898481214762,
+   "op_proportional_excluded": true,
+   "op_proportional_prediction_ms_per_round": 1.11525,
+   "us_per_removed_instruction_upper_bound": -4.582828095612333e-08
+  },
+  "na2/g1/hot": {
+   "ci95_half_width_ms_per_round": 0.44644369241689535,
+   "measured_ms_per_round": 0.30012737005347795,
+   "measured_upper_bound_ms_per_round": 0.7465710624703733,
+   "op_proportional_excluded": true,
+   "op_proportional_prediction_ms_per_round": 1.2903499999999999,
+   "us_per_removed_instruction_upper_bound": 6.132669214317707e-08
+  },
+  "removed_instructions_per_extra_byte": [
+   0.39375
+  ],
+  "why_collinear": "removing a bfloat16-to-float convert requires widening the load that feeds it, so both terms scale as NA * lane_k_blocks * groups"
+ },
  "cool_gate_passed_real_gate": false,
  "desk_source": "research/e223-artifacts/e223-desk-pricing.json",
  "experiment": "e223-percolumn-inner-loop",

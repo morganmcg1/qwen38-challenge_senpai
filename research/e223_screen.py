@@ -265,6 +265,66 @@ def main() -> None:
                 pooled["na%d/g%d/%s"
                        % (na, groups, "cold" if cold else "hot")] = entry
 
+    # The coefficient the advisor asked for: the marginal worth of one removed
+    # non-arithmetic instruction. This arm cannot identify it alone. Removing a
+    # convert REQUIRES widening the load, so removed instructions and extra
+    # bytes are exactly proportional in every arm, and only their SUM is
+    # identified. Report the ratio, the sum, and the exclusion test.
+    ratios = sorted({
+        round(a["removed_instructions_per_invocation"]
+              / (a["extra_issued_activation_mb_per_invocation"] * 1048576.0), 6)
+        for a in arms if a["extra_issued_activation_mb_per_invocation"]})
+    coefficient = {
+        "identified_quantity":
+            "sum of the instruction-relief and extra-byte terms, not either "
+            "term alone",
+        "removed_instructions_per_extra_byte": ratios,
+        "collinear": len(ratios) == 1,
+        "why_collinear":
+            "removing a bfloat16-to-float convert requires widening the load "
+            "that feeds it, so both terms scale as NA * lane_k_blocks * groups",
+    }
+    # The cheapest arms carry the smallest byte penalty, so they bound the
+    # instruction term most tightly from above.
+    cheap = [a for a in arms if a["na"] == 2 and a["groups"] == 1]
+    if cheap:
+        per_round_insn = sum(
+            a["removed_instructions_per_invocation"]
+            * a["invocations_per_round"] for a in cheap if a["pooled_cell"])
+        coefficient["min_byte_arms"] = {
+            "arm": "na2/g1",
+            "removed_instructions_per_round_pooled": per_round_insn,
+            "arms_overlapping_zero": sum(
+                1 for a in cheap
+                if abs(a["measured_in_kernel_relief_ms_per_round"])
+                <= a["measured_ci95_half_width_ms_per_round"]),
+            "arms_total": len(cheap),
+        }
+        for cold in (True, False):
+            tag = "na2/g1/%s" % ("cold" if cold else "hot")
+            if tag not in pooled:
+                continue
+            e = pooled[tag]
+            upper = (e["measured_in_kernel_relief_ms_per_round"]
+                     + e["ci95_half_width_ms_per_round"])
+            # Op-proportional relief scales with removed instructions, so the
+            # desk's NA=4 gross figure halves at NA=2.
+            desk_na4 = pooled.get("na4/g1/%s" % ("cold" if cold else "hot"), {})
+            predicted = desk_na4.get("desk_gross_relief_ms_per_round")
+            coefficient[tag] = {
+                "measured_ms_per_round":
+                    e["measured_in_kernel_relief_ms_per_round"],
+                "ci95_half_width_ms_per_round":
+                    e["ci95_half_width_ms_per_round"],
+                "measured_upper_bound_ms_per_round": upper,
+                "op_proportional_prediction_ms_per_round": (
+                    predicted / 2.0 if predicted is not None else None),
+                "op_proportional_excluded": (
+                    predicted is not None and upper < predicted / 2.0),
+                "us_per_removed_instruction_upper_bound": (
+                    upper * 1000.0 / per_round_insn if per_round_insn else None),
+            }
+
     best = None
     for tag, entry in pooled.items():
         if best is None or (entry["measured_in_kernel_relief_ms_per_round"]
@@ -312,6 +372,7 @@ def main() -> None:
             "bfloat16": INSN_PER_COLUMN_BF16, "float32": INSN_PER_COLUMN_F32},
         "source": str(args.xdtype_json),
         "desk_source": str(args.desk),
+        "coefficient": coefficient,
         "rule_407_occupancy_witness": occupancy,
         "rule_410_b_stream_us_per_mib": B_STREAM_US_PER_MIB,
         "rule_410_cache_served_fraction_bound": CACHE_SERVED_FRACTION_BOUND,
