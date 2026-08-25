@@ -16,6 +16,10 @@
 #   rows     rows_per_simd in {4 shipped, 4 parameterized, 2} at NA in {4,5}
 #            and G in {1,2} -> E221 step 1, the register-pressure premise
 #            against the activation-re-read premise (FINDING 576).
+#   xdtype   activation dtype in {bfloat16 shipped, float32} at NA 2..5 and
+#            G in {1,2} -> E223 step 1, the price of one removed
+#            bfloat16-to-float conversion per column per k-block against the
+#            doubled activation bytes that removing it costs.
 #
 # Each phase runs in its OWN process so the replica rings of one phase are
 # released before the next builds its own. Peak resident device memory is
@@ -64,7 +68,8 @@ esac
         MLX_E219_REPLICA_CAP_MB MLX_E219_NA MLX_E219_GROUPS \
         MLX_E219_GROUP_NA MLX_E219_K MLX_E219_N MLX_E219_SPLITS \
         MLX_E219_DSPLIT_CELLS MLX_E219_DSPLIT_NA \
-        MLX_E219_ROWS_NA MLX_E219_ROWS_GROUPS; do
+        MLX_E219_ROWS_NA MLX_E219_ROWS_GROUPS \
+        MLX_E219_XDTYPE_NA MLX_E219_XDTYPE_GROUPS; do
         echo "${name}=${!name-}"
     done
 } > "${out_dir}/${phase}.meta.txt"
