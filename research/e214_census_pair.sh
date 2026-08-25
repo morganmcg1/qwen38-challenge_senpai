@@ -46,7 +46,10 @@ changed="$(git diff --name-only "${base_sha}" -- "${surface[@]}")"
   exit 2; }
 
 restore() {
-  git checkout -- "${session}" 2>/dev/null || true
+  # From HEAD, not from the index: staging the base arm also wrote the base
+  # blob into the index, so an index-side restore would reinstate the base file
+  # and leave the branch file lost.
+  git checkout HEAD -- "${session}" 2>/dev/null || true
 }
 trap restore EXIT
 
@@ -148,7 +151,7 @@ senpai/rebuild-and-assert-worker.sh \
 run_leg base ship || exit $?
 
 echo "=== arm cand: restoring the branch file"
-git checkout -- "${session}"
+restore
 [[ -z "$(git status --porcelain)" ]] || {
   echo "e214_census_pair.sh: tree not restored after the base arm" >&2; exit 3; }
 senpai/rebuild-and-assert-worker.sh \
