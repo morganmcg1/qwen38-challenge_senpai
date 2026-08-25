@@ -673,11 +673,23 @@ public final class Qwen36MTPBlockSession {
         if Self.traceRounds {
             let tBeginDone = DispatchTime.now().uptimeNanoseconds
             let cpuBeginDone = Self.threadCPUNanoseconds()
+            Self.traceLeg += 1
             Self.traceWrite("mtp-trace: begin seed=\(seedTokens.count) "
                 + "build_us=\((tBeginBuilt - tBegin0) / 1000) "
                 + "eval_wall_us=\((tBeginDone - tBeginBuilt) / 1000) "
                 + "wall_us=\((tBeginDone - tBegin0) / 1000) "
                 + "cpu_us=\((cpuBeginDone - cpuBegin0) / 1000)\n")
+            // E210: absolute seed anchors, so the offline census can place the
+            // charged seed segment on the same mach axis as the round anchors
+            // and the command-buffer interval ledger. The `begin` line above
+            // carries durations only, and a leg's start cannot be recovered
+            // from a duration without assuming the parent protocol is free.
+            Self.traceWrite(
+                "mtp-begin-anchor: leg=\(Self.traceLeg) "
+                    + "pid=\(ProcessInfo.processInfo.processIdentifier) "
+                    + "seed=\(seedTokens.count) "
+                    + "t_begin0=\(tBegin0) t_begin_built=\(tBeginBuilt) "
+                    + "t_begin_done=\(tBeginDone)\n")
         }
         let readTail = (
             tailIDs.asArray(Int32.self).map { Int($0) },
@@ -761,6 +773,24 @@ public final class Qwen36MTPBlockSession {
     /// `MLXFAST_OFFICIAL_BENCHMARK_RUN=1`, so this stays local-only.
     private static let traceRounds =
         ProcessInfo.processInfo.environment["MLX_QWEN_MTP_TRACE"] == "1"
+
+    // E210 RESEARCH INSTRUMENT (research-only; strip before any submission).
+    //
+    // One trace file collects every leg a local run decodes, so RULE 386
+    // requires each record to name its leg. `traceLeg` counts `begin` calls in
+    // this process, and every `mtp-anchor:` line carries it.
+    nonisolated(unsafe) private static var traceLeg: Int = 0
+
+    /// Planted CPU stall, in microseconds, at the top of every round. The
+    /// positive control for the GPU-idle census: the host submits nothing
+    /// while it sleeps, so device busy time cannot change and the census must
+    /// report the leg's idle growing by this much per round, inside `d_pre`.
+    private static let stallMicroseconds: UInt32 = {
+        guard let raw = ProcessInfo.processInfo
+            .environment["MLX_E210_STALL_US"], let value = UInt32(raw)
+        else { return 0 }
+        return value
+    }()
 
     /// Attribution probe only. `verify_build_us` measures the window in which
     /// the host builds the verify graph WHILE the asynchronously submitted head
@@ -1451,6 +1481,7 @@ public final class Qwen36MTPBlockSession {
         // the single blocking eval's GPU wall. Never on in a ranked run.
         let tRound0 = Self.traceRounds ? DispatchTime.now().uptimeNanoseconds : 0
         let cpuRound0 = Self.traceRounds ? Self.threadCPUNanoseconds() : 0
+        if Self.stallMicroseconds > 0 { usleep(Self.stallMicroseconds) }
         if Qwen35BandTimer.enabled { Qwen35BandTimer.reset() }
         var tDraftBuilt: UInt64 = 0
         var tSnapshotDone: UInt64 = 0
@@ -1551,6 +1582,8 @@ public final class Qwen36MTPBlockSession {
             pendingPrimary = readTail.0[0]
             pendingTop2 = readTail
             let (tailTokens, tailLogits) = readTail
+            let tSerialEval = Self.traceRounds
+                ? DispatchTime.now().uptimeNanoseconds : 0
             Self.traceRow(
                 pos: seedTokenCount + committedTokenCount,
                 ids: tailTokens, values: tailLogits)
@@ -1577,6 +1610,21 @@ public final class Qwen36MTPBlockSession {
                         + "band_fa_mlp_us=\(Qwen35BandTimer.faMLPNs / 1000) "
                         + "band_fwd=\(Qwen35BandTimer.forwards) "
                         + "serial_body=1\n")
+                // E210: the serial body has no drafting anchors, so the census
+                // would have no absolute window for a K=1 leg at all. Emit the
+                // three boundaries this path does define, with the row dump
+                // bracketed as instrument cost.
+                Self.traceWrite(
+                    "mtp-anchor: leg=\(Self.traceLeg) "
+                        + "round=\(roundCount) d=0 acc=0 serial=1 "
+                        + "pid=\(ProcessInfo.processInfo.processIdentifier) "
+                        + "t_round0=\(tRound0) "
+                        + "t_eval_done=\(tSerialEval) "
+                        + "t_row_trace0=\(tSerialEval) "
+                        + "t_row_trace_done=\(tSerialDone) "
+                        + "t_tail_done=\(tSerialDone) "
+                        + "t_prev_trace_done=\(Self.traceEmitDone)\n")
+                Self.traceEmitDone = DispatchTime.now().uptimeNanoseconds
             }
             return Qwen36MTPRoundResult(
                 tokens: committed,
@@ -1948,7 +1996,8 @@ public final class Qwen36MTPBlockSession {
             // `verify_build_us` above keeps its historical meaning (it still
             // spans the recurrent snapshot), and the split appears here.
             Self.traceWrite(
-                "mtp-anchor: round=\(roundCount) d=\(draftCount) "
+                "mtp-anchor: leg=\(Self.traceLeg) "
+                    + "round=\(roundCount) d=\(draftCount) "
                     + "acc=\(acceptedCount) "
                     // One trace file collects every worker a leg spawns, and
                     // the GPU interval ledger is per process, so the reader
