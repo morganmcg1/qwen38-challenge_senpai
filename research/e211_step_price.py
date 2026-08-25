@@ -84,6 +84,12 @@ E208_M9_LOCAL_MS = 20.774      # FINDING 543 paired m=9 delta, harness=local
 E208_M9_LOCAL_CI = (20.396, 21.152)
 
 LAW_KEYS = ("smooth", "step", "step_e208")
+
+# Advisor Entry 424: E208 r1 is merged, so the maintained base carries the
+# (9,5) correction. The uncorrected step law is still what the `aff4ad64`
+# receipt pays on, because its candidate `c47c7284` predates that merge, but
+# no future implementation is ever priced under it.
+FORWARD_KEYS = ("smooth", "step_e208")
 TIEBREAK = 1e-7                # breaks exact median ties toward the better mean
 
 
@@ -764,8 +770,9 @@ def _minimax_arm(law_tables, ship, floors, rng):
     price = price_of_cuts(cuts)
     agree, mismatches = verify_price(cuts, price)
 
+    keys = tuple(law_tables)
     per_law, worst_prompt = {}, {}
-    for key in LAW_KEYS:
+    for key in keys:
         raws = evaluate(law_tables[key], cuts)
         value = median_of([raws[n] for n in ORDER])
         ship_raw = evaluate(law_tables[key], ship_cuts(8))
@@ -778,30 +785,31 @@ def _minimax_arm(law_tables, ship, floors, rng):
                         "worst_prompt_delta_pct":
                             min(prompt_pct.values())}
 
-    honest = {key: {} for key in LAW_KEYS}
+    honest = {key: {} for key in keys}
     for held in ORDER:
         pool = [n for n in ORDER if n != held]
         fold = optimise_minimax(law_tables, ship, pool, rng, floors)
-        for key in LAW_KEYS:
+        for key in keys:
             honest[key][held] = evaluate(law_tables[key], fold)[held]
     honest_out = {}
-    for key in LAW_KEYS:
+    for key in keys:
         value = median_of([honest[key][n] for n in ORDER])
         honest_out[key] = {"published_median": value,
                            "delta_pct": pct(value, ship[key]),
                            "per_prompt_raw": honest[key]}
 
-    return {"cuts": cuts[1:MAXD + 1],
+    return {"law_set": list(keys),
+            "cuts": cuts[1:MAXD + 1],
             "thresholds": [c / QGRID for c in cuts[1:MAXD + 1]],
             "price_marginal": price["marginal"],
             "price_cumulative": price["cumulative"],
             "greedy_agreement": agree, "greedy_mismatches": mismatches,
             "per_law": per_law, "loo_honest": honest_out,
-            "worst_delta_pct": min(per_law[k]["delta_pct"] for k in LAW_KEYS),
+            "worst_delta_pct": min(per_law[k]["delta_pct"] for k in keys),
             "worst_loo_honest_delta_pct":
-                min(honest_out[k]["delta_pct"] for k in LAW_KEYS),
+                min(honest_out[k]["delta_pct"] for k in keys),
             "worst_prompt_delta_pct":
-                min(per_law[k]["worst_prompt_delta_pct"] for k in LAW_KEYS),
+                min(per_law[k]["worst_prompt_delta_pct"] for k in keys),
             "worst_prompt": worst_prompt,
             "edl": edl_of(law_tables["step_e208"], cuts),
             "anchor_distance": anchor_distance(law_tables["step_e208"],
@@ -809,25 +817,39 @@ def _minimax_arm(law_tables, ship, floors, rng):
 
 
 def receipt_proof(inst, laws, rng):
-    """One table that must pay under EVERY live reading of the 9-row cell.
+    """One table that must pay under every reading the campaign still prices.
 
-    Two arms are reported. The free arm maximises the weakest per-law
-    published median. The guarded arm adds a floor that forbids any single
-    prompt falling below its shipped raw ratio, because the hidden pool is
-    not the proxy pool: a prompt that does not set the proxy median may set
-    the hidden one.
+    Two law sets are reported, because advisor Entry 424 separates them. The
+    RECEIPT set is all three readings: the `aff4ad64` receipt reads on the
+    uncorrected m=9 cost, because its candidate `c47c7284` predates the (9,5)
+    merge. The FORWARD set drops that uncorrected reading, because E208 r1 is
+    merged and the maintained base now carries the (9,5) correction, so no
+    future implementation is ever priced under the uncorrected step law.
+
+    Within each set, the free arm maximises the weakest per-law published
+    median and the guarded arm also forbids any single prompt falling below
+    its shipped raw ratio, because the hidden pool is not the proxy pool: a
+    prompt that does not set the proxy median may set the hidden one.
     """
-    law_tables = {key: prompt_tables(inst, laws[key]) for key in LAW_KEYS}
-    ship = {key: median_of([evaluate(law_tables[key], ship_cuts(8))[n]
+    all_tables = {key: prompt_tables(inst, laws[key]) for key in LAW_KEYS}
+    ship = {key: median_of([evaluate(all_tables[key], ship_cuts(8))[n]
                             for n in ORDER]) for key in LAW_KEYS}
-    floors = {key: evaluate(law_tables[key], ship_cuts(8))
+    floors = {key: evaluate(all_tables[key], ship_cuts(8))
               for key in LAW_KEYS}
+    fwd_tables = {key: all_tables[key] for key in FORWARD_KEYS}
 
-    free = _minimax_arm(law_tables, ship, None, rng)
-    guarded = _minimax_arm(law_tables, ship, floors, rng)
-    out = dict(free)
+    out = dict(_minimax_arm(all_tables, ship, None, rng))
     out["shipped"] = ship
-    out["guarded"] = guarded
+    out["guarded"] = _minimax_arm(all_tables, ship, floors, rng)
+    out["forward"] = _minimax_arm(fwd_tables, ship, None, rng)
+    out["forward_guarded"] = _minimax_arm(fwd_tables, ship, floors, rng)
+    # The forward table is chosen without the uncorrected reading, so what it
+    # would cost if that reading were somehow still paid is reported, not hidden.
+    for name in ("forward", "forward_guarded"):
+        cuts = cuts_of(out[name]["cuts"])
+        raws = evaluate(all_tables["step"], cuts)
+        value = median_of([raws[n] for n in ORDER])
+        out[name]["paid_under_uncorrected_step_pct"] = pct(value, ship["step"])
     return out
 
 
@@ -1040,6 +1062,39 @@ def report(out):
              % (gp["worst_delta_pct"], gp["worst_loo_honest_delta_pct"],
                 gp["worst_prompt_delta_pct"]))
 
+    L.append("")
+    L.append("  FORWARD-PRICING TABLES (advisor Entry 424). E208 r1 is "
+             "merged, so the maintained")
+    L.append("  base carries the (9,5) correction and law step_e208 is the "
+             "default forward law.")
+    L.append("  The uncorrected step law is dropped here: it is only what "
+             "the aff4ad64 receipt")
+    L.append("  itself reads on, because candidate c47c7284 predates the "
+             "(9,5) merge.")
+    for name, title in (("forward", "free"), ("forward_guarded", "guarded")):
+        fw = rp[name]
+        L.append("   %s over {%s}" % (title, ", ".join(fw["law_set"])))
+        L.append("     price  %s"
+                 % "  ".join("%6.3f" % v for v in fw["price_marginal"]))
+        L.append("     Q_(d+1)%s"
+                 % "  ".join("%6.4f" % v for v in fw["thresholds"]))
+        for key in fw["law_set"]:
+            L.append("     paid under %-10s %12.6f  %+7.3f%% in-sample   "
+                     "%+7.3f%% LOO-honest   worst prompt %+7.3f%%"
+                     % (key, fw["per_law"][key]["published_median"],
+                        fw["per_law"][key]["delta_pct"],
+                        fw["loo_honest"][key]["delta_pct"],
+                        fw["per_law"][key]["worst_prompt_delta_pct"]))
+        L.append("     worst forward reading %+.3f%% in-sample, %+.3f%% "
+                 "LOO-honest; worst single prompt %+.3f%%"
+                 % (fw["worst_delta_pct"], fw["worst_loo_honest_delta_pct"],
+                    fw["worst_prompt_delta_pct"]))
+        L.append("     if the dropped uncorrected step law were paid: "
+                 "%+.3f%%" % fw["paid_under_uncorrected_step_pct"])
+        L.append("     greedy-table agreement %.4f (%d mismatching grid "
+                 "points)" % (fw["greedy_agreement"],
+                              fw["greedy_mismatches"]))
+
     ve = out["validated_envelope"]
     L.append("")
     L.append("  VALIDATED EXTRAPOLATION ENVELOPE (round mass moved away from "
@@ -1129,16 +1184,40 @@ def decide(laws_out, cross, proof, envelope):
                  "table is %+.3f%%. A table fitted under a guessed reading "
                  "can lose." % cross["worst_transfer_delta_pct"])
     guarded = proof["guarded"]
-    lines.append("RECOMMENDED TABLE: the no-regression guarded minimax "
-                 "table, %+.3f%% under its WORST reading (%+.3f%% "
-                 "LOO-honest) with no prompt below %+.3f%%. The unguarded "
-                 "minimax table pays %+.3f%% but costs one prompt %+.3f%%, "
-                 "and the hidden pool is not the proxy pool."
-                 % (guarded["worst_delta_pct"],
-                    guarded["worst_loo_honest_delta_pct"],
-                    guarded["worst_prompt_delta_pct"],
-                    proof["worst_delta_pct"],
-                    proof["worst_prompt_delta_pct"]))
+    fwd = proof["forward_guarded"]
+    lines.append("RECEIPT BRANCH READING (advisor Entry 424). The aff4ad64 "
+                 "receipt reads on laws smooth and step, because its "
+                 "candidate c47c7284 predates the (9,5) merge. It cannot "
+                 "read on step_e208. Either way the FORWARD law for an "
+                 "implementation is step_e208, because E208 r1 is merged "
+                 "into the maintained base.")
+    lines.append("  receipt lands SMOOTH -> forward law smooth: free "
+                 "optimum %+.3f%% LOO-honest."
+                 % laws_out["smooth"]["loo_honest_delta_pct"])
+    lines.append("  receipt lands STEP   -> forward law step_e208: free "
+                 "optimum %+.3f%% LOO-honest."
+                 % laws_out["step_e208"]["loo_honest_delta_pct"])
+    lines.append("RECOMMENDED TABLE: the no-regression guarded FORWARD "
+                 "minimax table over {%s}. It pays %+.3f%% under its worst "
+                 "forward reading (%+.3f%% LOO-honest) with no prompt below "
+                 "%+.3f%%, so it needs no receipt branch and is correct "
+                 "under either outcome."
+                 % (", ".join(fwd["law_set"]), fwd["worst_delta_pct"],
+                    fwd["worst_loo_honest_delta_pct"],
+                    fwd["worst_prompt_delta_pct"]))
+    lines.append("  dropping the uncorrected step law is worth %+.3f pp of "
+                 "worst-reading delta (%+.3f%% forward vs %+.3f%% over all "
+                 "three readings). That uncorrected law was the whole source "
+                 "of the transfer risk."
+                 % (fwd["worst_delta_pct"] - guarded["worst_delta_pct"],
+                    fwd["worst_delta_pct"], guarded["worst_delta_pct"]))
+    lines.append("  the unguarded forward table pays %+.3f%% but costs one "
+                 "prompt %+.3f%%; the guard costs %.3f pp and the hidden "
+                 "pool is not the proxy pool."
+                 % (proof["forward"]["worst_delta_pct"],
+                    proof["forward"]["worst_prompt_delta_pct"],
+                    proof["forward"]["worst_delta_pct"]
+                    - fwd["worst_delta_pct"]))
     outside = [n for n, a in envelope["arms"].items()
                if not a["inside_validated_envelope"]]
     lines.append("ENVELOPE: %s sit outside the paid cap-4/cap-5 "
@@ -1156,6 +1235,12 @@ def decide(laws_out, cross, proof, envelope):
             "guarded_worst_loo_honest_pct":
                 guarded["worst_loo_honest_delta_pct"],
             "guarded_worst_prompt_pct": guarded["worst_prompt_delta_pct"],
+            "forward_law_set": list(fwd["law_set"]),
+            "forward_guarded_worst_pct": fwd["worst_delta_pct"],
+            "forward_guarded_worst_loo_honest_pct":
+                fwd["worst_loo_honest_delta_pct"],
+            "forward_guarded_worst_prompt_pct":
+                fwd["worst_prompt_delta_pct"],
             "arms_outside_validated_envelope": sorted(outside),
             "verdict": lines}
 
@@ -1183,12 +1268,15 @@ def main():
         out["laws"][key] = run_law(inst, laws[key], key, rng)
     out["cross_law"] = cross_law(inst, laws, out["laws"])
     out["receipt_proof"] = receipt_proof(inst, laws, rng)
+    proof = out["receipt_proof"]
     out["validated_envelope"] = validated_envelope(
         inst, laws["step_e208"],
         {"free_step_e208": cuts_of(out["laws"]["step_e208"]["optimum"]
                                    ["cuts"]),
-         "minimax": cuts_of(out["receipt_proof"]["cuts"]),
-         "minimax_guarded": cuts_of(out["receipt_proof"]["guarded"]["cuts"])})
+         "minimax": cuts_of(proof["cuts"]),
+         "minimax_guarded": cuts_of(proof["guarded"]["cuts"]),
+         "forward": cuts_of(proof["forward"]["cuts"]),
+         "forward_guarded": cuts_of(proof["forward_guarded"]["cuts"])})
     out["decision"] = decide(out["laws"], out["cross_law"],
                              out["receipt_proof"], out["validated_envelope"])
 

@@ -170,6 +170,27 @@ def proof_summary(blob):
             arm["inside_validated_envelope"]
     for name, value in env["validated_relocation"].items():
         out["envelope/validated/%s" % name] = value
+    for arm in ("forward", "forward_guarded"):
+        fw = proof[arm]
+        out["%s/lawSet" % arm] = ",".join(fw["law_set"])
+        out["%s/worstDeltaPct" % arm] = fw["worst_delta_pct"]
+        out["%s/worstLooHonestDeltaPct" % arm] = \
+            fw["worst_loo_honest_delta_pct"]
+        out["%s/worstSinglePromptDeltaPct" % arm] = \
+            fw["worst_prompt_delta_pct"]
+        out["%s/paidUnderUncorrectedStepPct" % arm] = \
+            fw["paid_under_uncorrected_step_pct"]
+        out["%s/greedyTableAgreement" % arm] = fw["greedy_agreement"]
+        for d, value in enumerate(fw["price_marginal"]):
+            out["%s/price/row%d" % (arm, d)] = value
+            out["%s/threshold/row%d" % (arm, d)] = fw["thresholds"][d]
+        for key in fw["law_set"]:
+            out["%s/paidUnder/%s/publishedMedian" % (arm, key)] = \
+                fw["per_law"][key]["published_median"]
+            out["%s/paidUnder/%s/deltaPct" % (arm, key)] = \
+                fw["per_law"][key]["delta_pct"]
+            out["%s/paidUnder/%s/looHonestDeltaPct" % (arm, key)] = \
+                fw["loo_honest"][key]["delta_pct"]
     return out
 
 
