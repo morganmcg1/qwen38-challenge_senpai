@@ -412,7 +412,11 @@ private struct E219Session {
             let order = ascending
                 ? Array(units.indices) : Array(units.indices.reversed())
             recordTemperature("block_\(block)_entry")
-            for _ in 0 ..< 20 { settle() }
+            for _ in 0 ..< 4 { settle() }
+            // Block prologue. The first two or three units measured after a
+            // settle burst were reproducibly inflated, so every unit is cycled
+            // once before any of them is timed and no position pays that cost.
+            for index in order { pretouch(units[index]) }
             for (position, index) in order.enumerated() {
                 let unit = units[index]
                 pretouch(unit)
@@ -717,7 +721,7 @@ struct E219PassAnatomyTests {
             phase: "groups",
             shapes: e219ScoredCells,
             arms: arms,
-            coldArms: [true],
+            coldArms: [true, false],
             deliverable:
                 "per-pass fixed cost from G at fixed NA; the G=2/G=1 ratio is "
                 + "the FINDING 559 reconciliation gate")

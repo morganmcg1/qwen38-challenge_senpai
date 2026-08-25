@@ -101,11 +101,33 @@ def census_spec(blob: dict) -> tuple[str, dict, dict]:
         "fit/identifiable": fit.get("identifiable"),
         "fit/weightedR2": fit.get("weighted_r2"),
         "fit/nUnits": fit.get("n_units"),
-        "gate/aPassVs536": recon.get("gate_a_pass_vs_536"),
-        "gate/aPassVs543": recon.get("gate_a_pass_vs_543"),
+        "gate/aPass": recon.get("gate_a_pass"),
         "gate/bPass": recon.get("gate_b_pass"),
-        "gate/bBand": recon.get("gate_b_band"),
+        "phi/cacheServedFraction": recon.get("phi_cache_served_fraction"),
     }
+    gate_a = recon.get("gate_a") or {}
+    for key, name in (
+        ("bracket_ms_per_round", "gateA/bracketMsPerRound"),
+        ("contains_point_anchor", "gateA/containsPointAnchor"),
+        ("cold_over_insitu", "gateA/coldOverInsitu"),
+        ("hot_over_insitu", "gateA/hotOverInsitu"),
+        ("residual_dram_served_fraction", "phi/dramResidualFraction"),
+        ("phi_from_anchor_ci", "phi/fromAnchorCi"),
+    ):
+        if gate_a.get(key) is not None:
+            summary[name] = gate_a[key]
+    for tag in ("cold", "hot"):
+        block = gate_a.get(tag)
+        if block:
+            summary["gateA/%s/scaledMsPerRound" % tag] = \
+                block["scaled_to_all_cells_ms_per_round"]
+            summary["gateA/%s/measuredCellsMsPerRound" % tag] = \
+                block["measured_cells_ms_per_round"]
+    for row in (recon.get("gate_b") or {}).get("rows") or []:
+        stem = "gateB/%s/%s" % (row["cell"].replace(".", "_"), row["arm"])
+        summary["%s/coldRatio" % stem] = row["cold_ratio"]
+        summary["%s/hotRatio" % stem] = row["hot_ratio"]
+        summary["%s/contains559Band" % stem] = row["contains_559_band"]
     for name, entry in (fit.get("coefficients") or {}).items():
         summary["coef/%s" % name] = entry["value"]
         summary["coef/%s/ci95Lo" % name] = entry["ci95"][0]
@@ -113,14 +135,13 @@ def census_spec(blob: dict) -> tuple[str, dict, dict]:
         summary["coef/%s/resolved" % name] = entry["resolved_away_from_zero"]
         if entry.get("implied_gb_per_s") is not None:
             summary["coef/%s/impliedGBps" % name] = entry["implied_gb_per_s"]
-    for check in recon.get("gate_a_cell_checks") or []:
-        stem = "gateA/%s" % check["cell"].replace(".", "_")
-        summary["%s/measuredMsPerRound" % stem] = \
-            check["measured_marginal_pass_ms_per_round"]
-        summary["%s/ratioVs536" % stem] = check["ratio_vs_536"]
-        summary["%s/ratioVs543" % stem] = check["ratio_vs_543"]
-    for i, r in enumerate(recon.get("gate_b_ratios") or []):
-        summary["gateB/ratio%d" % i] = r
+    for check in recon.get("finding_536_context") or []:
+        stem = "context536/%s" % check["cell"].replace(".", "_")
+        summary["%s/coldMsPerRound" % stem] = \
+            check["cold_marginal_pass_ms_per_round"]
+        summary["%s/hotMsPerRound" % stem] = \
+            check["hot_marginal_pass_ms_per_round"]
+        summary["%s/ratioColdVs536" % stem] = check["ratio_cold_vs_536"]
     for pair in blob.get("hot_vs_cold") or []:
         stem = "cache/%s/na%s/g%s" % (
             pair["cell"].replace(".", "_"), pair["na"], pair["groups"])
@@ -132,7 +153,11 @@ def census_spec(blob: dict) -> tuple[str, dict, dict]:
         stem = "priced/%s" % entry["mechanism"].split(" (")[0].replace(" ", "_")
         summary["%s/pooledMsPerRound" % stem] = entry["pooled_ms_per_round"]
         summary["%s/publicMsPerRound" % stem] = entry["public_ms_per_round"]
-        summary["%s/clears1msBar" % stem] = entry["clears_1ms_bar_pooled"]
+        summary["%s/decisionMsPerRound" % stem] = entry["decision_ms_per_round"]
+        summary["%s/clears1msBar" % stem] = entry["clears_1ms_bar"]
+        if entry.get("pooled_ms_per_round_residual") is not None:
+            summary["%s/pooledMsPerRoundResidual" % stem] = \
+                entry["pooled_ms_per_round_residual"]
 
     config = identity(blob, {
         "stage": "census",
