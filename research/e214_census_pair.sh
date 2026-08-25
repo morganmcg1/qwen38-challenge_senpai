@@ -2,8 +2,12 @@
 # Research-only (qwen38-r1-e214): the SAME-HOST base/candidate schedule census
 # pair the advisor asked for.
 #
-#   usage: research/e214_census_pair.sh [TOKENS]      # default 512
+#   usage: research/e214_census_pair.sh [TOKENS] [ARMS]   # default: 512, both
 #          research/e214_stage_arms.sh must have run first.
+#
+# The census is a deterministic function of build, head and fixture, so one arm
+# may be replayed on its own after a failed assertion without invalidating an
+# arm that already ran on this host.
 #
 # WHY. This experiment's headline IS the schedule delta. FINDING 545's base
 # census (76 rounds, EDL 6.855263, acc 0.836852) was measured on another M4
@@ -28,6 +32,7 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 tokens="${1:-512}"
+arms="${2:-base cand}"
 stage="${MLXFAST_E214_WORKERS:-$(cd ../.. && pwd)/e214-workers}"
 worker=".build-worker/release/mlxfast-runtime-worker"
 metallib=".build-worker/release/mlx.metallib"
@@ -131,7 +136,10 @@ run_leg() {
 
   local status printed post
   status="$(cat "${out}/exit")"
-  printed="$(grep -m1 -o 'mtp-price: arm=[a-z0-9]*' "${trace_path}" \
+  # `snapshotScheduleSignal` prints `arm=` on every schedule line and exists in
+  # both arms. The candidate's extra `mtp-price:` witness does not, so reading
+  # the arm from that line alone would fail the base leg by construction.
+  printed="$(grep -m1 -o 'arm=[a-z0-9]*' "${trace_path}" \
              | sed 's/.*arm=//' || true)"
   post="$(digest "${worker}")"
   {
@@ -152,14 +160,19 @@ run_leg() {
   return "${status}"
 }
 
-echo "=== arm base"
-install_arm base || exit $?
-run_leg base ship || exit $?
-
-echo "=== arm cand"
-install_arm cand || exit $?
-run_leg cand stepq || exit $?
+for arm in ${arms}; do
+  case "${arm}" in
+    base) want=ship ;;
+    cand) want=stepq ;;
+    *) echo "e214_census_pair.sh: unknown arm ${arm}" >&2; exit 2 ;;
+  esac
+  echo "=== arm ${arm}"
+  install_arm "${arm}" || exit $?
+  run_leg "${arm}" "${want}" || exit $?
+done
 
 echo "=== done"
-grep -H '^printed_price_arm=\|^worker_sha256=\|^trace_rounds=' \
-  "${out_root}"/e214-{base,cand}-census/meta.txt
+for arm in ${arms}; do
+  grep -H '^printed_price_arm=\|^worker_sha256=\|^trace_rounds=' \
+    "${out_root}/e214-${arm}-census/meta.txt"
+done
