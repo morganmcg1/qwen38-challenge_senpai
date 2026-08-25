@@ -88,7 +88,7 @@ def phase_specs(blob: dict) -> dict:
             "chains": meta.get("chains"),
             "gpuUsed": phase != "sanity",
         })
-        specs[phase] = ("e219-%s" % phase, config, summary)
+        specs[phase] = ("e219-%s" % phase.replace("/", "-"), config, summary)
     return specs
 
 
