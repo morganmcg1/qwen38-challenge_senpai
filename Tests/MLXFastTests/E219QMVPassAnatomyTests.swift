@@ -796,8 +796,10 @@ struct E219InstrumentSanityTests {
                             ])
                             #expect(
                                 a.count == b.count,
-                                "\(cell.name) m=\(m) rows=\(geometry.rows): "
-                                    + "output element count changed")
+                                """
+                                \(cell.name) m=\(m) rows=\(geometry.rows): \
+                                output element count changed
+                                """)
                             #expect(
                                 differing == 0,
                                 """
