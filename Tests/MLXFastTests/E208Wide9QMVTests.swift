@@ -19,10 +19,10 @@ import Testing
 // This file is the Stage-0 falsification gate that must pass before any timing.
 // Two sections:
 //
-//   * `planTable` is a pure-function test of the two tables. It proves that
-//     `stagedWide9` differs from `staged` at m = 9 and nowhere else, that the
-//     launched group count follows the table, and that the arm resolves the
-//     witness the trace will carry;
+//   * `planTable` is a pure-function test of the shipped table. It proves that
+//     the shipped plan differs from the E120 plan at m = 9 and nowhere else,
+//     that the launched group count follows the table, and that the witness
+//     the trace will carry names the shipped partition;
 //   * `numericalGate` compares the two compiled group partitions cell by cell
 //     at m = 9 with real packed 4-bit weights and real bfloat16 activations. It
 //     compares actual floating-point values, not argmax, records hexfloat
@@ -74,27 +74,35 @@ private let e208Cells: [E208Cell] = {
 private struct E208Pipeline {
     var variant: Qwen35QMVKernelVariant
     var label: String
+    /// Group count per width, when the instrument compiles a partition the
+    /// shipped table no longer names. The legacy `(9, 3)` reference needs it.
+    var groupsOverride: [Int: Int]
     var table: Qwen35CachedKernel
     var plain: Qwen35CachedKernel
 
     init(
         variant: Qwen35QMVKernelVariant, label: String,
-        header: String? = nil, nameSuffix: String = ""
+        header: String? = nil, nameSuffix: String = "",
+        sourceTransform: (String) -> String = { $0 },
+        groupsOverride: [Int: Int] = [:]
     ) {
         self.variant = variant
         self.label = label
+        self.groupsOverride = groupsOverride
         let head = header ?? qwen35E120QMVHeader
         self.table = Qwen35CachedKernel(
             name: "e208_qmv_table_\(label)\(nameSuffix)",
             inputNames: ["w", "scales", "biases", "x", "xsums"],
             outputNames: ["y"],
-            source: qwen35E120QMVSource(table: true, variant: variant),
+            source: sourceTransform(
+                qwen35E120QMVSource(table: true, variant: variant)),
             header: head)
         self.plain = Qwen35CachedKernel(
             name: "e208_qmv_plain_\(label)\(nameSuffix)",
             inputNames: ["w", "scales", "biases", "x"],
             outputNames: ["y"],
-            source: qwen35E120QMVSource(table: false, variant: variant),
+            source: sourceTransform(
+                qwen35E120QMVSource(table: false, variant: variant)),
             header: head)
     }
 
@@ -102,7 +110,9 @@ private struct E208Pipeline {
         x: MLXArray, w: MLXArray, scales: MLXArray, biases: MLXArray,
         xsums: MLXArray, m: Int, n: Int, useTable: Bool
     ) -> MLXArray {
-        let groups = Qwen35CustomQMV.activeInputGroups(m, variant: variant)
+        let groups =
+            groupsOverride[m]
+            ?? Qwen35CustomQMV.activeInputGroups(m, variant: variant)
         var outShape = x.shape
         outShape[outShape.count - 1] = n
         let launch = Qwen35KernelLaunch(
@@ -218,21 +228,26 @@ struct E208Wide9QMVTests {
 
     // MARK: - plan table
 
-    /// The wide-9 table must differ from the shipped table at m = 9 and at no
-    /// other width, and the launched group count must follow the table. This is
-    /// the "changes nothing else" proof and it needs no GPU.
+    /// The E120 plan this experiment started from. The shipped staged table
+    /// must equal it everywhere except the m = 9 entry.
+    static let legacyPairs: [(m: Int, ipg: Int)] = [
+        (2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3),
+    ]
+
+    /// The shipped table must carry `(9, 5)` and must move no other width, and
+    /// the launched group count must follow the table. This is the "changes
+    /// nothing else" proof and it needs no GPU.
     @Test
     func planTable() {
         let staged = Qwen35QMVKernelVariant.staged.pairs
-        let wide9 = Qwen35QMVKernelVariant.stagedWide9.pairs
-        #expect(staged.count == wide9.count)
-        for (a, b) in zip(staged, wide9) {
-            #expect(a.m == b.m)
-            if a.m == 9 {
-                #expect(a.ipg == 3)
-                #expect(b.ipg == 5)
+        #expect(staged.count == Self.legacyPairs.count)
+        for (shipped, legacy) in zip(staged, Self.legacyPairs) {
+            #expect(shipped.m == legacy.m)
+            if shipped.m == 9 {
+                #expect(legacy.ipg == 3)
+                #expect(shipped.ipg == 5)
             } else {
-                #expect(a.ipg == b.ipg, "width \(a.m) must not move")
+                #expect(shipped.ipg == legacy.ipg, "width \(shipped.m) must not move")
             }
         }
 
@@ -240,49 +255,40 @@ struct E208Wide9QMVTests {
         #expect(9 % 5 == 4)
 
         // The third weight pass is what this removes.
-        #expect(Qwen35CustomQMV.activeInputGroups(9, variant: .staged) == 3)
-        #expect(Qwen35CustomQMV.activeInputGroups(9, variant: .stagedWide9) == 2)
-        for m in 2 ... 8 {
+        #expect(Qwen35CustomQMV.activeInputGroups(9, variant: .staged) == 2)
+        for (m, ipg) in Self.legacyPairs where m != 9 {
             #expect(
                 Qwen35CustomQMV.activeInputGroups(m, variant: .staged)
-                    == Qwen35CustomQMV.activeInputGroups(
-                        m, variant: .stagedWide9),
+                    == (m + ipg - 1) / ipg,
                 "width \(m) group count must not move")
         }
 
-        // The compiled sources may differ only in the m = 9 case.
+        // The shipped source is the legacy source with the one m = 9
+        // instantiation moved, and nothing else.
         for table in [true, false] {
-            let a = qwen35E120QMVSource(table: table, variant: .staged)
-            let b = qwen35E120QMVSource(table: table, variant: .stagedWide9)
-            #expect(a != b)
+            let shipped = qwen35E120QMVSource(table: table, variant: .staged)
+            let legacy = shipped.replacingOccurrences(
+                of: "qwen_e120_qmv_m<9, 5,", with: "qwen_e120_qmv_m<9, 3,")
+            #expect(shipped != legacy)
             #expect(
-                a.replacingOccurrences(
+                legacy.replacingOccurrences(
                     of: "qwen_e120_qmv_m<9, 3,", with: "qwen_e120_qmv_m<9, 5,")
-                    == b)
+                    == shipped)
         }
 
-        // Distinct JIT names, so one arm cannot serve the other's compiled
-        // kernel inside one process.
-        #expect(Qwen35QMVKernelVariant.staged.kernelNameSuffix == "")
-        #expect(Qwen35QMVKernelVariant.stagedWide9.kernelNameSuffix == "_w9")
+        // The witness the trace will carry.
+        #expect(qwen35QMVWidthPlanWitness == "selective-m6+ipg9-5")
 
-        // The arm and the witness the trace will carry.
-        let armOn =
-            ProcessInfo.processInfo.environment["DARKBLOOM_E208_QMV_ARM"] == "on"
-        #expect(qwen35E208StagedVariant == (armOn ? .stagedWide9 : .staged))
-        #expect(
-            qwen35QMVWidthPlanWitness
-                == (armOn ? "selective-m6+ipg9-5" : "selective-m6+ipg9-3"))
-
-        // The arm may not disturb the m = 6 single-pass selection E195 shipped.
+        // The change may not disturb the m = 6 single-pass selection E195
+        // shipped.
         #expect(
             Qwen35CustomQMV.kernelVariant((m: 6, k: 5120, n: 248_320))
                 == .singlePass)
-        // Every fused cell at m = 9 takes the arm's staged family.
+        // Every fused cell at m = 9 takes the staged family.
         for cell in e208AllCells {
             #expect(
                 Qwen35CustomQMV.kernelVariant((m: 9, k: cell.k, n: cell.n))
-                    == qwen35E208StagedVariant, "\(cell.name)")
+                    == .staged, "\(cell.name)")
         }
     }
 
@@ -291,10 +297,20 @@ struct E208Wide9QMVTests {
     @Test(.enabled(if: E208Wide9QMVTests.gateEnabled))
     func numericalGate() throws {
         let m = 9
-        let staged = E208Pipeline(variant: .staged, label: "staged")
-        let wide9 = E208Pipeline(variant: .stagedWide9, label: "wide9")
+        // The shipped `(9, 5)` plan, and the legacy `(9, 3)` partition it
+        // replaced, compiled here from the shipped source by the same single
+        // substitution `planTable` proves is the only textual difference.
+        let wide9 = E208Pipeline(variant: .staged, label: "wide9")
+        let staged = E208Pipeline(
+            variant: .staged, label: "staged",
+            sourceTransform: {
+                $0.replacingOccurrences(
+                    of: "qwen_e120_qmv_m<9, 5,",
+                    with: "qwen_e120_qmv_m<9, 3,")
+            },
+            groupsOverride: [9: 3])
 
-        // Positive control: the wide-9 source with one accumulation perturbed
+        // Positive control: the shipped source with one accumulation perturbed
         // by a single bfloat16 ULP of relative scale. The comparison must
         // report differences for this build, otherwise a pass proves nothing.
         let perturbedHeader = qwen35E120QMVHeader.replacingOccurrences(
@@ -304,7 +320,7 @@ struct E208Wide9QMVTests {
                 + "+ sums * bias_local[r];")
         #expect(perturbedHeader != qwen35E120QMVHeader)
         let perturbed = E208Pipeline(
-            variant: .stagedWide9, label: "perturbed", header: perturbedHeader,
+            variant: .staged, label: "perturbed", header: perturbedHeader,
             nameSuffix: "_ctl")
 
         var rows: [[String: Any]] = []
@@ -346,10 +362,9 @@ struct E208Wide9QMVTests {
                         "non_finite": diff.nanOrInf,
                         "first_differing_index":
                             diff.firstDifferingIndex ?? -1,
-                        "staged_groups": Qwen35CustomQMV.activeInputGroups(
-                            m, variant: .staged),
+                        "staged_groups": staged.groupsOverride[m] ?? -1,
                         "wide9_groups": Qwen35CustomQMV.activeInputGroups(
-                            m, variant: .stagedWide9),
+                            m, variant: .staged),
                         "hexfloat_staged": e208RowSamples(
                             bv, n: cell.n, columns: 4),
                         "hexfloat_wide9": e208RowSamples(

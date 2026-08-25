@@ -272,16 +272,11 @@ struct E195CellSelectiveQMVTests {
                 == .singlePass)
         #expect(
             Qwen35CustomQMV.kernelVariant((m: 6, k: 17408, n: 5120))
-                == qwen35E208StagedVariant)
+                == .staged)
         #expect(
             Qwen35CustomQMV.kernelVariant((m: 7, k: 5120, n: 248_320))
-                == qwen35E208StagedVariant)
-        let armOn =
-            ProcessInfo.processInfo.environment["DARKBLOOM_E208_QMV_ARM"] == "on"
-        #expect(qwen35E208StagedVariant == (armOn ? .stagedWide9 : .staged))
-        #expect(
-            qwen35QMVWidthPlanWitness
-                == (armOn ? "selective-m6+ipg9-5" : "selective-m6+ipg9-3"))
+                == .staged)
+        #expect(qwen35QMVWidthPlanWitness == "selective-m6+ipg9-5")
 
         // The launch witness must follow the compiled variant, not the width
         // alone.

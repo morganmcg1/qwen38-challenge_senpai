@@ -1569,17 +1569,18 @@ let qwen35E120QMVHeader = """
 /// The two forms compile different sources, so each needs its own JIT kernel
 /// name. Both are built lazily, so a process that never selects `singlePass`
 /// never compiles it.
-/// `stagedWide9` is `staged` with the one m = 9 entry moved from IPG = 3 to
-/// IPG = 5, so a width-9 round pays `G(9) = 2` weight passes instead of 3. It
-/// stays inside the `IPG <= 5` regime the staged plan already ships and wins in
-/// at m = 5, and it is not the m = 7/8 single-pass mechanism that lost. Group 1
-/// serves the four-row tail through the template's existing `TAIL` branch. The
-/// per-row arithmetic of `qwen_e120_qmv_wide` is lane-independent, so the two
-/// group partitions are bit-exact against each other.
+///
+/// The staged m = 9 entry is `IPG = 5`, not the `IPG = 3` E120 shipped, so a
+/// width-9 round pays `G(9) = 2` weight passes instead of 3. It stays inside
+/// the `IPG <= 5` regime the staged plan already wins in at m = 5, and it is
+/// not the m = 7/8 single-pass mechanism that lost. Group 1 serves the
+/// four-row tail through the template's existing `TAIL` branch. The per-row
+/// arithmetic of `qwen_e120_qmv_wide` is lane-independent, so regrouping rows
+/// cannot reorder any row's own reduction and the two partitions are
+/// bit-exact against each other.
 enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
     case staged
     case singlePass = "singlepass"
-    case stagedWide9 = "stagedwide9"
 
     /// `(width, inputs per group)`. The Metal body maps group `g` to
     /// `first_m = g * IPG`, so the pair fixes both the template instantiation
@@ -1587,33 +1588,14 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
     var pairs: [(m: Int, ipg: Int)] {
         switch self {
         case .staged:
-            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
+            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 5)]
         case .singlePass:
             return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 3)]
-        case .stagedWide9:
-            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 5)]
         }
     }
 
-    var kernelNameSuffix: String {
-        switch self {
-        case .staged: return ""
-        case .singlePass: return "_sp"
-        case .stagedWide9: return "_w9"
-        }
-    }
+    var kernelNameSuffix: String { self == .staged ? "" : "_sp" }
 }
-
-/// E208 arm. `DARKBLOOM_E208_QMV_ARM=on` selects the `(9, 5)` group partition
-/// for every width the plan leaves staged; anything else keeps the shipped
-/// `(9, 3)`. One build carries both plans and each compiles under its own JIT
-/// kernel name, so a leg cannot serve the other arm's compiled source.
-///
-/// Read once at first use, never on the hot path: `qwen35QMVVariant` resolves
-/// the same global in both arms, so the arms pay identical selection cost.
-let qwen35E208StagedVariant: Qwen35QMVKernelVariant =
-    ProcessInfo.processInfo.environment["DARKBLOOM_E208_QMV_ARM"] == "on"
-    ? .stagedWide9 : .staged
 
 /// The distinct wide affine-4/group-64 shapes a decode round routes here.
 /// Identity is `(k, n)` only: the model geometry is fixed, so the map is a
@@ -1665,19 +1647,17 @@ enum Qwen35QMVCell: String, Sendable {
 /// depend on the request, the prompt or the benchmark phase.
 @inline(__always)
 func qwen35QMVVariant(m: Int, cell: Qwen35QMVCell) -> Qwen35QMVKernelVariant {
-    guard m == 6, cell != .mlpDown, cell != .unlisted else {
-        return qwen35E208StagedVariant
-    }
+    guard m == 6, cell != .mlpDown, cell != .unlisted else { return .staged }
     return .singlePass
 }
 
-/// Witness that a leg carries the plan above, including the E208 arm's m = 9
-/// group partition. The IPG figure is read from the selected table rather than
-/// from the environment, so the witness cannot desynchronise from the kernel
-/// the round actually launched. No hot-path state.
+/// Witness that a build carries the plan above, including the staged m = 9
+/// group partition. The IPG figure is read from the table itself, so the
+/// witness cannot desynchronise from the kernel the round actually launched.
+/// No runtime state: the trace can prove which dispatch plan shipped.
 public let qwen35QMVWidthPlanWitness =
     "selective-m6+ipg9-"
-    + String(Qwen35CustomQMV.inputsPerGroup(9, variant: qwen35E208StagedVariant))
+    + String(Qwen35CustomQMV.inputsPerGroup(9, variant: .staged))
 
 /// Geometry and width switch shared by both QMV pipelines. `table` decides
 /// whether the chunk-sum table is a bound buffer at all: the four-input
@@ -1900,22 +1880,6 @@ private let qwen35CachedAffine4QMVTableKernelSinglePass = Qwen35CachedKernel(
     header: qwen35E120QMVHeader
 )
 
-private let qwen35CachedAffine4QMVKernelWide9 = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_w9",
-    inputNames: ["w", "scales", "biases", "x"],
-    outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false, variant: .stagedWide9),
-    header: qwen35E120QMVHeader
-)
-
-private let qwen35CachedAffine4QMVTableKernelWide9 = Qwen35CachedKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_w9",
-    inputNames: ["w", "scales", "biases", "x", "xsums"],
-    outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true, variant: .stagedWide9),
-    header: qwen35E120QMVHeader
-)
-
 private func qwen35CachedQMVKernel(
     table: Bool, variant: Qwen35QMVKernelVariant
 ) -> Qwen35CachedKernel {
@@ -1924,8 +1888,6 @@ private func qwen35CachedQMVKernel(
     case (true, .staged): return qwen35CachedAffine4QMVTableKernel
     case (false, .singlePass): return qwen35CachedAffine4QMVKernelSinglePass
     case (true, .singlePass): return qwen35CachedAffine4QMVTableKernelSinglePass
-    case (false, .stagedWide9): return qwen35CachedAffine4QMVKernelWide9
-    case (true, .stagedWide9): return qwen35CachedAffine4QMVTableKernelWide9
     }
 }
 
@@ -1965,24 +1927,6 @@ private let qwen35CustomAffine4QMVTableKernelSinglePass = MLXFast.metalKernel(
     ensureRowContiguous: true
 )
 
-private let qwen35CustomAffine4QMVKernelWide9 = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_v1_w9",
-    inputNames: ["w", "scales", "biases", "x"],
-    outputNames: ["y"],
-    source: qwen35E120QMVSource(table: false, variant: .stagedWide9),
-    header: qwen35E120QMVHeader,
-    ensureRowContiguous: true
-)
-
-private let qwen35CustomAffine4QMVTableKernelWide9 = MLXFast.metalKernel(
-    name: "qwen35_custom_affine4_g64_qmv_wide_sums_v1_w9",
-    inputNames: ["w", "scales", "biases", "x", "xsums"],
-    outputNames: ["y"],
-    source: qwen35E120QMVSource(table: true, variant: .stagedWide9),
-    header: qwen35E120QMVHeader,
-    ensureRowContiguous: true
-)
-
 private func qwen35UncachedQMVKernel(
     table: Bool, variant: Qwen35QMVKernelVariant
 ) -> MLXFast.MLXFastKernel {
@@ -1991,8 +1935,6 @@ private func qwen35UncachedQMVKernel(
     case (true, .staged): return qwen35CustomAffine4QMVTableKernel
     case (false, .singlePass): return qwen35CustomAffine4QMVKernelSinglePass
     case (true, .singlePass): return qwen35CustomAffine4QMVTableKernelSinglePass
-    case (false, .stagedWide9): return qwen35CustomAffine4QMVKernelWide9
-    case (true, .stagedWide9): return qwen35CustomAffine4QMVTableKernelWide9
     }
 }
 
