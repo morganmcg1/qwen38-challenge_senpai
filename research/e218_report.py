@@ -523,10 +523,66 @@ def cell_decomposition(e186: dict) -> dict:
     return out
 
 
+def census_pricing(families: dict, w_table: dict, census_path: pathlib.Path) -> dict:
+    """Census-weighted ceiling of each family's width tax.
+
+    The ceiling of family F is the round-weighted cost F carries ABOVE its
+    width-1 level: sum over served widths of share(m) * (F(m) - F(1)). It is
+    the local screening value of a mechanism that removed F's whole width tax
+    and left the m=1 work in place. NOT-A-PRICE for ranked value (RULE 79).
+    """
+    census = json.loads(census_path.read_text())
+    shares = {
+        "pooled": census["pooled_all_prompts"]["share_by_served_width"],
+        "public": census["prompts"]["public"]["share_by_served_width"],
+    }
+    anchor = "1"
+    if anchor not in families:
+        return {"error": "no m=1 anchor leg in this session"}
+
+    names = list(BANDS) + ["lm_head_readout"]
+    out: dict = {"census_source": str(census_path), "shares": shares,
+                 "families": {}, "round_total": {}}
+    for label, share in shares.items():
+        total = 0.0
+        for m, weight in share.items():
+            if m in w_table and anchor in w_table:
+                total += float(weight) * (
+                    w_table[m]["phase_ms"]["round_us"]["value"]
+                    - w_table[anchor]["phase_ms"]["round_us"]["value"])
+        out["round_total"][label] = total
+    for name in names:
+        base = families[anchor]["scaled_family_ms"].get(name)
+        if base is None:
+            continue
+        entry = {"m1_ms": base, "weighted_tax_ms": {}}
+        for label, share in shares.items():
+            total = 0.0
+            for m, weight in share.items():
+                if m in families and name in families[m]["scaled_family_ms"]:
+                    total += float(weight) * (
+                        families[m]["scaled_family_ms"][name] - base)
+            entry["weighted_tax_ms"][label] = total
+        out["families"][name] = entry
+    for extra, key in [("draft_head", "draft_head_ms"), ("other_round", "other_round_ms")]:
+        base = families[anchor][key]
+        entry = {"m1_ms": base, "weighted_tax_ms": {}}
+        for label, share in shares.items():
+            total = 0.0
+            for m, weight in share.items():
+                if m in families:
+                    total += float(weight) * (families[m][key] - base)
+            entry["weighted_tax_ms"][label] = total
+        out["families"][extra] = entry
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("sessions", nargs="+")
     ap.add_argument("--e186", default=None)
+    ap.add_argument("--census",
+                    default="research/e215-artifacts/width-census-stepq.json")
     ap.add_argument("--out", default="research/e218-artifacts/width-tax-census.json")
     args = ap.parse_args()
 
@@ -584,6 +640,11 @@ def main() -> int:
         **{f"{b}_per_layer": shape_report(b_table, b, per_layer=True)
            for b in BANDS},
     }
+
+    census_path = pathlib.Path(args.census)
+    if census_path.exists():
+        report["census_pricing"] = census_pricing(
+            report["family_census"], w_table, census_path)
 
     if args.e186:
         e186 = load_e186(pathlib.Path(args.e186))
