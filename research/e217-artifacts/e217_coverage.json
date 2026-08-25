@@ -1,0 +1,2557 @@
+{
+ "experiment": "e217-staged-dequant",
+ "step": "3-rule-403-write-coverage",
+ "harness": "static_enumeration",
+ "gpu_seconds": 0,
+ "official_or_ranked_score": false,
+ "n_values": [
+  64,
+  4104,
+  5120
+ ],
+ "output_cover": [
+  {
+   "env": "split",
+   "m": 2,
+   "ipg": 2,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 128,
+   "pairs_written": 128,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 2,
+   "ipg": 2,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 8208,
+   "pairs_written": 8208,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 2,
+   "ipg": 2,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 10240,
+   "pairs_written": 10240,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 3,
+   "ipg": 3,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 192,
+   "pairs_written": 192,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 3,
+   "ipg": 3,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 12312,
+   "pairs_written": 12312,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 3,
+   "ipg": 3,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 15360,
+   "pairs_written": 15360,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 4,
+   "ipg": 4,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 256,
+   "pairs_written": 256,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 4,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 16416,
+   "pairs_written": 16416,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 4,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 20480,
+   "pairs_written": 20480,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 5,
+   "ipg": 5,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 320,
+   "pairs_written": 320,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 5,
+   "ipg": 5,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 20520,
+   "pairs_written": 20520,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 5,
+   "ipg": 5,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 25600,
+   "pairs_written": 25600,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 6,
+   "ipg": 3,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 384,
+   "pairs_written": 384,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 6,
+   "ipg": 3,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 24624,
+   "pairs_written": 24624,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 6,
+   "ipg": 3,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 30720,
+   "pairs_written": 30720,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 7,
+   "ipg": 4,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 448,
+   "pairs_written": 448,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 7,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 28728,
+   "pairs_written": 28728,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 7,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 35840,
+   "pairs_written": 35840,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 8,
+   "ipg": 4,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 512,
+   "pairs_written": 512,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 8,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 32832,
+   "pairs_written": 32832,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 8,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 40960,
+   "pairs_written": 40960,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 9,
+   "ipg": 5,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 576,
+   "pairs_written": 576,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 9,
+   "ipg": 5,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 36936,
+   "pairs_written": 36936,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "split",
+   "m": 9,
+   "ipg": 5,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "split",
+   "pairs_expected": 46080,
+   "pairs_written": 46080,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 2,
+   "ipg": 2,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 128,
+   "pairs_written": 128,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 2,
+   "ipg": 2,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 8208,
+   "pairs_written": 8208,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 2,
+   "ipg": 2,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 10240,
+   "pairs_written": 10240,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 3,
+   "ipg": 3,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 192,
+   "pairs_written": 192,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 3,
+   "ipg": 3,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 12312,
+   "pairs_written": 12312,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 3,
+   "ipg": 3,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 15360,
+   "pairs_written": 15360,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 4,
+   "ipg": 4,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 256,
+   "pairs_written": 256,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 4,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 16416,
+   "pairs_written": 16416,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 4,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 20480,
+   "pairs_written": 20480,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 5,
+   "ipg": 5,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 320,
+   "pairs_written": 320,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 5,
+   "ipg": 5,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 20520,
+   "pairs_written": 20520,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 5,
+   "ipg": 5,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 25600,
+   "pairs_written": 25600,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 6,
+   "ipg": 3,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 384,
+   "pairs_written": 384,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 6,
+   "ipg": 3,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 24624,
+   "pairs_written": 24624,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 6,
+   "ipg": 3,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 30720,
+   "pairs_written": 30720,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 7,
+   "ipg": 4,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 448,
+   "pairs_written": 448,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 7,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 28728,
+   "pairs_written": 28728,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 7,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 35840,
+   "pairs_written": 35840,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 8,
+   "ipg": 4,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 512,
+   "pairs_written": 512,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 8,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 32832,
+   "pairs_written": 32832,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 8,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 40960,
+   "pairs_written": 40960,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 9,
+   "ipg": 5,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 576,
+   "pairs_written": 576,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 9,
+   "ipg": 5,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 36936,
+   "pairs_written": 36936,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "coop",
+   "m": 9,
+   "ipg": 5,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "coop",
+   "pairs_expected": 46080,
+   "pairs_written": 46080,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 2,
+   "ipg": 2,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 128,
+   "pairs_written": 128,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 2,
+   "ipg": 2,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 8208,
+   "pairs_written": 8208,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 2,
+   "ipg": 2,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 10240,
+   "pairs_written": 10240,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 3,
+   "ipg": 3,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 192,
+   "pairs_written": 192,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 3,
+   "ipg": 3,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 12312,
+   "pairs_written": 12312,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 3,
+   "ipg": 3,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 15360,
+   "pairs_written": 15360,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 4,
+   "ipg": 4,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 256,
+   "pairs_written": 256,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 4,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 16416,
+   "pairs_written": 16416,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 4,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 20480,
+   "pairs_written": 20480,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 5,
+   "ipg": 5,
+   "n": 64,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 320,
+   "pairs_written": 320,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 5,
+   "ipg": 5,
+   "n": 4104,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 20520,
+   "pairs_written": 20520,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 5,
+   "ipg": 5,
+   "n": 5120,
+   "groups": 1,
+   "effective_mapping": "split",
+   "pairs_expected": 25600,
+   "pairs_written": 25600,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 6,
+   "ipg": 3,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 384,
+   "pairs_written": 384,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 6,
+   "ipg": 3,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 24624,
+   "pairs_written": 24624,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 6,
+   "ipg": 3,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 30720,
+   "pairs_written": 30720,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 7,
+   "ipg": 4,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 448,
+   "pairs_written": 448,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 7,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 28728,
+   "pairs_written": 28728,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 7,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 35840,
+   "pairs_written": 35840,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 8,
+   "ipg": 4,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 512,
+   "pairs_written": 512,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 8,
+   "ipg": 4,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 32832,
+   "pairs_written": 32832,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 8,
+   "ipg": 4,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 40960,
+   "pairs_written": 40960,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 9,
+   "ipg": 5,
+   "n": 64,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 576,
+   "pairs_written": 576,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 9,
+   "ipg": 5,
+   "n": 4104,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 36936,
+   "pairs_written": 36936,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  },
+  {
+   "env": "staged",
+   "m": 9,
+   "ipg": 5,
+   "n": 5120,
+   "groups": 2,
+   "effective_mapping": "staged",
+   "pairs_expected": 46080,
+   "pairs_written": 46080,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": true
+  }
+ ],
+ "output_controls": [
+  {
+   "control": "CONTROL staged keeps coop 4-row tiles",
+   "m": 6,
+   "ipg": 3,
+   "n": 64,
+   "pairs_expected": 384,
+   "pairs_written": 408,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 360,
+   "written_twice_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ]
+   ],
+   "out_of_range_count": 24,
+   "out_of_range_sample": [
+    [
+     0,
+     64
+    ],
+    [
+     0,
+     65
+    ],
+    [
+     0,
+     66
+    ],
+    [
+     0,
+     67
+    ],
+    [
+     1,
+     64
+    ],
+    [
+     1,
+     65
+    ]
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged keeps coop 4-row tiles",
+   "m": 7,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 448,
+   "pairs_written": 476,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 420,
+   "written_twice_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ]
+   ],
+   "out_of_range_count": 28,
+   "out_of_range_sample": [
+    [
+     0,
+     64
+    ],
+    [
+     0,
+     65
+    ],
+    [
+     0,
+     66
+    ],
+    [
+     0,
+     67
+    ],
+    [
+     1,
+     64
+    ],
+    [
+     1,
+     65
+    ]
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged keeps coop 4-row tiles",
+   "m": 8,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 512,
+   "pairs_written": 544,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 480,
+   "written_twice_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ]
+   ],
+   "out_of_range_count": 32,
+   "out_of_range_sample": [
+    [
+     0,
+     64
+    ],
+    [
+     0,
+     65
+    ],
+    [
+     0,
+     66
+    ],
+    [
+     0,
+     67
+    ],
+    [
+     1,
+     64
+    ],
+    [
+     1,
+     65
+    ]
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged keeps coop 4-row tiles",
+   "m": 9,
+   "ipg": 5,
+   "n": 64,
+   "pairs_expected": 576,
+   "pairs_written": 612,
+   "never_written_count": 0,
+   "never_written_sample": [],
+   "written_twice_count": 540,
+   "written_twice_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ]
+   ],
+   "out_of_range_count": 36,
+   "out_of_range_sample": [
+    [
+     0,
+     64
+    ],
+    [
+     0,
+     65
+    ],
+    [
+     0,
+     66
+    ],
+    [
+     0,
+     67
+    ],
+    [
+     1,
+     64
+    ],
+    [
+     1,
+     65
+    ]
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged uses E216 first_m = sgid * IPG",
+   "m": 6,
+   "ipg": 3,
+   "n": 64,
+   "pairs_expected": 384,
+   "pairs_written": 384,
+   "never_written_count": 192,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 192,
+   "out_of_range_sample": [
+    [
+     6,
+     0
+    ],
+    [
+     6,
+     1
+    ],
+    [
+     6,
+     2
+    ],
+    [
+     6,
+     3
+    ],
+    [
+     6,
+     8
+    ],
+    [
+     6,
+     9
+    ]
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged uses E216 first_m = sgid * IPG",
+   "m": 7,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 448,
+   "pairs_written": 512,
+   "never_written_count": 224,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 288,
+   "out_of_range_sample": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     1
+    ],
+    [
+     7,
+     2
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     7,
+     9
+    ]
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged uses E216 first_m = sgid * IPG",
+   "m": 8,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 512,
+   "pairs_written": 512,
+   "never_written_count": 256,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 256,
+   "out_of_range_sample": [
+    [
+     8,
+     0
+    ],
+    [
+     8,
+     1
+    ],
+    [
+     8,
+     2
+    ],
+    [
+     8,
+     3
+    ],
+    [
+     8,
+     8
+    ],
+    [
+     8,
+     9
+    ]
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged uses E216 first_m = sgid * IPG",
+   "m": 9,
+   "ipg": 5,
+   "n": 64,
+   "pairs_expected": 576,
+   "pairs_written": 640,
+   "never_written_count": 288,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 352,
+   "out_of_range_sample": [
+    [
+     9,
+     0
+    ],
+    [
+     9,
+     1
+    ],
+    [
+     9,
+     2
+    ],
+    [
+     9,
+     3
+    ],
+    [
+     9,
+     8
+    ],
+    [
+     9,
+     9
+    ]
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged drops the row-half offset",
+   "m": 6,
+   "ipg": 3,
+   "n": 64,
+   "pairs_expected": 384,
+   "pairs_written": 192,
+   "never_written_count": 192,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 192,
+   "written_twice_sample": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ]
+   ],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged drops the row-half offset",
+   "m": 7,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 448,
+   "pairs_written": 224,
+   "never_written_count": 224,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 224,
+   "written_twice_sample": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ]
+   ],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged drops the row-half offset",
+   "m": 8,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 512,
+   "pairs_written": 256,
+   "never_written_count": 256,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 256,
+   "written_twice_sample": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ]
+   ],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged drops the row-half offset",
+   "m": 9,
+   "ipg": 5,
+   "n": 64,
+   "pairs_expected": 576,
+   "pairs_written": 288,
+   "never_written_count": 288,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 288,
+   "written_twice_sample": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     0,
+     9
+    ]
+   ],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged runs 2 simdgroups",
+   "m": 6,
+   "ipg": 3,
+   "n": 64,
+   "pairs_expected": 384,
+   "pairs_written": 192,
+   "never_written_count": 192,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged runs 2 simdgroups",
+   "m": 7,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 448,
+   "pairs_written": 224,
+   "never_written_count": 224,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged runs 2 simdgroups",
+   "m": 8,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 512,
+   "pairs_written": 256,
+   "never_written_count": 256,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL staged runs 2 simdgroups",
+   "m": 9,
+   "ipg": 5,
+   "n": 64,
+   "pairs_expected": 576,
+   "pairs_written": 288,
+   "never_written_count": 288,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL coop keeps the 8-row split grid",
+   "m": 6,
+   "ipg": 3,
+   "n": 64,
+   "pairs_expected": 384,
+   "pairs_written": 192,
+   "never_written_count": 192,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL coop keeps the 8-row split grid",
+   "m": 7,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 448,
+   "pairs_written": 224,
+   "never_written_count": 224,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL coop keeps the 8-row split grid",
+   "m": 8,
+   "ipg": 4,
+   "n": 64,
+   "pairs_expected": 512,
+   "pairs_written": 256,
+   "never_written_count": 256,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL coop keeps the 8-row split grid",
+   "m": 9,
+   "ipg": 5,
+   "n": 64,
+   "pairs_expected": 576,
+   "pairs_written": 288,
+   "never_written_count": 288,
+   "never_written_sample": [
+    [
+     0,
+     4
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     0,
+     12
+    ],
+    [
+     0,
+     13
+    ]
+   ],
+   "written_twice_count": 0,
+   "written_twice_sample": [],
+   "out_of_range_count": 0,
+   "out_of_range_sample": [],
+   "exact_cover": false
+  }
+ ],
+ "tile_cover": {
+  "tile_words": 1024,
+  "words_written": 1024,
+  "words_written_twice": 0,
+  "reads": 2048,
+  "reads_of_unwritten_words": 0,
+  "wrong_device_word_count": 0,
+  "wrong_device_word_sample": [],
+  "exact_cover": true
+ },
+ "tile_controls": [
+  {
+   "control": "CONTROL producer writes 1 row per simdgroup",
+   "tile_words": 1024,
+   "words_written": 512,
+   "words_written_twice": 0,
+   "reads": 2048,
+   "reads_of_unwritten_words": 1024,
+   "wrong_device_word_count": 0,
+   "wrong_device_word_sample": [],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL consumer ignores the row half",
+   "tile_words": 1024,
+   "words_written": 1024,
+   "words_written_twice": 0,
+   "reads": 2048,
+   "reads_of_unwritten_words": 0,
+   "wrong_device_word_count": 1024,
+   "wrong_device_word_sample": [
+    {
+     "sgid": 2,
+     "r": 0,
+     "lane": 0,
+     "i": 0,
+     "got": [
+      0,
+      0
+     ],
+     "want": [
+      4,
+      0
+     ]
+    },
+    {
+     "sgid": 2,
+     "r": 0,
+     "lane": 0,
+     "i": 1,
+     "got": [
+      0,
+      2
+     ],
+     "want": [
+      4,
+      2
+     ]
+    },
+    {
+     "sgid": 2,
+     "r": 0,
+     "lane": 0,
+     "i": 2,
+     "got": [
+      0,
+      4
+     ],
+     "want": [
+      4,
+      4
+     ]
+    },
+    {
+     "sgid": 2,
+     "r": 0,
+     "lane": 0,
+     "i": 3,
+     "got": [
+      0,
+      6
+     ],
+     "want": [
+      4,
+      6
+     ]
+    },
+    {
+     "sgid": 2,
+     "r": 0,
+     "lane": 1,
+     "i": 0,
+     "got": [
+      0,
+      8
+     ],
+     "want": [
+      4,
+      8
+     ]
+    },
+    {
+     "sgid": 2,
+     "r": 0,
+     "lane": 1,
+     "i": 1,
+     "got": [
+      0,
+      10
+     ],
+     "want": [
+      4,
+      10
+     ]
+    }
+   ],
+   "exact_cover": false
+  },
+  {
+   "control": "CONTROL lane stride 8 words instead of 4",
+   "tile_words": 1024,
+   "words_written": 576,
+   "words_written_twice": 448,
+   "reads": 2048,
+   "reads_of_unwritten_words": 0,
+   "wrong_device_word_count": 896,
+   "wrong_device_word_sample": [
+    {
+     "sgid": 0,
+     "r": 0,
+     "lane": 16,
+     "i": 0,
+     "got": [
+      1,
+      0
+     ],
+     "want": [
+      0,
+      128
+     ]
+    },
+    {
+     "sgid": 0,
+     "r": 0,
+     "lane": 16,
+     "i": 1,
+     "got": [
+      1,
+      2
+     ],
+     "want": [
+      0,
+      130
+     ]
+    },
+    {
+     "sgid": 0,
+     "r": 0,
+     "lane": 16,
+     "i": 2,
+     "got": [
+      1,
+      4
+     ],
+     "want": [
+      0,
+      132
+     ]
+    },
+    {
+     "sgid": 0,
+     "r": 0,
+     "lane": 16,
+     "i": 3,
+     "got": [
+      1,
+      6
+     ],
+     "want": [
+      0,
+      134
+     ]
+    },
+    {
+     "sgid": 0,
+     "r": 0,
+     "lane": 17,
+     "i": 0,
+     "got": [
+      1,
+      8
+     ],
+     "want": [
+      0,
+      136
+     ]
+    },
+    {
+     "sgid": 0,
+     "r": 0,
+     "lane": 17,
+     "i": 1,
+     "got": [
+      1,
+      10
+     ],
+     "want": [
+      0,
+      138
+     ]
+    }
+   ],
+   "exact_cover": false
+  }
+ ],
+ "failures": [],
+ "passed": true
+}

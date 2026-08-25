@@ -2174,7 +2174,7 @@ func qwen35E217QMVSource(
         """
 }
 
-private let qwen35E217Header = qwen35E120QMVHeader + "\n" + qwen35E217StagedHeader
+let qwen35E217Header = qwen35E120QMVHeader + "\n" + qwen35E217StagedHeader
 
 private let qwen35CachedAffine4QMVKernelCoop = Qwen35CachedKernel(
     name: "qwen35_custom_affine4_g64_qmv_wide_v1_coop",
