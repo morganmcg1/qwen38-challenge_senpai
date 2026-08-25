@@ -489,6 +489,118 @@ struct E213RowsPerSimdQMVTests {
 
     // MARK: - numerical gate
 
+    /// Where the plain pipeline stops agreeing with the table pipeline.
+    ///
+    /// The two paths are documented to agree bit for bit: the table entry holds
+    /// the same float accumulation of the same BF16 expression tree in the same
+    /// `i` order that `sums[m] += xv[0] + xv[1] + xv[2] + xv[3]` builds. The
+    /// `g1` gate found that they disagree at `<NA = 7, USE_TABLE = false,
+    /// ROWS = 2>`, and that input row 0 is the only correct row.
+    ///
+    /// This section separates the two candidate causes. `ROWS` cannot be the
+    /// cause on its own, because the plain-only code is the `sums`
+    /// accumulation, which no `ROWS` value reads or writes. So the sweep
+    /// compares plain against table over the `(NA, ROWS)` grid the shipped
+    /// enum already compiles, including `singlePass` at m = 7, which is
+    /// `NA = 7` at the shipped `ROWS = 4`.
+    ///
+    /// A `singlePass` m = 7 failure means the defect is a property of `NA = 7`
+    /// in the plain pipeline and predates E213. A `singlePass` m = 7 pass with
+    /// a `g1` m = 7 failure means `ROWS = 2` provoked it.
+    @Test(.enabled(if: E213RowsPerSimdQMVTests.gateEnabled))
+    func plainAgreesWithTable() throws {
+        let sweep: [(variant: Qwen35QMVKernelVariant, widths: [Int])] = [
+            (.staged, Array(Qwen35CustomQMV.widths)),
+            (.singlePass, [6, 7, 8, 9]),
+            (.stagedG1, [7, 8, 9]),
+            (.probeRows2, [9]),
+        ]
+        let pipelines = sweep.map {
+            (
+                variant: $0.variant, widths: $0.widths,
+                pipeline: E213Pipeline(
+                    variant: $0.variant, label: "pvt_\($0.variant.rawValue)",
+                    nameSuffix: "_pvt")
+            )
+        }
+
+        var rows: [[String: Any]] = []
+        for cell in e213Cells {
+            autoreleasepool {
+                let (w, scales, biases) = e213PackedCell(
+                    k: cell.k, n: cell.n, seed: 0xE213)
+                for m in Qwen35CustomQMV.widths {
+                    autoreleasepool {
+                        let x = e213Activations(
+                            m: m, k: cell.k, seed: UInt64(0xE213_0000 + m))
+                        let xsums = Qwen35CustomQMV.xsumsTable(x)
+                        eval(xsums)
+                        for entry in pipelines where entry.widths.contains(m) {
+                            let plain = entry.pipeline.call(
+                                x: x, w: w, scales: scales, biases: biases,
+                                xsums: xsums, m: m, n: cell.n, useTable: false)
+                            let table = entry.pipeline.call(
+                                x: x, w: w, scales: scales, biases: biases,
+                                xsums: xsums, m: m, n: cell.n, useTable: true)
+                            eval(plain, table)
+                            let plainValues = plain.asType(.float32)
+                                .asArray(Float.self)
+                            let tableValues = table.asType(.float32)
+                                .asArray(Float.self)
+                            let diff = e213Compare(plainValues, tableValues)
+                            // Which input rows the plain path gets wrong. The
+                            // failing signature is "every row except row 0".
+                            var wrongRows: [Int] = []
+                            for row in 0 ..< m {
+                                let lo = row * cell.n
+                                let hi = min(lo + cell.n, plainValues.count)
+                                for i in lo ..< hi
+                                where plainValues[i].bitPattern
+                                    != tableValues[i].bitPattern
+                                {
+                                    wrongRows.append(row)
+                                    break
+                                }
+                            }
+                            rows.append([
+                                "variant": entry.variant.rawValue,
+                                "cell": cell.name,
+                                "m": m,
+                                "na_first_group": Qwen35CustomQMV
+                                    .inputsPerGroup(m, variant: entry.variant),
+                                "rows_per_simd": Qwen35CustomQMV.rowsPerSimd(
+                                    m, variant: entry.variant),
+                                "elements": m * cell.n,
+                                "differing": diff.count,
+                                "max_ulp": diff.maxUlp,
+                                "max_abs_diff": diff.maxAbsDiff,
+                                "wrong_input_rows": wrongRows,
+                            ])
+                        }
+                    }
+                }
+            }
+        }
+
+        try e213Write(
+            [
+                "harness": "local",
+                "experiment": "e213",
+                "section": "plain_vs_table",
+                "cool_gate_passed_real_gate": false,
+                "gate_qualified_for_timing": false,
+                "official_or_ranked_score": false,
+                "claim": "the plain and table pipelines agree bit for bit",
+                "rows": rows,
+            ], to: "MLXFAST_E213_PLAIN_OUT")
+
+        // Reported, not asserted: this section exists to localize a defect the
+        // gate already fails on, so it must produce its whole table.
+        let broken = rows.filter { ($0["differing"] as? Int ?? 0) > 0 }
+        Issue.record(
+            "plain vs table: \(broken.count) of \(rows.count) instantiations differ")
+    }
+
     @Test(.enabled(if: E213RowsPerSimdQMVTests.gateEnabled))
     func numericalGate() throws {
         let shippedPlan = E213Pipeline(variant: .staged, label: "shipped")

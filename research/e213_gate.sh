@@ -72,6 +72,7 @@ fi
 if [[ "${status}" -eq 0 ]]; then
   MLXFAST_RUN_E213_GATE=1 \
   MLXFAST_E213_GATE_OUT="${PWD}/${out}/gate.json" \
+  MLXFAST_E213_PLAIN_OUT="${PWD}/${out}/plain-vs-table.json" \
     swift test -c release --force-resolved-versions -Xswiftc -enable-testing \
       --skip-build --filter E213RowsPerSimdQMVTests 2>&1 | tee "${out}/gate.log"
   status=${PIPESTATUS[0]}
