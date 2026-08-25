@@ -72571,3 +72571,49 @@ Queue after this entry: aff4ad64 validating (watcher live; E199 held), frozen-be
 **Ruling and sequencing.** Implement the GUARDED FORWARD minimax table (E214, Askeladd). The out-of-envelope statistic (1.06×) is accepted with a predeclared contingency: the aff4ad64 cap-8 receipt is itself a new instrument-validation point at much larger relocation than cap-4/5 — when it lands, revalidate FINDING 520 against it; if the instrument misses beyond the receipt channel at cap-8, the implementation freezes pending refit and the in-envelope guarded three-law table becomes the candidate. Value is priced by the desk model only (RULE 79: a schedule change cannot be priced locally; FINDING 541 is the standing warning); the official receipt settles it. Queue discipline: 9a91ba76 (cap-8+(9,5)) holds the frozen-behind slot; E214's frozen SHA enters the queue behind it and does not submit from the PR. Note: advisor feedback e211-fb-forward-minimax-guarded-approved-425 was composed during the terminal push and never delivered (head moved, then status flipped to review); the terminal result independently anticipated every ruling in it, and its content is folded into this entry and the E214 brief.
 
 Queue after this entry: aff4ad64 validating (watcher live; E199 held), frozen-behind 9a91ba76, E212 r1 census (Alphonse, on cap-8+(9,5) base), E213 retune (Edward), E214 step-price implementation (Askeladd, being assigned).
+
+## Entry 426 — 2026-08-25 — E213 Stage-0 ruling: assigned family null by construction; redirect to rows_per_simd G=1; register boundary quantified
+
+**Context.** Edward ran the E213 r0 Stage-0 desk checks before booking a timed session (PR 211, comment `e213-stage0-desk-blocker`, harness=local, base 523da3be, no GPU timing). Two assignment premises failed at the source level. Ruling delivered as revision e213-r1 (required base e0c7a026).
+
+### FINDING 547 — IPG legality map for `qwen_e120_qmv_m` (desk, compile probe)
+
+`qwen_e120_qmv_m` carries `static_assert(M % IPG != 1, "a one-input tail group is not built")`. Compiled every (m, IPG) pair with `xcrun metal`:
+
+| m | legal IPG | illegal (`M % IPG == 1`) |
+| --- | --- | --- |
+| 6 | 2, 3, 4, 6 | 5 |
+| 7 | 4, 5, 7 | 2, 3, 6 |
+| 8 | 2, 3, 4, 5, 6, 8 | 7 |
+| 9 | 3, 5, 6, 7, 9 | 2, 4, 8 |
+
+The assigned `(6,5)` does not exist; the widest legal first group at m=6 is 4. Reproduction: `research/e213_occupancy.sh`.
+
+### FINDING 548 — E213 r0 family is null by construction below m=9 (desk)
+
+`G(m) = ceil(m/IPG)` counts full weight-matrix passes per threadgroup. Every assigned entry keeps G=2: (6,4)=4+2, (7,5)=5+2, (8,5)=5+3 vs shipped (6,3)=3+3, (7,4)=4+3, (8,4)=4+4. Zero weight passes removed at any width; total row work and weight traffic identical; shipped entries are the balanced split (expected weak negative from imbalance). G=1 at these widths requires IPG=m — exactly the E195 single-pass form, measured and rejected at m=7/8, already shipping at m=6 for six of seven cells. Interplay confirmed: `qwen35QMVVariant` returns `.staged` at m=6 only for `.mlpDown` (+`.unlisted`), so a (6,x) staged entry governs `mlp.down` alone. The E213 r0 hypothesis ("rows-per-group 5 removes weight-streaming cost within G=2") is false by construction below m=9; E208's (9,5) won because it took G from 3 to 2, not because of rows-per-group 5 itself.
+
+### FINDING 549 — The IPG cliff is a 128-register occupancy boundary, now quantified (desk, AIR proxy)
+
+`maxTotalThreadsPerThreadgroup` saturates at 1024 for every instantiation (non-diagnostic). AIR lane-weighted peak live registers (`research/air_kernel_stats.py`, E46 instrument, calibrated to campaign history 108/129) in `qwen_e120_qmv_wide<NA>`, plain path:
+
+| rows_per_simd \ NA | 5 | 6 | 7 | 8 | 9 |
+| --- | --- | --- | --- | --- | --- |
+| 4 (shipped) | **125** | 144 | 155 | 175 | 195 |
+| 3 | 108 | 124 | 140 | 166 | 185 |
+| 2 | 91 | 104 | **117** | 132 | 147 |
+| 1 | 74 | 84 | 94 | **104** | **114** |
+
+(rows4 also: NA=2:67, 3:87, 4:106.) The Apple 128-register boundary falls between NA=5 (125) and NA=6 (144) at rows4. One line explains the family history: E208 (9,5) NA=5 = 125 under the boundary — won; E195 single-pass m=7 (155) and m=8 (175) over — lost despite removing a whole pass; E195 m=6 (144) over but pass removal still repays on six of seven cells and fails on `mlp.down`. FINDING 500's register/occupancy story is quantified; the shipped table is at the maximum legal IPG under the boundary for every width at rows4. **Open lever:** lowering `rows_per_simd` shrinks the live accumulator set without changing weight traffic per pass — `rows2/IPG7` (117), `rows1/IPG8` (104), `rows1/IPG9` (114) all sit below the shipped 125 while giving G=1 at m=7/8/9, the widths carrying 58/76 rounds (76%), where E208 priced the third pass at +20.8 ms/round paired on 55% coverage. Needs a launch-geometry change (`out_row = tid.y * 8 + sgid * 4` and y-extent assume rows4).
+
+### RULE 400 — compile-probe before assigning QMV table retunes
+
+Before assigning any QMV partition/table retune, run the legality compile probe and the register census (`research/e213_occupancy.sh`). A retune that changes neither G nor the register-boundary position is null by construction and does not earn a timed session.
+
+### Ruling and axis closure
+
+- E213 r0 family WITHDRAWN (null by construction). Edward's corrected "retuned" arm ((6,4)/(7,5)/(8,5)) also declined — same null.
+- **Axis closed:** staged rows-per-group retunes at fixed rows_per_simd=4 below m=9 (`closedAxes.qmv_rows_per_group_retune_rows4`). Reopen only if the kernel's register footprint or the static_assert changes.
+- **E213 r1 redirected** to the section-6 lever: per-width sub-boundary G=1 arm (m=7 rows2/IPG7, m=8 rows1/IPG8, m=9 rows1/IPG9; m≤6 unchanged), optional (9,6) na6 register control, numerics gate per changed width with ragged-edge tests before timing, trajectory invariants, ABBA paired, whole-leg headline, fixed-G rows2/IPG5 attribution probe only on a loss, ship form + freeze behind the queue on a ≥0.5 ms/round 2σ win. W&B group `qwen38-r1-e213-rows-per-simd-g1`.
+
+Stage-0 worked exactly as designed: three decisive desk findings and a live lever for the price of zero GPU minutes.
