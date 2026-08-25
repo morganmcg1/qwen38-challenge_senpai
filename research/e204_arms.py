@@ -480,6 +480,20 @@ def cmd_paired(args: argparse.Namespace) -> int:
         return {"n": len(values), "mean_us": m, "sigma_us": s,
                 "median_us": st.median(values), "sigma_ratio": m / s if s else None}
 
+    # TRANSITION AUDIT (RULE 391(c)). The scheduled arm phase for round N is
+    # the gate round N-1 resolved, which the trace records as that round's
+    # `pf_chain`. `pf_chain_in` is what round N actually received. They differ
+    # whenever a prefetch was built but handed back before the next round could
+    # use it. The paired design assumes those transition costs are symmetric
+    # between the two legs; this counts them per leg instead of assuming it.
+    def transitions(rows: list[dict]) -> dict:
+        disagree = [
+            int(rows[i]["round"]) for i in range(1, len(rows))
+            if rows[i]["pf_chain_in"] != rows[i - 1]["pf_chain"]
+        ]
+        return {"compared": len(rows) - 1, "disagreements": len(disagree),
+                "rounds": disagree[:20]}
+
     report = {
         "experiment": "e204-round-end-seam-overlap",
         "harness": "local",
@@ -508,7 +522,14 @@ def cmd_paired(args: argparse.Namespace) -> int:
                       for tag in by_leg},
         "full_acceptance": group([p for p in pairs if p["full_accept"]]),
         "rejection": group([p for p in pairs if not p["full_accept"]]),
+        "transitions": {args.tag_a: transitions(a), args.tag_b: transitions(b)},
+        "entry_temp_spread_c": abs(
+            float(read_meta(args.tag_a).get("gpu_temp_entry_c", "nan"))
+            - float(read_meta(args.tag_b).get("gpu_temp_entry_c", "nan"))),
     }
+    report["transitions_symmetric"] = (
+        report["transitions"][args.tag_a]["disagreements"]
+        == report["transitions"][args.tag_b]["disagreements"])
 
     print("E204 stage 2 DECISION: complementary paired arm switch")
     print("  legs %s / %s" % (args.tag_a, args.tag_b))
@@ -522,6 +543,16 @@ def cmd_paired(args: argparse.Namespace) -> int:
              report["delta_2sigma_interval"][1]))
     print("  promote at >= 200 us with 2 sigma clear of zero: %s"
           % report["promote"])
+    print("  -- transition audit (RULE 391(c)) --")
+    for tag, block in report["transitions"].items():
+        meta = read_meta(tag)
+        print("     %-16s witness disagrees with scheduled phase on %d of %d "
+              "rounds; entry %.2f C exit %.2f C"
+              % (tag, block["disagreements"], block["compared"],
+                 float(meta.get("gpu_temp_entry_c", "nan")),
+                 float(meta.get("gpu_temp_exit_c", "nan"))))
+    print("     symmetric between legs: %s; entry spread %.2f C"
+          % (report["transitions_symmetric"], report["entry_temp_spread_c"]))
     print("  -- session-offset cancellation --")
     for tag, block in report["by_on_leg"].items():
         print("     ON in %-16s n=%2d mean %8.1f us" % (tag, block.get("n", 0),
