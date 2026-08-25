@@ -97,11 +97,12 @@ struct E219Bytes {
     /// reads the WHOLE activation slab, so the simdgroup count -- and with it
     /// every re-read term -- is inversely proportional to `rows` while the
     /// weight and metadata streams are invariant in it.
-    init(k: Int, n: Int, na: Int, stride: Int, rows: Int = 4) {
+    init(k: Int, n: Int, na: Int, stride: Int, rows: Int = 4,
+         activationBytesPerValue: Int = 2) {
         let simds = n / rows
         weight = n * (k / 2)
         scaleBias = n * (k / 64) * 4
-        activationUnique = na * k * 2
+        activationUnique = na * k * activationBytesPerValue
         activationRead = simds * activationUnique
         output = na * n * 2
         xsumsUnique = (k / 512) * 32 * stride * 4
@@ -111,7 +112,9 @@ struct E219Bytes {
         // Per output row per k-block, from the kernel body: `12 * rows` bytes
         // of weights and metadata against `36 * na` bytes of activation and
         // chunk sums, the second group divided by `rows`.
-        bytesPerRowPerKBlock = 12.0 + 36.0 * Double(na) / Double(rows)
+        bytesPerRowPerKBlock = 12.0
+            + (16.0 * Double(activationBytesPerValue) + 4.0)
+            * Double(na) / Double(rows)
     }
 
     var dictionary: [String: Int] {
@@ -169,6 +172,80 @@ func e221RowsParameterizedHeader() -> String {
     return text
 }
 
+// MARK: - E223: the activation dtype arm
+
+/// The shipped gather, verbatim. The E223 transform replaces this exact text,
+/// so a base move breaks this arm loudly instead of timing the wrong kernel.
+private let e223ShippedGather = """
+        for (int i = 0; i < 4; i++) {
+            VF a0, a1, a2, a3;
+            for (int m = 0; m < NA; m++) {
+                const device bfloat16_t* xm =
+                    x + (first_m + m) * in_vec_size + k +
+                    simd_lid * values_per_thread + 4 * i;
+                const vec<bfloat16_t, 4> xv =
+                    *reinterpret_cast<const device vec<bfloat16_t, 4>*>(
+                        xm);
+                a0[m] = static_cast<float>(xv[0]);
+                a1[m] = static_cast<float>(xv[1]);
+                a2[m] = static_cast<float>(xv[2]);
+                a3[m] = static_cast<float>(xv[3]);
+                if (!USE_TABLE) {
+                    sums[m] += xv[0] + xv[1] + xv[2] + xv[3];
+                }
+            }
+"""
+
+/// Activations already float32, in the SHIPPED `[m, k]` layout.
+///
+/// E223's census found that the addressable part of the per-column cost is not
+/// the lane inserts, the address arithmetic or the load count -- the backend
+/// removes or normalises all three -- but the 16 `bfloat16` to `float`
+/// conversions each column pays per k-block. This arm is the only source form
+/// that removes them: 12.6 of the 123.2 machine instructions per column per
+/// k-block on `applegpu_g17s`, at the cost of issuing twice the activation
+/// bytes.
+///
+/// `bfloat16` to `float` is exact and no other line moves, so this arm must
+/// return values bit-identical to the shipped arm. `activationDTypeExactness`
+/// proves that with a positive control before any arm is timed.
+///
+/// The chunk-sum table is unchanged, so this arm is only built at
+/// `USE_TABLE = true`; the `!USE_TABLE` branch of the shipped gather is what
+/// the replacement drops.
+func e223ActivationF32Header() -> String {
+    let gather = """
+        for (int i = 0; i < 4; i++) {
+            VF a0, a1, a2, a3;
+            for (int m = 0; m < NA; m++) {
+                const device float* xm =
+                    x + (first_m + m) * in_vec_size + k +
+                    simd_lid * values_per_thread + 4 * i;
+                const vec<float, 4> xv =
+                    *reinterpret_cast<const device vec<float, 4>*>(xm);
+                a0[m] = xv[0];
+                a1[m] = xv[1];
+                a2[m] = xv[2];
+                a3[m] = xv[3];
+            }
+"""
+    // Both `qwen_e120_qmv_wide` and the `qwen_e120_qmv_m` wrapper declare the
+    // activation pointer, and the wrapper forwards it, so both must move.
+    let substitutions = [
+        ("const device bfloat16_t* x,\n", "const device float* x,\n", 2),
+        (e223ShippedGather, gather, 1),
+    ]
+    var text = qwen35E120QMVHeader
+    for (old, new, expected) in substitutions {
+        let occurrences = text.components(separatedBy: old).count - 1
+        precondition(
+            occurrences == expected,
+            "[e223] expected \(expected) occurrences, found \(occurrences)")
+        text = text.replacingOccurrences(of: old, with: new)
+    }
+    return text
+}
+
 /// Which output rows each simdgroup writes, by pure launch arithmetic.
 ///
 /// RULE 403: a value comparison cannot prove write coverage, because a wrong
@@ -220,14 +297,23 @@ private struct E219Pipeline {
     /// `rows == 4` this is the E221 control arm: same geometry, same
     /// arithmetic, one substituted line.
     let parameterized: Bool
+    /// True when the body came from `e223ActivationF32Header()`, so the `x`
+    /// argument is float32 in the shipped `[m, k]` layout.
+    let activationF32: Bool
     let kernel: Qwen35CachedKernel
 
     init(na: Int, stride: Int, table: Bool, rows: Int = 4,
-         parameterized: Bool = false) {
+         parameterized: Bool = false, activationF32: Bool = false) {
         precondition(rows >= 1 && rows <= 4, "[e221] rows out of range")
         precondition(
             parameterized || rows == 4,
             "[e221] rows != 4 needs the parameterized header")
+        precondition(
+            !(activationF32 && parameterized),
+            "[e223] the float32 activation arm and the rows arm are separate")
+        precondition(
+            !activationF32 || table,
+            "[e223] the float32 activation arm drops the in-kernel sum path")
         // FINDING 552: `<NA=7, USE_TABLE=false, ROWS=2>` is miscompiled. It is
         // never timed, so the joint pair cannot reach a measurement.
         precondition(
@@ -238,6 +324,7 @@ private struct E219Pipeline {
         self.table = table
         self.rows = rows
         self.parameterized = parameterized
+        self.activationF32 = activationF32
         let sums = table ? "xsums" : "qmv_null_sums"
         let flag = table ? "USE_TABLE" : "false"
         let nullDecl =
@@ -259,7 +346,15 @@ private struct E219Pipeline {
                     qmv_k, qmv_n, \(stride),
                     qmv_first_m, qmv_out_row, qmv_lid);
             """
-        let tag = parameterized ? "r\(rows)p" : "ship"
+        let tag = activationF32 ? "xf32" : (parameterized ? "r\(rows)p" : "ship")
+        let header: String
+        if activationF32 {
+            header = e223ActivationF32Header()
+        } else if parameterized {
+            header = e221RowsParameterizedHeader()
+        } else {
+            header = qwen35E120QMVHeader
+        }
         self.kernel = Qwen35CachedKernel(
             name: "e219_qmv_na\(na)_s\(stride)_\(table ? "tab" : "raw")_\(tag)",
             inputNames: table
@@ -267,8 +362,7 @@ private struct E219Pipeline {
                 : ["w", "scales", "biases", "x"],
             outputNames: ["y"],
             source: source,
-            header: parameterized
-                ? e221RowsParameterizedHeader() : qwen35E120QMVHeader)
+            header: header)
     }
 
     /// One dispatch: `groups` weight-group passes over `n` output rows.
@@ -296,13 +390,14 @@ private struct E219PipelineCache {
 
     mutating func get(
         na: Int, stride: Int, table: Bool, rows: Int = 4,
-        parameterized: Bool = false
+        parameterized: Bool = false, activationF32: Bool = false
     ) -> E219Pipeline {
-        let key = "\(na)/\(stride)/\(table)/\(rows)/\(parameterized)"
+        let key =
+            "\(na)/\(stride)/\(table)/\(rows)/\(parameterized)/\(activationF32)"
         if let hit = pipelines[key] { return hit }
         let made = E219Pipeline(
             na: na, stride: stride, table: table, rows: rows,
-            parameterized: parameterized)
+            parameterized: parameterized, activationF32: activationF32)
         pipelines[key] = made
         return made
     }
@@ -879,6 +974,121 @@ struct E219InstrumentSanityTests {
                 "write_census": censusRows,
             ], session: nil)
     }
+
+    /// E223 gate: the float32 activation arm must return the shipped bits.
+    ///
+    /// `bfloat16` to `float` widening is exact and the arm moves no other line,
+    /// so `differing` must be zero at every scored width. A perturbed float32
+    /// slab is the positive control: it changes the activation values inside the
+    /// first k-block of the first column only, leaves the chunk-sum table
+    /// alone, and must move the comparison off zero. Without it a gather that
+    /// silently read nothing would pass.
+    @Test(.enabled(if: e219PhaseEnabled("sanity")))
+    func activationDTypeExactness() throws {
+        var cache = E219PipelineCache()
+        var valueRows: [[String: Any]] = []
+
+        for cell in e219ScoredCells {
+            autoreleasepool {
+                let set = e219RandomSet(k: cell.k, n: cell.n, seed: 0xE223)
+                for m in [2, 3, 4, 5] {
+                    autoreleasepool {
+                        let stride = e219SumsStride(m)
+                        let x = e219Activations(
+                            m: m, k: cell.k, seed: UInt64(0xE223_0000 + m))
+                        let xsums = Qwen35CustomQMV.xsumsTable(x)
+                        let xf32 = x.asType(.float32)
+                        eval(xsums, xf32)
+
+                        let reference = cache.get(
+                            na: m, stride: stride, table: true)
+                        let want = reference.call(
+                            x: x, xsums: xsums, set: set, m: m, groups: 1)
+                        eval(want)
+                        let a = want.asType(.float32).asArray(Float.self)
+
+                        let probe = cache.get(
+                            na: m, stride: stride, table: true,
+                            activationF32: true)
+                        let got = probe.call(
+                            x: xf32, xsums: xsums, set: set, m: m, groups: 1)
+                        eval(got)
+                        let b = got.asType(.float32).asArray(Float.self)
+
+                        var differing = 0
+                        var nonFinite = 0
+                        for i in 0 ..< min(a.count, b.count) {
+                            if a[i].bitPattern != b[i].bitPattern {
+                                differing += 1
+                            }
+                            if !b[i].isFinite { nonFinite += 1 }
+                        }
+                        valueRows.append([
+                            "cell": cell.name, "k": cell.k, "n": cell.n,
+                            "m": m, "activation_dtype": "float32",
+                            "elements": b.count, "differing": differing,
+                            "non_finite": nonFinite,
+                        ])
+                        #expect(
+                            a.count == b.count,
+                            """
+                            \(cell.name) m=\(m): the float32 activation arm \
+                            changed the output element count
+                            """)
+                        #expect(
+                            differing == 0,
+                            """
+                            \(cell.name) m=\(m): \(differing) of \(b.count) \
+                            outputs differ from the shipped bfloat16 arm
+                            """)
+                        #expect(nonFinite == 0)
+
+                        // Positive control: perturb the float32 slab only, and
+                        // only inside the first k-block of the first column.
+                        // The chunk-sum table stays the shipped one, so any
+                        // output move comes from the gather under test.
+                        var flat = xf32.asArray(Float.self)
+                        for i in 0 ..< 64 { flat[i] += 0.25 }
+                        let xBad = MLXArray(flat, [1, m, cell.k])
+                        eval(xBad)
+                        let bad = probe.call(
+                            x: xBad, xsums: xsums, set: set, m: m, groups: 1)
+                        eval(bad)
+                        let c = bad.asType(.float32).asArray(Float.self)
+                        var controlDiffering = 0
+                        for i in 0 ..< min(a.count, c.count) {
+                            if a[i].bitPattern != c[i].bitPattern {
+                                controlDiffering += 1
+                            }
+                        }
+                        valueRows.append([
+                            "cell": cell.name, "k": cell.k, "n": cell.n,
+                            "m": m, "activation_dtype": "float32",
+                            "positive_control": true,
+                            "elements": c.count,
+                            "differing": controlDiffering,
+                        ])
+                        #expect(
+                            controlDiffering > 0,
+                            """
+                            \(cell.name) m=\(m): the positive control did NOT \
+                            differ, so the bit-exactness gate above is vacuous
+                            """)
+                    }
+                }
+            }
+        }
+
+        #expect(!valueRows.isEmpty)
+        try e219Write(
+            "sanity_xdtype",
+            [
+                "deliverable":
+                    "E223 gate: the float32 activation arm is bit-exact "
+                    + "against the shipped bfloat16 arm",
+                "value_comparisons": valueRows,
+            ], session: nil)
+    }
 }
 
 // MARK: - Section 1: the sweeps
@@ -892,8 +1102,70 @@ struct E219PassAnatomyTests {
         e219Int("MLX_E219_REPLICA_CAP_MB", 768) * 1_048_576
     }
 
+    /// One timed unit per thermal arm, for one (cell, width, geometry, dtype).
+    private func sweepArm(
+        cell: E219Cell,
+        arm: (na: Int, groups: Int),
+        m: Int,
+        stride: Int,
+        geometry: (rows: Int, parameterized: Bool),
+        geometryTag: String,
+        activationF32: Bool,
+        activations: MLXArray,
+        xsums: MLXArray,
+        coldArms: [Bool],
+        cache: inout E219PipelineCache,
+        units: inout [E219Unit],
+        ringBox: E219RingBox
+    ) throws {
+        let pipeline = cache.get(
+            na: arm.na, stride: stride, table: true, rows: geometry.rows,
+            parameterized: geometry.parameterized,
+            activationF32: activationF32)
+        let bytes = E219Bytes(
+            k: cell.k, n: cell.n, na: arm.na, stride: stride,
+            rows: geometry.rows,
+            activationBytesPerValue: activationF32 ? 4 : 2)
+        let dtypeTag = activationF32 ? "xf32" : "xbf16"
+        for cold in coldArms {
+            let key = cell.name
+            var fields: [String: Any] = [
+                "cell": cell.name, "k": cell.k, "n": cell.n,
+                "na": arm.na, "groups": arm.groups, "m": m,
+                "stride": stride, "cold": cold, "dispatches": 1,
+                "rows_per_simd": geometry.rows,
+                "parameterized_header": geometry.parameterized,
+                "geometry": geometryTag,
+                "activation_dtype": activationF32 ? "float32" : "bfloat16",
+                "activation_bytes_per_value": activationF32 ? 4 : 2,
+                "bytes_per_row_per_kblock": bytes.bytesPerRowPerKBlock,
+                "invocations_per_round": cell.invocations,
+                "replicas": ringBox.count(key),
+                "replica_set_bytes": ringBox.bytes(key),
+            ]
+            for (bk, bv) in bytes.dictionary { fields[bk] = bv }
+            fields["pass_stream_bytes"] =
+                (bytes.weight + bytes.scaleBias) * arm.groups
+            units.append(
+                E219Unit(
+                    label:
+                        "\(cell.name)/na\(arm.na)/g\(arm.groups)/"
+                        + "\(geometryTag)/\(dtypeTag)/"
+                        + (cold ? "cold" : "hot"),
+                    fields: fields,
+                    enqueue: {
+                        let set = ringBox.next(key, cold: cold)
+                        return [
+                            pipeline.call(
+                                x: activations, xsums: xsums, set: set, m: m,
+                                groups: arm.groups)
+                        ]
+                    }))
+        }
+    }
+
     /// Shared driver: build one replica ring per cell shape, then time every
-    /// requested `(NA, G, cold)` unit on it.
+    /// requested `(NA, G, geometry, dtype, cold)` unit on it.
     private func sweep(
         phase: String,
         shapes: [E219Cell],
@@ -903,6 +1175,9 @@ struct E219PassAnatomyTests {
         /// `rows_per_simd` arms. The default is the shipped geometry compiled
         /// from the shipped header, so every pre-E221 phase is unchanged.
         geometries: [(rows: Int, parameterized: Bool)] = [(4, false)],
+        /// Activation dtype arms. The default is the shipped bfloat16 slab, so
+        /// every pre-E223 phase is unchanged.
+        activationDTypes: [Bool] = [false],
         extra: [String: Any] = [:]
     ) throws {
         var cache = E219PipelineCache()
@@ -933,51 +1208,22 @@ struct E219PassAnatomyTests {
                 let x = e219Activations(
                     m: m, k: cell.k, seed: UInt64(0xE219_1000 + m))
                 let xsums = Qwen35CustomQMV.xsumsTable(x)
-                eval(xsums)
+                // bfloat16 to float32 is exact, so this is the same activation
+                // slab in a wider container, not a different input.
+                let xf32 = x.asType(.float32)
+                eval(xsums, xf32)
                 for geometry in geometries {
                     guard cell.n % (2 * geometry.rows) == 0 else { continue }
-                    let pipeline = cache.get(
-                        na: arm.na, stride: stride, table: true,
-                        rows: geometry.rows,
-                        parameterized: geometry.parameterized)
-                    let bytes = E219Bytes(
-                        k: cell.k, n: cell.n, na: arm.na, stride: stride,
-                        rows: geometry.rows)
                     let geometryTag = geometry.parameterized
                         ? "rows\(geometry.rows)param" : "rows\(geometry.rows)"
-                    for cold in coldArms {
-                        let key = cell.name
-                        var fields: [String: Any] = [
-                            "cell": cell.name, "k": cell.k, "n": cell.n,
-                            "na": arm.na, "groups": arm.groups, "m": m,
-                            "stride": stride, "cold": cold, "dispatches": 1,
-                            "rows_per_simd": geometry.rows,
-                            "parameterized_header": geometry.parameterized,
-                            "geometry": geometryTag,
-                            "bytes_per_row_per_kblock":
-                                bytes.bytesPerRowPerKBlock,
-                            "invocations_per_round": cell.invocations,
-                            "replicas": ringBox.count(key),
-                            "replica_set_bytes": ringBox.bytes(key),
-                        ]
-                        for (bk, bv) in bytes.dictionary { fields[bk] = bv }
-                        fields["pass_stream_bytes"] =
-                            (bytes.weight + bytes.scaleBias) * arm.groups
-                        units.append(
-                            E219Unit(
-                                label:
-                                    "\(cell.name)/na\(arm.na)/g\(arm.groups)/"
-                                    + "\(geometryTag)/"
-                                    + (cold ? "cold" : "hot"),
-                                fields: fields,
-                                enqueue: {
-                                    let set = ringBox.next(key, cold: cold)
-                                    return [
-                                        pipeline.call(
-                                            x: x, xsums: xsums, set: set, m: m,
-                                            groups: arm.groups)
-                                    ]
-                                }))
+                    for f32 in activationDTypes {
+                        try sweepArm(
+                            cell: cell, arm: arm, m: m, stride: stride,
+                            geometry: geometry, geometryTag: geometryTag,
+                            activationF32: f32,
+                            activations: f32 ? xf32 : x, xsums: xsums,
+                            coldArms: coldArms, cache: &cache,
+                            units: &units, ringBox: ringBox)
                     }
                 }
             }
@@ -1113,6 +1359,51 @@ struct E219PassAnatomyTests {
                 },
                 "e221_register_witness":
                     "research/e221-artifacts/e221_register_probe.json",
+            ])
+    }
+
+    /// E223 step 1: what is one removed non-arithmetic instruction worth?
+    ///
+    /// The float32 activation arm removes 12.6 of the 123.2 machine
+    /// instructions each column runs per k-block on `applegpu_g17s`, all of
+    /// them `bfloat16` to `float` conversions, and issues twice the activation
+    /// bytes to do it. Both arms run the same geometry, the same weight stream,
+    /// the same chunk-sum table and bit-identical arithmetic, so the measured
+    /// delta separates the two readings the desk cannot separate:
+    ///
+    ///  - if cost is proportional to instructions, the arm is 10.2% faster per
+    ///    column before the extra bytes are charged;
+    ///  - if cost is limited by floating-point issue alone, removing a
+    ///    conversion is worth nothing and only the extra bytes show up.
+    ///
+    /// The answer prices every future non-arithmetic instruction in this kernel,
+    /// not just this arm.
+    @Test(.enabled(if: e219PhaseEnabled("xdtype")))
+    func activationDTypeSweep() throws {
+        let nas = e219IntList("MLX_E219_XDTYPE_NA", [2, 3, 4, 5])
+        let groups = e219IntList("MLX_E219_XDTYPE_GROUPS", [1, 2])
+        var arms: [(na: Int, groups: Int)] = []
+        for na in nas {
+            for g in groups where na * g <= 16 {
+                arms.append((na: na, groups: g))
+            }
+        }
+        try sweep(
+            phase: "xdtype",
+            shapes: e219ScoredCells,
+            arms: arms,
+            coldArms: [true, false],
+            deliverable:
+                "E223 step 1: price one removed bfloat16-to-float conversion "
+                + "per column per k-block against the doubled activation bytes "
+                + "that removing it costs",
+            activationDTypes: [false, true],
+            extra: [
+                "e223_census":
+                    "research/e223-artifacts/e223-desk-pricing.json",
+                "e223_insn_per_column_per_kblock_g17s": [
+                    "bfloat16": 123.2, "float32": 110.6,
+                ],
             ])
     }
 

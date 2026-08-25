@@ -1,0 +1,5727 @@
+{
+ "agx": {
+  "g16s": {
+   "na2_tbl": {
+    "registers": 86,
+    "spill_bytes": 0,
+    "text_bytes": 3736,
+    "text_sha8": "1c087e7d"
+   },
+   "na3_tbl": {
+    "registers": 96,
+    "spill_bytes": 16,
+    "text_bytes": 4648,
+    "text_sha8": "b83f5089"
+   },
+   "na4_tbl": {
+    "registers": 96,
+    "spill_bytes": 48,
+    "text_bytes": 5778,
+    "text_sha8": "b754f76d"
+   },
+   "na5_tbl": {
+    "registers": 96,
+    "spill_bytes": 80,
+    "text_bytes": 6668,
+    "text_sha8": "6adfe86c"
+   },
+   "na6_tbl": {
+    "registers": 96,
+    "spill_bytes": 48,
+    "text_bytes": 4626,
+    "text_sha8": "93c3dcb3"
+   },
+   "na7_tbl": {
+    "registers": 96,
+    "spill_bytes": 112,
+    "text_bytes": 5626,
+    "text_sha8": "c637ec35"
+   },
+   "na8_tbl": {
+    "registers": 96,
+    "spill_bytes": 192,
+    "text_bytes": 6512,
+    "text_sha8": "7f426bdd"
+   },
+   "na9_tbl": {
+    "registers": 96,
+    "spill_bytes": 240,
+    "text_bytes": 7518,
+    "text_sha8": "bbada868"
+   }
+  },
+  "g17s": {
+   "na2_tbl": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 3992,
+    "text_sha8": "0906bde8"
+   },
+   "na3_tbl": {
+    "registers": 92,
+    "spill_bytes": 0,
+    "text_bytes": 4832,
+    "text_sha8": "c0dce370"
+   },
+   "na4_tbl": {
+    "registers": 95,
+    "spill_bytes": 0,
+    "text_bytes": 5876,
+    "text_sha8": "f7b840c7"
+   },
+   "na5_tbl": {
+    "registers": 101,
+    "spill_bytes": 0,
+    "text_bytes": 6996,
+    "text_sha8": "44877a67"
+   },
+   "na6_tbl": {
+    "registers": 117,
+    "spill_bytes": 0,
+    "text_bytes": 4534,
+    "text_sha8": "13d5fcbd"
+   },
+   "na7_tbl": {
+    "registers": 126,
+    "spill_bytes": 32,
+    "text_bytes": 5422,
+    "text_sha8": "388ccde4"
+   },
+   "na8_tbl": {
+    "registers": 126,
+    "spill_bytes": 112,
+    "text_bytes": 6418,
+    "text_sha8": "d7a6939f"
+   },
+   "na9_tbl": {
+    "registers": 126,
+    "spill_bytes": 176,
+    "text_bytes": 7358,
+    "text_sha8": "03ab5617"
+   }
+  }
+ },
+ "air": {
+  "na2_tbl": {
+   "blocks": {
+    "100": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "102": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "108": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "119": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "121": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 8,
+     "instructions": {
+      "address_arith": 4,
+      "control": 7,
+      "device_load": 4,
+      "int_arith": 7,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 7,
+      "device_load": 4,
+      "int_arith": 7,
+      "vector_shuffle": 4
+     },
+     "role": "xsums_load"
+    },
+    "147": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "150": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 3,
+      "fp_arith": 2,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 6,
+      "fp_arith": 4,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "role": "dequant_fma"
+    },
+    "183": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "186": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 1,
+      "fp_arith": 2,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 2,
+      "fp_arith": 4,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "role": "other"
+    },
+    "20": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "206": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "role": "other"
+    },
+    "212": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "213": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "216": {
+     "executions_per_dispatch_outside_k": 8,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 3,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "control": 3,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "role": "epilogue_reduce"
+    },
+    "221": {
+     "executions_per_dispatch_outside_k": 8,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "role": "output_store"
+    },
+    "228": {
+     "executions_per_dispatch_outside_k": 8,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "23": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "lane_ops": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "role": "other"
+    },
+    "35": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "41": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "43": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "55": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "61": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "69": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "role": "scale_bias_load"
+    },
+    "83": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "weight_load"
+    },
+    "91": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "92": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 2,
+     "instructions": {
+      "address_arith": 1,
+      "control": 4,
+      "device_load": 1,
+      "int_arith": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 4,
+      "device_load": 1,
+      "int_arith": 1,
+      "vector_shuffle": 1
+     },
+     "role": "xsums_load"
+    },
+    "entry": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    }
+   },
+   "instructions_per_dispatch_outside_k_loop": {
+    "address_arith": 23,
+    "control": 65,
+    "convert_f32_bf16": 8,
+    "device_store": 8,
+    "int_arith": 69,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 8,
+    "vector_shuffle": 8
+   },
+   "instructions_per_k_block": {
+    "address_arith": 149,
+    "control": 198,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 58,
+    "fma": 52,
+    "fp_arith": 40,
+    "int_arith": 365,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 178
+   },
+   "instructions_per_k_block_total": 1208,
+   "loops": [
+    {
+     "body": [
+      "43",
+      "55",
+      "61",
+      "69",
+      "83",
+      "91",
+      "92",
+      "100",
+      "102",
+      "108",
+      "119",
+      "121",
+      "147",
+      "150",
+      "183",
+      "186"
+     ],
+     "header": "43",
+     "latch": "183",
+     "trip": "runtime"
+    },
+    {
+     "body": [
+      "108",
+      "119",
+      "121",
+      "147",
+      "150"
+     ],
+     "header": "108",
+     "latch": "147",
+     "trip": 4
+    },
+    {
+     "body": [
+      "206",
+      "213",
+      "216",
+      "221",
+      "228"
+     ],
+     "header": "206",
+     "latch": "213",
+     "trip": 4
+    },
+    {
+     "body": [
+      "216",
+      "221",
+      "228"
+     ],
+     "header": "216",
+     "latch": "228",
+     "trip": 2
+    },
+    {
+     "body": [
+      "61",
+      "69",
+      "83"
+     ],
+     "header": "61",
+     "latch": "69",
+     "trip": 4
+    },
+    {
+     "body": [
+      "102"
+     ],
+     "header": "102",
+     "latch": "102",
+     "trip": 4
+    },
+    {
+     "body": [
+      "121"
+     ],
+     "header": "121",
+     "latch": "121",
+     "trip": 2
+    },
+    {
+     "body": [
+      "150"
+     ],
+     "header": "150",
+     "latch": "150",
+     "trip": 4
+    },
+    {
+     "body": [
+      "186"
+     ],
+     "header": "186",
+     "latch": "186",
+     "trip": 4
+    },
+    {
+     "body": [
+      "35"
+     ],
+     "header": "35",
+     "latch": "35",
+     "trip": 4
+    },
+    {
+     "body": [
+      "83"
+     ],
+     "header": "83",
+     "latch": "83",
+     "trip": 4
+    },
+    {
+     "body": [
+      "92"
+     ],
+     "header": "92",
+     "latch": "92",
+     "trip": 2
+    }
+   ],
+   "na": 2,
+   "ops_per_dispatch_outside_k_loop": {
+    "address_arith": 23,
+    "control": 65,
+    "convert_f32_bf16": 8,
+    "device_store": 8,
+    "int_arith": 69,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 8,
+    "vector_shuffle": 8
+   },
+   "ops_per_k_block": {
+    "address_arith": 149,
+    "control": 198,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 58,
+    "fma": 104,
+    "fp_arith": 80,
+    "int_arith": 365,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 178
+   },
+   "ops_per_k_block_by_role": {
+    "dequant_fma": {
+     "address_arith": 32,
+     "control": 32,
+     "convert_i2f": 64,
+     "fma": 96,
+     "fp_arith": 64,
+     "int_arith": 160,
+     "private_load": 32,
+     "private_store": 16,
+     "vector_shuffle": 128
+    },
+    "other": {
+     "address_arith": 35,
+     "control": 66,
+     "fma": 8,
+     "fp_arith": 16,
+     "int_arith": 79,
+     "private_load": 16,
+     "private_store": 8,
+     "vector_shuffle": 16
+    },
+    "scale_bias_load": {
+     "address_arith": 16,
+     "control": 4,
+     "convert_bf16_f32": 8,
+     "device_load": 8,
+     "int_arith": 20,
+     "private_store": 8
+    },
+    "weight_load": {
+     "address_arith": 32,
+     "control": 32,
+     "device_load": 16,
+     "int_arith": 48,
+     "private_store": 16
+    },
+    "xsums_load": {
+     "address_arith": 34,
+     "control": 64,
+     "device_load": 34,
+     "int_arith": 58,
+     "vector_shuffle": 34
+    }
+   },
+   "ops_per_k_block_total": 1300,
+   "use_table": true
+  },
+  "na3_tbl": {
+   "blocks": {
+    "101": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "103": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "109": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "120": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "122": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 12,
+     "instructions": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "role": "xsums_load"
+    },
+    "149": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "152": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 3,
+      "fp_arith": 2,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 9,
+      "fp_arith": 6,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "role": "dequant_fma"
+    },
+    "185": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "188": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 1,
+      "fp_arith": 2,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 3,
+      "fp_arith": 6,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "role": "other"
+    },
+    "20": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "208": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "role": "other"
+    },
+    "214": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "215": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "218": {
+     "executions_per_dispatch_outside_k": 12,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "role": "epilogue_reduce"
+    },
+    "222": {
+     "executions_per_dispatch_outside_k": 12,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "role": "output_store"
+    },
+    "229": {
+     "executions_per_dispatch_outside_k": 12,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "23": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "lane_ops": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "role": "other"
+    },
+    "35": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "41": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "43": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "55": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "61": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "69": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "role": "scale_bias_load"
+    },
+    "83": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "weight_load"
+    },
+    "91": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "92": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 3,
+     "instructions": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "role": "xsums_load"
+    },
+    "entry": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    }
+   },
+   "instructions_per_dispatch_outside_k_loop": {
+    "address_arith": 27,
+    "control": 73,
+    "convert_f32_bf16": 12,
+    "device_store": 12,
+    "int_arith": 109,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 12,
+    "vector_shuffle": 12
+   },
+   "instructions_per_k_block": {
+    "address_arith": 166,
+    "control": 215,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 75,
+    "fma": 52,
+    "fp_arith": 40,
+    "int_arith": 424,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 195
+   },
+   "instructions_per_k_block_total": 1335,
+   "loops": [
+    {
+     "body": [
+      "43",
+      "55",
+      "61",
+      "69",
+      "83",
+      "91",
+      "92",
+      "101",
+      "103",
+      "109",
+      "120",
+      "122",
+      "149",
+      "152",
+      "185",
+      "188"
+     ],
+     "header": "43",
+     "latch": "185",
+     "trip": "runtime"
+    },
+    {
+     "body": [
+      "109",
+      "120",
+      "122",
+      "149",
+      "152"
+     ],
+     "header": "109",
+     "latch": "149",
+     "trip": 4
+    },
+    {
+     "body": [
+      "208",
+      "215",
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "208",
+     "latch": "215",
+     "trip": 4
+    },
+    {
+     "body": [
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "218",
+     "latch": "229",
+     "trip": 3
+    },
+    {
+     "body": [
+      "61",
+      "69",
+      "83"
+     ],
+     "header": "61",
+     "latch": "69",
+     "trip": 4
+    },
+    {
+     "body": [
+      "103"
+     ],
+     "header": "103",
+     "latch": "103",
+     "trip": 4
+    },
+    {
+     "body": [
+      "122"
+     ],
+     "header": "122",
+     "latch": "122",
+     "trip": 3
+    },
+    {
+     "body": [
+      "152"
+     ],
+     "header": "152",
+     "latch": "152",
+     "trip": 4
+    },
+    {
+     "body": [
+      "188"
+     ],
+     "header": "188",
+     "latch": "188",
+     "trip": 4
+    },
+    {
+     "body": [
+      "35"
+     ],
+     "header": "35",
+     "latch": "35",
+     "trip": 4
+    },
+    {
+     "body": [
+      "83"
+     ],
+     "header": "83",
+     "latch": "83",
+     "trip": 4
+    },
+    {
+     "body": [
+      "92"
+     ],
+     "header": "92",
+     "latch": "92",
+     "trip": 3
+    }
+   ],
+   "na": 3,
+   "ops_per_dispatch_outside_k_loop": {
+    "address_arith": 27,
+    "control": 73,
+    "convert_f32_bf16": 12,
+    "device_store": 12,
+    "int_arith": 109,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 12,
+    "vector_shuffle": 12
+   },
+   "ops_per_k_block": {
+    "address_arith": 166,
+    "control": 215,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 75,
+    "fma": 156,
+    "fp_arith": 120,
+    "int_arith": 424,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 195
+   },
+   "ops_per_k_block_by_role": {
+    "dequant_fma": {
+     "address_arith": 32,
+     "control": 32,
+     "convert_i2f": 64,
+     "fma": 144,
+     "fp_arith": 96,
+     "int_arith": 160,
+     "private_load": 32,
+     "private_store": 16,
+     "vector_shuffle": 128
+    },
+    "other": {
+     "address_arith": 35,
+     "control": 66,
+     "fma": 12,
+     "fp_arith": 24,
+     "int_arith": 79,
+     "private_load": 16,
+     "private_store": 8,
+     "vector_shuffle": 16
+    },
+    "scale_bias_load": {
+     "address_arith": 16,
+     "control": 4,
+     "convert_bf16_f32": 8,
+     "device_load": 8,
+     "int_arith": 20,
+     "private_store": 8
+    },
+    "weight_load": {
+     "address_arith": 32,
+     "control": 32,
+     "device_load": 16,
+     "int_arith": 48,
+     "private_store": 16
+    },
+    "xsums_load": {
+     "address_arith": 51,
+     "control": 81,
+     "device_load": 51,
+     "int_arith": 117,
+     "vector_shuffle": 51
+    }
+   },
+   "ops_per_k_block_total": 1519,
+   "use_table": true
+  },
+  "na4_tbl": {
+   "blocks": {
+    "101": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "103": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "109": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "120": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "122": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "role": "xsums_load"
+    },
+    "149": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "152": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 3,
+      "fp_arith": 2,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 12,
+      "fp_arith": 8,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "role": "dequant_fma"
+    },
+    "185": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "188": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 1,
+      "fp_arith": 2,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 4,
+      "fp_arith": 8,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "role": "other"
+    },
+    "20": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "208": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "role": "other"
+    },
+    "214": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "215": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "218": {
+     "executions_per_dispatch_outside_k": 16,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "role": "epilogue_reduce"
+    },
+    "222": {
+     "executions_per_dispatch_outside_k": 16,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "role": "output_store"
+    },
+    "229": {
+     "executions_per_dispatch_outside_k": 16,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "23": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "lane_ops": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "role": "other"
+    },
+    "35": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "41": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "43": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "55": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "61": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "69": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "role": "scale_bias_load"
+    },
+    "83": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "weight_load"
+    },
+    "91": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "92": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "role": "xsums_load"
+    },
+    "entry": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    }
+   },
+   "instructions_per_dispatch_outside_k_loop": {
+    "address_arith": 31,
+    "control": 89,
+    "convert_f32_bf16": 16,
+    "device_store": 16,
+    "int_arith": 133,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 16,
+    "vector_shuffle": 16
+   },
+   "instructions_per_k_block": {
+    "address_arith": 183,
+    "control": 242,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 92,
+    "fma": 52,
+    "fp_arith": 40,
+    "int_arith": 463,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 212
+   },
+   "instructions_per_k_block_total": 1452,
+   "loops": [
+    {
+     "body": [
+      "43",
+      "55",
+      "61",
+      "69",
+      "83",
+      "91",
+      "92",
+      "101",
+      "103",
+      "109",
+      "120",
+      "122",
+      "149",
+      "152",
+      "185",
+      "188"
+     ],
+     "header": "43",
+     "latch": "185",
+     "trip": "runtime"
+    },
+    {
+     "body": [
+      "109",
+      "120",
+      "122",
+      "149",
+      "152"
+     ],
+     "header": "109",
+     "latch": "149",
+     "trip": 4
+    },
+    {
+     "body": [
+      "208",
+      "215",
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "208",
+     "latch": "215",
+     "trip": 4
+    },
+    {
+     "body": [
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "218",
+     "latch": "229",
+     "trip": 4
+    },
+    {
+     "body": [
+      "61",
+      "69",
+      "83"
+     ],
+     "header": "61",
+     "latch": "69",
+     "trip": 4
+    },
+    {
+     "body": [
+      "103"
+     ],
+     "header": "103",
+     "latch": "103",
+     "trip": 4
+    },
+    {
+     "body": [
+      "122"
+     ],
+     "header": "122",
+     "latch": "122",
+     "trip": 4
+    },
+    {
+     "body": [
+      "152"
+     ],
+     "header": "152",
+     "latch": "152",
+     "trip": 4
+    },
+    {
+     "body": [
+      "188"
+     ],
+     "header": "188",
+     "latch": "188",
+     "trip": 4
+    },
+    {
+     "body": [
+      "35"
+     ],
+     "header": "35",
+     "latch": "35",
+     "trip": 4
+    },
+    {
+     "body": [
+      "83"
+     ],
+     "header": "83",
+     "latch": "83",
+     "trip": 4
+    },
+    {
+     "body": [
+      "92"
+     ],
+     "header": "92",
+     "latch": "92",
+     "trip": 4
+    }
+   ],
+   "na": 4,
+   "ops_per_dispatch_outside_k_loop": {
+    "address_arith": 31,
+    "control": 89,
+    "convert_f32_bf16": 16,
+    "device_store": 16,
+    "int_arith": 133,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 16,
+    "vector_shuffle": 16
+   },
+   "ops_per_k_block": {
+    "address_arith": 183,
+    "control": 242,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 92,
+    "fma": 208,
+    "fp_arith": 160,
+    "int_arith": 463,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 212
+   },
+   "ops_per_k_block_by_role": {
+    "dequant_fma": {
+     "address_arith": 32,
+     "control": 32,
+     "convert_i2f": 64,
+     "fma": 192,
+     "fp_arith": 128,
+     "int_arith": 160,
+     "private_load": 32,
+     "private_store": 16,
+     "vector_shuffle": 128
+    },
+    "other": {
+     "address_arith": 35,
+     "control": 66,
+     "fma": 16,
+     "fp_arith": 32,
+     "int_arith": 79,
+     "private_load": 16,
+     "private_store": 8,
+     "vector_shuffle": 16
+    },
+    "scale_bias_load": {
+     "address_arith": 16,
+     "control": 4,
+     "convert_bf16_f32": 8,
+     "device_load": 8,
+     "int_arith": 20,
+     "private_store": 8
+    },
+    "weight_load": {
+     "address_arith": 32,
+     "control": 32,
+     "device_load": 16,
+     "int_arith": 48,
+     "private_store": 16
+    },
+    "xsums_load": {
+     "address_arith": 68,
+     "control": 108,
+     "device_load": 68,
+     "int_arith": 156,
+     "vector_shuffle": 68
+    }
+   },
+   "ops_per_k_block_total": 1728,
+   "use_table": true
+  },
+  "na5_tbl": {
+   "blocks": {
+    "101": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "103": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "109": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "120": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "122": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 20,
+     "instructions": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "role": "xsums_load"
+    },
+    "149": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "152": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 3,
+      "fp_arith": 2,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 15,
+      "fp_arith": 10,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "role": "dequant_fma"
+    },
+    "185": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "188": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 1,
+      "fp_arith": 2,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 5,
+      "fp_arith": 10,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "role": "other"
+    },
+    "20": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "208": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "role": "other"
+    },
+    "214": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "215": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "218": {
+     "executions_per_dispatch_outside_k": 20,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "role": "epilogue_reduce"
+    },
+    "222": {
+     "executions_per_dispatch_outside_k": 20,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "role": "output_store"
+    },
+    "229": {
+     "executions_per_dispatch_outside_k": 20,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "23": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "lane_ops": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "role": "other"
+    },
+    "35": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "41": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "43": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "55": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "61": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "69": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "role": "scale_bias_load"
+    },
+    "83": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "weight_load"
+    },
+    "91": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "92": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 5,
+     "instructions": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "role": "xsums_load"
+    },
+    "entry": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    }
+   },
+   "instructions_per_dispatch_outside_k_loop": {
+    "address_arith": 35,
+    "control": 105,
+    "convert_f32_bf16": 20,
+    "device_store": 20,
+    "int_arith": 157,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 20,
+    "vector_shuffle": 20
+   },
+   "instructions_per_k_block": {
+    "address_arith": 200,
+    "control": 269,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 109,
+    "fma": 52,
+    "fp_arith": 40,
+    "int_arith": 502,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 229
+   },
+   "instructions_per_k_block_total": 1569,
+   "loops": [
+    {
+     "body": [
+      "43",
+      "55",
+      "61",
+      "69",
+      "83",
+      "91",
+      "92",
+      "101",
+      "103",
+      "109",
+      "120",
+      "122",
+      "149",
+      "152",
+      "185",
+      "188"
+     ],
+     "header": "43",
+     "latch": "185",
+     "trip": "runtime"
+    },
+    {
+     "body": [
+      "109",
+      "120",
+      "122",
+      "149",
+      "152"
+     ],
+     "header": "109",
+     "latch": "149",
+     "trip": 4
+    },
+    {
+     "body": [
+      "208",
+      "215",
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "208",
+     "latch": "215",
+     "trip": 4
+    },
+    {
+     "body": [
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "218",
+     "latch": "229",
+     "trip": 5
+    },
+    {
+     "body": [
+      "61",
+      "69",
+      "83"
+     ],
+     "header": "61",
+     "latch": "69",
+     "trip": 4
+    },
+    {
+     "body": [
+      "103"
+     ],
+     "header": "103",
+     "latch": "103",
+     "trip": 4
+    },
+    {
+     "body": [
+      "122"
+     ],
+     "header": "122",
+     "latch": "122",
+     "trip": 5
+    },
+    {
+     "body": [
+      "152"
+     ],
+     "header": "152",
+     "latch": "152",
+     "trip": 4
+    },
+    {
+     "body": [
+      "188"
+     ],
+     "header": "188",
+     "latch": "188",
+     "trip": 4
+    },
+    {
+     "body": [
+      "35"
+     ],
+     "header": "35",
+     "latch": "35",
+     "trip": 4
+    },
+    {
+     "body": [
+      "83"
+     ],
+     "header": "83",
+     "latch": "83",
+     "trip": 4
+    },
+    {
+     "body": [
+      "92"
+     ],
+     "header": "92",
+     "latch": "92",
+     "trip": 5
+    }
+   ],
+   "na": 5,
+   "ops_per_dispatch_outside_k_loop": {
+    "address_arith": 35,
+    "control": 105,
+    "convert_f32_bf16": 20,
+    "device_store": 20,
+    "int_arith": 157,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 20,
+    "vector_shuffle": 20
+   },
+   "ops_per_k_block": {
+    "address_arith": 200,
+    "control": 269,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 109,
+    "fma": 260,
+    "fp_arith": 200,
+    "int_arith": 502,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 229
+   },
+   "ops_per_k_block_by_role": {
+    "dequant_fma": {
+     "address_arith": 32,
+     "control": 32,
+     "convert_i2f": 64,
+     "fma": 240,
+     "fp_arith": 160,
+     "int_arith": 160,
+     "private_load": 32,
+     "private_store": 16,
+     "vector_shuffle": 128
+    },
+    "other": {
+     "address_arith": 35,
+     "control": 66,
+     "fma": 20,
+     "fp_arith": 40,
+     "int_arith": 79,
+     "private_load": 16,
+     "private_store": 8,
+     "vector_shuffle": 16
+    },
+    "scale_bias_load": {
+     "address_arith": 16,
+     "control": 4,
+     "convert_bf16_f32": 8,
+     "device_load": 8,
+     "int_arith": 20,
+     "private_store": 8
+    },
+    "weight_load": {
+     "address_arith": 32,
+     "control": 32,
+     "device_load": 16,
+     "int_arith": 48,
+     "private_store": 16
+    },
+    "xsums_load": {
+     "address_arith": 85,
+     "control": 135,
+     "device_load": 85,
+     "int_arith": 195,
+     "vector_shuffle": 85
+    }
+   },
+   "ops_per_k_block_total": 1937,
+   "use_table": true
+  },
+  "na6_tbl": {
+   "blocks": {
+    "101": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "103": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "109": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "120": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "122": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 24,
+     "instructions": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "role": "xsums_load"
+    },
+    "149": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "152": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 3,
+      "fp_arith": 2,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 18,
+      "fp_arith": 12,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "role": "dequant_fma"
+    },
+    "185": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "188": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 1,
+      "fp_arith": 2,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 6,
+      "fp_arith": 12,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "role": "other"
+    },
+    "20": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "208": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "role": "other"
+    },
+    "214": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "215": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "218": {
+     "executions_per_dispatch_outside_k": 24,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "role": "epilogue_reduce"
+    },
+    "222": {
+     "executions_per_dispatch_outside_k": 24,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "role": "output_store"
+    },
+    "229": {
+     "executions_per_dispatch_outside_k": 24,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "23": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "lane_ops": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "role": "other"
+    },
+    "35": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "41": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "43": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "55": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "61": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "69": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "role": "scale_bias_load"
+    },
+    "83": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "weight_load"
+    },
+    "91": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "92": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 6,
+     "instructions": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "role": "xsums_load"
+    },
+    "entry": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    }
+   },
+   "instructions_per_dispatch_outside_k_loop": {
+    "address_arith": 39,
+    "control": 121,
+    "convert_f32_bf16": 24,
+    "device_store": 24,
+    "int_arith": 181,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 24,
+    "vector_shuffle": 24
+   },
+   "instructions_per_k_block": {
+    "address_arith": 217,
+    "control": 296,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 126,
+    "fma": 52,
+    "fp_arith": 40,
+    "int_arith": 541,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 246
+   },
+   "instructions_per_k_block_total": 1686,
+   "loops": [
+    {
+     "body": [
+      "43",
+      "55",
+      "61",
+      "69",
+      "83",
+      "91",
+      "92",
+      "101",
+      "103",
+      "109",
+      "120",
+      "122",
+      "149",
+      "152",
+      "185",
+      "188"
+     ],
+     "header": "43",
+     "latch": "185",
+     "trip": "runtime"
+    },
+    {
+     "body": [
+      "109",
+      "120",
+      "122",
+      "149",
+      "152"
+     ],
+     "header": "109",
+     "latch": "149",
+     "trip": 4
+    },
+    {
+     "body": [
+      "208",
+      "215",
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "208",
+     "latch": "215",
+     "trip": 4
+    },
+    {
+     "body": [
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "218",
+     "latch": "229",
+     "trip": 6
+    },
+    {
+     "body": [
+      "61",
+      "69",
+      "83"
+     ],
+     "header": "61",
+     "latch": "69",
+     "trip": 4
+    },
+    {
+     "body": [
+      "103"
+     ],
+     "header": "103",
+     "latch": "103",
+     "trip": 4
+    },
+    {
+     "body": [
+      "122"
+     ],
+     "header": "122",
+     "latch": "122",
+     "trip": 6
+    },
+    {
+     "body": [
+      "152"
+     ],
+     "header": "152",
+     "latch": "152",
+     "trip": 4
+    },
+    {
+     "body": [
+      "188"
+     ],
+     "header": "188",
+     "latch": "188",
+     "trip": 4
+    },
+    {
+     "body": [
+      "35"
+     ],
+     "header": "35",
+     "latch": "35",
+     "trip": 4
+    },
+    {
+     "body": [
+      "83"
+     ],
+     "header": "83",
+     "latch": "83",
+     "trip": 4
+    },
+    {
+     "body": [
+      "92"
+     ],
+     "header": "92",
+     "latch": "92",
+     "trip": 6
+    }
+   ],
+   "na": 6,
+   "ops_per_dispatch_outside_k_loop": {
+    "address_arith": 39,
+    "control": 121,
+    "convert_f32_bf16": 24,
+    "device_store": 24,
+    "int_arith": 181,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 24,
+    "vector_shuffle": 24
+   },
+   "ops_per_k_block": {
+    "address_arith": 217,
+    "control": 296,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 126,
+    "fma": 312,
+    "fp_arith": 240,
+    "int_arith": 541,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 246
+   },
+   "ops_per_k_block_by_role": {
+    "dequant_fma": {
+     "address_arith": 32,
+     "control": 32,
+     "convert_i2f": 64,
+     "fma": 288,
+     "fp_arith": 192,
+     "int_arith": 160,
+     "private_load": 32,
+     "private_store": 16,
+     "vector_shuffle": 128
+    },
+    "other": {
+     "address_arith": 35,
+     "control": 66,
+     "fma": 24,
+     "fp_arith": 48,
+     "int_arith": 79,
+     "private_load": 16,
+     "private_store": 8,
+     "vector_shuffle": 16
+    },
+    "scale_bias_load": {
+     "address_arith": 16,
+     "control": 4,
+     "convert_bf16_f32": 8,
+     "device_load": 8,
+     "int_arith": 20,
+     "private_store": 8
+    },
+    "weight_load": {
+     "address_arith": 32,
+     "control": 32,
+     "device_load": 16,
+     "int_arith": 48,
+     "private_store": 16
+    },
+    "xsums_load": {
+     "address_arith": 102,
+     "control": 162,
+     "device_load": 102,
+     "int_arith": 234,
+     "vector_shuffle": 102
+    }
+   },
+   "ops_per_k_block_total": 2146,
+   "use_table": true
+  },
+  "na7_tbl": {
+   "blocks": {
+    "101": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "103": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "109": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "120": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "122": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 28,
+     "instructions": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "role": "xsums_load"
+    },
+    "149": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "152": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 3,
+      "fp_arith": 2,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 21,
+      "fp_arith": 14,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "role": "dequant_fma"
+    },
+    "185": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "188": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 1,
+      "fp_arith": 2,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 7,
+      "fp_arith": 14,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "role": "other"
+    },
+    "20": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "208": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "role": "other"
+    },
+    "214": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "215": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "218": {
+     "executions_per_dispatch_outside_k": 28,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "role": "epilogue_reduce"
+    },
+    "222": {
+     "executions_per_dispatch_outside_k": 28,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "role": "output_store"
+    },
+    "229": {
+     "executions_per_dispatch_outside_k": 28,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "23": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "lane_ops": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "role": "other"
+    },
+    "35": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "41": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "43": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "55": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "61": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "69": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "role": "scale_bias_load"
+    },
+    "83": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "weight_load"
+    },
+    "91": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "92": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 7,
+     "instructions": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "role": "xsums_load"
+    },
+    "entry": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    }
+   },
+   "instructions_per_dispatch_outside_k_loop": {
+    "address_arith": 43,
+    "control": 137,
+    "convert_f32_bf16": 28,
+    "device_store": 28,
+    "int_arith": 205,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 28,
+    "vector_shuffle": 28
+   },
+   "instructions_per_k_block": {
+    "address_arith": 234,
+    "control": 323,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 143,
+    "fma": 52,
+    "fp_arith": 40,
+    "int_arith": 580,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 263
+   },
+   "instructions_per_k_block_total": 1803,
+   "loops": [
+    {
+     "body": [
+      "43",
+      "55",
+      "61",
+      "69",
+      "83",
+      "91",
+      "92",
+      "101",
+      "103",
+      "109",
+      "120",
+      "122",
+      "149",
+      "152",
+      "185",
+      "188"
+     ],
+     "header": "43",
+     "latch": "185",
+     "trip": "runtime"
+    },
+    {
+     "body": [
+      "109",
+      "120",
+      "122",
+      "149",
+      "152"
+     ],
+     "header": "109",
+     "latch": "149",
+     "trip": 4
+    },
+    {
+     "body": [
+      "208",
+      "215",
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "208",
+     "latch": "215",
+     "trip": 4
+    },
+    {
+     "body": [
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "218",
+     "latch": "229",
+     "trip": 7
+    },
+    {
+     "body": [
+      "61",
+      "69",
+      "83"
+     ],
+     "header": "61",
+     "latch": "69",
+     "trip": 4
+    },
+    {
+     "body": [
+      "103"
+     ],
+     "header": "103",
+     "latch": "103",
+     "trip": 4
+    },
+    {
+     "body": [
+      "122"
+     ],
+     "header": "122",
+     "latch": "122",
+     "trip": 7
+    },
+    {
+     "body": [
+      "152"
+     ],
+     "header": "152",
+     "latch": "152",
+     "trip": 4
+    },
+    {
+     "body": [
+      "188"
+     ],
+     "header": "188",
+     "latch": "188",
+     "trip": 4
+    },
+    {
+     "body": [
+      "35"
+     ],
+     "header": "35",
+     "latch": "35",
+     "trip": 4
+    },
+    {
+     "body": [
+      "83"
+     ],
+     "header": "83",
+     "latch": "83",
+     "trip": 4
+    },
+    {
+     "body": [
+      "92"
+     ],
+     "header": "92",
+     "latch": "92",
+     "trip": 7
+    }
+   ],
+   "na": 7,
+   "ops_per_dispatch_outside_k_loop": {
+    "address_arith": 43,
+    "control": 137,
+    "convert_f32_bf16": 28,
+    "device_store": 28,
+    "int_arith": 205,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 28,
+    "vector_shuffle": 28
+   },
+   "ops_per_k_block": {
+    "address_arith": 234,
+    "control": 323,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 143,
+    "fma": 364,
+    "fp_arith": 280,
+    "int_arith": 580,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 263
+   },
+   "ops_per_k_block_by_role": {
+    "dequant_fma": {
+     "address_arith": 32,
+     "control": 32,
+     "convert_i2f": 64,
+     "fma": 336,
+     "fp_arith": 224,
+     "int_arith": 160,
+     "private_load": 32,
+     "private_store": 16,
+     "vector_shuffle": 128
+    },
+    "other": {
+     "address_arith": 35,
+     "control": 66,
+     "fma": 28,
+     "fp_arith": 56,
+     "int_arith": 79,
+     "private_load": 16,
+     "private_store": 8,
+     "vector_shuffle": 16
+    },
+    "scale_bias_load": {
+     "address_arith": 16,
+     "control": 4,
+     "convert_bf16_f32": 8,
+     "device_load": 8,
+     "int_arith": 20,
+     "private_store": 8
+    },
+    "weight_load": {
+     "address_arith": 32,
+     "control": 32,
+     "device_load": 16,
+     "int_arith": 48,
+     "private_store": 16
+    },
+    "xsums_load": {
+     "address_arith": 119,
+     "control": 189,
+     "device_load": 119,
+     "int_arith": 273,
+     "vector_shuffle": 119
+    }
+   },
+   "ops_per_k_block_total": 2355,
+   "use_table": true
+  },
+  "na8_tbl": {
+   "blocks": {
+    "101": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "103": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "109": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "120": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "122": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 32,
+     "instructions": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "role": "xsums_load"
+    },
+    "149": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "152": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 3,
+      "fp_arith": 2,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 24,
+      "fp_arith": 16,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "role": "dequant_fma"
+    },
+    "185": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "188": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 1,
+      "fp_arith": 2,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 8,
+      "fp_arith": 16,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "role": "other"
+    },
+    "20": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "208": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "role": "other"
+    },
+    "214": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "215": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "218": {
+     "executions_per_dispatch_outside_k": 32,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "role": "epilogue_reduce"
+    },
+    "222": {
+     "executions_per_dispatch_outside_k": 32,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "role": "output_store"
+    },
+    "229": {
+     "executions_per_dispatch_outside_k": 32,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "23": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "lane_ops": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "role": "other"
+    },
+    "35": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "41": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "43": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "55": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "61": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "69": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "role": "scale_bias_load"
+    },
+    "83": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "weight_load"
+    },
+    "91": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "92": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 8,
+     "instructions": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "role": "xsums_load"
+    },
+    "entry": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    }
+   },
+   "instructions_per_dispatch_outside_k_loop": {
+    "address_arith": 47,
+    "control": 153,
+    "convert_f32_bf16": 32,
+    "device_store": 32,
+    "int_arith": 229,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 32,
+    "vector_shuffle": 32
+   },
+   "instructions_per_k_block": {
+    "address_arith": 251,
+    "control": 350,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 160,
+    "fma": 52,
+    "fp_arith": 40,
+    "int_arith": 619,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 280
+   },
+   "instructions_per_k_block_total": 1920,
+   "loops": [
+    {
+     "body": [
+      "43",
+      "55",
+      "61",
+      "69",
+      "83",
+      "91",
+      "92",
+      "101",
+      "103",
+      "109",
+      "120",
+      "122",
+      "149",
+      "152",
+      "185",
+      "188"
+     ],
+     "header": "43",
+     "latch": "185",
+     "trip": "runtime"
+    },
+    {
+     "body": [
+      "109",
+      "120",
+      "122",
+      "149",
+      "152"
+     ],
+     "header": "109",
+     "latch": "149",
+     "trip": 4
+    },
+    {
+     "body": [
+      "208",
+      "215",
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "208",
+     "latch": "215",
+     "trip": 4
+    },
+    {
+     "body": [
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "218",
+     "latch": "229",
+     "trip": 8
+    },
+    {
+     "body": [
+      "61",
+      "69",
+      "83"
+     ],
+     "header": "61",
+     "latch": "69",
+     "trip": 4
+    },
+    {
+     "body": [
+      "103"
+     ],
+     "header": "103",
+     "latch": "103",
+     "trip": 4
+    },
+    {
+     "body": [
+      "122"
+     ],
+     "header": "122",
+     "latch": "122",
+     "trip": 8
+    },
+    {
+     "body": [
+      "152"
+     ],
+     "header": "152",
+     "latch": "152",
+     "trip": 4
+    },
+    {
+     "body": [
+      "188"
+     ],
+     "header": "188",
+     "latch": "188",
+     "trip": 4
+    },
+    {
+     "body": [
+      "35"
+     ],
+     "header": "35",
+     "latch": "35",
+     "trip": 4
+    },
+    {
+     "body": [
+      "83"
+     ],
+     "header": "83",
+     "latch": "83",
+     "trip": 4
+    },
+    {
+     "body": [
+      "92"
+     ],
+     "header": "92",
+     "latch": "92",
+     "trip": 8
+    }
+   ],
+   "na": 8,
+   "ops_per_dispatch_outside_k_loop": {
+    "address_arith": 47,
+    "control": 153,
+    "convert_f32_bf16": 32,
+    "device_store": 32,
+    "int_arith": 229,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 32,
+    "vector_shuffle": 32
+   },
+   "ops_per_k_block": {
+    "address_arith": 251,
+    "control": 350,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 160,
+    "fma": 416,
+    "fp_arith": 320,
+    "int_arith": 619,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 280
+   },
+   "ops_per_k_block_by_role": {
+    "dequant_fma": {
+     "address_arith": 32,
+     "control": 32,
+     "convert_i2f": 64,
+     "fma": 384,
+     "fp_arith": 256,
+     "int_arith": 160,
+     "private_load": 32,
+     "private_store": 16,
+     "vector_shuffle": 128
+    },
+    "other": {
+     "address_arith": 35,
+     "control": 66,
+     "fma": 32,
+     "fp_arith": 64,
+     "int_arith": 79,
+     "private_load": 16,
+     "private_store": 8,
+     "vector_shuffle": 16
+    },
+    "scale_bias_load": {
+     "address_arith": 16,
+     "control": 4,
+     "convert_bf16_f32": 8,
+     "device_load": 8,
+     "int_arith": 20,
+     "private_store": 8
+    },
+    "weight_load": {
+     "address_arith": 32,
+     "control": 32,
+     "device_load": 16,
+     "int_arith": 48,
+     "private_store": 16
+    },
+    "xsums_load": {
+     "address_arith": 136,
+     "control": 216,
+     "device_load": 136,
+     "int_arith": 312,
+     "vector_shuffle": 136
+    }
+   },
+   "ops_per_k_block_total": 2564,
+   "use_table": true
+  },
+  "na9_tbl": {
+   "blocks": {
+    "101": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "103": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "109": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "120": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "122": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 36,
+     "instructions": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 6,
+      "device_load": 4,
+      "int_arith": 9,
+      "vector_shuffle": 4
+     },
+     "role": "xsums_load"
+    },
+    "149": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "152": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 3,
+      "fp_arith": 2,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "convert_i2f": 4,
+      "fma": 27,
+      "fp_arith": 18,
+      "int_arith": 10,
+      "private_load": 2,
+      "private_store": 1,
+      "vector_shuffle": 8
+     },
+     "role": "dequant_fma"
+    },
+    "185": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "188": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 1,
+      "fp_arith": 2,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 2,
+      "fma": 9,
+      "fp_arith": 18,
+      "int_arith": 3,
+      "private_load": 4,
+      "private_store": 1,
+      "vector_shuffle": 4
+     },
+     "role": "other"
+    },
+    "20": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "208": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 2,
+      "private_load": 1
+     },
+     "role": "other"
+    },
+    "214": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "215": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "218": {
+     "executions_per_dispatch_outside_k": 36,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "control": 2,
+      "simd_reduce": 1,
+      "vector_shuffle": 1
+     },
+     "role": "epilogue_reduce"
+    },
+    "222": {
+     "executions_per_dispatch_outside_k": 36,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "convert_f32_bf16": 1,
+      "device_store": 1,
+      "int_arith": 4
+     },
+     "role": "output_store"
+    },
+    "229": {
+     "executions_per_dispatch_outside_k": 36,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 2
+     },
+     "role": "other"
+    },
+    "23": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "lane_ops": {
+      "address_arith": 6,
+      "control": 1,
+      "int_arith": 5
+     },
+     "role": "other"
+    },
+    "35": {
+     "executions_per_dispatch_outside_k": 4,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 2,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "other"
+    },
+    "41": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    },
+    "43": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 6,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "55": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "61": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "int_arith": 4
+     },
+     "role": "other"
+    },
+    "69": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 4,
+     "instructions": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "lane_ops": {
+      "address_arith": 4,
+      "control": 1,
+      "convert_bf16_f32": 2,
+      "device_load": 2,
+      "int_arith": 5,
+      "private_store": 2
+     },
+     "role": "scale_bias_load"
+    },
+    "83": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 16,
+     "instructions": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "lane_ops": {
+      "address_arith": 2,
+      "control": 2,
+      "device_load": 1,
+      "int_arith": 3,
+      "private_store": 1
+     },
+     "role": "weight_load"
+    },
+    "91": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 1,
+     "instructions": {
+      "control": 1
+     },
+     "lane_ops": {
+      "control": 1
+     },
+     "role": "other"
+    },
+    "92": {
+     "executions_per_dispatch_outside_k": 0,
+     "executions_per_k_block": 9,
+     "instructions": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 3,
+      "device_load": 1,
+      "int_arith": 3,
+      "vector_shuffle": 1
+     },
+     "role": "xsums_load"
+    },
+    "entry": {
+     "executions_per_dispatch_outside_k": 1,
+     "executions_per_k_block": 0,
+     "instructions": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "lane_ops": {
+      "address_arith": 1,
+      "control": 1,
+      "int_arith": 1
+     },
+     "role": "other"
+    }
+   },
+   "instructions_per_dispatch_outside_k_loop": {
+    "address_arith": 51,
+    "control": 169,
+    "convert_f32_bf16": 36,
+    "device_store": 36,
+    "int_arith": 253,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 36,
+    "vector_shuffle": 36
+   },
+   "instructions_per_k_block": {
+    "address_arith": 268,
+    "control": 377,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 177,
+    "fma": 52,
+    "fp_arith": 40,
+    "int_arith": 658,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 297
+   },
+   "instructions_per_k_block_total": 2037,
+   "loops": [
+    {
+     "body": [
+      "43",
+      "55",
+      "61",
+      "69",
+      "83",
+      "91",
+      "92",
+      "101",
+      "103",
+      "109",
+      "120",
+      "122",
+      "149",
+      "152",
+      "185",
+      "188"
+     ],
+     "header": "43",
+     "latch": "185",
+     "trip": "runtime"
+    },
+    {
+     "body": [
+      "109",
+      "120",
+      "122",
+      "149",
+      "152"
+     ],
+     "header": "109",
+     "latch": "149",
+     "trip": 4
+    },
+    {
+     "body": [
+      "208",
+      "215",
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "208",
+     "latch": "215",
+     "trip": 4
+    },
+    {
+     "body": [
+      "218",
+      "222",
+      "229"
+     ],
+     "header": "218",
+     "latch": "229",
+     "trip": 9
+    },
+    {
+     "body": [
+      "61",
+      "69",
+      "83"
+     ],
+     "header": "61",
+     "latch": "69",
+     "trip": 4
+    },
+    {
+     "body": [
+      "103"
+     ],
+     "header": "103",
+     "latch": "103",
+     "trip": 4
+    },
+    {
+     "body": [
+      "122"
+     ],
+     "header": "122",
+     "latch": "122",
+     "trip": 9
+    },
+    {
+     "body": [
+      "152"
+     ],
+     "header": "152",
+     "latch": "152",
+     "trip": 4
+    },
+    {
+     "body": [
+      "188"
+     ],
+     "header": "188",
+     "latch": "188",
+     "trip": 4
+    },
+    {
+     "body": [
+      "35"
+     ],
+     "header": "35",
+     "latch": "35",
+     "trip": 4
+    },
+    {
+     "body": [
+      "83"
+     ],
+     "header": "83",
+     "latch": "83",
+     "trip": 4
+    },
+    {
+     "body": [
+      "92"
+     ],
+     "header": "92",
+     "latch": "92",
+     "trip": 9
+    }
+   ],
+   "na": 9,
+   "ops_per_dispatch_outside_k_loop": {
+    "address_arith": 51,
+    "control": 169,
+    "convert_f32_bf16": 36,
+    "device_store": 36,
+    "int_arith": 253,
+    "private_load": 4,
+    "private_store": 4,
+    "simd_reduce": 36,
+    "vector_shuffle": 36
+   },
+   "ops_per_k_block": {
+    "address_arith": 268,
+    "control": 377,
+    "convert_bf16_f32": 8,
+    "convert_i2f": 64,
+    "device_load": 177,
+    "fma": 468,
+    "fp_arith": 360,
+    "int_arith": 658,
+    "private_load": 48,
+    "private_store": 48,
+    "vector_shuffle": 297
+   },
+   "ops_per_k_block_by_role": {
+    "dequant_fma": {
+     "address_arith": 32,
+     "control": 32,
+     "convert_i2f": 64,
+     "fma": 432,
+     "fp_arith": 288,
+     "int_arith": 160,
+     "private_load": 32,
+     "private_store": 16,
+     "vector_shuffle": 128
+    },
+    "other": {
+     "address_arith": 35,
+     "control": 66,
+     "fma": 36,
+     "fp_arith": 72,
+     "int_arith": 79,
+     "private_load": 16,
+     "private_store": 8,
+     "vector_shuffle": 16
+    },
+    "scale_bias_load": {
+     "address_arith": 16,
+     "control": 4,
+     "convert_bf16_f32": 8,
+     "device_load": 8,
+     "int_arith": 20,
+     "private_store": 8
+    },
+    "weight_load": {
+     "address_arith": 32,
+     "control": 32,
+     "device_load": 16,
+     "int_arith": 48,
+     "private_store": 16
+    },
+    "xsums_load": {
+     "address_arith": 153,
+     "control": 243,
+     "device_load": 153,
+     "int_arith": 351,
+     "vector_shuffle": 153
+    }
+   },
+   "ops_per_k_block_total": 2773,
+   "use_table": true
+  }
+ },
+ "arms": [
+  {
+   "na": 2,
+   "use_table": true
+  },
+  {
+   "na": 3,
+   "use_table": true
+  },
+  {
+   "na": 4,
+   "use_table": true
+  },
+  {
+   "na": 5,
+   "use_table": true
+  },
+  {
+   "na": 6,
+   "use_table": true
+  },
+  {
+   "na": 7,
+   "use_table": true
+  },
+  {
+   "na": 8,
+   "use_table": true
+  },
+  {
+   "na": 9,
+   "use_table": true
+  }
+ ],
+ "calibration": {
+  "g16s": {
+   "bytes_per_instruction": 9.2565,
+   "fit": {
+    "intercept": 160.6087,
+    "na_domain": [
+     16,
+     128
+    ],
+    "r_squared": 0.99644,
+    "slope": 9.2565
+   },
+   "text_bytes_by_fma_count": {
+    "16": 330,
+    "32": 458,
+    "64": 714,
+    "128": 1362
+   }
+  },
+  "g17s": {
+   "bytes_per_instruction": 9.2565,
+   "fit": {
+    "intercept": 152.6087,
+    "na_domain": [
+     16,
+     128
+    ],
+    "r_squared": 0.99644,
+    "slope": 9.2565
+   },
+   "text_bytes_by_fma_count": {
+    "16": 322,
+    "32": 450,
+    "64": 706,
+    "128": 1354
+   }
+  }
+ },
+ "cool_gate_passed_real_gate": false,
+ "experiment": "e223-percolumn-inner-loop",
+ "fits": {
+  "agx/g16s/tbl/registers": {
+   "intercept": 90.1667,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 0.33333,
+   "slope": 0.8333
+  },
+  "agx/g16s/tbl/text_bytes": {
+   "intercept": 3458.9048,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 0.59986,
+   "slope": 396.381
+  },
+  "agx/g16s/tbl/text_bytes_by_regime": {
+   "na2_5": {
+    "instructions_per_na": 107.2,
+    "intercept": 1733.4,
+    "na_domain": [
+     2,
+     5
+    ],
+    "r_squared": 0.99785,
+    "slope": 992.6
+   },
+   "na6_9": {
+    "instructions_per_na": 103.3,
+    "intercept": -1101.0,
+    "na_domain": [
+     6,
+     9
+    ],
+    "r_squared": 0.9994,
+    "slope": 956.2
+   }
+  },
+  "agx/g17s/tbl/registers": {
+   "intercept": 77.8571,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 0.86637,
+   "slope": 5.8214
+  },
+  "agx/g17s/tbl/text_bytes": {
+   "intercept": 3866.9048,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 0.4521,
+   "slope": 329.381
+  },
+  "agx/g17s/tbl/text_bytes_by_regime": {
+   "na2_5": {
+    "instructions_per_na": 108.6,
+    "intercept": 1904.4,
+    "na_domain": [
+     2,
+     5
+    ],
+    "r_squared": 0.99598,
+    "slope": 1005.6
+   },
+   "na6_9": {
+    "instructions_per_na": 102.3,
+    "intercept": -1168.0,
+    "na_domain": [
+     6,
+     9
+    ],
+    "r_squared": 0.99955,
+    "slope": 946.8
+   }
+  },
+  "air/tbl/ops_per_k_block/TOTAL": {
+   "intercept": 886.1667,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 0.99997,
+   "slope": 209.8333
+  },
+  "air/tbl/ops_per_k_block/address_arith": {
+   "intercept": 115.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 17.0
+  },
+  "air/tbl/ops_per_k_block/control": {
+   "intercept": 139.8333,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 0.99798,
+   "slope": 26.1667
+  },
+  "air/tbl/ops_per_k_block/convert_bf16_f32": {
+   "intercept": 8.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 0.0
+  },
+  "air/tbl/ops_per_k_block/convert_i2f": {
+   "intercept": 64.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 0.0
+  },
+  "air/tbl/ops_per_k_block/device_load": {
+   "intercept": 24.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 17.0
+  },
+  "air/tbl/ops_per_k_block/fma": {
+   "intercept": 0.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 52.0
+  },
+  "air/tbl/ops_per_k_block/fp_arith": {
+   "intercept": 0.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 40.0
+  },
+  "air/tbl/ops_per_k_block/int_arith": {
+   "intercept": 295.3333,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 0.99665,
+   "slope": 40.6667
+  },
+  "air/tbl/ops_per_k_block/private_load": {
+   "intercept": 48.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 0.0
+  },
+  "air/tbl/ops_per_k_block/private_store": {
+   "intercept": 48.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 0.0
+  },
+  "air/tbl/ops_per_k_block/vector_shuffle": {
+   "intercept": 144.0,
+   "na_domain": [
+    2,
+    9
+   ],
+   "r_squared": 1.0,
+   "slope": 17.0
+  }
+ },
+ "gate_qualified_for_timing": false,
+ "gpu_seconds": 0,
+ "harness": "local",
+ "host_chip": "Apple M4 Pro",
+ "lane_k_blocks_per_dispatch": {
+  "gdn.in_proj": 1318400,
+  "mlp.down": 1392640,
+  "mlp.gate_up": 2785280
+ },
+ "local_arch": "applegpu_g16s",
+ "measured_na_slope": {
+  "gdn.in_proj/g1/cold": {
+   "cell": "gdn.in_proj",
+   "groups": "g1",
+   "invocations_per_round": 48,
+   "rows4_ms_per_round_per_na": 1.3207556199999928,
+   "thermal": "cold"
+  },
+  "gdn.in_proj/g1/hot": {
+   "cell": "gdn.in_proj",
+   "groups": "g1",
+   "invocations_per_round": 48,
+   "rows4_ms_per_round_per_na": 1.3477318600000032,
+   "thermal": "hot"
+  },
+  "gdn.in_proj/g2/cold": {
+   "cell": "gdn.in_proj",
+   "groups": "g2",
+   "invocations_per_round": 48,
+   "rows4_ms_per_round_per_na": 2.2610991272727183,
+   "thermal": "cold"
+  },
+  "gdn.in_proj/g2/hot": {
+   "cell": "gdn.in_proj",
+   "groups": "g2",
+   "invocations_per_round": 48,
+   "rows4_ms_per_round_per_na": 2.415765406060615,
+   "thermal": "hot"
+  },
+  "mlp.down/g1/cold": {
+   "cell": "mlp.down",
+   "groups": "g1",
+   "invocations_per_round": 64,
+   "rows4_ms_per_round_per_na": 4.126557754497352,
+   "thermal": "cold"
+  },
+  "mlp.down/g1/hot": {
+   "cell": "mlp.down",
+   "groups": "g1",
+   "invocations_per_round": 64,
+   "rows4_ms_per_round_per_na": 3.7478500952380926,
+   "thermal": "hot"
+  },
+  "mlp.down/g2/cold": {
+   "cell": "mlp.down",
+   "groups": "g2",
+   "invocations_per_round": 64,
+   "rows4_ms_per_round_per_na": 14.267737422222218,
+   "thermal": "cold"
+  },
+  "mlp.down/g2/hot": {
+   "cell": "mlp.down",
+   "groups": "g2",
+   "invocations_per_round": 64,
+   "rows4_ms_per_round_per_na": 13.474622488888897,
+   "thermal": "hot"
+  },
+  "mlp.gate_up/g1/cold": {
+   "cell": "mlp.gate_up",
+   "groups": "g1",
+   "invocations_per_round": 64,
+   "rows4_ms_per_round_per_na": 4.1317216000000165,
+   "thermal": "cold"
+  },
+  "mlp.gate_up/g1/hot": {
+   "cell": "mlp.gate_up",
+   "groups": "g1",
+   "invocations_per_round": 64,
+   "rows4_ms_per_round_per_na": 4.960666400000019,
+   "thermal": "hot"
+  },
+  "mlp.gate_up/g2/cold": {
+   "cell": "mlp.gate_up",
+   "groups": "g2",
+   "invocations_per_round": 64,
+   "rows4_ms_per_round_per_na": 8.18766666666668,
+   "thermal": "cold"
+  },
+  "mlp.gate_up/g2/hot": {
+   "cell": "mlp.gate_up",
+   "groups": "g2",
+   "invocations_per_round": 64,
+   "rows4_ms_per_round_per_na": 9.369744800000014,
+   "thermal": "hot"
+  }
+ },
+ "measurement": "static_compile",
+ "official_or_ranked_score": false,
+ "ranked_arch": "applegpu_g17s",
+ "source_sha8": "f78cedde",
+ "source_symbol": "qwen35E120QMVHeader",
+ "stage": "0-attribution-census",
+ "variant": "xtf32"
+}
