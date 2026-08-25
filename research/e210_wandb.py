@@ -84,6 +84,21 @@ def phase_table(docs: list[dict]) -> wandb.Table:
     return wandb.Table(columns=columns, data=rows)
 
 
+def slice_table(docs: list[dict]) -> wandb.Table:
+    """Coherent idle slices, keyed by the phase each slice starts in."""
+    columns = ["tag", "leg", "start_phase", "count", "total_us",
+               "us_per_round", "max_us"]
+    rows = []
+    for doc in docs:
+        for leg_name, leg in doc["legs"].items():
+            for phase, block in leg["coherent_slices"]["by_phase"].items():
+                rows.append([
+                    doc["tag"], leg_name, phase, block["count"],
+                    block["total_us"], block["us_per_round"], block["max_us"],
+                ])
+    return wandb.Table(columns=columns, data=rows)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("docs", nargs="+")
@@ -107,7 +122,8 @@ def main() -> None:
         prefix = doc.get("tag", "doc")
         for key, value in flatten(doc).items():
             run.summary[f"{prefix}/{key}"] = value
-    run.log({"segments": segment_table(docs), "phases": phase_table(docs)})
+    run.log({"segments": segment_table(docs), "phases": phase_table(docs),
+             "coherent_slices": slice_table(docs)})
     print(run.url)
     run.finish()
 

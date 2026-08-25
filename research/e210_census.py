@@ -41,6 +41,7 @@ from e185_gap_table import (  # noqa: E402
     PHASES,
     busy_in,
     gaps_in,
+    phase_of,
     read_intervals,
     union,
 )
@@ -102,6 +103,17 @@ def window_report(merged, windows: list[tuple[int, int]]) -> dict:
     }
 
 
+def locate(anchors: dict, t: int) -> str:
+    """The phase containing `t`, extended past the anchored round."""
+    name = phase_of(anchors, t)
+    if name != "inter_round_gap":
+        return name
+    if anchors.get("t_round0", 0) <= t < anchors.get("t_eval_done", 0):
+        # A serial round anchors only its ends, so its body has no phase name.
+        return "serial_body"
+    return name
+
+
 def leg_census(merged, begin: dict, anchors: list[dict], skip: int,
                min_slice_us: float) -> dict:
     """One decode leg, tiled from its seed anchor to its last round anchor."""
@@ -139,12 +151,14 @@ def leg_census(merged, begin: dict, anchors: list[dict], skip: int,
     per_phase = {}
     instrument_idle = 0.0
     extra = [
-        # The serial body defines no drafting anchors, so its compute window
-        # has no name in the drafting phase list.
-        ("t_round0", "t_eval_done", "serial_body"),
         # The Stage-0 planted stall. Zero-width unless MLX_E210_STALL_US is set.
         ("t_round0", "t_stall_done", "planted_stall"),
     ]
+    # The serial body defines no drafting anchors, so its compute window has no
+    # name in the drafting phase list. On a drafting leg the same window would
+    # overlap every drafting phase, so it is only defined where it tiles.
+    if not any("t_draft0" in a for a in kept):
+        extra.append(("t_round0", "t_eval_done", "serial_body"))
     for lo, hi, name in PHASES + extra:
         windows = []
         for a in kept:
@@ -160,11 +174,24 @@ def leg_census(merged, begin: dict, anchors: list[dict], skip: int,
 
     # Coherent idle slices across the whole censused span: an idle total made
     # of one 5 ms slice and one made of 5000 one-microsecond slices are not the
-    # same opportunity.
+    # same opportunity. Each slice is tagged with the round and the phase it
+    # starts in, so a located pool can be told from dust.
     slices = []
-    for t0, t1 in gaps_in(merged, kept[0]["t_round0"], leg_t1):
-        slices.append((t1 - t0) / 1000.0)
-    big = sorted((s for s in slices if s >= min_slice_us), reverse=True)
+    for index, a in enumerate(kept):
+        end = kept[index + 1]["t_round0"] if index + 1 < len(kept) \
+            else a["t_tail_done"]
+        for t0, t1 in gaps_in(merged, a["t_round0"], end):
+            slices.append({
+                "round": a.get("round"),
+                "phase": locate(a, t0),
+                "us": (t1 - t0) / 1000.0,
+            })
+    big = sorted((s for s in slices if s["us"] >= min_slice_us),
+                 key=lambda s: -s["us"])
+    by_phase: dict[str, list[float]] = {}
+    for entry in big:
+        by_phase.setdefault(entry["phase"], []).append(entry["us"])
+    slice_total = sum(entry["us"] for entry in big)
 
     censused_span = (leg_t1 - kept[0]["t_round0"]) / 1000.0
     censused_idle = window_report(merged, [(kept[0]["t_round0"], leg_t1)])
@@ -206,10 +233,21 @@ def leg_census(merged, begin: dict, anchors: list[dict], skip: int,
             "min_slice_us": min_slice_us,
             "count": len(big),
             "count_per_round": len(big) / len(kept),
-            "total_us": sum(big),
-            "us_per_round": sum(big) / len(kept),
-            "pct_of_censused_span": 100.0 * sum(big) / censused_span,
-            "largest_us": big[:10],
+            "total_us": slice_total,
+            "us_per_round": slice_total / len(kept),
+            "pct_of_censused_span": 100.0 * slice_total / censused_span,
+            "largest_us": [entry["us"] for entry in big[:10]],
+            "largest": big[:10],
+            "by_phase": {
+                name: {
+                    "count": len(values),
+                    "total_us": sum(values),
+                    "us_per_round": sum(values) / len(kept),
+                    "max_us": max(values),
+                }
+                for name, values in sorted(
+                    by_phase.items(), key=lambda kv: -sum(kv[1]))
+            },
         },
     }
 

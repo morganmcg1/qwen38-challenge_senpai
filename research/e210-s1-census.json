@@ -1,0 +1,715 @@
+{
+  "accepted_draft_rate": 0.8770161290322581,
+  "all_tokens_matched": true,
+  "base_sha": "35fdcb0adbcbe2d687278489eea17d35cdc2814e",
+  "chip": "Apple M4 Pro",
+  "cool_gate_passed_real_gate": "false",
+  "effective_mean_draft_len": 6.358974358974359,
+  "experiment": "e210-gpu-idle-census",
+  "gate_qualified_for_timing": "false",
+  "harness": "local",
+  "head_provenance_sha256": "dadbfb806d80eca258395e5360534c5969acd5ad312b45102ad2caf65566f7e9",
+  "host": "ip-10-231-2-22.ec2.internal",
+  "leg_role": "gpu-interval-ledger-observation",
+  "legs": {
+    "mtp-pid21242-leg1": {
+      "budget_crosscheck": {
+        "anchored_share_pct": 72.82897698451154,
+        "anchored_us": 10624659.665,
+        "e204_reader_outside_share_pct": 20.149841688429746,
+        "e204_reader_outside_us": 2939560.860352662,
+        "e204_reader_seed_share_pct": 7.021181327058712,
+        "e204_reader_seed_us": 1024285.458,
+        "leg_us": 14588505.983352661,
+        "outside_share_pct": 0.3066482777860228,
+        "outside_us": 44735.402352661826,
+        "seed_share_pct": 26.864374737702434,
+        "seed_us": 3919110.916
+      },
+      "censused_idle_us": 188013.725,
+      "censused_span_us": 9664186.25,
+      "coherent_slices": {
+        "by_phase": {
+          "commit": {
+            "count": 85,
+            "max_us": 1557.958,
+            "total_us": 39760.954,
+            "us_per_round": 568.0136285714285
+          },
+          "d_chain": {
+            "count": 64,
+            "max_us": 12999.333,
+            "total_us": 62582.915,
+            "us_per_round": 894.0416428571428
+          },
+          "d_pre": {
+            "count": 1,
+            "max_us": 1162.375,
+            "total_us": 1162.375,
+            "us_per_round": 16.605357142857144
+          },
+          "d_submit2": {
+            "count": 70,
+            "max_us": 411.208,
+            "total_us": 18067.415,
+            "us_per_round": 258.1059285714286
+          },
+          "eval_wall": {
+            "count": 70,
+            "max_us": 9278.5,
+            "total_us": 62431.124,
+            "us_per_round": 891.8732
+          },
+          "verify_graph": {
+            "count": 2,
+            "max_us": 330.125,
+            "total_us": 448.66700000000003,
+            "us_per_round": 6.409528571428572
+          }
+        },
+        "count": 292,
+        "count_per_round": 4.171428571428572,
+        "largest": [
+          {
+            "phase": "d_chain",
+            "round": 21,
+            "us": 12999.333
+          },
+          {
+            "phase": "eval_wall",
+            "round": 20,
+            "us": 9278.5
+          },
+          {
+            "phase": "commit",
+            "round": 49,
+            "us": 1557.958
+          },
+          {
+            "phase": "d_chain",
+            "round": 45,
+            "us": 1274.708
+          },
+          {
+            "phase": "d_chain",
+            "round": 22,
+            "us": 1251.5
+          },
+          {
+            "phase": "d_pre",
+            "round": 10,
+            "us": 1162.375
+          },
+          {
+            "phase": "commit",
+            "round": 48,
+            "us": 1157.708
+          },
+          {
+            "phase": "d_chain",
+            "round": 69,
+            "us": 1130.333
+          },
+          {
+            "phase": "d_chain",
+            "round": 35,
+            "us": 1122.875
+          },
+          {
+            "phase": "commit",
+            "round": 42,
+            "us": 1114.583
+          }
+        ],
+        "largest_us": [
+          12999.333,
+          9278.5,
+          1557.958,
+          1274.708,
+          1251.5,
+          1162.375,
+          1157.708,
+          1130.333,
+          1122.875,
+          1114.583
+        ],
+        "min_slice_us": 100.0,
+        "pct_of_censused_span": 1.9086288822299964,
+        "total_us": 184453.45,
+        "us_per_round": 2635.049285714286
+      },
+      "idle_share_of_leg_idle_pct": {
+        "prologue": 0.42969350142880036,
+        "rounds": 77.42147057086531,
+        "seed": 8.441077903258707,
+        "turnaround": 0.21596745616718221
+      },
+      "instrument_idle_us": 2684.632,
+      "leg_gpu_busy_us": 14345679.106,
+      "leg_gpu_idle_pct": 1.6600727811257698,
+      "leg_gpu_idle_pct_production": 1.6416695731954432,
+      "leg_gpu_idle_us": 242168.894,
+      "leg_kind": "mtp",
+      "leg_span_minus_parent_leg_us": -657.9833526611328,
+      "leg_span_us": 14587848.0,
+      "parent_leg_us": 14588505.983352661,
+      "parent_seconds_per_token": 0.028493175748735666,
+      "phases": {
+        "commit": {
+          "gpu_busy_us": 47615.98,
+          "gpu_idle_pct_of_segment": 63.67759223832782,
+          "gpu_idle_us": 83476.596,
+          "idle_us_per_window": {
+            "max": 2736.75,
+            "mean": 1192.5228,
+            "median": 1002.4795,
+            "n": 70,
+            "p90": 1759.042,
+            "total": 83476.596
+          },
+          "span_us": 131092.576,
+          "windows": 70
+        },
+        "d_chain": {
+          "gpu_busy_us": 27932.195,
+          "gpu_idle_pct_of_segment": 60.08988001471686,
+          "gpu_idle_us": 42055.555,
+          "idle_us_per_window": {
+            "max": 8823.707,
+            "mean": 600.7936428571429,
+            "median": 489.41650000000004,
+            "n": 70,
+            "p90": 792.333,
+            "total": 42055.555
+          },
+          "span_us": 69987.75,
+          "windows": 70
+        },
+        "d_flush": {
+          "gpu_busy_us": 3.997,
+          "gpu_idle_pct_of_segment": 2.058319039451115,
+          "gpu_idle_us": 0.084,
+          "idle_us_per_window": {
+            "max": 0.084,
+            "mean": 0.0012000000000000001,
+            "median": 0.0,
+            "n": 70,
+            "p90": 0.0,
+            "total": 0.084
+          },
+          "span_us": 4.081,
+          "windows": 70
+        },
+        "d_head1": {
+          "gpu_busy_us": 84.087,
+          "gpu_idle_pct_of_segment": 0.9809232218558643,
+          "gpu_idle_us": 0.833,
+          "idle_us_per_window": {
+            "max": 0.833,
+            "mean": 0.011899999999999999,
+            "median": 0.0,
+            "n": 70,
+            "p90": 0.0,
+            "total": 0.833
+          },
+          "span_us": 84.92,
+          "windows": 70
+        },
+        "d_pre": {
+          "gpu_busy_us": 5788.75,
+          "gpu_idle_pct_of_segment": 1.234814346190253,
+          "gpu_idle_us": 72.374,
+          "idle_us_per_window": {
+            "max": 71.624,
+            "mean": 1.0339142857142856,
+            "median": 0.0,
+            "n": 70,
+            "p90": 0.0,
+            "total": 72.374
+          },
+          "span_us": 5861.124,
+          "windows": 70
+        },
+        "d_submit2": {
+          "gpu_busy_us": 103464.559,
+          "gpu_idle_pct_of_segment": 27.799345371428085,
+          "gpu_idle_us": 39836.855,
+          "idle_us_per_window": {
+            "max": 4179.709,
+            "mean": 569.0979285714286,
+            "median": 528.8755,
+            "n": 70,
+            "p90": 595.792,
+            "total": 39836.855
+          },
+          "span_us": 143301.414,
+          "windows": 70
+        },
+        "eval_wall": {
+          "gpu_busy_us": 4458646.868,
+          "gpu_idle_pct_of_segment": 0.31660404671534437,
+          "gpu_idle_us": 14161.091,
+          "idle_us_per_window": {
+            "max": 6464.542,
+            "mean": 202.3013,
+            "median": 104.1665,
+            "n": 70,
+            "p90": 128.209,
+            "total": 14161.091
+          },
+          "span_us": 4472807.959,
+          "windows": 70
+        },
+        "readout": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 3092.631,
+          "idle_us_per_window": {
+            "max": 93.25,
+            "mean": 44.18044285714286,
+            "median": 43.5835,
+            "n": 70,
+            "p90": 45.291,
+            "total": 3092.631
+          },
+          "span_us": 3092.631,
+          "windows": 70
+        },
+        "row_dump": {
+          "gpu_busy_us": 17581.036,
+          "gpu_idle_pct_of_segment": 11.33525573530766,
+          "gpu_idle_us": 2247.63,
+          "idle_us_per_window": {
+            "max": 167.5,
+            "mean": 32.109,
+            "median": 0.0,
+            "n": 70,
+            "p90": 136.584,
+            "total": 2247.63
+          },
+          "span_us": 19828.666,
+          "windows": 70
+        },
+        "snapshot": {
+          "gpu_busy_us": 13664.418,
+          "gpu_idle_pct_of_segment": 0.0,
+          "gpu_idle_us": 0.0,
+          "idle_us_per_window": {
+            "max": 0.0,
+            "mean": 0.0,
+            "median": 0.0,
+            "n": 70,
+            "p90": 0.0,
+            "total": 0.0
+          },
+          "span_us": 13664.418,
+          "windows": 70
+        },
+        "trace_tail": {
+          "gpu_busy_us": 3.463,
+          "gpu_idle_pct_of_segment": 15.226438188494493,
+          "gpu_idle_us": 0.622,
+          "idle_us_per_window": {
+            "max": 0.083,
+            "mean": 0.008885714285714285,
+            "median": 0.0,
+            "n": 70,
+            "p90": 0.041,
+            "total": 0.622
+          },
+          "span_us": 4.085,
+          "windows": 70
+        },
+        "upkeep_pre": {
+          "gpu_busy_us": 60.751,
+          "gpu_idle_pct_of_segment": 19.3567228173576,
+          "gpu_idle_us": 14.582,
+          "idle_us_per_window": {
+            "max": 1.334,
+            "mean": 0.2083142857142857,
+            "median": 0.0,
+            "n": 70,
+            "p90": 0.958,
+            "total": 14.581999999999999
+          },
+          "span_us": 75.333,
+          "windows": 70
+        },
+        "verify_graph": {
+          "gpu_busy_us": 4762493.925,
+          "gpu_idle_pct_of_segment": 0.05313436088388215,
+          "gpu_idle_us": 2531.866,
+          "idle_us_per_window": {
+            "max": 464.167,
+            "mean": 36.169514285714286,
+            "median": 25.249499999999998,
+            "n": 70,
+            "p90": 40.083,
+            "total": 2531.866
+          },
+          "span_us": 4765025.791,
+          "windows": 70
+        }
+      },
+      "pid": 21242,
+      "rounds_analysed": 70,
+      "rounds_skipped": 8,
+      "segment_share_of_leg_pct": {
+        "prologue": 0.007133224859485786,
+        "rounds": 65.97841400595892,
+        "seed": 26.865586452504854,
+        "turnaround": 0.26978278084608504
+      },
+      "segments": {
+        "prologue": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 1040.584,
+          "idle_us_per_window": {
+            "max": 1040.584,
+            "mean": 1040.584,
+            "median": 1040.584,
+            "n": 1,
+            "p90": 1040.584,
+            "total": 1040.584
+          },
+          "span_us": 1040.584,
+          "windows": 1
+        },
+        "rounds": {
+          "gpu_busy_us": 9437340.029,
+          "gpu_idle_pct_of_segment": 1.9479897767444876,
+          "gpu_idle_us": 187490.719,
+          "idle_us_per_window": {
+            "max": 14707.704,
+            "mean": 2678.438842857143,
+            "median": 2309.249,
+            "n": 70,
+            "p90": 3166.083,
+            "total": 187490.719
+          },
+          "span_us": 9624830.748,
+          "windows": 70
+        },
+        "seed": {
+          "gpu_busy_us": 3898669.251,
+          "gpu_idle_pct_of_segment": 0.5215893461077028,
+          "gpu_idle_us": 20441.665,
+          "idle_us_per_window": {
+            "max": 20441.665,
+            "mean": 20441.665,
+            "median": 20441.665,
+            "n": 1,
+            "p90": 20441.665,
+            "total": 20441.665
+          },
+          "span_us": 3919110.916,
+          "windows": 1
+        },
+        "turnaround": {
+          "gpu_busy_us": 38832.496,
+          "gpu_idle_pct_of_segment": 1.328927274260153,
+          "gpu_idle_us": 523.006,
+          "idle_us_per_window": {
+            "max": 123.584,
+            "mean": 7.579797101449275,
+            "median": 0.0,
+            "n": 69,
+            "p90": 19.209,
+            "total": 523.006
+          },
+          "span_us": 39355.502,
+          "windows": 69
+        },
+        "turnaround_protocol_gap": {
+          "gpu_busy_us": 34078.212,
+          "gpu_idle_pct_of_segment": 0.2535530828508539,
+          "gpu_idle_us": 86.626,
+          "idle_us_per_window": {
+            "max": 64.584,
+            "mean": 1.255449275362319,
+            "median": 0.0,
+            "n": 69,
+            "p90": 0.0,
+            "total": 86.626
+          },
+          "span_us": 34164.838,
+          "windows": 69
+        },
+        "turnaround_trace_emit": {
+          "gpu_busy_us": 4754.284,
+          "gpu_idle_pct_of_segment": 8.407016905736915,
+          "gpu_idle_us": 436.38,
+          "idle_us_per_window": {
+            "max": 78.959,
+            "mean": 6.324347826086957,
+            "median": 0.0,
+            "n": 69,
+            "p90": 19.209,
+            "total": 436.38
+          },
+          "span_us": 5190.664,
+          "windows": 69
+        }
+      }
+    },
+    "serial-k1-pid21216-leg1": {
+      "budget_crosscheck": {
+        "anchored_share_pct": 89.0994613413334,
+        "anchored_us": 33407352.003,
+        "e204_reader_outside_share_pct": 8.169374478269983,
+        "e204_reader_outside_us": 3063061.9392227796,
+        "e204_reader_seed_share_pct": 2.7311641803966227,
+        "e204_reader_seed_us": 1024034.958,
+        "leg_us": 37494448.90022278,
+        "outside_share_pct": 0.45686046667500635,
+        "outside_us": 171297.3142227796,
+        "seed_share_pct": 10.443678191991598,
+        "seed_us": 3915799.583
+      },
+      "censused_idle_us": 802538.6,
+      "censused_span_us": 33013726.417,
+      "coherent_slices": {
+        "by_phase": {
+          "eval_wall": {
+            "count": 1546,
+            "max_us": 29942.291,
+            "total_us": 783936.927,
+            "us_per_round": 1555.4304107142857
+          }
+        },
+        "count": 1546,
+        "count_per_round": 3.0674603174603177,
+        "largest": [
+          {
+            "phase": "eval_wall",
+            "round": 369,
+            "us": 29942.291
+          },
+          {
+            "phase": "eval_wall",
+            "round": 49,
+            "us": 27992.625
+          },
+          {
+            "phase": "eval_wall",
+            "round": 50,
+            "us": 20859.708
+          },
+          {
+            "phase": "eval_wall",
+            "round": 369,
+            "us": 14013.083
+          },
+          {
+            "phase": "eval_wall",
+            "round": 511,
+            "us": 13014.125
+          },
+          {
+            "phase": "eval_wall",
+            "round": 210,
+            "us": 9594.125
+          },
+          {
+            "phase": "eval_wall",
+            "round": 208,
+            "us": 8740.5
+          },
+          {
+            "phase": "eval_wall",
+            "round": 510,
+            "us": 6943.166
+          },
+          {
+            "phase": "eval_wall",
+            "round": 210,
+            "us": 3368.583
+          },
+          {
+            "phase": "eval_wall",
+            "round": 245,
+            "us": 2316.5
+          }
+        ],
+        "largest_us": [
+          29942.291,
+          27992.625,
+          20859.708,
+          14013.083,
+          13014.125,
+          9594.125,
+          8740.5,
+          6943.166,
+          3368.583,
+          2316.5
+        ],
+        "min_slice_us": 100.0,
+        "pct_of_censused_span": 2.374578734608771,
+        "total_us": 783936.927,
+        "us_per_round": 1555.4304107142857
+      },
+      "idle_share_of_leg_idle_pct": {
+        "prologue": 0.03576214975764617,
+        "rounds": 72.84491120773384,
+        "seed": 1.9365751233974575,
+        "turnaround": 19.31609991077188
+      },
+      "instrument_idle_us": 66339.406,
+      "leg_gpu_busy_us": 36622969.066,
+      "leg_gpu_idle_pct": 2.322520695330058,
+      "leg_gpu_idle_pct_production": 2.1455862161792436,
+      "leg_gpu_idle_us": 870800.559,
+      "leg_kind": "serial-k1",
+      "leg_span_minus_parent_leg_us": -679.2752227783203,
+      "leg_span_us": 37493769.625,
+      "parent_leg_us": 37494448.90022278,
+      "parent_seconds_per_token": 0.07323134550824761,
+      "phases": {
+        "row_dump": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 45949.294,
+          "idle_us_per_window": {
+            "max": 294.834,
+            "mean": 91.16923412698414,
+            "median": 88.833,
+            "n": 504,
+            "p90": 96.375,
+            "total": 45949.294
+          },
+          "span_us": 45949.294,
+          "windows": 504
+        },
+        "serial_body": {
+          "gpu_busy_us": 32211187.817,
+          "gpu_idle_pct_of_segment": 1.7938788729301867,
+          "gpu_idle_us": 588384.6,
+          "idle_us_per_window": {
+            "max": 44092.707,
+            "mean": 1167.4297619047618,
+            "median": 865.561,
+            "n": 504,
+            "p90": 987.085,
+            "total": 588384.6
+          },
+          "span_us": 32799572.417,
+          "windows": 504
+        }
+      },
+      "pid": 21216,
+      "rounds_analysed": 504,
+      "rounds_skipped": 8,
+      "segment_share_of_leg_pct": {
+        "prologue": 0.0008305833292162603,
+        "rounds": 87.60261248604714,
+        "seed": 10.443867400276106,
+        "turnaround": 0.4486204179583077
+      },
+      "segments": {
+        "prologue": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 311.417,
+          "idle_us_per_window": {
+            "max": 311.417,
+            "mean": 311.417,
+            "median": 311.417,
+            "n": 1,
+            "p90": 311.417,
+            "total": 311.417
+          },
+          "span_us": 311.417,
+          "windows": 1
+        },
+        "rounds": {
+          "gpu_busy_us": 32211187.817,
+          "gpu_idle_pct_of_segment": 1.9312644797709544,
+          "gpu_idle_us": 634333.894,
+          "idle_us_per_window": {
+            "max": 44279.915,
+            "mean": 1258.598996031746,
+            "median": 956.8325,
+            "n": 504,
+            "p90": 1078.084,
+            "total": 634333.894
+          },
+          "span_us": 32845521.711,
+          "windows": 504
+        },
+        "seed": {
+          "gpu_busy_us": 3898935.876,
+          "gpu_idle_pct_of_segment": 0.43065807231840647,
+          "gpu_idle_us": 16863.707,
+          "idle_us_per_window": {
+            "max": 16863.707,
+            "mean": 16863.707,
+            "median": 16863.707,
+            "n": 1,
+            "p90": 16863.707,
+            "total": 16863.707
+          },
+          "span_us": 3915799.583,
+          "windows": 1
+        },
+        "turnaround": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 168204.706,
+          "idle_us_per_window": {
+            "max": 2220.375,
+            "mean": 334.4029940357853,
+            "median": 322.25,
+            "n": 503,
+            "p90": 353.167,
+            "total": 168204.706
+          },
+          "span_us": 168204.706,
+          "windows": 503
+        },
+        "turnaround_protocol_gap": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 147814.594,
+          "idle_us_per_window": {
+            "max": 2081.583,
+            "mean": 293.86599204771375,
+            "median": 281.375,
+            "n": 503,
+            "p90": 306.0,
+            "total": 147814.594
+          },
+          "span_us": 147814.594,
+          "windows": 503
+        },
+        "turnaround_trace_emit": {
+          "gpu_busy_us": 0.0,
+          "gpu_idle_pct_of_segment": 100.0,
+          "gpu_idle_us": 20390.112,
+          "idle_us_per_window": {
+            "max": 138.792,
+            "mean": 40.53700198807157,
+            "median": 39.541,
+            "n": 503,
+            "p90": 48.0,
+            "total": 20390.112
+          },
+          "span_us": 20390.112,
+          "windows": 503
+        }
+      }
+    }
+  },
+  "memory_bytes": "51539607552",
+  "metallib_source_fingerprint": "ce5e223eb6b404f16f07aca83ca44e65fc517187f3b130edaf4e7acb56789d50",
+  "mtp_seconds_per_token": 0.028493175748735666,
+  "official_or_ranked_score": false,
+  "pid": 21216,
+  "sandbox": "off",
+  "serial_seconds_per_token": 0.07323134550824761,
+  "stall_us": "0",
+  "tag": "e210-s1-census",
+  "tokens": "512",
+  "union_intervals": 5721,
+  "worker_sha256": "2b21eff287383ca6f426b7a05da66a4e2860bccd8426fdbd5218dd458cbcbcad"
+}
