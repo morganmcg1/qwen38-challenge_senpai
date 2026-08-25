@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 import wandb
@@ -31,6 +32,14 @@ GROUP = "qwen38-r1-e217-staged-dequant"
 
 CONTRASTS = ["staged_minus_off", "coop_minus_off", "staged_minus_coop"]
 PHASES = ["round_us", "eval_wall_us", "verify_build_us"]
+
+
+def finite(value):
+    """A single-observation width has no dispersion; W&B stores that as null
+    rather than as a NaN summary value."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 def width_table(report: dict) -> wandb.Table:
@@ -47,8 +56,9 @@ def width_table(report: dict) -> wandb.Table:
             m = int(key)
             rows.append([
                 name.replace("_minus_", " - "), m, m >= 6, entry["n_rounds"],
-                entry["saving_ms"], entry["stdev_ms"], entry["sem_ms"],
-                entry["two_sigma_ms"], entry["ci95_ms"][0], entry["ci95_ms"][1],
+                entry["saving_ms"], finite(entry["stdev_ms"]),
+                finite(entry["sem_ms"]), finite(entry["two_sigma_ms"]),
+                finite(entry["ci95_ms"][0]), finite(entry["ci95_ms"][1]),
                 entry["excludes_zero"], entry["above_noise_floor"],
                 public.get(key), pooled.get(key),
             ])
@@ -68,25 +78,29 @@ def phase_table(report: dict) -> wandb.Table:
                                      key=lambda kv: int(kv[0])):
                 rows.append([
                     name.replace("_minus_", " - "), phase, int(key),
-                    entry["n_rounds"], entry["saving_ms"], entry["sem_ms"],
-                    entry["excludes_zero"],
+                    entry["n_rounds"], entry["saving_ms"],
+                    finite(entry["sem_ms"]), entry["excludes_zero"],
                 ])
     return wandb.Table(columns=columns, data=rows)
 
 
 def weighted_table(report: dict) -> wandb.Table:
-    columns = ["contrast", "census", "saving_ms_per_round", "sem_ms",
-               "ci95_lo_ms", "ci95_hi_ms", "excludes_zero",
-               "census_share_covered"]
+    columns = ["contrast", "census", "min_paired_rounds_per_width",
+               "saving_ms_per_round", "sem_ms", "ci95_lo_ms", "ci95_hi_ms",
+               "excludes_zero", "census_share_covered"]
+    keys = [("public", "weighted_public_census"),
+            ("pooled", "weighted_pooled_census"),
+            ("pooled_all_widths", "weighted_pooled_census_all_widths")]
     rows = []
     for name in CONTRASTS:
         block = report["contrasts"][name]["round_us"]
-        for census in ["public", "pooled"]:
-            entry = block[f"weighted_{census}_census"]
+        for census, key in keys:
+            entry = block[key]
             rows.append([
                 name.replace("_minus_", " - "), census,
-                entry["saving_ms_per_round"], entry["sem_ms"],
-                entry["ci95_ms"][0], entry["ci95_ms"][1],
+                entry["min_paired_rounds_per_width"],
+                entry["saving_ms_per_round"], finite(entry["sem_ms"]),
+                finite(entry["ci95_ms"][0]), finite(entry["ci95_ms"][1]),
                 entry["excludes_zero"], entry["census_share_covered"],
             ])
     return wandb.Table(columns=columns, data=rows)
@@ -124,25 +138,31 @@ def census_table(path: Path | None) -> wandb.Table | None:
     if path is None or not path.exists():
         return None
     data = json.loads(path.read_text())
-    columns = ["mapping", "m", "use_table", "static_threadgroup_memory_bytes",
+    columns = ["variant", "mapping", "m", "table", "simdgroups_per_threadgroup",
+               "output_rows_per_threadgroup", "static_threadgroup_memory_bytes",
                "air_threadgroup_bytes", "max_total_threads_per_threadgroup",
-               "simdgroups_per_threadgroup", "g16s_registers", "g16s_spill",
-               "g17s_registers", "g17s_spill", "g16s_resident_simdgroups",
-               "g17s_resident_simdgroups"]
+               "g16s_registers", "g16s_spill_bytes", "g17s_registers",
+               "g17s_spill_bytes", "g16s_local_resident_simdgroups",
+               "g17s_local_resident_simdgroups",
+               "g16s_ranked_resident_simdgroups",
+               "g17s_ranked_resident_simdgroups"]
     rows = []
-    for cell in data["cells"]:
+    for variant, cell in sorted(data["cells"].items()):
+        g16s = cell["g16s"]
+        g17s = cell["g17s"]
         rows.append([
-            cell.get("mapping"), cell.get("m"), cell.get("use_table"),
-            cell.get("static_threadgroup_memory_bytes"),
-            cell.get("air_threadgroup_bytes"),
-            cell.get("max_total_threads_per_threadgroup"),
-            cell.get("simdgroups_per_threadgroup"),
-            (cell.get("applegpu_g16s") or {}).get("registers"),
-            (cell.get("applegpu_g16s") or {}).get("spill_bytes"),
-            (cell.get("applegpu_g17s") or {}).get("registers"),
-            (cell.get("applegpu_g17s") or {}).get("spill_bytes"),
-            (cell.get("applegpu_g16s") or {}).get("resident_simdgroups"),
-            (cell.get("applegpu_g17s") or {}).get("resident_simdgroups"),
+            variant, cell["mapping"], cell["m"], cell["table"],
+            cell["simdgroups_per_threadgroup"],
+            cell["output_rows_per_threadgroup"],
+            cell["pipeline"]["static_threadgroup_memory_bytes"],
+            cell["air_threadgroup_bytes"],
+            cell["pipeline"]["max_total_threads_per_threadgroup"],
+            g16s["registers"], g16s["spill_bytes"],
+            g17s["registers"], g17s["spill_bytes"],
+            g16s["occupancy"]["local_resident_simdgroups"],
+            g17s["occupancy"]["local_resident_simdgroups"],
+            g16s["occupancy"]["ranked_resident_simdgroups"],
+            g17s["occupancy"]["ranked_resident_simdgroups"],
         ])
     return wandb.Table(columns=columns, data=rows)
 
@@ -175,7 +195,8 @@ def main() -> None:
         "--census", default="research/e217-artifacts/e217_census.json")
     parser.add_argument(
         "--coverage", default="research/e217-artifacts/e217_coverage.json")
-    parser.add_argument("--gate", default="research/out/e217-gate-0ulp/gate.json")
+    parser.add_argument("--gate",
+                        default="research/e217-artifacts/e217_gate.json")
     args = parser.parse_args()
 
     report = json.loads(Path(args.report).read_text())
@@ -220,7 +241,7 @@ def main() -> None:
 
     gate_result = report["promotion_gate"]
     run.summary["promotion_gate/measured_ms"] = gate_result["measured_ms"]
-    run.summary["promotion_gate/sem_ms"] = gate_result["sem_ms"]
+    run.summary["promotion_gate/sem_ms"] = finite(gate_result["sem_ms"])
     run.summary["promotion_gate/threshold_ms"] = gate_result["threshold_ms"]
     run.summary["promotion_gate/met"] = gate_result["met"]
 
@@ -239,15 +260,21 @@ def main() -> None:
             entry = block[f"weighted_{census_kind}_census"]
             run.summary[f"{label}/{census_kind}_saving_ms"] = \
                 entry["saving_ms_per_round"]
-            run.summary[f"{label}/{census_kind}_sem_ms"] = entry["sem_ms"]
+            run.summary[f"{label}/{census_kind}_sem_ms"] = finite(entry["sem_ms"])
         for key, entry in block["by_width"].items():
             run.summary[f"{label}/m{key}_saving_ms"] = entry["saving_ms"]
-            run.summary[f"{label}/m{key}_sem_ms"] = entry["sem_ms"]
+            run.summary[f"{label}/m{key}_sem_ms"] = finite(entry["sem_ms"])
             run.summary[f"{label}/m{key}_n"] = entry["n_rounds"]
 
     for key, value in report["integrity"].items():
         if isinstance(value, (bool, int, float, str)):
             run.summary[f"integrity/{key}"] = value
+
+    thermal = report["thermal"]
+    run.summary["thermal/entry_temp_spread_c"] = thermal["entry_temp_spread_c"]
+    for arm, spread in thermal["arm_leg_spread_mtp_spt"].items():
+        run.summary[f"thermal/{arm}_leg_relative_spread"] = \
+            spread["relative_spread"]
 
     if gate:
         run.summary["numerics_gate/worst_max_ulp"] = gate["worst_max_ulp"]
