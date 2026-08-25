@@ -1,0 +1,1245 @@
+{
+ "experiment": "e217-staged-dequant",
+ "step": "1-rule-400-census",
+ "harness": "static_compile",
+ "gpu_seconds": 0,
+ "official_or_ranked_score": false,
+ "source": "Qwen35.swift qwen35E120QMVHeader + qwen35E217StagedHeader, read live",
+ "na_instantiated": [
+  3,
+  4,
+  5
+ ],
+ "tile_words": 1024,
+ "declared_tile_bytes": 2048,
+ "arches": [
+  "applegpu_g16s",
+  "applegpu_g17s"
+ ],
+ "cells": {
+  "qmv_split_m6_tbl": {
+   "mapping": "split",
+   "m": 6,
+   "ipg": 3,
+   "table": true,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 84,
+    "spill_bytes": 0,
+    "text_bytes": 5348,
+    "text_sha8": "37c00942",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 36,
+     "local_threadgroups": 18,
+     "local_resident_simdgroups": 36,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 47,
+     "ranked_threadgroups": 23,
+     "ranked_resident_simdgroups": 46,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 5596,
+    "text_sha8": "f7126412",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 17,
+     "local_resident_simdgroups": 34,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 22,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_coop_m6_tbl": {
+   "mapping": "coop",
+   "m": 6,
+   "ipg": 3,
+   "table": true,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 4,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 84,
+    "spill_bytes": 0,
+    "text_bytes": 5382,
+    "text_sha8": "d26e6d8a",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 36,
+     "local_threadgroups": 18,
+     "local_resident_simdgroups": 36,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 47,
+     "ranked_threadgroups": 23,
+     "ranked_resident_simdgroups": 46,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 5634,
+    "text_sha8": "23e36467",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 17,
+     "local_resident_simdgroups": 34,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 22,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_staged_m6_tbl": {
+   "mapping": "staged",
+   "m": 6,
+   "ipg": 3,
+   "table": true,
+   "simdgroups_per_threadgroup": 4,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 2048,
+   "air_threadgroup_bytes": 2048,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 2048
+   },
+   "g16s": {
+    "registers": 85,
+    "spill_bytes": 0,
+    "text_bytes": 3898,
+    "text_sha8": "83e21e21",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 36,
+     "local_threadgroups": 9,
+     "local_resident_simdgroups": 36,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 46,
+     "ranked_threadgroups": 11,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 4056,
+    "text_sha8": "b39e60e4",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 8,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 41,
+     "ranked_threadgroups": 10,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_split_m7_tbl": {
+   "mapping": "split",
+   "m": 7,
+   "ipg": 4,
+   "table": true,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 11704,
+    "text_sha8": "b2515bb6",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 33,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 12184,
+    "text_sha8": "a7864ed4",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_coop_m7_tbl": {
+   "mapping": "coop",
+   "m": 7,
+   "ipg": 4,
+   "table": true,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 4,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 11808,
+    "text_sha8": "5ecc7aa3",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 33,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 12300,
+    "text_sha8": "03cd67f3",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_staged_m7_tbl": {
+   "mapping": "staged",
+   "m": 7,
+   "ipg": 4,
+   "table": true,
+   "simdgroups_per_threadgroup": 4,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 2048,
+   "air_threadgroup_bytes": 2048,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 2048
+   },
+   "g16s": {
+    "registers": 89,
+    "spill_bytes": 0,
+    "text_bytes": 7278,
+    "text_sha8": "a449ae00",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 8,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 11,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 99,
+    "spill_bytes": 0,
+    "text_bytes": 7430,
+    "text_sha8": "ac325300",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 31,
+     "local_threadgroups": 7,
+     "local_resident_simdgroups": 28,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 40,
+     "ranked_threadgroups": 10,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_split_m8_tbl": {
+   "mapping": "split",
+   "m": 8,
+   "ipg": 4,
+   "table": true,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 6508,
+    "text_sha8": "f04e5445",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 33,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 6748,
+    "text_sha8": "20062eb4",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_coop_m8_tbl": {
+   "mapping": "coop",
+   "m": 8,
+   "ipg": 4,
+   "table": true,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 4,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 6562,
+    "text_sha8": "3f35b6d5",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 33,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 6808,
+    "text_sha8": "9b0f7a55",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_staged_m8_tbl": {
+   "mapping": "staged",
+   "m": 8,
+   "ipg": 4,
+   "table": true,
+   "simdgroups_per_threadgroup": 4,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 2048,
+   "air_threadgroup_bytes": 2048,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 2048
+   },
+   "g16s": {
+    "registers": 82,
+    "spill_bytes": 0,
+    "text_bytes": 4672,
+    "text_sha8": "f8026ba7",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 37,
+     "local_threadgroups": 9,
+     "local_resident_simdgroups": 36,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 48,
+     "ranked_threadgroups": 12,
+     "ranked_resident_simdgroups": 48,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 4848,
+    "text_sha8": "331c6e3f",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 8,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 41,
+     "ranked_threadgroups": 10,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_split_m9_tbl": {
+   "mapping": "split",
+   "m": 9,
+   "ipg": 5,
+   "table": true,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 14034,
+    "text_sha8": "b22b7c0b",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 41,
+     "ranked_threadgroups": 20,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 102,
+    "spill_bytes": 0,
+    "text_bytes": 14470,
+    "text_sha8": "46389b3f",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 30,
+     "local_threadgroups": 15,
+     "local_resident_simdgroups": 30,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 38,
+     "ranked_threadgroups": 19,
+     "ranked_resident_simdgroups": 38,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_coop_m9_tbl": {
+   "mapping": "coop",
+   "m": 9,
+   "ipg": 5,
+   "table": true,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 4,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 14178,
+    "text_sha8": "f1dde034",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 41,
+     "ranked_threadgroups": 20,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 102,
+    "spill_bytes": 0,
+    "text_bytes": 14630,
+    "text_sha8": "2fc03277",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 30,
+     "local_threadgroups": 15,
+     "local_resident_simdgroups": 30,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 38,
+     "ranked_threadgroups": 19,
+     "ranked_resident_simdgroups": 38,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_staged_m9_tbl": {
+   "mapping": "staged",
+   "m": 9,
+   "ipg": 5,
+   "table": true,
+   "simdgroups_per_threadgroup": 4,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 2048,
+   "air_threadgroup_bytes": 2048,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 2048
+   },
+   "g16s": {
+    "registers": 84,
+    "spill_bytes": 0,
+    "text_bytes": 7346,
+    "text_sha8": "296aac1f",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 36,
+     "local_threadgroups": 9,
+     "local_resident_simdgroups": 36,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 47,
+     "ranked_threadgroups": 11,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 100,
+    "spill_bytes": 0,
+    "text_bytes": 7420,
+    "text_sha8": "ab5bf26e",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 30,
+     "local_threadgroups": 7,
+     "local_resident_simdgroups": 28,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 39,
+     "ranked_threadgroups": 9,
+     "ranked_resident_simdgroups": 36,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_split_m6_rec": {
+   "mapping": "split",
+   "m": 6,
+   "ipg": 3,
+   "table": false,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 82,
+    "spill_bytes": 0,
+    "text_bytes": 5670,
+    "text_sha8": "90ae3663",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 37,
+     "local_threadgroups": 18,
+     "local_resident_simdgroups": 36,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 48,
+     "ranked_threadgroups": 24,
+     "ranked_resident_simdgroups": 48,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 89,
+    "spill_bytes": 0,
+    "text_bytes": 5900,
+    "text_sha8": "525f65cd",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 17,
+     "local_resident_simdgroups": 34,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 22,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_coop_m6_rec": {
+   "mapping": "coop",
+   "m": 6,
+   "ipg": 3,
+   "table": false,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 4,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 82,
+    "spill_bytes": 0,
+    "text_bytes": 5704,
+    "text_sha8": "e0f06f80",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 37,
+     "local_threadgroups": 18,
+     "local_resident_simdgroups": 36,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 48,
+     "ranked_threadgroups": 24,
+     "ranked_resident_simdgroups": 48,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 89,
+    "spill_bytes": 0,
+    "text_bytes": 5938,
+    "text_sha8": "513a0783",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 17,
+     "local_resident_simdgroups": 34,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 22,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_staged_m6_rec": {
+   "mapping": "staged",
+   "m": 6,
+   "ipg": 3,
+   "table": false,
+   "simdgroups_per_threadgroup": 4,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 2048,
+   "air_threadgroup_bytes": 2048,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 2048
+   },
+   "g16s": {
+    "registers": 82,
+    "spill_bytes": 0,
+    "text_bytes": 4044,
+    "text_sha8": "c4906b2b",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 37,
+     "local_threadgroups": 9,
+     "local_resident_simdgroups": 36,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 48,
+     "ranked_threadgroups": 12,
+     "ranked_resident_simdgroups": 48,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 4200,
+    "text_sha8": "d6e1ad1f",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 8,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 10,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_split_m7_rec": {
+   "mapping": "split",
+   "m": 7,
+   "ipg": 4,
+   "table": false,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 12452,
+    "text_sha8": "91bbc140",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 12958,
+    "text_sha8": "1359528c",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 17,
+     "local_resident_simdgroups": 34,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 22,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_coop_m7_rec": {
+   "mapping": "coop",
+   "m": 7,
+   "ipg": 4,
+   "table": false,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 4,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 12556,
+    "text_sha8": "bbd726a2",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 13074,
+    "text_sha8": "77ef6f27",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 17,
+     "local_resident_simdgroups": 34,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 22,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_staged_m7_rec": {
+   "mapping": "staged",
+   "m": 7,
+   "ipg": 4,
+   "table": false,
+   "simdgroups_per_threadgroup": 4,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 2048,
+   "air_threadgroup_bytes": 2048,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 2048
+   },
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 7640,
+    "text_sha8": "59bf922c",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 8,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 41,
+     "ranked_threadgroups": 10,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 104,
+    "spill_bytes": 0,
+    "text_bytes": 7788,
+    "text_sha8": "fb51d1e3",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 29,
+     "local_threadgroups": 7,
+     "local_resident_simdgroups": 28,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 38,
+     "ranked_threadgroups": 9,
+     "ranked_resident_simdgroups": 36,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_split_m8_rec": {
+   "mapping": "split",
+   "m": 8,
+   "ipg": 4,
+   "table": false,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 6934,
+    "text_sha8": "0e812090",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 7218,
+    "text_sha8": "ab51b6af",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 17,
+     "local_resident_simdgroups": 34,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 22,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_coop_m8_rec": {
+   "mapping": "coop",
+   "m": 8,
+   "ipg": 4,
+   "table": false,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 4,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 6988,
+    "text_sha8": "e165e289",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 7278,
+    "text_sha8": "d6433423",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 34,
+     "local_threadgroups": 17,
+     "local_resident_simdgroups": 34,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 44,
+     "ranked_threadgroups": 22,
+     "ranked_resident_simdgroups": 44,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_staged_m8_rec": {
+   "mapping": "staged",
+   "m": 8,
+   "ipg": 4,
+   "table": false,
+   "simdgroups_per_threadgroup": 4,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 2048,
+   "air_threadgroup_bytes": 2048,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 2048
+   },
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 4888,
+    "text_sha8": "c26cffac",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 8,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 41,
+     "ranked_threadgroups": 10,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 104,
+    "spill_bytes": 0,
+    "text_bytes": 5054,
+    "text_sha8": "526295ff",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 29,
+     "local_threadgroups": 7,
+     "local_resident_simdgroups": 28,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 38,
+     "ranked_threadgroups": 9,
+     "ranked_resident_simdgroups": 36,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_split_m9_rec": {
+   "mapping": "split",
+   "m": 9,
+   "ipg": 5,
+   "table": false,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 15012,
+    "text_sha8": "41379e11",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 101,
+    "spill_bytes": 0,
+    "text_bytes": 15510,
+    "text_sha8": "68f38a98",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 30,
+     "local_threadgroups": 15,
+     "local_resident_simdgroups": 30,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 39,
+     "ranked_threadgroups": 19,
+     "ranked_resident_simdgroups": 38,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_coop_m9_rec": {
+   "mapping": "coop",
+   "m": 9,
+   "ipg": 5,
+   "table": false,
+   "simdgroups_per_threadgroup": 2,
+   "output_rows_per_threadgroup": 4,
+   "declared_tile_bytes": 0,
+   "air_threadgroup_bytes": 0,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 0
+   },
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 15156,
+    "text_sha8": "87aaa058",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 16,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 42,
+     "ranked_threadgroups": 21,
+     "ranked_resident_simdgroups": 42,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 101,
+    "spill_bytes": 0,
+    "text_bytes": 15670,
+    "text_sha8": "bd4e86fe",
+    "occupancy": {
+     "threadgroup_bytes": 0,
+     "threadgroups_by_memory": 1048576,
+     "local_simdgroups_by_register": 30,
+     "local_threadgroups": 15,
+     "local_resident_simdgroups": 30,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 39,
+     "ranked_threadgroups": 19,
+     "ranked_resident_simdgroups": 38,
+     "ranked_binding": "register"
+    }
+   }
+  },
+  "qmv_staged_m9_rec": {
+   "mapping": "staged",
+   "m": 9,
+   "ipg": 5,
+   "table": false,
+   "simdgroups_per_threadgroup": 4,
+   "output_rows_per_threadgroup": 8,
+   "declared_tile_bytes": 2048,
+   "air_threadgroup_bytes": 2048,
+   "pipeline": {
+    "max_total_threads_per_threadgroup": 1024,
+    "thread_execution_width": 32,
+    "static_threadgroup_memory_bytes": 2048
+   },
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 7666,
+    "text_sha8": "69adbb6a",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 32,
+     "local_threadgroups": 8,
+     "local_resident_simdgroups": 32,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 41,
+     "ranked_threadgroups": 10,
+     "ranked_resident_simdgroups": 40,
+     "ranked_binding": "register"
+    }
+   },
+   "g17s": {
+    "registers": 110,
+    "spill_bytes": 0,
+    "text_bytes": 7734,
+    "text_sha8": "1650929b",
+    "occupancy": {
+     "threadgroup_bytes": 2048,
+     "threadgroups_by_memory": 16,
+     "local_simdgroups_by_register": 27,
+     "local_threadgroups": 6,
+     "local_resident_simdgroups": 24,
+     "local_binding": "register",
+     "ranked_simdgroups_by_register": 36,
+     "ranked_threadgroups": 9,
+     "ranked_resident_simdgroups": 36,
+     "ranked_binding": "register"
+    }
+   }
+  }
+ }
+}
