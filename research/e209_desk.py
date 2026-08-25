@@ -168,6 +168,124 @@ def summarize(name, kind, legs, baseline):
     }
 
 
+def width_histogram(pairs, factory, draws, seed_base):
+    """Which cost cells an arm actually pays, pooled over draws."""
+    counts = {}
+    for n in range(draws):
+        order = draw_order(len(pairs), seed_base + n)
+        controller = factory()
+        ema = list(D.PRIOR)
+        emitted = 0
+        index = 0
+        rounds = 0
+        while emitted < LEG_TOKENS:
+            pair = pairs[order[index % len(order)]]
+            index += 1
+            round_cap = min(CAP, LEG_TOKENS - emitted - 1)
+            depth = max(0, min(
+                controller.choose(ema, pair["m"], round_cap, rounds),
+                round_cap))
+            accepted = min(pair["k"], depth)
+            counts[depth + 1] = counts.get(depth + 1, 0) + 1
+            emitted += 1 + accepted
+            rounds += 1
+            D.update_ema(ema, accepted, depth)
+    total = sum(counts.values())
+    return {m: n / total for m, n in sorted(counts.items())}
+
+
+def lock_diagnostic(pairs, window, draws, seed_base):
+    """Where a settle-then-freeze window locks, and whether it locks fairly.
+
+    The settle window estimates the leg's average depth from its first `window`
+    rounds. The EMA starts at the optimistic seed prior, so those early rounds
+    draft deeper than the settled leg does. This returns the prefix mean, the
+    whole-leg mean under the shipped rule, and the distribution of locked
+    levels, which together show whether a window's advantage comes from better
+    estimation or from that upward bias.
+    """
+    prefix, full, locks = [], [], {}
+    for n in range(draws):
+        order = draw_order(len(pairs), seed_base + n)
+        full.append(run_leg(pairs, C.Shipped, order)["mean_depth"])
+        controller = C.SettleThenFreeze(window, "OWN-mean")
+        ema = list(D.PRIOR)
+        emitted = rounds = index = 0
+        while emitted < LEG_TOKENS and controller.locked is None:
+            pair = pairs[order[index % len(order)]]
+            index += 1
+            round_cap = min(CAP, LEG_TOKENS - emitted - 1)
+            depth = max(0, min(
+                controller.choose(ema, pair["m"], round_cap, rounds),
+                round_cap))
+            accepted = min(pair["k"], depth)
+            emitted += 1 + accepted
+            rounds += 1
+            D.update_ema(ema, accepted, depth)
+        prefix.append(statistics.fmean(controller.history))
+        locks[controller.locked] = locks.get(controller.locked, 0) + 1
+    return {"window": window,
+            "prefix_mean_depth": statistics.fmean(prefix),
+            "whole_leg_mean_depth": statistics.fmean(full),
+            "prefix_bias": statistics.fmean(prefix) - statistics.fmean(full),
+            "lock_distribution": {str(d): n / draws
+                                  for d, n in sorted(locks.items())}}
+
+
+def weighted_line(cells):
+    """Least-squares line through (width, ms) cells weighted by round count."""
+    sw = sum(w for _m, _v, w in cells)
+    mx = sum(w * m for m, _v, w in cells) / sw
+    my = sum(w * v for _m, v, w in cells) / sw
+    num = sum(w * (m - mx) * (v - my) for m, v, w in cells)
+    den = sum(w * (m - mx) ** 2 for m, _v, w in cells)
+    slope = num / den
+    return my - slope * mx, slope
+
+
+def cost_scenarios():
+    """Perturbations of the DATED E168 round-cost table.
+
+    Prose legs pay only widths 2 to 5 under every arm here, so the thin m=6
+    (10 rounds) and m=7 (6 rounds) cells carry no prose weight and are not
+    scanned. The prose-relevant weaknesses are the m=5 cell (56 rounds,
+    sd 24.7 ms, mean 98.1 against median 90.8) and the m=2 cell (48 rounds).
+
+    `linear` is the decisive mechanism test. It removes ALL curvature from the
+    cost table while leaving the concavity of E[min(k,d)] untouched. A gain
+    that survives `linear` is not an artifact of a thinly measured convex cell.
+    """
+    raw = json.loads((pathlib.Path("research/out/e168/round_cost.json"))
+                     .read_text())["table"]
+    cells = {row["m"]: row for row in raw}
+    intercept, slope = weighted_line(
+        [(m, cells[m]["median_ms"], cells[m]["rounds"]) for m in (2, 3, 4, 5)])
+    return {
+        "measured": {},
+        "m5_at_cell_mean": {5: cells[5]["mean_ms"]},
+        "m5_at_linear_continuation": {
+            5: 2 * cells[4]["median_ms"] - cells[3]["median_ms"]},
+        "m2_at_cell_mean": {2: cells[2]["mean_ms"]},
+        "linear": {m: intercept + slope * m for m in range(1, 9)},
+    }, (intercept, slope)
+
+
+def scenario_delta(pairs, factory, draws, seed_base, overrides):
+    """Paired prose delta of one arm against the shipped rule under one table."""
+    saved = dict(D.COST_MS)
+    D.COST_MS.update(overrides)
+    try:
+        orders = [draw_order(len(pairs), seed_base + n) for n in range(draws)]
+        base = [run_leg(pairs, C.Shipped, order) for order in orders]
+        arm = [run_leg(pairs, factory, order) for order in orders]
+        return statistics.fmean(
+            100.0 * (b["decode_ms_per_token"] - a["decode_ms_per_token"])
+            / b["decode_ms_per_token"] for a, b in zip(arm, base))
+    finally:
+        D.COST_MS.clear()
+        D.COST_MS.update(saved)
+
+
 def ms_per_round_equivalent(row, shipped):
     """Convert the ms/token gain to ms/round at the shipped tokens-per-round.
 
@@ -277,6 +395,64 @@ def main():
         [row["held_out_pct"] for row in lopo.values()])
     summary["lopo_min_pct"] = min(row["held_out_pct"] for row in lopo.values())
 
+    # The constant-depth null. If a hardcoded fixed depth captures the same
+    # prose median, the value is in the LEVEL, not in the controller. The
+    # benchfixture column is what separates the two: benchfixture drafts deep
+    # (shipped mean depth 6.6) and a hardcoded shallow constant must lose
+    # heavily there, while a controller that estimates the level online should
+    # not.
+    summary["constant_depth_null"] = {
+        "fixed-d%d" % d: {
+            "prose_median_pct": statistics.median(
+                [per_prompt[p]["arms"]["fixed-d%d" % d]["pct_faster"]
+                 for p in PROSE]),
+            "prose_min_pct": min(
+                per_prompt[p]["arms"]["fixed-d%d" % d]["pct_faster"]
+                for p in PROSE),
+            "benchfixture_pct":
+                per_prompt["benchfixture"]["arms"]["fixed-d%d" % d]
+                ["pct_faster"],
+        } for d in range(CAP + 1)}
+
+    # Cost-table sensitivity for the best promotion-eligible controller.
+    factory = {f().name: f for f in C.registry(CAP)}[best]
+    scenarios, line = cost_scenarios()
+    summary["cost_table_linear_fit"] = {"intercept_ms": line[0],
+                                        "slope_ms_per_width": line[1]}
+    sensitivity = {}
+    for label, overrides in scenarios.items():
+        deltas = [scenario_delta(D.corpus(p), factory, args.draws, args.seed,
+                                 overrides) for p in PROSE]
+        sensitivity[label] = {"prose_median_pct": statistics.median(deltas),
+                              "prose_min_pct": min(deltas)}
+    summary["cost_table_sensitivity"] = sensitivity
+    summary["sign_survives_linear_cost_table"] = \
+        sensitivity["linear"]["prose_median_pct"] > 0.0
+
+    summary["width_histograms"] = {
+        "shipped": width_histogram(D.corpus("dramatic"), C.Shipped,
+                                   min(args.draws, 20), args.seed),
+        best: width_histogram(D.corpus("dramatic"), factory,
+                              min(args.draws, 20), args.seed),
+        "shipped_benchfixture": width_histogram(
+            D.corpus("benchfixture"), C.Shipped, min(args.draws, 20),
+            args.seed),
+        "%s_benchfixture" % best: width_histogram(
+            D.corpus("benchfixture"), factory, min(args.draws, 20), args.seed),
+    }
+
+    summary["settle_window_bias"] = {
+        str(window): {
+            prompt: lock_diagnostic(D.corpus(prompt), window,
+                                    min(args.draws, 100), args.seed)
+            for prompt in ("english", "medicine", "benchfixture")}
+        for window in (16, 32, 64)}
+
+    # The pre-registered stage-1 measurement path turns on this comparison.
+    prose_sign = summary["best_prose_median_pct"] > 0
+    bench_sign = eligible[best]["benchfixture_pct"] > 0
+    summary["benchfixture_sign_agrees_with_prose"] = prose_sign == bench_sign
+
     median = summary["best_prose_median_pct"]
     minimum = summary["best_prose_min_pct"]
     if median >= PROMOTE_MEDIAN_PCT and minimum >= PROMOTE_MIN_PER_PROMPT_PCT:
@@ -367,6 +543,51 @@ def render(summary, per_prompt, names):
                      % (held, row["picked"], row["held_out_pct"]))
     lines.append("  held-out median %+.3f%%   held-out min %+.3f%%"
                  % (summary["lopo_median_pct"], summary["lopo_min_pct"]))
+    lines.append("")
+    lines.append("CONSTANT-DEPTH NULL (is the value the LEVEL or the "
+                 "CONTROLLER?)")
+    lines.append("  %-10s %11s %10s %12s" % ("arm", "prose med", "prose min",
+                                             "benchfixture"))
+    for name, row in summary["constant_depth_null"].items():
+        lines.append("  %-10s %+11.3f %+10.3f %+12.3f"
+                     % (name, row["prose_median_pct"], row["prose_min_pct"],
+                        row["benchfixture_pct"]))
+    lines.append("  %-10s %+11.3f %+10.3f %+12.3f"
+                 % (summary["best_controller"],
+                    summary["best_prose_median_pct"],
+                    summary["best_prose_min_pct"], best_row["benchfixture_pct"]))
+    lines.append("")
+    lines.append("COST-TABLE SENSITIVITY for %s (prose median)"
+                 % summary["best_controller"])
+    for label, row in summary["cost_table_sensitivity"].items():
+        lines.append("  %-26s %+7.3f%%  (prose min %+7.3f%%)"
+                     % (label, row["prose_median_pct"], row["prose_min_pct"]))
+    lines.append("  linear fit used: %.3f + %.3f * width ms"
+                 % (summary["cost_table_linear_fit"]["intercept_ms"],
+                    summary["cost_table_linear_fit"]["slope_ms_per_width"]))
+    lines.append("  sign survives a curvature-free cost table: %s"
+                 % summary["sign_survives_linear_cost_table"])
+    lines.append("")
+    lines.append("WIDTH HISTOGRAMS (which cost cells are actually paid)")
+    for label, hist in summary["width_histograms"].items():
+        lines.append("  %-28s %s" % (label, " ".join(
+            "m%d:%.3f" % (m, w) for m, w in sorted(hist.items()))))
+    lines.append("")
+    lines.append("SETTLE-WINDOW BIAS (is a shorter window better estimation, "
+                 "or an upward bias?)")
+    lines.append("  %-4s %-16s %10s %10s %8s  %s"
+                 % ("W", "prompt", "prefix", "whole leg", "bias", "locks"))
+    for window, prompts in summary["settle_window_bias"].items():
+        for prompt, row in prompts.items():
+            lines.append("  %-4s %-16s %10.3f %10.3f %+8.3f  %s"
+                         % (window, prompt, row["prefix_mean_depth"],
+                            row["whole_leg_mean_depth"], row["prefix_bias"],
+                            " ".join("d%s:%.2f" % (d, w) for d, w
+                                     in row["lock_distribution"].items())))
+    lines.append("")
+    lines.append("BENCHFIXTURE SIGN vs PROSE SIGN: %s"
+                 % ("AGREES" if summary["benchfixture_sign_agrees_with_prose"]
+                    else "INVERTED"))
     lines.append("")
     lines.append("PRE-REGISTERED DECISION: %s" % summary["verdict"])
     return "\n".join(lines)

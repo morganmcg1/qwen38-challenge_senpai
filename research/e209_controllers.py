@@ -163,13 +163,14 @@ class Hysteresis:
 
     def __init__(self, persistence, cap):
         self.persistence = persistence
+        self.cap = cap
         self.name = "B-h%d" % persistence
         self.level = D.depth_walk(D.PRIOR, None, cap)
         self.candidate = None
         self.streak = 0
 
     def choose(self, ema, _margin, cap, _round_index):
-        preferred = D.depth_walk(ema, None, cap)
+        preferred = D.depth_walk(ema, None, self.cap)
         if preferred == self.level:
             self.candidate, self.streak = None, 0
         elif preferred == self.candidate:
@@ -190,12 +191,13 @@ class StickyValue:
     def __init__(self, penalty, price, label, cap):
         self.penalty = penalty
         self.price = price
+        self.cap = cap
         self.name = "%s-p%g" % (label, penalty)
         self.level = D.depth_walk(D.PRIOR, None, cap)
 
     def choose(self, ema, _margin, cap, _round_index):
         values = {d: self.price(d) / (1.0 + expected_accepted(ema, d))
-                  for d in range(cap + 1)}
+                  for d in range(self.cap + 1)}
         best = min(values, key=values.get)
         if values[best] < (1.0 - self.penalty) * values[self.level]:
             self.level = best
