@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # E207 session: matched legs of the EMA-subtraction arm.
 #
+# STATUS: retained as a design record only. The advisor cancelled stage 1 and
+# the `DARKBLOOM_E207_EMA_ARM` arm was removed from the scored surface for a
+# research-only merge (RULE 393), so `frozen` legs run the SHIPPED policy
+# today and the two arms are identical. Restore the arm commit before using
+# this runner for a real contrast.
+#
 #   usage: research/e207_session.sh TAG_PREFIX TOKENS ARM[,ARM...]
 #
 #   ARM is `frozen` (DARKBLOOM_E207_EMA_ARM=frozen, the EMAs keep their seed
