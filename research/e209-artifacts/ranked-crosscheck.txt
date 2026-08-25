@@ -1,0 +1,36 @@
+E209 ranked cross-check (harness=ranked, FINDING 520 instrument)
+receipt A 3.707845   crown 3.729110
+
+published median by CONSTANT depth
+  d=0  1.212314  ( -67.30% vs A,  -68.34% vs shipped cap8)
+  d=1  2.144444  ( -42.16% vs A,  -44.00% vs shipped cap8)
+  d=2  2.869960  ( -22.60% vs A,  -25.05% vs shipped cap8)
+  d=3  3.378325  (  -8.89% vs A,  -11.78% vs shipped cap8)
+  d=4  3.570432  (  -3.71% vs A,   -6.76% vs shipped cap8)
+  d=5  3.471402  (  -6.38% vs A,   -9.35% vs shipped cap8)
+  d=6  3.436016  (  -7.33% vs A,  -10.27% vs shipped cap8)
+  d=7  3.562402  (  -3.92% vs A,   -6.97% vs shipped cap8)
+  d=8  3.744526  (  +0.99% vs A,   -2.22% vs shipped cap8)
+
+shipped rule cap7 3.707845   cap8 3.829386
+per-prompt best fixed depth (ORACLE) 3.744526  (-2.22% vs shipped cap8)
+
+per-ranked-prompt preferred fixed depth
+  plutarch               d*=1  raw 1.2348   shipped cap8 raw 1.2607
+  drama                  d*=3  raw 2.1312   shipped cap8 raw 2.1222
+  travel                 d*=3  raw 2.4119   shipped cap8 raw 2.4277
+  beagle                 d*=8  raw 3.4711   shipped cap8 raw 3.6472
+  republic               d*=8  raw 4.1173   shipped cap8 raw 4.0439
+  essays                 d*=8  raw 4.0180   shipped cap8 raw 4.0116
+  medicine               d*=8  raw 4.0251   shipped cap8 raw 4.0589
+  botany                 d*=8  raw 4.0785   shipped cap8 raw 4.1134
+
+local prose corpus preferred fixed depth: 2 to 3 (E209 desk, harness=local)
+ranked instrument preferred fixed depth : 8 (median of d* above)
+
+WHICH PROMPTS SET THE PUBLISHED MEDIAN
+  shipped cap8 raws, sorted: plutarch 1.2607  drama 2.1222  travel 2.4277  beagle 3.6472  essays 4.0116  republic 4.0439  medicine 4.0589  botany 4.1134
+  the median is the mean of the two middle raws: beagle and essays
+    beagle                 shipped 3.6472  best fixed d=8 3.4711  (-4.83%)
+    essays                 shipped 4.0116  best fixed d=8 4.0180  (+0.16%)
+  both median-setting prompts prefer deep drafting (d*=8,8), the regime the local prose corpus never visits.
