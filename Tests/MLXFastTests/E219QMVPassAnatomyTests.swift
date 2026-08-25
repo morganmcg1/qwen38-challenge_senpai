@@ -103,7 +103,7 @@ private struct E219Bytes {
         threadgroups = rowSlices
     }
 
-    var dictionary: [String: Any] {
+    var dictionary: [String: Int] {
         [
             "weight_bytes": weight, "scale_bias_bytes": scaleBias,
             "stream_bytes": weight + scaleBias,
@@ -266,7 +266,7 @@ private struct E219Replicas {
         }
         sets = built
         totalBytes = perSet * built.count
-        MLX.GPU.clearCache()
+        MLX.Memory.clearCache()
     }
 
     /// The cold arm walks the replica ring; the hot arm is the same ring
@@ -498,13 +498,13 @@ struct E219InstrumentSanityTests {
         var rows: [[String: Any]] = []
 
         for cell in e219ScoredCells {
-            try autoreleasepool {
+            autoreleasepool {
                 let set = e219RandomSet(k: cell.k, n: cell.n, seed: 0xE219)
                 // Widths whose shipped staged plan is a whole number of equal
                 // groups, so `first_m = tid.x * IPG` matches the shim exactly
                 // and no tail instantiation is involved.
                 for m in [4, 5, 8] {
-                    try autoreleasepool {
+                    autoreleasepool {
                         let variant = Qwen35CustomQMV.kernelVariant(
                             (m: m, k: cell.k, n: cell.n))
                         let ipg = Qwen35CustomQMV.inputsPerGroup(
