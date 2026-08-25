@@ -923,10 +923,10 @@ public final class Qwen36MTPBlockSession {
     /// reproduce that experiment's published arithmetic exactly.
     internal static let boundaryTierFactor = 2.0301
 
-    /// The shipped flat price. `cumulative` repeats the tip's closed form
-    /// instead of accumulating: `1.0 + 0.18 + 0.18 + 0.18` and
-    /// `1.0 + 3.0 * 0.18` differ by one ulp, and a control arm that is not
-    /// bit-identical to the tip is not a control.
+    /// The flat price E214 replaced, kept as the uniform control. `cumulative`
+    /// repeats its closed form instead of accumulating: `1.0 + 0.18 + 0.18 +
+    /// 0.18` and `1.0 + 3.0 * 0.18` differ by one ulp, and a control arm that
+    /// is not bit-identical to the price it controls is not a control.
     internal static func makeUniformDepthPrice() -> DepthPrice {
         DepthPrice(
             marginal: [Double](repeating: headStepCostRatio,
@@ -991,6 +991,86 @@ public final class Qwen36MTPBlockSession {
                           cumulative: prefixCosts(marginal))
     }
 
+    /// E214: the shipped depth price, written as the threshold vector it
+    /// realises (FINDING 546, Entry 425).
+    ///
+    /// `costModelDepth` extends into depth `d + 1` iff
+    /// `reach > marginal[d] * (1 + expected) / cumulative[d]`. Under a single
+    /// per-position acceptance `q` the left side is `q**(d + 1)` and the right
+    /// side rises strictly in `q`, so every row has exactly one crossing and a
+    /// round reaches depth >= k iff `q > Q_k`. The whole price family is
+    /// therefore the set of MONOTONE threshold vectors, and
+    /// `makeThresholdDepthPrice` inverts the relation, so a refitted schedule
+    /// is a data change of these eight numbers and never a change of the walk.
+    ///
+    /// SOURCE. `research/e211-artifacts/step-price.json`, sha256
+    /// `3c5295cc1d05816e01da571a8053e73aa09ed1cc9e72e0ea192aaa415318f4ae`,
+    /// key `receipt_proof.forward_guarded`: the no-regression guarded FORWARD
+    /// minimax table over the {smooth, step_e208} readings of the ranked 9-row
+    /// cell. Desk projection, harness=ranked: +2.242 % under its worst forward
+    /// reading, +2.252 % leave-one-out honest, worst prompt +0.000 %. Each
+    /// value is a crossing `cut / 4001` on the instrument's own quadrature
+    /// grid, for cuts 480, 619, 2103, 2604, 3315, 3315, 3315, 3315.
+    ///
+    /// LEGALITY. The minimax guard was a FIT-TIME constraint that chose which
+    /// fixed table ships. What ships is one input-independent price table keyed
+    /// on the marginal row index and read against the scheduler's existing
+    /// acceptance signal. It carries no prompt feature, no runtime prompt
+    /// conditioning, no benchmark-phase detection and no cross-request state.
+    ///
+    /// CONTINGENCY (advisor Entry 425). This fit sits outside the paid
+    /// cap-4/cap-5 extrapolation envelope: relocation 0.940 against a 0.890
+    /// bar. If the `aff4ad64` cap-8 receipt misses the FINDING 520 instrument
+    /// beyond its 0.689 % receipt channel, the in-envelope guarded three-law
+    /// vector replaces this one, unchanged in every other respect:
+    ///
+    ///     0.1799550112471882, 0.1799550112471882, 0.3366658335416146,
+    ///     0.672831792051987,  0.8722819295176206, 0.8722819295176206,
+    ///     0.8722819295176206, 0.9105223694076481
+    internal static let shippedDepthThresholds: [Double] = [
+        0.11997000749812547,
+        0.15471132216945763,
+        0.5256185953511622,
+        0.6508372906773306,
+        0.828542864283929,
+        0.828542864283929,
+        0.828542864283929,
+        0.828542864283929,
+    ]
+
+    /// The price table that realises a monotone threshold vector through the
+    /// UNMODIFIED walk:
+    ///
+    ///     marginal[d] = Q**(d + 1) * cumulative[d] / (1 + sum_{k=1..d} Q**k)
+    ///
+    /// Term order matches `research/e211_step_price.price_of_cuts` exactly, so
+    /// the built table reproduces the fitted artifact bit for bit and the
+    /// offline gate compares doubles rather than roundings.
+    internal static func makeThresholdDepthPrice(
+        _ thresholds: [Double]
+    ) -> DepthPrice {
+        precondition(
+            thresholds.count == Qwen36MTPLimits.maxDepth,
+            "depth thresholds are not one per marginal row")
+        precondition(
+            zip(thresholds, thresholds.dropFirst()).allSatisfy { $0 <= $1 },
+            "depth thresholds are not monotone, so no price table realises them")
+        var marginal: [Double] = []
+        var cumulative: [Double] = [1.0]
+        for depth in 0 ..< Qwen36MTPLimits.maxDepth {
+            let q = thresholds[depth]
+            var reach = 0.0
+            for step in stride(from: 1, through: depth, by: 1) {
+                reach += pow(q, Double(step))
+            }
+            let value = pow(q, Double(depth + 1)) * cumulative[depth]
+                / (1.0 + reach)
+            marginal.append(value)
+            cumulative.append(cumulative[depth] + value)
+        }
+        return DepthPrice(marginal: marginal, cumulative: cumulative)
+    }
+
     internal static func prefixCosts(_ marginal: [Double]) -> [Double] {
         var out = [1.0]
         var running = 1.0
@@ -1002,19 +1082,19 @@ public final class Qwen36MTPBlockSession {
     }
 
     internal enum DepthPriceArm: String {
-        case ship, pb5, pb7, pbfit
+        case ship, pb5, pb7, pbfit, stepq
     }
 
-    /// THE ONE LINE AN ARM SESSION PATCHES. `QwenMTPDepthPriceTests` pins the
-    /// shipped value so a leg session cannot leave another arm behind.
+    /// THE ONE LINE AN ARM SESSION PATCHES.
     ///
-    /// The shipped default is `ship` (uniform). `pbfit` wins by -3.5 % on this
-    /// host's kernel dispatch table and loses that win entirely on the crown
-    /// table (E75 rung B/D: +0.33 % on crown, a +3.8 pp interaction). The
-    /// shape is fitted to one dispatch table, so it is a research arm, not a
-    /// shipped constant. Refit and re-price on the live table before shipping
-    /// any non-uniform shape.
-    internal static let depthPriceArm: DepthPriceArm = .ship
+    /// The shipped arm is `stepq`, the E214 threshold table. `ship` is the
+    /// uniform price it replaced and stays as the control. `pbfit` wins by
+    /// -3.5 % on this host's kernel dispatch table and loses that win entirely
+    /// on the crown table (E75 rung B/D: +0.33 % on crown, a +3.8 pp
+    /// interaction); its shape is fitted to one LOCAL dispatch table, which is
+    /// why it is a research arm. `stepq` is fitted on the ranked instrument
+    /// instead, so it does not carry that transfer risk.
+    internal static let depthPriceArm: DepthPriceArm = .stepq
 
     /// Built once. A computed property here would allocate two arrays on
     /// every round, inside the timed path.
@@ -1024,7 +1104,24 @@ public final class Qwen36MTPBlockSession {
         case .pb5: return makeBoundaryDepthPrice(enteringVerifyWidth: 5)
         case .pb7: return makeBoundaryDepthPrice(enteringVerifyWidth: 7)
         case .pbfit: return makeMeasuredDepthPrice()
+        case .stepq: return makeThresholdDepthPrice(shippedDepthThresholds)
         }
+    }()
+
+    /// Open-loop gate witness: the shipped table, printed FROM the table the
+    /// walk reads. Hexfloat, so an offline replay consumes the exact doubles
+    /// and no second transcription of the numbers can drift from this one.
+    /// Written once on first use, under the phase-trace env gate, so the
+    /// scored schedule runs unchanged arithmetic without it.
+    private static let tracedDepthPrice: Bool = {
+        guard traceRounds else { return false }
+        func hex(_ values: [Double]) -> String {
+            values.map { String(format: "%a", $0) }.joined(separator: ",")
+        }
+        traceWrite("mtp-price: arm=" + depthPriceArm.rawValue
+            + " marginal=" + hex(depthPrice.marginal)
+            + " cumulative=" + hex(depthPrice.cumulative) + "\n")
+        return true
     }()
 
     /// HARD DEPTH CAP 4 — WIDTHS ABOVE 5 ARE STRUCTURALLY CLOSED on this
@@ -1361,6 +1458,7 @@ public final class Qwen36MTPBlockSession {
     /// fit can ask which of these separates a round that accepts its whole
     /// chain from one that accepts nothing, without spending a second run.
     private func snapshotScheduleSignal(widthCap: Int) {
+        _ = Self.tracedDepthPrice
         let margin: Double
         if let tail = pendingTop2, tail.1.count >= 2 {
             margin = tail.1[0] - tail.1[1]
