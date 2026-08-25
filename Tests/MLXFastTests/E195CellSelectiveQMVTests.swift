@@ -251,16 +251,10 @@ struct E195CellSelectiveQMVTests {
                 if m == 6 {
                     let expected: Qwen35QMVKernelVariant =
                         (cell == .mlpDown || cell == .unlisted)
-                        ? qwen35E208StagedVariant : .singlePass
+                        ? .staged : .singlePass
                     #expect(variant == expected, "m=6 cell=\(cell)")
                 } else {
-                    // E208 put the m = 9 group partition behind a runtime arm,
-                    // so the staged family is named by the arm rather than by
-                    // the case. Single-pass must still never appear here.
-                    #expect(
-                        variant == qwen35E208StagedVariant, "m=\(m) cell=\(cell)"
-                    )
-                    #expect(variant != .singlePass, "m=\(m) cell=\(cell)")
+                    #expect(variant == .staged, "m=\(m) cell=\(cell)")
                 }
             }
         }
