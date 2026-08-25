@@ -1458,12 +1458,6 @@ public final class Qwen36MTPBlockSession {
         var tEvalDone: UInt64 = 0
         var tReadDone: UInt64 = 0
         var tCommitDone: UInt64 = 0
-        var tRepairNs: UInt64 = 0
-        var cRepairNs: UInt64 = 0
-        var tGenericNs: UInt64 = 0
-        var tClearNs: UInt64 = 0
-        var cClearNs: UInt64 = 0
-        var e205RepairPath = 0
         var tRowTrace0: UInt64 = 0
         var tRowTraceDone: UInt64 = 0
 
@@ -1582,13 +1576,6 @@ public final class Qwen36MTPBlockSession {
                         + "band_fa_mixer_us=\(Qwen35BandTimer.faMixerNs / 1000) "
                         + "band_fa_mlp_us=\(Qwen35BandTimer.faMLPNs / 1000) "
                         + "band_fwd=\(Qwen35BandTimer.forwards) "
-                        + "acc_true=0 "
-                        + "e205_trunc_req=\(Self.e205TruncRequested(round: roundCount)) "
-                        + "e205_trunc_applied=0 repair_path=0 "
-                        + "repair_us=0 repair_cpu_us=0 "
-                        + "repair_replay_us=0 repair_trim_us=0 "
-                        + "repair_prefetch_us=0 repair_generic_us=0 "
-                        + "clear_release_us=0 clear_release_cpu_us=0 "
                         + "serial_body=1\n")
             }
             return Qwen36MTPRoundResult(
@@ -1733,19 +1720,6 @@ public final class Qwen36MTPBlockSession {
             if stopTokens.contains(drafts[index]) { break }
         }
 
-        // E205 forced-truncation arm. `acceptedTrue` is the real longest
-        // common prefix; the arm treats the last `j` accepted drafts as
-        // rejected so the repair path runs on demand. Correct drafts are
-        // dropped, never changed, so the emitted trajectory is identical
-        // and the leg simply uses more rounds. Diagnostic only.
-        let acceptedTrue = acceptedCount
-        let e205Requested = Self.e205TruncRequested(round: roundCount)
-        var e205Applied = 0
-        if e205Requested > 0, acceptedCount > 0 {
-            e205Applied = Swift.min(e205Requested, acceptedCount)
-            acceptedCount -= e205Applied
-        }
-
         var perRowTop2Tokens: [[Int]] = []
         var perRowTop2Logits: [[Double]] = []
         perRowTop2Tokens.reserveCapacity(draftCount + 1)
@@ -1798,11 +1772,7 @@ public final class Qwen36MTPBlockSession {
             // FULL ACCEPTANCE: the verify state IS the committed state. No
             // rollback, no repair forward; the bonus row carries the next primary
             // and the last hidden row seeds the next draft.
-            let tClear0 = DispatchTime.now().uptimeNanoseconds
-            let cClear0 = Self.threadCPUNanoseconds()
             Self.clearRecurrentRollback(cache)
-            tClearNs = DispatchTime.now().uptimeNanoseconds - tClear0
-            cClearNs = Self.threadCPUNanoseconds() &- cClear0
             committed.append(contentsOf: drafts)
             committedTokenCount += drafts.count
         } else {
@@ -1817,20 +1787,11 @@ public final class Qwen36MTPBlockSession {
             // the same post-primary distribution, so reuse its already-recorded
             // top-2 evidence rather than running the target again.
             let committedOffset = base + committed.count
-            Self.e205ReplayNs = 0
-            Self.e205TrimNs = 0
-            Self.e205PrefetchNs = 0
-            let tRepair0 = DispatchTime.now().uptimeNanoseconds
-            let cRepair0 = Self.threadCPUNanoseconds()
-            let e205Restored = Self.restoreAfterPrefixReject(
+            if !Self.restoreAfterPrefixReject(
                 model, cache,
                 acceptedCount: acceptedCount, draftCount: draftCount,
                 to: committedOffset)
-            tRepairNs = DispatchTime.now().uptimeNanoseconds - tRepair0
-            cRepairNs = Self.threadCPUNanoseconds() &- cRepair0
-            e205RepairPath = e205Restored ? 1 : 2
-            let tGeneric0 = DispatchTime.now().uptimeNanoseconds
-            if !e205Restored {
+            {
                 // Generic K>1 / defensive fallback: undo the whole verify window
                 // and re-forward the committed block. This rare path pays a
                 // second blocking eval for its own readout.
@@ -1856,18 +1817,14 @@ public final class Qwen36MTPBlockSession {
                 pendingTop2 = (ids, values)
                 perRowTop2Tokens[perRowTop2Tokens.count - 1] = ids
                 perRowTop2Logits[perRowTop2Logits.count - 1] = values
-                tGenericNs =
-                    DispatchTime.now().uptimeNanoseconds - tGeneric0
             }
         }
 
         if Self.traceRounds { tCommitDone = DispatchTime.now().uptimeNanoseconds }
 
-        // Both fed the true walk outcome: the schedule must not see the
-        // forced truncation, or width would move with the arm.
         fullAcceptStreak =
-            acceptedTrue == drafts.count ? fullAcceptStreak + 1 : 0
-        recordAcceptOutcome(acceptedCount: acceptedTrue, drafts: drafts)
+            acceptedCount == drafts.count ? fullAcceptStreak + 1 : 0
+        recordAcceptOutcome(acceptedCount: acceptedCount, drafts: drafts)
         if Self.traceRounds {
             tRowTrace0 = DispatchTime.now().uptimeNanoseconds
             // Row i's distribution follows (primary + drafts[0..<i]); only
@@ -1913,18 +1870,6 @@ public final class Qwen36MTPBlockSession {
                 + "eval_wall_us=\((tEvalDone - tVerifyBuilt) / 1000) "
                 + "readout_us=\((tReadDone - tEvalDone) / 1000) "
                 + "commit_us=\((tCommitDone - tReadDone) / 1000) "
-                + "acc_true=\(acceptedTrue) "
-                + "e205_trunc_req=\(e205Requested) "
-                + "e205_trunc_applied=\(e205Applied) "
-                + "repair_path=\(e205RepairPath) "
-                + "repair_us=\(tRepairNs / 1000) "
-                + "repair_cpu_us=\(cRepairNs / 1000) "
-                + "repair_replay_us=\(Self.e205ReplayNs / 1000) "
-                + "repair_trim_us=\(Self.e205TrimNs / 1000) "
-                + "repair_prefetch_us=\(Self.e205PrefetchNs / 1000) "
-                + "repair_generic_us=\(tGenericNs / 1000) "
-                + "clear_release_us=\(tClearNs / 1000) "
-                + "clear_release_cpu_us=\(cClearNs / 1000) "
                 + "upkeep_us=\((tTailDone - tCommitDone) / 1000) "
                 + "round_us=\((tTailDone - tRound0) / 1000) "
                 // Thread CPU nanoseconds this round consumed, beside the wall
@@ -2130,19 +2075,14 @@ public final class Qwen36MTPBlockSession {
                       entry.offset == committedOffset + rejected
                 else { return false }
             }
-            let tReplay0 = DispatchTime.now().uptimeNanoseconds
-            let replayed = model.replayRecurrentPrefix(
+            guard model.replayRecurrentPrefix(
                 cache: cache, committedRows: acceptedCount + 1)
-            e205ReplayNs = DispatchTime.now().uptimeNanoseconds - tReplay0
-            guard replayed else { return false }
-            let tTrim0 = DispatchTime.now().uptimeNanoseconds
+            else { return false }
             for entry in cache where !(entry is ArraysCache) {
                 if entry.isTrimmable, entry.offset > committedOffset {
                     _ = entry.trim(entry.offset - committedOffset)
                 }
             }
-            e205TrimNs = DispatchTime.now().uptimeNanoseconds - tTrim0
-            let tPrefetch0 = DispatchTime.now().uptimeNanoseconds
             // E020 replay-prefetch (promoted +0.039%, then deleted by a
             // whole-file overlay in 6209702 whose author never opened this
             // file — see Amal-David's crown-tree audit note 062ba58): submit
@@ -2155,8 +2095,6 @@ public final class Qwen36MTPBlockSession {
                 return arrays[1]
             }
             asyncEval(replayedRecurrentStates)
-            e205PrefetchNs =
-                DispatchTime.now().uptimeNanoseconds - tPrefetch0
             return true
         }
 
@@ -2186,41 +2124,6 @@ public final class Qwen36MTPBlockSession {
         }
         return true
     }
-
-    /// E205 forced-truncation arm. Open-loop by construction: the
-    /// schedule reads the round index and nothing else, so no measured
-    /// quantity can steer which rounds are truncated (RULE 392).
-    ///
-    ///   off      never truncate (the shipped behaviour)
-    ///   alt1     truncate 1 draft on odd rounds
-    ///   alt2     truncate 2 drafts on odd rounds
-    ///   alt4     truncate 4 drafts on odd rounds
-    ///   cycle8   1 / 2 / 4 drafts on rounds 1 / 3 / 5 mod 8
-    private static let e205TruncMode =
-        ProcessInfo.processInfo.environment["MLX_E205_TRUNCATION"] ?? "off"
-
-    @inline(__always)
-    private static func e205TruncRequested(round: Int) -> Int {
-        switch e205TruncMode {
-        case "alt1": return round % 2 == 1 ? 1 : 0
-        case "alt2": return round % 2 == 1 ? 2 : 0
-        case "alt4": return round % 2 == 1 ? 4 : 0
-        case "cycle8":
-            switch round % 8 {
-            case 1: return 1
-            case 3: return 2
-            case 5: return 4
-            default: return 0
-            }
-        default: return 0
-        }
-    }
-
-    /// Site timers for the fast restore. Written by the static repair
-    /// helper, read once per round by the trace line.
-    nonisolated(unsafe) private static var e205ReplayNs: UInt64 = 0
-    nonisolated(unsafe) private static var e205TrimNs: UInt64 = 0
-    nonisolated(unsafe) private static var e205PrefetchNs: UInt64 = 0
 
     private static func clearRecurrentRollback(_ cache: [any KVCache]) {
         for entry in cache {
