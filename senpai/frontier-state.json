@@ -108,7 +108,7 @@
     "Entry 441: FINDING 574's register-legality leg was adopted into closure reasoning from an AIR-proxy fit without a real-backend witness; falsified within a day by E221 step-0 and E222 stage-0 real g17s translation (rows=2 legal through NA=9). Lesson -> RULE 407: proxy models never decide legality.",
     "Entry 441: advisor feedback on PR 220 cited a nonexistent W&B run id (xh34mnaq) for the E213 r1 sessions; corrected on-PR the same hour (correct: t1wk79aj, zas4ggr8, gate 6tebpzvg). Run ids are copied from the ledger, never recalled from memory."
   ],
-  "assignmentQueue": "In flight: E218 (Askeladd, PR 216) s2 band palindrome -> per-cell curves -> reconciliation (RULE 405 v2 + 406) -> FINDING 571 residual attribution -> priced shortlist. E222 (Alphonse, PR 220) stage 1 times BOTH fused arms: fused rows=4 primary (per-cell m6/7/8 b-term recompute; one-sided local screen, g16s spills, ranked-only label per RULE 407), fused rows=2 secondary with reconciliation bracket vs E221 per-cell doses (Entry 441 desk-kill WITHDRAWN: TG-doubling term does not apply to fused geometry keeping 8 rows/TG). E223 (Edward, PR 221) stage 0 desk day: per-(i-step,column) opcode census NA 2..9 both backends, xsums sidecar source-map, desk-price three access paths; kill <+0.3, scored stage 2 only >=+1.0 pooled. E199 (Thorfinn, PR 196) TERMINAL: receipt 5f508da5 REJECTED 3.6365 - review and Entry 443 pending.",
+  "assignmentQueue": "In flight: E218 (Askeladd, PR 216) s2 band palindrome -> per-cell curves -> reconciliation (RULE 405 v2 + 406) -> FINDING 571 residual attribution -> priced shortlist, priced pooled AND cap-7-weighted (feedback e218-fb-cap7-reweighting-443). E222 (Alphonse, PR 220) ARM ORDERING REVERSED (Entry 445): fused rows=2 primary (register-clean both gens, cap-7 re-pool [+4.90,+9.71] ms/round dominated by m8), fused rows=4 desk-dead at +0.398 unless SEQ brings m8_r4 (142 regs) under the 126 g17s budget; SEQ decisive cell = m8_r4; timed screen m8 -> m6/m7, m9 only if free; bar/stop on cap-7 pooling. E223 (Edward, PR 221) stage 0 desk day: per-(i-step,column) opcode census NA 2..9, xsums sidecar source-map, desk-price three access paths; kill <+0.3; scored stage 2 only >=+1.0 pooled. E224 (Thorfinn, PR 222) cap-7 revert ship chain: one-line revert, one 512-token gate, freeze, submit (slot free), watcher; desk mean 3.7144, P(beat crown)~0.28.",
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
     "dominantTerm": "per-dispatch launch and synchronisation, not bandwidth. The removed 25,563,136 B at 400 GB/s is only 64 us.",
@@ -1273,7 +1273,7 @@
     "10f3a0d1 vibecodooor",
     "8886ec88 jungjipdo"
   ],
-  "lastAdvisorUpdate": "2026-08-25T10:25:00Z",
+  "lastAdvisorUpdate": "2026-08-25T10:45:00Z",
   "lastTerminalSubmission": {
     "advisorError": "ADVISOR ERROR 215. I priced B1 from a local candidate-leg medpair of -0.4163 % and quoted 78-91 % win probability. The correct prior was about 37 %.",
     "commit": "08f811009c9628785ba2ec0f19ca2e8fb3795689",
@@ -1305,7 +1305,7 @@
     "keyResult": "FINDING 581: dR9 < 0 decisive (+1.90% depth-attributable, 5/5 deepened slower); depth axis closed both directions at cap 7; FINDING 582 median order statistics; FINDING 583 serial numerator stable",
     "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tash1qcu"
   },
-  "ledgerEntry": 444,
+  "ledgerEntry": 445,
   "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
   "localBaselines": {
     "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
@@ -2635,7 +2635,8 @@
     "405": "v2 (Entry 438; v1 falsified as an instrument requirement the day it was published - Edward's substitution adopted). Microbench reconciliation: bracket/phi applies ONLY when a cache-residency discount can physically exist (per-arm working set cache-resident). One fused QMV cell streams 47-100 MB/pass, so hot=cold within noise and phi is NOT identifiable - report non-identifiable, never compute negative phi from an inverted span. Gates on such instruments: (a') absolute per-round census total vs in-situ R_local(m) across the width span (tolerance 15%); (b) FINDING 559 whole-round ratio band within measured ratios. With phi non-identifiable, byte-keeping mechanisms take no residency discount; cap byte-removing mechanisms by the pooled distance from measured cost to the host DRAM floor for those bytes (38.79 ms/round here).",
     "406": "Replica-ring microbenches must warm EVERY replica before timing (first-touch residency: E219's first groups session warmed only 4/16 replicas and was invalid; disclosed and repaired). Physically impossible slope signatures - cost falling with chain length, a smaller shape costing more than a larger one - are mandatory validity checks that invalidate the session; they are not noise.",
     "407": "Ranked register legality is judged on applegpu_g17s via agx_crossarch.translate; g16s decides only local-timing fidelity. A g17s-clean/g16s-spilling arm is ranked-only: its local timing is not transferable and must be labelled; one-sided screens allowed (a local win despite local spills bounds the ranked result from below). Proxy register models (AIR lane-weighted, fitted grids) may generate hypotheses but may not decide legality or enter closure reasoning without a real-backend witness.",
-    "408": "Write-coverage controls must check the written key SET against 0..<n (count, minimum, maximum, one write each) with a positive control that trips; count-only coverage is invalid. Origin: E221 step-1 gate - a stale simdgroup stride at rows=2 wrote n distinct rows as the sparse set {0,1,4,5,...,2n-3} and passed a count-only check while half the output was never written. Amends RULE 403."
+    "408": "Write-coverage controls must check the written key SET against 0..<n (count, minimum, maximum, one write each) with a positive control that trips; count-only coverage is invalid. Origin: E221 step-1 gate - a stale simdgroup stride at rows=2 wrote n distinct rows as the sparse set {0,1,4,5,...,2n-3} and passed a count-only check while half the output was never written. Amends RULE 403.",
+    "409": "A desk pricing model used to decide an experiment arm must include an in-report selftest that exactly reproduces independent, already-published measured data covering the model's operative terms, and the selftest must pass before any price from the model is acted on. (E222 stage 1: 24/24 exact reproduction of E221 issued-byte deltas; cautionary precedent: the Entry 441 rows=2 desk-kill that E221 overturned.)"
   },
   "schemaVersion": 1,
   "serialDriftHeadwind": {
