@@ -176,6 +176,10 @@ func e221RowsParameterizedHeader() -> String {
 /// stale-correct values. This enumerates the launched simdgroups and counts
 /// writes per output row, so coverage is proved rather than inferred.
 ///
+/// Check the returned KEY SET against `0 ..< n`, not its size: a stale
+/// simdgroup stride can write exactly `n` distinct rows and still miss half the
+/// output while addressing indices beyond `n - 1`.
+///
 /// `sgStride` is the per-simdgroup row stride the launch shim encodes. It
 /// equals `rows` in every timed arm; passing a different value builds the
 /// positive control that proves this census can fail.
@@ -725,6 +729,16 @@ struct E219InstrumentSanityTests {
         let geometries: [(rows: Int, parameterized: Bool)] =
             [(4, true), (2, true)]
 
+        // A COUNT of written rows is not enough. At rows=2 with a stale
+        // simdgroup stride of 4 the count is still exactly `n`, but the written
+        // indices are the sparse set {0,1,4,5,...} running up to 2n-3. Coverage
+        // must therefore be checked as a SET against 0 ..< n.
+        func covers(_ census: [Int: Int], _ n: Int) -> Bool {
+            census.count == n && census.keys.min() == 0
+                && census.keys.max() == n - 1
+                && census.values.allSatisfy { $0 == 1 }
+        }
+
         for cell in e219ScoredCells {
             for rows in [4, 2] {
                 let census = e221WriteCensus(n: cell.n, rows: rows)
@@ -733,22 +747,27 @@ struct E219InstrumentSanityTests {
                 censusRows.append([
                     "cell": cell.name, "n": cell.n, "rows": rows,
                     "rows_written": census.count,
+                    "min_row": census.keys.min() ?? -1,
+                    "max_row": census.keys.max() ?? -1,
                     "min_writes": census.values.min() ?? 0,
                     "max_writes": census.values.max() ?? 0,
+                    "control_sg_stride": 4,
                     "control_rows_written": broken.count,
-                    "control_max_writes": broken.values.max() ?? 0,
+                    "control_max_row": broken.keys.max() ?? -1,
+                    "control_covers": covers(broken, cell.n),
                 ])
                 #expect(
-                    census.count == cell.n,
+                    covers(census, cell.n),
                     """
-                    \(cell.name) rows=\(rows): \(census.count) of \(cell.n) \
-                    output rows are written
+                    \(cell.name) rows=\(rows): the launch writes \
+                    \(census.count) rows over \
+                    [\(census.keys.min() ?? -1), \(census.keys.max() ?? -1)], \
+                    not exactly once over [0, \(cell.n - 1)]
                     """)
-                #expect(census.values.allSatisfy { $0 == 1 })
                 if rows != 4 {
-                    // The control must actually break, otherwise the census
-                    // above is vacuous.
-                    #expect(broken.count != cell.n || broken.values.contains { $0 != 1 })
+                    // The control must actually break, otherwise the coverage
+                    // gate above is vacuous.
+                    #expect(!covers(broken, cell.n))
                 }
             }
         }
@@ -1084,6 +1103,8 @@ struct E219PassAnatomyTests {
                         return [
                             "cell": cell.name, "n": cell.n, "rows": rows,
                             "rows_written": census.count,
+                            "min_row": census.keys.min() ?? -1,
+                            "max_row": census.keys.max() ?? -1,
                             "min_writes": census.values.min() ?? 0,
                             "max_writes": census.values.max() ?? 0,
                         ]
