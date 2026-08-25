@@ -239,6 +239,42 @@ def predict_median(data, tvar, acc, fit, cap, lam, model, transfer,
     return e177.published_median(raws)
 
 
+def removal_value(data, tvar, acc, fit, model, transfer, fraction=1.0,
+                  cap=7, anchor="A"):
+    """Ranked value of REMOVING the measured premium from the shipped tree.
+
+    The stage-B cap curve prices only the CHANGE in the premium between two
+    caps, which is a second-order term. This function prices the first-order
+    question the stage-A measurement actually answers: what does the board pay
+    today for the repair site, and what would a mechanism that removed
+    ``fraction`` of the round-endpoint premium be worth?
+
+    harness=ranked. The measured premium is a local M4 Pro round-endpoint
+    number, so it crosses to the ranked round through the same transfer ratio
+    the cap curve uses.
+    """
+    raws, per_prompt = [], {}
+    for name in ORDER:
+        t = tvar[name]
+        S0 = scaled_S(acc[name]["S"], 1.0)
+        rec = data[anchor]["rec"][name]
+        prem_ms = expected_premium_ms(t, S0, cap, model, transfer)
+        R_pred = rec["R"] - fraction * prem_ms / 1000.0
+        n_rounds = TOKENS / (1.0 + rec["abar"])
+        raws.append(R.raw_of(data, name, n_rounds * R_pred, anchor))
+        probs = depth_probs(t, cap)
+        Sm = monotone(S0)
+        p_reject = sum(q * (1.0 - Sm[min(d, len(Sm) - 1)])
+                       for d, q in enumerate(probs))
+        per_prompt[name] = {
+            "expected_premium_ms_per_round": prem_ms,
+            "p_reject_per_round": p_reject,
+            "round_ms": rec["R"] * 1000.0,
+            "premium_share_of_round_pct": 100 * prem_ms / (rec["R"] * 1000.0),
+        }
+    return {"median": e177.published_median(raws), "per_prompt": per_prompt}
+
+
 def board_acceptance(data, tvar, acc, lam, cap, deep=1.0):
     """Acceptance summary of the board at one setting of the knobs.
 
@@ -464,6 +500,30 @@ def main():
               f"{row['cap8_flat']:11.6f} {row['cap8_step']:11.6f} "
               f"{100 * (row['cap8_flat'] / row['cap7_flat'] - 1):+14.2f}%")
 
+    removal = {f"{f:.2f}": removal_value(data, tvar, acc, flat, model,
+                                         transfer, fraction=f)
+               for f in (0.25, 0.50, 0.75, 1.00)}
+    full = removal["1.00"]
+    print("\nREMOVAL VALUE on the shipped cap-7 tree (harness=ranked)")
+    print("   What the board pays today for the repair site, and what a "
+          "mechanism that removes it is worth.")
+    print(f"{'prompt':>9s} {'P(reject)/round':>15s} {'premium ms/round':>17s} "
+          f"{'round ms':>9s} {'share%':>7s}")
+    for name in ORDER:
+        entry = full["per_prompt"][name]
+        print(f"{name:>9s} {entry['p_reject_per_round']:15.4f} "
+              f"{entry['expected_premium_ms_per_round']:17.4f} "
+              f"{entry['round_ms']:9.2f} "
+              f"{entry['premium_share_of_round_pct']:7.3f}")
+    print(f"{'fraction removed':>18s} {'median':>11s} {'vs receipt A':>13s}")
+    for key in sorted(removal):
+        value = removal[key]["median"]
+        print(f"{key:>18s} {value:11.6f} "
+              f"{100 * (value / BEST_A - 1):+12.3f}%")
+    print(f"   receipt channel 2 sigma is {200 * SIGMA_PUBLISHED:.2f}%; "
+          "the crown is "
+          f"{100 * (CROWN / BEST_A - 1):+.3f}% above receipt A.")
+
     print("\nCURVE 2  8th-position acceptance only (cap 7 invariant at "
           f"{BEST_A:.6f})")
     print(f"{'deep':>6s} {'S8 x':>7s} {'abar%':>8s} {'cap8 flat':>11s} "
@@ -519,6 +579,7 @@ def main():
         },
         "premium_model": model,
         "transfer_ratio": transfer,
+        "removal_value": removal,
         "edl_model_check": checks,
         "public_fixture_a": a_public,
         "curve_lam": lam_rows,
