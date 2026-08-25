@@ -27,8 +27,16 @@ PINNED_THRESHOLDS_HEX = [
     "0x1.a836c532de064p-1",
 ]
 
+PIN_TEST_NAMES = [
+    "the pin can fail: one ulp moves both the table and the price",
+    "the shipped arm is stepq",
+    "the shipped threshold table is bit-identical to the fitted table",
+    "the walk reads the shipped table and nothing else",
+]
+
 RUN_SUMMARY = re.compile(
-    r"Test run with (\d+) tests (passed|failed) after [\d.]+ seconds(?: with (\d+) issues?)?"
+    r"Test run with (\d+) tests (?:in \d+ suites? )?(?:passed|failed)"
+    r" after [\d.]+ seconds(?: with (\d+) issues?)?"
 )
 FAILED_TEST = re.compile(r'Test (?:case )?"?([^"\n]+?)"? failed after')
 XCTEST_FAILURE = re.compile(r"Test Case '(.+?)' failed")
@@ -40,13 +48,16 @@ def parse(path: pathlib.Path) -> dict:
     tests, issues = None, 0
     for match in RUN_SUMMARY.finditer(text):
         tests = int(match.group(1))
-        issues = int(match.group(3) or 0)
+        issues = int(match.group(2) or 0)
     failing = set()
     for match in FAILED_TEST.finditer(text):
         failing.add(match.group(1).strip())
     for match in XCTEST_FAILURE.finditer(text):
         failing.add(match.group(1).strip())
     passing = {match.group(1).strip() for match in PASSED_TEST.finditer(text)}
+    # The whole-run summary line has the same shape as a test line.
+    failing = {name for name in failing if not name.startswith("run with ")}
+    passing = {name for name in passing if not name.startswith("run with ")}
     return {
         "tests": tests,
         "issues": issues,
@@ -65,15 +76,11 @@ def main() -> int:
     added = sorted(branch_failing - base_failing)
     removed = sorted(base_failing - branch_failing)
 
-    pin_tests = sorted(
-        name
-        for name in branch["passing_names"] | branch_failing
-        if "depth-price" in name
-        or "stepq" in name
-        or "shipped table" in name
-        or "one ulp" in name
+    pin_passing = sorted(n for n in PIN_TEST_NAMES if n in branch["passing_names"])
+    pin_failing = sorted(n for n in PIN_TEST_NAMES if n in branch_failing)
+    pin_missing = sorted(
+        n for n in PIN_TEST_NAMES if n not in pin_passing and n not in pin_failing
     )
-    pin_failing = sorted(name for name in pin_tests if name in branch_failing)
 
     payload = {
         "harness": "local",
@@ -86,10 +93,14 @@ def main() -> int:
         "failing_names_added": added,
         "failing_names_removed": removed,
         "failing_name_diff_empty": not added and not removed,
-        "pin_test_names": pin_tests,
-        "pin_test_count": len(pin_tests),
-        "pin_tests_passed": bool(pin_tests) and not pin_failing,
+        "pin_test_names": PIN_TEST_NAMES,
+        "pin_test_count": len(PIN_TEST_NAMES),
+        "pin_tests_passed": len(pin_passing) == len(PIN_TEST_NAMES),
         "pin_tests_failing": pin_failing,
+        "pin_tests_missing": pin_missing,
+        "pin_tests_absent_from_base": sorted(
+            n for n in PIN_TEST_NAMES if n not in base["passing_names"]
+        ),
         "pinned_arm": "stepq",
         "pinned_thresholds_hex": PINNED_THRESHOLDS_HEX,
     }
