@@ -25,9 +25,18 @@ WHAT THIS GATE PROVES, in the order the evidence has to hold.
      scheduler snapshotted before it proposed anything (`ema=`, `m=`, `cap=`)
      and the walk it then ran (`sched=`, `d=`). Replaying that state through
      `e128_replay.cost_model_depth` under the printed table must return the
-     same depth and the byte-identical walk string. Open loop: the recorded
-     state is replayed, never regenerated, so the EMA feedback of a moved
-     schedule cannot hide a disagreement.
+     same depth at every round, and every field of the replayed walk must
+     agree with the printed walk to the resolution the trace prints. Open
+     loop: the recorded state is replayed, never regenerated, so the EMA
+     feedback of a moved schedule cannot hide a disagreement.
+
+     The trace prints `ema=` and `sched=` rounded to 6 decimals, so the
+     replay reads inputs that are already quantized to 1e-6 and its running
+     acceptance product can land one unit either side of the printed field.
+     Byte identity of the walk string is therefore NOT a well-posed
+     criterion; it is reported as a diagnostic only. The criterion is exact
+     depth agreement plus `field_max_ulp <= 1`, one unit in the last printed
+     place. Gate 4 shows this floor is far below any real disagreement.
 
   4. POSITIVE CONTROL. The same comparison is run under the uniform price the
      candidate replaced. It must FAIL, or the gate proves nothing.
@@ -58,6 +67,11 @@ ARTIFACT_SHA256 = \
     "3c5295cc1d05816e01da571a8053e73aa09ed1cc9e72e0ea192aaa415318f4ae"
 ARTIFACT_KEY = ("receipt_proof", "forward_guarded")
 SHIPPED_ARM = "stepq"
+# `snapshotScheduleSignal` prints `ema=` and `sched=` at 6 decimals, so a
+# replay from those quantized inputs may miss a printed field by one unit in
+# the last printed place. Distances are measured in these units throughout.
+QUANT_DECIMALS = 6
+QUANT_UNITS = 1
 MAXD = E211.MAXD
 QGRID = E211.QGRID
 
@@ -140,6 +154,8 @@ def replay_rounds(rounds: list[dict], price: dict) -> dict:
     sched_hits = 0
     max_ulp = 0
     steps = 0
+    fields = 0
+    fields_off = 0
     mismatches = []
     for record in rounds:
         depth, sched, _ = R128.cost_model_depth(
@@ -156,10 +172,13 @@ def replay_rounds(rounds: list[dict], price: dict) -> dict:
                                "shipped_sched": record["sched"],
                                "replayed_sched": sched})
             continue
-        ulp = max((abs(round((a - b) * 1e6))
-                   for a, b in zip(shipped, replayed)), default=0)
+        deltas = [abs(round((a - b) * 10 ** QUANT_DECIMALS))
+                  for a, b in zip(shipped, replayed)]
+        fields += len(deltas)
+        fields_off += sum(1 for d in deltas if d)
+        ulp = max(deltas, default=0)
         max_ulp = max(max_ulp, ulp)
-        if ulp > 1 or depth != record["depth"]:
+        if ulp > QUANT_UNITS or depth != record["depth"]:
             mismatches.append({
                 "round": record["round"], "kind": "value", "ulp": ulp,
                 "shipped_depth": record["depth"], "replayed_depth": depth,
@@ -170,6 +189,8 @@ def replay_rounds(rounds: list[dict], price: dict) -> dict:
         "steps_checked": steps,
         "depth_agreement": depth_hits / total if total else 0.0,
         "sched_byte_identical": sched_hits / total if total else 0.0,
+        "fields_checked": fields,
+        "fields_off_by_quantum": fields_off,
         "field_max_ulp": max_ulp,
         "mismatches_total": len(mismatches),
         "mismatches": mismatches[:8],
@@ -225,9 +246,12 @@ def main() -> int:
         and grid["greedy_agreement"] == 1.0
         and grid["greedy_mismatches"] == 0
         and live["depth_agreement"] == 1.0
-        and live["sched_byte_identical"] == 1.0
+        and live["field_max_ulp"] <= QUANT_UNITS
         and live["mismatches_total"] == 0
         and control["mismatches_total"] > 0
+        # The control has to fail by far more than the trace's own printing
+        # resolution, or a passing live arm would prove nothing.
+        and control["field_max_ulp"] > 100 * QUANT_UNITS
     )
 
     print("E214 open-loop agreement gate")
@@ -264,10 +288,14 @@ def main() -> int:
     print("3. round-for-round agreement on the traced fixture")
     print("   rounds / walk steps    %d / %d"
           % (live["rounds_checked"], live["steps_checked"]))
-    print("   depth agreement        %.4f" % live["depth_agreement"])
-    print("   sched byte identical   %.4f" % live["sched_byte_identical"])
-    print("   max field distance     %d units in the last printed place"
-          % live["field_max_ulp"])
+    print("   depth agreement        %.4f (criterion: 1.0000)"
+          % live["depth_agreement"])
+    print("   max field distance     %d units of 1e-%d (criterion: <= %d)"
+          % (live["field_max_ulp"], QUANT_DECIMALS, QUANT_UNITS))
+    print("   fields off by a unit   %d of %d"
+          % (live["fields_off_by_quantum"], live["fields_checked"]))
+    print("   sched byte identical   %.4f (diagnostic; the trace prints 1e-%d)"
+          % (live["sched_byte_identical"], QUANT_DECIMALS))
     print("   mismatches             %d" % live["mismatches_total"])
     for bad in live["mismatches"]:
         print("   MISMATCH round %s: %s" % (bad["round"], bad))
@@ -276,7 +304,8 @@ def main() -> int:
     print("   depth agreement        %.4f" % control["depth_agreement"])
     print("   mismatches             %d (must be > 0)"
           % control["mismatches_total"])
-    print("   max field distance     %d units" % control["field_max_ulp"])
+    print("   max field distance     %d units (must be > %d)"
+          % (control["field_max_ulp"], 100 * QUANT_UNITS))
     print()
     print("leg schedule census: rounds=%d edl=%.3f acc_mean=%.3f hist=%s"
           % (live["rounds_checked"], census["edl"], census["accepted_mean"],
@@ -295,6 +324,9 @@ def main() -> int:
         "grid": grid,
         "round_for_round": live,
         "positive_control": control,
+        "quantization": {"trace_decimals": QUANT_DECIMALS,
+                         "field_tolerance_units": QUANT_UNITS,
+                         "control_min_units": 100 * QUANT_UNITS},
         "census": census,
         "pass": passed,
     }
