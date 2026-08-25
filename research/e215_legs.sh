@@ -70,6 +70,15 @@ install_arm() {
   cp "${stage}/${arm}/mlxfast-runtime-worker" "${worker}"
   cp "${stage}/${arm}/mlx.metallib" "${metallib}"
   cp "${stage}/${arm}/mlxfast-swift" "${cli}"
+  # `swift_build_required` (benchmark.sh:1791) compares source mtimes against
+  # the OLDER of MLXFAST_SWIFT_BIN and the worker. MLXFAST_SWIFT_BIN is
+  # research/capture-cli.sh here, and that tracked file is older than the
+  # session file the staging step checked back out, so the wrapper rebuilt the
+  # worker inside the first leg and replaced the staged arm with a fresh build
+  # of the current tree. Touching both references after the install makes them
+  # newer than every source and leaves the rebuild rule intact for a real edit.
+  # Only mtimes change, so the worktree stays clean.
+  touch research/capture-cli.sh "${worker}" "${metallib}" "${cli}"
   want="$(manifest_field "${arm}" worker_sha256)"
   got="$(digest "${worker}")"
   [[ "${want}" == "${got}" ]] || {
