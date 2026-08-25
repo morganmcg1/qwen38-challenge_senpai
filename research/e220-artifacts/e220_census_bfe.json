@@ -1,0 +1,1599 @@
+{
+ "experiment": "e220-dequant-integer-path",
+ "step": "2-rule-400-census",
+ "harness": "local",
+ "measurement": "static_compile",
+ "gpu_seconds": 0,
+ "official_or_ranked_score": false,
+ "variant": "bfe",
+ "source_symbol": "qwen35E120QMVHeader",
+ "source_sha8": "c7889c61",
+ "width_plan_rule": "guard m == 6, cell != .mlpDown, cell != .unlisted else { return .staged } return .singlePass",
+ "pair_table": {
+  "staged": {
+   "2": 2,
+   "3": 3,
+   "4": 4,
+   "5": 5,
+   "6": 3,
+   "7": 4,
+   "8": 4,
+   "9": 5
+  },
+  "singlepass": {
+   "2": 2,
+   "3": 3,
+   "4": 4,
+   "5": 5,
+   "6": 6,
+   "7": 7,
+   "8": 8,
+   "9": 3
+  }
+ },
+ "scored_cells": {
+  "mlp.gate_up": [
+   5120,
+   34816
+  ],
+  "mlp.down": [
+   17408,
+   5120
+  ],
+  "gdn.in_proj": [
+   5120,
+   16480
+  ],
+  "out_proj": [
+   6144,
+   5120
+  ],
+  "fa.qkv": [
+   5120,
+   14336
+  ],
+  "lm_head": [
+   5120,
+   248320
+  ]
+ },
+ "reachable_instantiations": {
+  "m2_ipg2": {
+   "m": 2,
+   "ipg": 2,
+   "variant": "staged",
+   "cells": [
+    "mlp.gate_up",
+    "mlp.down",
+    "gdn.in_proj",
+    "out_proj",
+    "fa.qkv",
+    "lm_head"
+   ],
+   "groups": 1,
+   "na_full": 2,
+   "na_tail": null,
+   "na_instantiated": [
+    2
+   ]
+  },
+  "m3_ipg3": {
+   "m": 3,
+   "ipg": 3,
+   "variant": "staged",
+   "cells": [
+    "mlp.gate_up",
+    "mlp.down",
+    "gdn.in_proj",
+    "out_proj",
+    "fa.qkv",
+    "lm_head"
+   ],
+   "groups": 1,
+   "na_full": 3,
+   "na_tail": null,
+   "na_instantiated": [
+    3
+   ]
+  },
+  "m4_ipg4": {
+   "m": 4,
+   "ipg": 4,
+   "variant": "staged",
+   "cells": [
+    "mlp.gate_up",
+    "mlp.down",
+    "gdn.in_proj",
+    "out_proj",
+    "fa.qkv",
+    "lm_head"
+   ],
+   "groups": 1,
+   "na_full": 4,
+   "na_tail": null,
+   "na_instantiated": [
+    4
+   ]
+  },
+  "m5_ipg5": {
+   "m": 5,
+   "ipg": 5,
+   "variant": "staged",
+   "cells": [
+    "mlp.gate_up",
+    "mlp.down",
+    "gdn.in_proj",
+    "out_proj",
+    "fa.qkv",
+    "lm_head"
+   ],
+   "groups": 1,
+   "na_full": 5,
+   "na_tail": null,
+   "na_instantiated": [
+    5
+   ]
+  },
+  "m6_ipg3": {
+   "m": 6,
+   "ipg": 3,
+   "variant": "staged",
+   "cells": [
+    "mlp.down"
+   ],
+   "groups": 2,
+   "na_full": 3,
+   "na_tail": null,
+   "na_instantiated": [
+    3
+   ]
+  },
+  "m6_ipg6": {
+   "m": 6,
+   "ipg": 6,
+   "variant": "singlepass",
+   "cells": [
+    "mlp.gate_up",
+    "gdn.in_proj",
+    "out_proj",
+    "fa.qkv",
+    "lm_head"
+   ],
+   "groups": 1,
+   "na_full": 6,
+   "na_tail": null,
+   "na_instantiated": [
+    6
+   ]
+  },
+  "m7_ipg4": {
+   "m": 7,
+   "ipg": 4,
+   "variant": "staged",
+   "cells": [
+    "mlp.gate_up",
+    "mlp.down",
+    "gdn.in_proj",
+    "out_proj",
+    "fa.qkv",
+    "lm_head"
+   ],
+   "groups": 2,
+   "na_full": 4,
+   "na_tail": 3,
+   "na_instantiated": [
+    3,
+    4
+   ]
+  },
+  "m8_ipg4": {
+   "m": 8,
+   "ipg": 4,
+   "variant": "staged",
+   "cells": [
+    "mlp.gate_up",
+    "mlp.down",
+    "gdn.in_proj",
+    "out_proj",
+    "fa.qkv",
+    "lm_head"
+   ],
+   "groups": 2,
+   "na_full": 4,
+   "na_tail": null,
+   "na_instantiated": [
+    4
+   ]
+  },
+  "m9_ipg5": {
+   "m": 9,
+   "ipg": 5,
+   "variant": "staged",
+   "cells": [
+    "mlp.gate_up",
+    "mlp.down",
+    "gdn.in_proj",
+    "out_proj",
+    "fa.qkv",
+    "lm_head"
+   ],
+   "groups": 2,
+   "na_full": 5,
+   "na_tail": 4,
+   "na_instantiated": [
+    4,
+    5
+   ]
+  }
+ },
+ "arches": [
+  "applegpu_g16s",
+  "applegpu_g17s"
+ ],
+ "cells": {
+  "qmv_m2_ipg2_tbl": {
+   "m": 2,
+   "ipg": 2,
+   "table": true,
+   "variant": "staged",
+   "groups": 1,
+   "g16s": {
+    "registers": 74,
+    "spill_bytes": 0,
+    "text_bytes": 4242,
+    "text_sha8": "7b85883a"
+   },
+   "g17s": {
+    "registers": 87,
+    "spill_bytes": 0,
+    "text_bytes": 4464,
+    "text_sha8": "b42056d2"
+   }
+  },
+  "qmv_m2_ipg2_rec": {
+   "m": 2,
+   "ipg": 2,
+   "table": false,
+   "variant": "staged",
+   "groups": 1,
+   "g16s": {
+    "registers": 66,
+    "spill_bytes": 0,
+    "text_bytes": 4430,
+    "text_sha8": "09e67a29"
+   },
+   "g17s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 4670,
+    "text_sha8": "8559ba1b"
+   }
+  },
+  "qmv_m3_ipg3_tbl": {
+   "m": 3,
+   "ipg": 3,
+   "table": true,
+   "variant": "staged",
+   "groups": 1,
+   "g16s": {
+    "registers": 84,
+    "spill_bytes": 0,
+    "text_bytes": 5348,
+    "text_sha8": "fd32a84e"
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 5596,
+    "text_sha8": "44ee82c3"
+   }
+  },
+  "qmv_m3_ipg3_rec": {
+   "m": 3,
+   "ipg": 3,
+   "table": false,
+   "variant": "staged",
+   "groups": 1,
+   "g16s": {
+    "registers": 82,
+    "spill_bytes": 0,
+    "text_bytes": 5670,
+    "text_sha8": "546986aa"
+   },
+   "g17s": {
+    "registers": 89,
+    "spill_bytes": 0,
+    "text_bytes": 5900,
+    "text_sha8": "52a5b298"
+   }
+  },
+  "qmv_m4_ipg4_tbl": {
+   "m": 4,
+   "ipg": 4,
+   "table": true,
+   "variant": "staged",
+   "groups": 1,
+   "g16s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 6508,
+    "text_sha8": "5ed2e3eb"
+   },
+   "g17s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 6748,
+    "text_sha8": "abe4d6f4"
+   }
+  },
+  "qmv_m4_ipg4_rec": {
+   "m": 4,
+   "ipg": 4,
+   "table": false,
+   "variant": "staged",
+   "groups": 1,
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 6934,
+    "text_sha8": "239c419e"
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 7218,
+    "text_sha8": "9213432d"
+   }
+  },
+  "qmv_m5_ipg5_tbl": {
+   "m": 5,
+   "ipg": 5,
+   "table": true,
+   "variant": "staged",
+   "groups": 1,
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 7682,
+    "text_sha8": "ab989e21"
+   },
+   "g17s": {
+    "registers": 102,
+    "spill_bytes": 0,
+    "text_bytes": 7882,
+    "text_sha8": "da33d06d"
+   }
+  },
+  "qmv_m5_ipg5_rec": {
+   "m": 5,
+   "ipg": 5,
+   "table": false,
+   "variant": "staged",
+   "groups": 1,
+   "g16s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 8234,
+    "text_sha8": "b23a42ec"
+   },
+   "g17s": {
+    "registers": 101,
+    "spill_bytes": 0,
+    "text_bytes": 8452,
+    "text_sha8": "92bd05e7"
+   }
+  },
+  "qmv_m6_ipg3_tbl": {
+   "m": 6,
+   "ipg": 3,
+   "table": true,
+   "variant": "staged",
+   "groups": 2,
+   "g16s": {
+    "registers": 84,
+    "spill_bytes": 0,
+    "text_bytes": 5348,
+    "text_sha8": "37c00942"
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 5596,
+    "text_sha8": "f7126412"
+   }
+  },
+  "qmv_m6_ipg3_rec": {
+   "m": 6,
+   "ipg": 3,
+   "table": false,
+   "variant": "staged",
+   "groups": 2,
+   "g16s": {
+    "registers": 82,
+    "spill_bytes": 0,
+    "text_bytes": 5670,
+    "text_sha8": "90ae3663"
+   },
+   "g17s": {
+    "registers": 89,
+    "spill_bytes": 0,
+    "text_bytes": 5900,
+    "text_sha8": "525f65cd"
+   }
+  },
+  "qmv_m6_ipg6_tbl": {
+   "m": 6,
+   "ipg": 6,
+   "table": true,
+   "variant": "singlepass",
+   "groups": 1,
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 16,
+    "text_bytes": 4862,
+    "text_sha8": "13751565"
+   },
+   "g17s": {
+    "registers": 114,
+    "spill_bytes": 0,
+    "text_bytes": 4950,
+    "text_sha8": "0d622557"
+   }
+  },
+  "qmv_m6_ipg6_rec": {
+   "m": 6,
+   "ipg": 6,
+   "table": false,
+   "variant": "singlepass",
+   "groups": 1,
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 16,
+    "text_bytes": 4974,
+    "text_sha8": "c38c12c0"
+   },
+   "g17s": {
+    "registers": 111,
+    "spill_bytes": 0,
+    "text_bytes": 5084,
+    "text_sha8": "32a1f590"
+   }
+  },
+  "qmv_m7_ipg4_tbl": {
+   "m": 7,
+   "ipg": 4,
+   "table": true,
+   "variant": "staged",
+   "groups": 2,
+   "g16s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 11704,
+    "text_sha8": "b2515bb6"
+   },
+   "g17s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 12184,
+    "text_sha8": "a7864ed4"
+   }
+  },
+  "qmv_m7_ipg4_rec": {
+   "m": 7,
+   "ipg": 4,
+   "table": false,
+   "variant": "staged",
+   "groups": 2,
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 12452,
+    "text_sha8": "91bbc140"
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 12958,
+    "text_sha8": "1359528c"
+   }
+  },
+  "qmv_m8_ipg4_tbl": {
+   "m": 8,
+   "ipg": 4,
+   "table": true,
+   "variant": "staged",
+   "groups": 2,
+   "g16s": {
+    "registers": 93,
+    "spill_bytes": 0,
+    "text_bytes": 6508,
+    "text_sha8": "f04e5445"
+   },
+   "g17s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 6748,
+    "text_sha8": "20062eb4"
+   }
+  },
+  "qmv_m8_ipg4_rec": {
+   "m": 8,
+   "ipg": 4,
+   "table": false,
+   "variant": "staged",
+   "groups": 2,
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 6934,
+    "text_sha8": "0e812090"
+   },
+   "g17s": {
+    "registers": 90,
+    "spill_bytes": 0,
+    "text_bytes": 7218,
+    "text_sha8": "ab51b6af"
+   }
+  },
+  "qmv_m9_ipg5_tbl": {
+   "m": 9,
+   "ipg": 5,
+   "table": true,
+   "variant": "staged",
+   "groups": 2,
+   "g16s": {
+    "registers": 96,
+    "spill_bytes": 0,
+    "text_bytes": 14034,
+    "text_sha8": "b22b7c0b"
+   },
+   "g17s": {
+    "registers": 102,
+    "spill_bytes": 0,
+    "text_bytes": 14470,
+    "text_sha8": "46389b3f"
+   }
+  },
+  "qmv_m9_ipg5_rec": {
+   "m": 9,
+   "ipg": 5,
+   "table": false,
+   "variant": "staged",
+   "groups": 2,
+   "g16s": {
+    "registers": 94,
+    "spill_bytes": 0,
+    "text_bytes": 15012,
+    "text_sha8": "41379e11"
+   },
+   "g17s": {
+    "registers": 101,
+    "spill_bytes": 0,
+    "text_bytes": 15510,
+    "text_sha8": "68f38a98"
+   }
+  }
+ },
+ "instantiations": {
+  "NA2_tbl": {
+   "na": 2,
+   "use_table": true,
+   "symbol": "_Z18qwen_e120_qmv_wideILi2ELb1EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 259,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 3,
+     "mul": 5,
+     "add": 17,
+     "zext": 15,
+     "sext": 6
+    },
+    "int_ops_total": 49,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 2,
+     "fpext": 6,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 5,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 33,
+    "fp_fma": 4,
+    "getelementptr": 26,
+    "device_load": 5,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "9e6b51e3",
+    "fp_sequence_length": 37
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <2 x float> poison, float %, i64 0",
+    "% = shufflevector <2 x float> %, <2 x float> poison, <2 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <2 x float> poison, float %, i64 0",
+    "% = shufflevector <2 x float> %, <2 x float> poison, <2 x i32> zeroinitializer",
+    "% = fmul <2 x float> %, %",
+    "% = tail call <2 x float> @llvm.fmuladd.v2f32(<2 x float> %, <2 x float> %, <2 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <2 x float> poison, float %, i64 0",
+    "% = shufflevector <2 x float> %, <2 x float> poison, <2 x i32> zeroinitializer",
+    "% = tail call <2 x float> @llvm.fmuladd.v2f32(<2 x float> %, <2 x float> %, <2 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <2 x float> poison, float %, i64 0",
+    "% = shufflevector <2 x float> %, <2 x float> poison, <2 x i32> zeroinitializer",
+    "% = tail call <2 x float> @llvm.fmuladd.v2f32(<2 x float> %, <2 x float> %, <2 x float> %)",
+    "% = getelementptr inbounds [4 x <2 x float>], [4 x <2 x float>]* %, i64 0, i64 %",
+    "% = load <2 x float>, <2 x float>* %, align 8,",
+    "% = fadd <2 x float> %, %",
+    "store <2 x float> %, <2 x float>* %, align 8,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <2 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <2 x float>]"
+   ],
+   "block_count": 27
+  },
+  "NA2_rec": {
+   "na": 2,
+   "use_table": false,
+   "symbol": "_Z18qwen_e120_qmv_wideILi2ELb0EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 250,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 2,
+     "mul": 4,
+     "add": 16,
+     "zext": 14,
+     "sext": 4
+    },
+    "int_ops_total": 43,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 6,
+     "fpext": 7,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 6,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 39,
+    "fp_fma": 4,
+    "getelementptr": 23,
+    "device_load": 4,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "feefd07c",
+    "fp_sequence_length": 43
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <2 x float> poison, float %, i64 0",
+    "% = shufflevector <2 x float> %, <2 x float> poison, <2 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <2 x float> poison, float %, i64 0",
+    "% = shufflevector <2 x float> %, <2 x float> poison, <2 x i32> zeroinitializer",
+    "% = fmul <2 x float> %, %",
+    "% = tail call <2 x float> @llvm.fmuladd.v2f32(<2 x float> %, <2 x float> %, <2 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <2 x float> poison, float %, i64 0",
+    "% = shufflevector <2 x float> %, <2 x float> poison, <2 x i32> zeroinitializer",
+    "% = tail call <2 x float> @llvm.fmuladd.v2f32(<2 x float> %, <2 x float> %, <2 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <2 x float> poison, float %, i64 0",
+    "% = shufflevector <2 x float> %, <2 x float> poison, <2 x i32> zeroinitializer",
+    "% = tail call <2 x float> @llvm.fmuladd.v2f32(<2 x float> %, <2 x float> %, <2 x float> %)",
+    "% = getelementptr inbounds [4 x <2 x float>], [4 x <2 x float>]* %, i64 0, i64 %",
+    "% = load <2 x float>, <2 x float>* %, align 8,",
+    "% = fadd <2 x float> %, %",
+    "store <2 x float> %, <2 x float>* %, align 8,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <2 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <2 x float>]"
+   ],
+   "block_count": 25
+  },
+  "NA3_tbl": {
+   "na": 3,
+   "use_table": true,
+   "symbol": "_Z18qwen_e120_qmv_wideILi3ELb1EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 262,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 3,
+     "mul": 5,
+     "add": 20,
+     "zext": 15,
+     "sext": 6
+    },
+    "int_ops_total": 52,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 2,
+     "fpext": 6,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 5,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 33,
+    "fp_fma": 4,
+    "getelementptr": 26,
+    "device_load": 5,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "9e6b51e3",
+    "fp_sequence_length": 37
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <3 x float> poison, float %, i64 0",
+    "% = shufflevector <3 x float> %, <3 x float> poison, <3 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <3 x float> poison, float %, i64 0",
+    "% = shufflevector <3 x float> %, <3 x float> poison, <3 x i32> zeroinitializer",
+    "% = fmul <3 x float> %, %",
+    "% = tail call <3 x float> @llvm.fmuladd.v3f32(<3 x float> %, <3 x float> %, <3 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <3 x float> poison, float %, i64 0",
+    "% = shufflevector <3 x float> %, <3 x float> poison, <3 x i32> zeroinitializer",
+    "% = tail call <3 x float> @llvm.fmuladd.v3f32(<3 x float> %, <3 x float> %, <3 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <3 x float> poison, float %, i64 0",
+    "% = shufflevector <3 x float> %, <3 x float> poison, <3 x i32> zeroinitializer",
+    "% = tail call <3 x float> @llvm.fmuladd.v3f32(<3 x float> %, <3 x float> %, <3 x float> %)",
+    "% = getelementptr inbounds [4 x <3 x float>], [4 x <3 x float>]* %, i64 0, i64 %",
+    "% = load <3 x float>, <3 x float>* %, align 16,",
+    "% = fadd <3 x float> %, %",
+    "store <3 x float> %, <3 x float>* %, align 16,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <3 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <3 x float>]"
+   ],
+   "block_count": 27
+  },
+  "NA3_rec": {
+   "na": 3,
+   "use_table": false,
+   "symbol": "_Z18qwen_e120_qmv_wideILi3ELb0EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 252,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 2,
+     "mul": 4,
+     "add": 18,
+     "zext": 14,
+     "sext": 4
+    },
+    "int_ops_total": 45,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 6,
+     "fpext": 7,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 6,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 39,
+    "fp_fma": 4,
+    "getelementptr": 23,
+    "device_load": 4,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "feefd07c",
+    "fp_sequence_length": 43
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <3 x float> poison, float %, i64 0",
+    "% = shufflevector <3 x float> %, <3 x float> poison, <3 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <3 x float> poison, float %, i64 0",
+    "% = shufflevector <3 x float> %, <3 x float> poison, <3 x i32> zeroinitializer",
+    "% = fmul <3 x float> %, %",
+    "% = tail call <3 x float> @llvm.fmuladd.v3f32(<3 x float> %, <3 x float> %, <3 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <3 x float> poison, float %, i64 0",
+    "% = shufflevector <3 x float> %, <3 x float> poison, <3 x i32> zeroinitializer",
+    "% = tail call <3 x float> @llvm.fmuladd.v3f32(<3 x float> %, <3 x float> %, <3 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <3 x float> poison, float %, i64 0",
+    "% = shufflevector <3 x float> %, <3 x float> poison, <3 x i32> zeroinitializer",
+    "% = tail call <3 x float> @llvm.fmuladd.v3f32(<3 x float> %, <3 x float> %, <3 x float> %)",
+    "% = getelementptr inbounds [4 x <3 x float>], [4 x <3 x float>]* %, i64 0, i64 %",
+    "% = load <3 x float>, <3 x float>* %, align 16,",
+    "% = fadd <3 x float> %, %",
+    "store <3 x float> %, <3 x float>* %, align 16,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <3 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <3 x float>]"
+   ],
+   "block_count": 25
+  },
+  "NA4_tbl": {
+   "na": 4,
+   "use_table": true,
+   "symbol": "_Z18qwen_e120_qmv_wideILi4ELb1EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 262,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 3,
+     "mul": 5,
+     "add": 20,
+     "zext": 15,
+     "sext": 6
+    },
+    "int_ops_total": 52,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 2,
+     "fpext": 6,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 5,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 33,
+    "fp_fma": 4,
+    "getelementptr": 26,
+    "device_load": 5,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "9e6b51e3",
+    "fp_sequence_length": 37
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <4 x float> poison, float %, i64 0",
+    "% = shufflevector <4 x float> %, <4 x float> poison, <4 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <4 x float> poison, float %, i64 0",
+    "% = shufflevector <4 x float> %, <4 x float> poison, <4 x i32> zeroinitializer",
+    "% = fmul <4 x float> %, %",
+    "% = tail call <4 x float> @llvm.fmuladd.v4f32(<4 x float> %, <4 x float> %, <4 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <4 x float> poison, float %, i64 0",
+    "% = shufflevector <4 x float> %, <4 x float> poison, <4 x i32> zeroinitializer",
+    "% = tail call <4 x float> @llvm.fmuladd.v4f32(<4 x float> %, <4 x float> %, <4 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <4 x float> poison, float %, i64 0",
+    "% = shufflevector <4 x float> %, <4 x float> poison, <4 x i32> zeroinitializer",
+    "% = tail call <4 x float> @llvm.fmuladd.v4f32(<4 x float> %, <4 x float> %, <4 x float> %)",
+    "% = getelementptr inbounds [4 x <4 x float>], [4 x <4 x float>]* %, i64 0, i64 %",
+    "% = load <4 x float>, <4 x float>* %, align 16,",
+    "% = fadd <4 x float> %, %",
+    "store <4 x float> %, <4 x float>* %, align 16,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <4 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <4 x float>]"
+   ],
+   "block_count": 27
+  },
+  "NA4_rec": {
+   "na": 4,
+   "use_table": false,
+   "symbol": "_Z18qwen_e120_qmv_wideILi4ELb0EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 252,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 2,
+     "mul": 4,
+     "add": 18,
+     "zext": 14,
+     "sext": 4
+    },
+    "int_ops_total": 45,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 6,
+     "fpext": 7,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 6,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 39,
+    "fp_fma": 4,
+    "getelementptr": 23,
+    "device_load": 4,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "feefd07c",
+    "fp_sequence_length": 43
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <4 x float> poison, float %, i64 0",
+    "% = shufflevector <4 x float> %, <4 x float> poison, <4 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <4 x float> poison, float %, i64 0",
+    "% = shufflevector <4 x float> %, <4 x float> poison, <4 x i32> zeroinitializer",
+    "% = fmul <4 x float> %, %",
+    "% = tail call <4 x float> @llvm.fmuladd.v4f32(<4 x float> %, <4 x float> %, <4 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <4 x float> poison, float %, i64 0",
+    "% = shufflevector <4 x float> %, <4 x float> poison, <4 x i32> zeroinitializer",
+    "% = tail call <4 x float> @llvm.fmuladd.v4f32(<4 x float> %, <4 x float> %, <4 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <4 x float> poison, float %, i64 0",
+    "% = shufflevector <4 x float> %, <4 x float> poison, <4 x i32> zeroinitializer",
+    "% = tail call <4 x float> @llvm.fmuladd.v4f32(<4 x float> %, <4 x float> %, <4 x float> %)",
+    "% = getelementptr inbounds [4 x <4 x float>], [4 x <4 x float>]* %, i64 0, i64 %",
+    "% = load <4 x float>, <4 x float>* %, align 16,",
+    "% = fadd <4 x float> %, %",
+    "store <4 x float> %, <4 x float>* %, align 16,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <4 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <4 x float>]"
+   ],
+   "block_count": 25
+  },
+  "NA5_tbl": {
+   "na": 5,
+   "use_table": true,
+   "symbol": "_Z18qwen_e120_qmv_wideILi5ELb1EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 262,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 3,
+     "mul": 5,
+     "add": 20,
+     "zext": 15,
+     "sext": 6
+    },
+    "int_ops_total": 52,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 2,
+     "fpext": 6,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 5,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 33,
+    "fp_fma": 4,
+    "getelementptr": 26,
+    "device_load": 5,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "9e6b51e3",
+    "fp_sequence_length": 37
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <5 x float> poison, float %, i64 0",
+    "% = shufflevector <5 x float> %, <5 x float> poison, <5 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <5 x float> poison, float %, i64 0",
+    "% = shufflevector <5 x float> %, <5 x float> poison, <5 x i32> zeroinitializer",
+    "% = fmul <5 x float> %, %",
+    "% = tail call <5 x float> @llvm.fmuladd.v5f32(<5 x float> %, <5 x float> %, <5 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <5 x float> poison, float %, i64 0",
+    "% = shufflevector <5 x float> %, <5 x float> poison, <5 x i32> zeroinitializer",
+    "% = tail call <5 x float> @llvm.fmuladd.v5f32(<5 x float> %, <5 x float> %, <5 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <5 x float> poison, float %, i64 0",
+    "% = shufflevector <5 x float> %, <5 x float> poison, <5 x i32> zeroinitializer",
+    "% = tail call <5 x float> @llvm.fmuladd.v5f32(<5 x float> %, <5 x float> %, <5 x float> %)",
+    "% = getelementptr inbounds [4 x <5 x float>], [4 x <5 x float>]* %, i64 0, i64 %",
+    "% = load <5 x float>, <5 x float>* %, align 32,",
+    "% = fadd <5 x float> %, %",
+    "store <5 x float> %, <5 x float>* %, align 32,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <5 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <5 x float>]"
+   ],
+   "block_count": 27
+  },
+  "NA5_rec": {
+   "na": 5,
+   "use_table": false,
+   "symbol": "_Z18qwen_e120_qmv_wideILi5ELb0EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 252,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 2,
+     "mul": 4,
+     "add": 18,
+     "zext": 14,
+     "sext": 4
+    },
+    "int_ops_total": 45,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 6,
+     "fpext": 7,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 6,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 39,
+    "fp_fma": 4,
+    "getelementptr": 23,
+    "device_load": 4,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "feefd07c",
+    "fp_sequence_length": 43
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <5 x float> poison, float %, i64 0",
+    "% = shufflevector <5 x float> %, <5 x float> poison, <5 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <5 x float> poison, float %, i64 0",
+    "% = shufflevector <5 x float> %, <5 x float> poison, <5 x i32> zeroinitializer",
+    "% = fmul <5 x float> %, %",
+    "% = tail call <5 x float> @llvm.fmuladd.v5f32(<5 x float> %, <5 x float> %, <5 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <5 x float> poison, float %, i64 0",
+    "% = shufflevector <5 x float> %, <5 x float> poison, <5 x i32> zeroinitializer",
+    "% = tail call <5 x float> @llvm.fmuladd.v5f32(<5 x float> %, <5 x float> %, <5 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <5 x float> poison, float %, i64 0",
+    "% = shufflevector <5 x float> %, <5 x float> poison, <5 x i32> zeroinitializer",
+    "% = tail call <5 x float> @llvm.fmuladd.v5f32(<5 x float> %, <5 x float> %, <5 x float> %)",
+    "% = getelementptr inbounds [4 x <5 x float>], [4 x <5 x float>]* %, i64 0, i64 %",
+    "% = load <5 x float>, <5 x float>* %, align 32,",
+    "% = fadd <5 x float> %, %",
+    "store <5 x float> %, <5 x float>* %, align 32,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <5 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <5 x float>]"
+   ],
+   "block_count": 25
+  },
+  "NA6_tbl": {
+   "na": 6,
+   "use_table": true,
+   "symbol": "_Z18qwen_e120_qmv_wideILi6ELb1EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 262,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 3,
+     "mul": 5,
+     "add": 20,
+     "zext": 15,
+     "sext": 6
+    },
+    "int_ops_total": 52,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 2,
+     "fpext": 6,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 5,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 33,
+    "fp_fma": 4,
+    "getelementptr": 26,
+    "device_load": 5,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "9e6b51e3",
+    "fp_sequence_length": 37
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <6 x float> poison, float %, i64 0",
+    "% = shufflevector <6 x float> %, <6 x float> poison, <6 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <6 x float> poison, float %, i64 0",
+    "% = shufflevector <6 x float> %, <6 x float> poison, <6 x i32> zeroinitializer",
+    "% = fmul <6 x float> %, %",
+    "% = tail call <6 x float> @llvm.fmuladd.v6f32(<6 x float> %, <6 x float> %, <6 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <6 x float> poison, float %, i64 0",
+    "% = shufflevector <6 x float> %, <6 x float> poison, <6 x i32> zeroinitializer",
+    "% = tail call <6 x float> @llvm.fmuladd.v6f32(<6 x float> %, <6 x float> %, <6 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <6 x float> poison, float %, i64 0",
+    "% = shufflevector <6 x float> %, <6 x float> poison, <6 x i32> zeroinitializer",
+    "% = tail call <6 x float> @llvm.fmuladd.v6f32(<6 x float> %, <6 x float> %, <6 x float> %)",
+    "% = getelementptr inbounds [4 x <6 x float>], [4 x <6 x float>]* %, i64 0, i64 %",
+    "% = load <6 x float>, <6 x float>* %, align 32,",
+    "% = fadd <6 x float> %, %",
+    "store <6 x float> %, <6 x float>* %, align 32,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <6 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <6 x float>]"
+   ],
+   "block_count": 27
+  },
+  "NA6_rec": {
+   "na": 6,
+   "use_table": false,
+   "symbol": "_Z18qwen_e120_qmv_wideILi6ELb0EEvPU9MTLdeviceKjPU9MTLdeviceKDF16bS3_S3_PU9MTLdeviceKfPU9MTLdeviceDF16biiiiij",
+   "whole_body": {
+    "instructions": 252,
+    "int_ops": {
+     "shl": 3,
+     "lshr": 2,
+     "mul": 4,
+     "add": 18,
+     "zext": 14,
+     "sext": 4
+    },
+    "int_ops_total": 45,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 2,
+     "fadd": 6,
+     "fpext": 7,
+     "fptrunc": 1,
+     "insertelement": 11,
+     "extractelement": 6,
+     "shufflevector": 6
+    },
+    "fp_ops_total": 39,
+    "fp_fma": 4,
+    "getelementptr": 23,
+    "device_load": 4,
+    "device_load_vector": 1,
+    "private_load": 7,
+    "private_store": 7,
+    "fp_sequence_sha8": "feefd07c",
+    "fp_sequence_length": 43
+   },
+   "dequant_block": {
+    "instructions": 32,
+    "int_ops": {
+     "add": 1,
+     "zext": 2
+    },
+    "int_ops_total": 3,
+    "conv_int_to_float": 4,
+    "fp_ops": {
+     "fmul": 1,
+     "fadd": 1,
+     "insertelement": 4,
+     "shufflevector": 4
+    },
+    "fp_ops_total": 10,
+    "fp_fma": 3,
+    "getelementptr": 2,
+    "device_load": 0,
+    "device_load_vector": 0,
+    "private_load": 2,
+    "private_store": 1,
+    "fp_sequence_sha8": "9b60928a",
+    "fp_sequence_length": 13
+   },
+   "dequant_block_sequence": [
+    "% = phi i32 [ 0, % ], [ %, % ]",
+    "% = zext i32 % to i64",
+    "% = getelementptr inbounds [4 x [4 x i16]], [4 x [4 x i16]]* %, i64 0, i64 %, i64 %",
+    "% = load i16, i16* %, align 2,",
+    "% = zext i16 % to i32",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 0, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <6 x float> poison, float %, i64 0",
+    "% = shufflevector <6 x float> %, <6 x float> poison, <6 x i32> zeroinitializer",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 4, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <6 x float> poison, float %, i64 0",
+    "% = shufflevector <6 x float> %, <6 x float> poison, <6 x i32> zeroinitializer",
+    "% = fmul <6 x float> %, %",
+    "% = tail call <6 x float> @llvm.fmuladd.v6f32(<6 x float> %, <6 x float> %, <6 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 8, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <6 x float> poison, float %, i64 0",
+    "% = shufflevector <6 x float> %, <6 x float> poison, <6 x i32> zeroinitializer",
+    "% = tail call <6 x float> @llvm.fmuladd.v6f32(<6 x float> %, <6 x float> %, <6 x float> %)",
+    "% = tail call i32 @air.extract_bits.u.i32(i32 %, i32 12, i32 4) #8",
+    "% = tail call float @air.convert.f.f32.s.i32(i32 %) #8",
+    "% = insertelement <6 x float> poison, float %, i64 0",
+    "% = shufflevector <6 x float> %, <6 x float> poison, <6 x i32> zeroinitializer",
+    "% = tail call <6 x float> @llvm.fmuladd.v6f32(<6 x float> %, <6 x float> %, <6 x float> %)",
+    "% = getelementptr inbounds [4 x <6 x float>], [4 x <6 x float>]* %, i64 0, i64 %",
+    "% = load <6 x float>, <6 x float>* %, align 32,",
+    "% = fadd <6 x float> %, %",
+    "store <6 x float> %, <6 x float>* %, align 32,",
+    "% = add nuw nsw i32 %, 1",
+    "% = icmp eq i32 %, 4",
+    "br i1 %, label %, label %,"
+   ],
+   "surviving_allocas": [
+    "[4 x <6 x float>]",
+    "[4 x [4 x i16]]",
+    "[4 x float]",
+    "[4 x float]",
+    "[4 x <6 x float>]"
+   ],
+   "block_count": 25
+  }
+ }
+}
