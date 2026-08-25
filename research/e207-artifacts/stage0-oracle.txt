@@ -1,0 +1,28 @@
+E207 oracle ceiling for the depth-policy family (harness=local, cap 7)
+corpus: E168 p7 pinned-depth-7; port control 1955/0; cap 8 NOT evaluated (no measured width-9 cell)
+
+prompt             shipped |    d*    (a) %  (a) ms/rd |    (b) %  (b) ms/rd
+benchfixture       20.5506 |     4    +3.86     +5.377 |    +8.57    +11.937
+dramatic           33.4763 |     3    +2.63     +1.971 |   +14.30    +10.701
+english            35.8061 |     2    +2.62     +1.938 |   +13.20     +9.763
+medicine           35.0163 |     3    +4.28     +3.245 |   +15.75    +11.948
+narrative          34.9108 |     2    +2.36     +1.731 |   +11.97     +8.763
+natural_history    37.3131 |     2    +3.37     +2.464 |   +12.39     +9.067
+philosophy         34.3636 |     2    +2.56     +1.892 |   +11.04     +8.169
+technical          33.5446 |     3    +2.15     +1.607 |   +13.29     +9.956
+travel             34.0935 |     2    +1.79     +1.324 |   +12.67     +9.392
+
+prose-population medians (benchfixture EXCLUDED, sign-inverted per FINDING 538):
+  (a) best fixed depth : +2.589%  +1.9152 ms/round
+  (b) per-round oracle : +12.935%  +9.5776 ms/round
+  variance-only (fixed at the shipped rule's own level):
+                       : +2.460%  +1.8115 ms/round
+
+composition bar        : 0.200 ms/round
+oracle ceiling / bar   : 47.888x
+VERDICT: oracle ceiling is ABOVE the composition bar
+
+mechanism: uninformative variation against a convex cost
+  max |corr(depth, k)| over prose : 0.0706
+  median shipped depth sd         : 0.698
+  cost second differences by width: {'2': 0.0, '3': 5.5, '4': 6.24, '5': 21.78, '6': -24.48, '7': -1.32}

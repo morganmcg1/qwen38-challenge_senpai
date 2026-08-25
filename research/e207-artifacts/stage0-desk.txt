@@ -1,0 +1,78 @@
+==============================================================================
+E207 STAGE 0 DESK  EMA SUBTRACTION  (frozen prior vs live update)
+==============================================================================
+
+WALK PORT POSITIVE CONTROL (recorded depth vs replayed depth)
+  rounds checked 1955, mismatches 0
+
+FROZEN WALK, CLOSED FORM (no margin binding)
+  cap 7 -> depth 4
+  cap 8 -> depth 4
+  frozen depth by margin, cap 7:
+   m=0:d=2  m=1:d=3  m=2:d=4  m=3:d=4  m=4:d=4  m=6:d=4  m=8:d=4  m=12:d=4  m=16:d=4
+
+LOCAL OPEN-LOOP REPLAY, cap 7  (harness=local, DATED cost table)
+  prompt           rounds  d_live  d_froz  ms/tok_L  ms/tok_F  frozen-live
+  benchfixture         72   6.597   3.833    20.551    19.674    -4.27%
+  dramatic            191   2.497   2.990    33.476    33.411    -0.20%
+  english             215   2.326   2.907    35.806    36.339    +1.49%
+  medicine            199   2.518   2.935    35.016    34.154    -2.46%
+  narrative           215   2.284   2.767    34.911    35.184    +0.78%
+  natural_history     231   2.182   2.814    37.313    37.448    +0.36%
+  philosophy          215   2.381   2.921    34.364    35.292    +2.70%
+  technical           197   2.503   2.898    33.545    33.917    +1.11%
+  travel              206   2.413   2.864    34.093    34.457    +1.07%
+
+CHANNEL DECOMPOSITION, ms/token, cap 7 (harness=local)
+  prompt                live  live-noM    frozen  froz-noM
+  benchfixture        20.551    20.855    19.674    19.757
+  dramatic            33.476    33.876    33.411    35.992
+  english             35.806    35.857    36.339    39.772
+  medicine            35.016    34.824    34.154    37.039
+  narrative           34.911    35.556    35.184    39.213
+  natural_history     37.313    37.422    37.448    41.879
+  philosophy          34.364    34.974    35.292    39.056
+  technical           33.545    34.118    33.917    36.517
+  travel              34.093    34.532    34.457    37.723
+
+DATED COST TABLE vs THE FRESH E207 SCREEN (current tree)
+  m=4 dated 77.65 ms, screen 75.91 ms (-2.24%)
+  m=5 dated 90.83 ms, screen 89.50 ms (-1.46%)
+  m=6,7,8 have no current-tree measurement: the dated table holds
+  10, 6 and 120 rounds there and predates E192/E193/E195.
+
+  STAGE-1 FIXTURE (benchfixture is the --local-iterate prompt)
+   live   depth 6.597 accepted 5.778 ms/round 139.29 decode ms/token 20.551
+   frozen depth 3.833 accepted 3.514 ms/round 88.81 decode ms/token 19.674
+   decode-only delta            -4.27%
+   leg endpoint at 512 tokens    live 28.212 frozen 27.335 ms/token
+   PREDICTED STAGE-1 DELTA      -3.11% (seed prologue 3922 ms included in both arms)
+   permutation sd: live 0.1209 frozen 0.0000 decode ms/token
+   SENSITIVITY: the two arms tie when the m=6,7,8 cells of the dated table are scaled by 0.955
+   live width histogram on benchfixture: m=4:3 m=5:3 m=6:2 m=7:4 m=8:60
+   wide-cell scale 1.000 -> predicted stage-1 delta -3.11%
+   wide-cell scale 0.970 -> predicted stage-1 delta -1.05%
+   wide-cell scale 0.955 -> predicted stage-1 delta +0.00%
+   wide-cell scale 0.940 -> predicted stage-1 delta +1.09%
+   wide-cell scale 0.900 -> predicted stage-1 delta +4.09%
+
+FROZEN DEPTH DISTRIBUTION over the pooled local margins
+  d=2:0.316  d=3:0.445  d=4:0.240
+
+RANKED PROJECTION (harness=ranked)
+  receipt A (paid cap 7)          3.707845
+  instrument shipped cap 7        3.707845
+  instrument shipped cap 8        3.829386
+  constant depth 4 (frozen, no margin) 3.570432  (-3.71% vs A)
+  frozen with margin mix          3.283922  (-11.43% vs A, -14.24% vs cap 8)
+  best constant depth             3.744526 at d=8
+
+PRE-REGISTERED RANKED BRACKET (harness=ranked)
+  upper end 3.570432 (-3.71% vs A): the margin never binds on a
+            hidden prompt, so the frozen rule is constant depth 4.
+  lower end 3.283922 (-11.43% vs A): hidden margins are distributed
+            like the pooled local margins.
+  both ends are NEGATIVE, so the pre-registered ranked sign is:
+  FROZEN LOSES on the published median.
+
+wrote /Users/ec2-user/.senpai/native/qwen38-mlx-senpai-r4/roles/student-qwen-askeladd/workspace/target/research/e207-artifacts/stage0-desk.json

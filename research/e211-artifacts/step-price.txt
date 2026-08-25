@@ -1,0 +1,264 @@
+==============================================================================
+E211  OPTIMAL STEP-AWARE MARGINAL DEPTH PRICE   (harness=ranked)
+==============================================================================
+  instrument: FINDING 520 survival-pinned latent-q, imported from
+              e201_online_cap without modification
+  receipt A 3.70784519 (cap 7)   crown 3.72911001
+  MUE = 0.39 % of the published median = 0.0145 score points
+
+  REPRODUCTION GATE (grid form vs merged O.cap_grid)
+   max relative error 2.318e-14   PASS
+  INSTRUMENT VALIDATION GATE (FINDING 520 bar)
+   cap 7 in-sample     3.70784519 vs paid 3.70784519  (-0.000000%)
+   cap 4 out-of-sample 3.531905 vs paid 3.547429  (-0.44%)
+   cap 5 out-of-sample 3.532206 vs paid 3.523636  (+0.24%)
+   receipt channel 1-sigma 0.689%   PASS
+
+  9-ROW CELL, THE THREE LIVE READINGS
+   transfer ratio (FINDING 505 over E186) 0.23731
+   local dR9 39.827 ms; E208 (9,5) removes 20.774 ms; residual 19.053 ms [INFERRED transfer]
+   smooth     ranked dR9  +1.962 ms
+   step       ranked dR9  +9.451 ms
+   step_e208  ranked dR9  +4.521 ms
+
+------------------------------------------------------------------------------
+  LAW SMOOTH
+   R(1..9) ms  30.26  31.67  33.28  35.68  40.44  48.36  55.23  58.80  60.76
+   shipped uniform price h=0.18, cap 8   3.829386
+   OPTIMAL price table                   3.962218  (+3.469% in-sample)
+   LOO-honest median (decision statistic) 3.958695  (+3.377%)
+   round-level oracle_q ceiling           3.963760  (+3.509%)
+   optimal marginal price by row d (shipped = 0.18 on every row)
+     d           0       1       2       3       4       5       6       7
+     price   0.121   0.031   0.024   0.095   0.127   0.102   0.082   0.066
+     Q_(d+1)0.1215  0.1800  0.3097  0.6633  0.8048  0.8048  0.8048  0.8048
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+   per-prompt raw: shipped -> optimum (edl shipped -> optimum)
+     plutarch  1.2607 -> 1.2670 ( +0.50%)   edl 0.16 -> 0.54
+     drama     2.1222 -> 2.1194 ( -0.13%)   edl 2.30 -> 3.27
+     travel    2.4277 -> 2.4249 ( -0.12%)   edl 2.65 -> 3.76
+     beagle    3.6472 -> 3.7627 ( +3.17%)   edl 4.61 -> 5.56
+     republic  4.0439 -> 4.2215 ( +4.39%)   edl 5.28 -> 6.32
+     essays    4.0116 -> 4.1617 ( +3.74%)   edl 5.43 -> 6.38
+     medicine  4.0589 -> 4.1735 ( +2.82%)   edl 5.64 -> 6.44
+     botany    4.1134 -> 4.1726 ( +1.44%)   edl 6.70 -> 7.50
+   LEVEL / STRUCTURE DECOMPOSITION. The price has a level (how deep the
+   scheduler drafts) and a shape (how the rows are priced against each
+   other). Only the shape carries step awareness.
+     shipped uniform, level 1.44                3.829386
+     best SHAPE at the shipped level            3.931892   +2.677%
+     best uniform LEVEL h=0.0712 (level 0.57)     3.896807   +1.761%
+     best SHAPE at that best level              3.962375   +3.473%
+     free table (level + structure)             3.962218   +3.469%
+     STRUCTURE PREMIUM over the level control  +1.679% in-sample,  +1.963% LOO-honest
+     LOO-honest level control alone            +1.387%
+   ANCHOR DISTANCE of the free table (round mass moved off the paid schedule)
+     worst prompt 0.655; mass at depth 8: plut 0.00 dram 0.00 trav 0.09 beag 0.46 repu 0.62 essa 0.64 medi 0.65 bota 0.89
+   LOO robustness of the fitted table (drop one prompt)
+     drop plutarch  shipped 4.011573  optimum 4.161736  +3.743%
+     drop drama     shipped 4.011573  optimum 4.161736  +3.743%
+     drop travel    shipped 4.011573  optimum 4.161736  +3.743%
+     drop beagle    shipped 4.011573  optimum 4.161736  +3.743%
+     drop republic  shipped 3.647199  optimum 3.762700  +3.167%
+     drop essays    shipped 3.647199  optimum 3.762700  +3.167%
+     drop medicine  shipped 3.647199  optimum 3.762700  +3.167%
+     drop botany    shipped 3.647199  optimum 3.762700  +3.167%
+   worst LOO prompt republic at +3.167%
+   LOO-honest held-out raws
+     plutarch  honest 1.2446  shipped 1.2607  ( -1.28%)
+     drama     honest 2.1057  shipped 2.1222  ( -0.78%)
+     travel    honest 2.3942  shipped 2.4277  ( -1.38%)
+     beagle    honest 3.7576  shipped 3.6472  ( +3.03%)
+     republic  honest 4.2219  shipped 4.0439  ( +4.40%)
+     essays    honest 4.1598  shipped 4.0116  ( +3.70%)
+     medicine  honest 4.1727  shipped 4.0589  ( +2.80%)
+     botany    honest 4.1737  shipped 4.1134  ( +1.47%)
+
+------------------------------------------------------------------------------
+  LAW STEP
+   R(1..9) ms  30.26  31.67  33.28  35.68  40.44  48.36  55.23  58.80  68.25
+   shipped uniform price h=0.18, cap 8   3.681378
+   OPTIMAL price table                   3.780722  (+2.699% in-sample)
+   LOO-honest median (decision statistic) 3.778645  (+2.642%)
+   round-level oracle_q ceiling           3.781543  (+2.721%)
+   optimal marginal price by row d (shipped = 0.18 on every row)
+     d           0       1       2       3       4       5       6       7
+     price   0.121   0.031   0.021   0.086   0.141   0.118   0.098   0.202
+     Q_(d+1)0.1215  0.1800  0.2952  0.6416  0.8335  0.8335  0.8335  1.0000
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+   per-prompt raw: shipped -> optimum (edl shipped -> optimum)
+     plutarch  1.2607 -> 1.2666 ( +0.47%)   edl 0.16 -> 0.54
+     drama     2.1222 -> 2.1114 ( -0.51%)   edl 2.30 -> 3.35
+     travel    2.4277 -> 2.4217 ( -0.25%)   edl 2.65 -> 3.58
+     beagle    3.5273 -> 3.6134 ( +2.44%)   edl 4.61 -> 4.96
+     republic  3.8886 -> 4.0102 ( +3.13%)   edl 5.28 -> 5.50
+     essays    3.8355 -> 3.9481 ( +2.94%)   edl 5.43 -> 5.57
+     medicine  3.8628 -> 3.9622 ( +2.57%)   edl 5.64 -> 5.66
+     botany    3.8607 -> 3.9517 ( +2.36%)   edl 6.70 -> 6.45
+   LEVEL / STRUCTURE DECOMPOSITION. The price has a level (how deep the
+   scheduler drafts) and a shape (how the rows are priced against each
+   other). Only the shape carries step awareness.
+     shipped uniform, level 1.44                3.681378
+     best SHAPE at the shipped level            3.780784   +2.700%
+     best uniform LEVEL h=0.1513 (level 1.21)     3.689400   +0.218%
+     best SHAPE at that best level              3.780784   +2.700%
+     free table (level + structure)             3.780722   +2.699%
+     STRUCTURE PREMIUM over the level control  +2.475% in-sample,  +2.544% LOO-honest
+     LOO-honest level control alone            +0.096%
+   ANCHOR DISTANCE of the free table (round mass moved off the paid schedule)
+     worst prompt 0.814; mass at depth 8: plut 0.00 dram 0.00 trav 0.00 beag 0.00 repu 0.00 essa 0.00 medi 0.00 bota 0.00
+   LOO robustness of the fitted table (drop one prompt)
+     drop plutarch  shipped 3.835456  optimum 3.948084  +2.936%
+     drop drama     shipped 3.835456  optimum 3.948084  +2.936%
+     drop travel    shipped 3.835456  optimum 3.948084  +2.936%
+     drop beagle    shipped 3.835456  optimum 3.948084  +2.936%
+     drop republic  shipped 3.527299  optimum 3.613359  +2.440%
+     drop essays    shipped 3.527299  optimum 3.613359  +2.440%
+     drop medicine  shipped 3.527299  optimum 3.613359  +2.440%
+     drop botany    shipped 3.527299  optimum 3.613359  +2.440%
+   worst LOO prompt republic at +2.440%
+   LOO-honest held-out raws
+     plutarch  honest 1.1936  shipped 1.2607  ( -5.32%)
+     drama     honest 2.0897  shipped 2.1222  ( -1.53%)
+     travel    honest 2.4062  shipped 2.4277  ( -0.88%)
+     beagle    honest 3.6112  shipped 3.5273  ( +2.38%)
+     republic  honest 4.0068  shipped 3.8886  ( +3.04%)
+     essays    honest 3.9461  shipped 3.8355  ( +2.88%)
+     medicine  honest 3.9617  shipped 3.8628  ( +2.56%)
+     botany    honest 3.9603  shipped 3.8607  ( +2.58%)
+
+------------------------------------------------------------------------------
+  LAW STEP_E208
+   R(1..9) ms  30.26  31.67  33.28  35.68  40.44  48.36  55.23  58.80  63.32
+   shipped uniform price h=0.18, cap 8   3.777460
+   OPTIMAL price table                   3.866967  (+2.369% in-sample)
+   LOO-honest median (decision statistic) 3.864785  (+2.312%)
+   round-level oracle_q ceiling           3.869460  (+2.436%)
+   optimal marginal price by row d (shipped = 0.18 on every row)
+     d           0       1       2       3       4       5       6       7
+     price   0.121   0.031   0.023   0.090   0.149   0.126   0.106   0.090
+     Q_(d+1)0.1215  0.1800  0.3022  0.6513  0.8453  0.8453  0.8453  0.8453
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+   per-prompt raw: shipped -> optimum (edl shipped -> optimum)
+     plutarch  1.2607 -> 1.2669 ( +0.50%)   edl 0.16 -> 0.54
+     drama     2.1222 -> 2.1154 ( -0.32%)   edl 2.30 -> 3.31
+     travel    2.4277 -> 2.4259 ( -0.07%)   edl 2.65 -> 3.53
+     beagle    3.6053 -> 3.6874 ( +2.28%)   edl 4.61 -> 5.31
+     republic  3.9894 -> 4.1020 ( +2.82%)   edl 5.28 -> 5.90
+     essays    3.9496 -> 4.0466 ( +2.45%)   edl 5.43 -> 6.03
+     medicine  3.9897 -> 4.0631 ( +1.84%)   edl 5.64 -> 6.19
+     botany    4.0234 -> 4.0565 ( +0.82%)   edl 6.70 -> 7.14
+   LEVEL / STRUCTURE DECOMPOSITION. The price has a level (how deep the
+   scheduler drafts) and a shape (how the rows are priced against each
+   other). Only the shape carries step awareness.
+     shipped uniform, level 1.44                3.777460
+     best SHAPE at the shipped level            3.841924   +1.707%
+     best uniform LEVEL h=0.0968 (level 0.77)     3.816673   +1.038%
+     best SHAPE at that best level              3.868098   +2.399%
+     free table (level + structure)             3.866967   +2.369%
+     STRUCTURE PREMIUM over the level control  +1.318% in-sample,  +1.641% LOO-honest
+     LOO-honest level control alone            +0.660%
+   ANCHOR DISTANCE of the free table (round mass moved off the paid schedule)
+     worst prompt 0.655; mass at depth 8: plut 0.00 dram 0.00 trav 0.02 beag 0.40 repu 0.51 essa 0.55 medi 0.58 bota 0.80
+   LOO robustness of the fitted table (drop one prompt)
+     drop plutarch  shipped 3.949599  optimum 4.046555  +2.455%
+     drop drama     shipped 3.949599  optimum 4.046555  +2.455%
+     drop travel    shipped 3.949599  optimum 4.046555  +2.455%
+     drop beagle    shipped 3.949599  optimum 4.046555  +2.455%
+     drop republic  shipped 3.605320  optimum 3.687378  +2.276%
+     drop essays    shipped 3.605320  optimum 3.687378  +2.276%
+     drop medicine  shipped 3.605320  optimum 3.687378  +2.276%
+     drop botany    shipped 3.605320  optimum 3.687378  +2.276%
+   worst LOO prompt republic at +2.276%
+   LOO-honest held-out raws
+     plutarch  honest 1.1943  shipped 1.2607  ( -5.27%)
+     drama     honest 2.0975  shipped 2.1222  ( -1.16%)
+     travel    honest 2.4122  shipped 2.4277  ( -0.64%)
+     beagle    honest 3.6856  shipped 3.6053  ( +2.23%)
+     republic  honest 4.1006  shipped 3.9894  ( +2.79%)
+     essays    honest 4.0440  shipped 3.9496  ( +2.39%)
+     medicine  honest 4.0629  shipped 3.9897  ( +1.83%)
+     botany    honest 4.0509  shipped 4.0234  ( +0.68%)
+
+==============================================================================
+  CROSS-LAW TRANSFER. A table fitted under one 9-row reading, paid under
+  another. The receipt picks the paid row after the table is chosen.
+   paid law        shipped | fit smooth      fit step        fit step_e208 
+   smooth         3.829386 |   +3.469%         -1.271%         +3.204%     
+   step           3.681378 |   -0.529%         +2.699%         +0.303%     
+   step_e208      3.777460 |   +2.115%         +0.086%         +2.369%     
+   worst transfer -1.271%
+
+  RECEIPT-PROOF TABLE (maximises the WORST per-law delta)
+     d           0       1       2       3       4       5       6       7
+     price   0.000   0.000   0.023   0.086   0.135   0.115   0.098   0.118
+     Q_(d+1)0.0000  0.0000  0.3184  0.6733  0.8535  0.8535  0.8535  0.9123
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+     paid under smooth         3.893649   +1.678% in-sample    +1.902% LOO-honest
+     paid under step           3.743157   +1.678% in-sample    +1.249% LOO-honest
+     paid under step_e208      3.843387   +1.745% in-sample    +1.829% LOO-honest
+     worst reading +1.678% in-sample, +1.249% LOO-honest
+     worst-prompt round mass relocated 0.926
+     WORST SINGLE PROMPT -5.151% (plutarch under smooth). The published median does not
+     see a prompt that loses, but the hidden pool is not the proxy pool.
+
+  NO-REGRESSION GUARDED MINIMAX TABLE (no prompt may fall below its shipped raw)
+     d           0       1       2       3       4       5       6       7
+     price   0.180   0.032   0.032   0.105   0.176   0.153   0.134   0.145
+     Q_(d+1)0.1800  0.1800  0.3367  0.6728  0.8723  0.8723  0.8723  0.9105
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+     paid under smooth         3.892111   +1.638% in-sample    +1.805% LOO-honest   worst prompt  +0.015%
+     paid under step           3.741678   +1.638% in-sample    +1.321% LOO-honest   worst prompt  +0.015%
+     paid under step_e208      3.839823   +1.651% in-sample    +1.716% LOO-honest   worst prompt  +0.015%
+     worst reading +1.638% in-sample, +1.321% LOO-honest; worst single prompt +0.015%
+
+  FORWARD-PRICING TABLES (advisor Entry 424). E208 r1 is merged, so the maintained
+  base carries the (9,5) correction and law step_e208 is the default forward law.
+  The uncorrected step law is dropped here: it is only what the aff4ad64 receipt
+  itself reads on, because candidate c47c7284 predates the (9,5) merge.
+   free over {smooth, step_e208}
+     price   0.012   0.006   0.020   0.079   0.130   0.110   0.093   0.078
+     Q_(d+1)0.0125  0.0780  0.3022  0.6513  0.8435  0.8435  0.8435  0.8435
+     paid under smooth         3.952792   +3.223% in-sample    +3.287% LOO-honest   worst prompt  -3.116%
+     paid under step_e208      3.867230   +2.376% in-sample    +2.372% LOO-honest   worst prompt  -3.116%
+     worst forward reading +2.376% in-sample, +2.372% LOO-honest; worst single prompt -3.116%
+     if the dropped uncorrected step law were paid: +0.268%
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+   guarded over {smooth, step_e208}
+     price   0.120   0.023   0.092   0.094   0.146   0.121   0.100   0.083
+     Q_(d+1)0.1200  0.1547  0.5256  0.6508  0.8285  0.8285  0.8285  0.8285
+     paid under smooth         3.951756   +3.196% in-sample    +3.200% LOO-honest   worst prompt  +0.000%
+     paid under step_e208      3.862135   +2.242% in-sample    +2.252% LOO-honest   worst prompt  +0.000%
+     worst forward reading +2.242% in-sample, +2.252% LOO-honest; worst single prompt +0.000%
+     if the dropped uncorrected step law were paid: -0.146%
+     greedy-table agreement 1.0000 (0 mismatching grid points)
+
+  VALIDATED EXTRAPOLATION ENVELOPE (round mass moved away from the PAID cap-7 anchor)
+   the instrument was checked against a paid receipt at caps 4 and 5 only, so
+   their relocation is the largest the instrument is known to survive.
+     cap4             0.890  <- validated
+     cap5             0.757  <- validated
+     cap8             0.547
+     validated bar    0.890
+     forward          0.940   1.06x the bar   OUTSIDE the validated envelope
+     forward_guarded  0.940   1.06x the bar   OUTSIDE the validated envelope
+     free_step_e208   0.940   1.06x the bar   OUTSIDE the validated envelope
+     minimax          0.926   1.04x the bar   OUTSIDE the validated envelope
+     minimax_guarded  0.752   0.85x the bar   inside
+==============================================================================
+  DECISION
+   law           in-sample   LOO-honest   level-only    structure
+   smooth          +3.469%      +3.377%      +1.387%      +1.963%  IMPLEMENT (>=1%)
+   step            +2.699%      +2.642%      +0.096%      +2.544%  IMPLEMENT (>=1%)
+   step_e208       +2.369%      +2.312%      +0.660%      +1.641%  IMPLEMENT (>=1%)
+
+   ASSIGNED RULE: IMPLEMENT under every law. Weakest law step_e208 at +2.312% LOO-honest.
+   STRUCTURE READING: the step-aware SHAPE is worth +2.544% LOO-honest over a refitted level control.
+   TRANSFER: worst cross-law transfer of a per-law fitted table is -1.271%. A table fitted under a guessed reading can lose.
+   RECEIPT BRANCH READING (advisor Entry 424). The aff4ad64 receipt reads on laws smooth and step, because its candidate c47c7284 predates the (9,5) merge. It cannot read on step_e208. Either way the FORWARD law for an implementation is step_e208, because E208 r1 is merged into the maintained base.
+     receipt lands SMOOTH -> forward law smooth: free optimum +3.377% LOO-honest.
+     receipt lands STEP   -> forward law step_e208: free optimum +2.312% LOO-honest.
+   RECOMMENDED TABLE: the no-regression guarded FORWARD minimax table over {smooth, step_e208}. It pays +2.242% under its worst forward reading (+2.252% LOO-honest) with no prompt below +0.000%, so it needs no receipt branch and is correct under either outcome.
+     dropping the uncorrected step law is worth +0.604 pp of worst-reading delta (+2.242% forward vs +1.638% over all three readings). That uncorrected law was the whole source of the transfer risk.
+     the unguarded forward table pays +2.376% but costs one prompt -3.116%; the guard costs 0.135 pp and the hidden pool is not the proxy pool.
+   ENVELOPE: forward, forward_guarded, free_step_e208, minimax sit outside the paid cap-4/cap-5 extrapolation envelope (bar 0.890). The predicted gain is a desk prediction that a paid receipt has not yet covered; an implementation must measure it.

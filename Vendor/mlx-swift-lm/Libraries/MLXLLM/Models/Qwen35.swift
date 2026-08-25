@@ -1569,6 +1569,15 @@ let qwen35E120QMVHeader = """
 /// The two forms compile different sources, so each needs its own JIT kernel
 /// name. Both are built lazily, so a process that never selects `singlePass`
 /// never compiles it.
+///
+/// The staged m = 9 entry is `IPG = 5`, not the `IPG = 3` E120 shipped, so a
+/// width-9 round pays `G(9) = 2` weight passes instead of 3. It stays inside
+/// the `IPG <= 5` regime the staged plan already wins in at m = 5, and it is
+/// not the m = 7/8 single-pass mechanism that lost. Group 1 serves the
+/// four-row tail through the template's existing `TAIL` branch. The per-row
+/// arithmetic of `qwen_e120_qmv_wide` is lane-independent, so regrouping rows
+/// cannot reorder any row's own reduction and the two partitions are
+/// bit-exact against each other.
 enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
     case staged
     case singlePass = "singlepass"
@@ -1579,7 +1588,7 @@ enum Qwen35QMVKernelVariant: String, Sendable, CaseIterable {
     var pairs: [(m: Int, ipg: Int)] {
         switch self {
         case .staged:
-            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 3)]
+            return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 3), (7, 4), (8, 4), (9, 5)]
         case .singlePass:
             return [(2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 3)]
         }
@@ -1642,9 +1651,13 @@ func qwen35QMVVariant(m: Int, cell: Qwen35QMVCell) -> Qwen35QMVKernelVariant {
     return .singlePass
 }
 
-/// Compile-time witness that a build carries the plan above. Fixed string, no
-/// runtime state: the trace can prove which dispatch plan shipped.
-public let qwen35QMVWidthPlanWitness = "selective-m6"
+/// Witness that a build carries the plan above, including the staged m = 9
+/// group partition. The IPG figure is read from the table itself, so the
+/// witness cannot desynchronise from the kernel the round actually launched.
+/// No runtime state: the trace can prove which dispatch plan shipped.
+public let qwen35QMVWidthPlanWitness =
+    "selective-m6+ipg9-"
+    + String(Qwen35CustomQMV.inputsPerGroup(9, variant: .staged))
 
 /// Geometry and width switch shared by both QMV pipelines. `table` decides
 /// whether the chunk-sum table is a bound buffer at all: the four-input
