@@ -104,7 +104,7 @@
     "Entry 386: E185 brief stated a 181.9 ms decode round - that is leg_seconds/rounds with the ~3.9 s seed folded in; true round median 145.963 ms. Downstream MUE and E177 M^2-share corrections adopted (FINDING 482).",
     "Entry 386: my F2 verdict on E185 priced total idle from the powermetrics reading and declared 'even total elimination is below MUE' - falsified. The hardware idle counter is a floor (3.18x under production load); production idle is 2226 us/round = 1.52% (FINDING 481). Never price idle from powermetrics alone."
   ],
-  "assignmentQueue": "E219 (Edward, PR pending): QMV pass-anatomy census - standalone JIT harness on exact scored shapes (E216 gate pattern), cache-defeating weight cycling, one-dim-at-a-time sweeps fitting cost = dispatch + weight-bytes + activation + output per cell family; reconciliation gate vs FINDING 536 in-situ cell totals; prices the next mechanism wave (layout vs fusion vs staging vs geometry). In flight: E217 (Alphonse, PR 215, explicit TG staging, re-ruled Entry 435); E218 (Askeladd, PR 216, non-QMV width-tax census); E199 (Thorfinn, PR 196, held, receipt 5f508da5 watcher, board shows validating at 06:40Z). Frozen behind: 3f1065cb. Receipt-terminal desk stack remaining: E205 Stage-B reading, FINDING 520 revalidation vs composed prediction (needs the paid receipt), pooled re-weighting of E213/E212 shipped-share. Stepq free-optimum re-derivation DONE (FINDING 567, confirmation).",
+  "assignmentQueue": "E220 (Alphonse, PR pending): bit-exact dequant integer-path attack - FP instruction sequence unchanged (FINDING 404 forbids reassociation), integer/bit-manipulation side only (nibble extraction, mask/shift strength reduction, per-group scale/bias register scheduling, k-loop address arithmetic); 0-ULP gate research/e217_gate.sh before any timing; promotion pooled >= +1.0 ms/round, stop < +0.3 pooled. In flight: E218 (Askeladd, PR 216, non-QMV width-tax census, first sweep pending); E219 (Edward, PR 217, pass-anatomy census under restructured RULE 405 gates, sweeps running); E199 (Thorfinn, PR 196, held, receipt 5f508da5 watcher, validating at 06:40Z, ETA ~09:30Z). Frozen behind: 3f1065cb. Receipt-terminal desk stack: E205 Stage-B reading; FINDING 520 revalidation vs composed prediction (needs the paid receipt); pooled re-weighting of E213/E212 shipped-share.",
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
     "dominantTerm": "per-dispatch launch and synchronisation, not bandwidth. The removed 25,563,136 B at 400 GB/s is only 64 us.",
@@ -362,6 +362,14 @@
     "qmv_coop_implicit_l1_pairing": "Entry 435, FINDING 565: coop pairing of G==2 token-column groups in one threadgroup is -1.323 ms/round pooled-census (m=9 paired -3.256, 81 sigma below the +1.0 bar); staticThreadgroupMemoryLength=0 means nothing was shared; L1 already dedups the second stream and the 8->4 rows/TG coalescing cost is certain. Reopen only with explicit staging (that is E217, a different axis) or a hardware/register-file change.",
     "qmv_rows_per_group_retune_rows4": "Entry 426 / FINDING 548: at fixed rows_per_simd=4, every legal rows-per-group retune below m=9 keeps G=2 and removes zero weight passes; shipped table already at max legal IPG under the 128-register boundary per width. Reopen only if the kernel register footprint or the static_assert changes.",
     "qmv_single_pass_g1_via_rows": "Entry 432, FINDINGs 557-558: registers over boundary, amortization + negative G-value under it",
+    "qmv_weight_sharing_family": {
+      "closedAt": "2026-08-25T07:45:00Z",
+      "reason": "implicit L1 pairing (E216/FINDING 565, -1.323 pooled) and explicit TG staging (E217/FINDING 569, -5.866 pooled, staged-coop -4.639) both decisively negative; coop negative replicated cross-host; 8-rows/TG coalesced private weight streams are the measured optimum",
+      "reopenIf": "a proposal names a physical dedup resource (RULE 404) with a priced geometry displacement AND E219 phi shows a large (1-phi) streamed residual concentrated in a cell family the family never tested",
+      "subsumes": [
+        "qmv_coop_implicit_l1_pairing"
+      ]
+    },
     "qmv_width6_one_pass": {
       "closedAt": "2026-08-24T03:10:00Z",
       "evidence": "FINDING 375. Officially submitted twice: c47b45be 3.649616, 24fb4012 3.692476 (declared parent 684821e 3.719597 promoted). RULE 372 Pge6 slope +0.395/+0.362/+0.563, t=+3.68/+4.27/+5.00; two negative controls null. Related board arms 0adf695f (M=8 IPG 4->8, 3.574 vs 3.720), eff9348d (M=8 4+4 -> 3+3+2, Pge6 +4.295 t=+8.04) and 0e849bfc (single-pass width 5, 3.323 vs 3.350) all lost.",
@@ -820,6 +828,18 @@
       "sz5dionh"
     ]
   },
+  "e217StagedDequant": {
+    "controlBand": "m5 +0.135 +/- 0.198 (n=11)",
+    "coopReplication": "coop-off pooled -1.226 +/- 0.160 vs FINDING 565 band -1.323 +/- 0.5 (agrees, cross-host)",
+    "legacy": "branch preserved: research/e217_gate.sh (0-ULP dequant gate), research/e217_census.py (RULE 400 census tool)",
+    "mechanism": "TG staging pays round-trip + barriers on top of L1 service the off mapping already gets",
+    "stagedCoopPooled_msPerRound": -4.639,
+    "stagedOffPooled_msPerRound": -5.866,
+    "status": "CLOSED decisive negative (Entry 437, PR 215)",
+    "wandb": [
+      "tjrl0kzd"
+    ]
+  },
   "edlDefinition": {
     "boardCheck": "acceptance = (512 - rounds) / (rounds * edl) recovers FINDING 374 alpha on all 8 prompts",
     "closes": "E167-B, previously assigned to edward",
@@ -1048,8 +1068,10 @@
     "563": "E215 Q2 (W&B c3eeo8bs): stepq reduces rounds on 5/5 prompts (public -3.95%, eos-para -2.17%, eos-short -1.53%, code -6.40%, story -5.79%; EDL up to +30.0%). Accept rate FALLS on 4/5 while rounds fall = depth-price signature. One-line ship control reproduces FINDING 554 census EXACTLY (extends FINDING 553 build-stability). Public fixture is stepq's WEAKEST case: hidden prompts with faster acceptance decay should benefit more.",
     "564": "E215 D4 pooled width census (research/e215-artifacts/width-census-stepq.json, 637 rounds over 5 prompts): w2=3 w3=61 w4=128 w5=166 w6=5 w7=7 w8=10 w9=257. w9 share 40.4% pooled vs 75.3% public-only; widths 3-5 carry 55.7%. Public-only weighting overweights w9 ~2x. E216/E217 report both weightings, promotion decided on pooled primary. Local pooled census still nominates only (RULE 399); ranked value claims stay with FINDING 520 instrument.",
     "565": "E216 decisive negative (harness=local, ungated counterbalanced, PR 214 closed): pairing both token-column groups of a G==2 staged-QMV entry in one threadgroup (coop mapping, TG (32,2,1), NA<=5/rows4) is net SLOWER. m=9 paired -3.256 +/- 0.040 ms/round (n=55, CI95 [-3.334,-3.178]); pooled-census (FINDING 564) -1.323 ms/round; public-census -2.446; whole-leg +1.167%. Control band m<=5 clean (+0.244 +/- 0.135, n=13). Witness 16704 G==2 dispatches moved exactly; correctness clean 4/4 legs; numerics 0 ULP. Mechanism: staticThreadgroupMemoryLength=0 in both mappings, so nothing is explicitly shared; coop bets on L1 temporal locality while halving per-TG output rows 8->4 and loses on coalescing (loss localized in kernel time: verify_build -1487us, eval_wall -1544us over moved widths). Reading: the FINDING 559 per-pass fixed cost is not made of L1-dedupable redundant weight fetches; coheres with FINDING 560 cache-served repeat traffic. Explicit staging (E217) is the only live mechanism left on this axis. W&B uwykhe4b (gate), sz5dionh (session).",
-    "566": "E216 m=7 width-shape anomaly, unresolved: m=7 is the only positive moved width for coop (+1.144 +/- 0.126 ms/round, n=2). Schedule-driven census gives no usable n at m=6/7/8. Width-shape prior only; settle with a pinned-width session only if a live decision needs it.",
-    "567": "Desk (harness=ranked, FINDING 520 instrument, reproduction gate PASS): re-deriving the stepq free optimum with the measured width curve CONFIRMS the shipped E214 table. Corrections: m=6 ranked -2.172 ms (E195 selective-m6, 9.152 ms local within-shape at matched-vintage ratio 0.23731, INFERRED); m=9 residual measured 19.113 vs constructed 19.053 ms (0.06 ms agreement - independent confirmation of the E186/FINDING 543/FINDING 505 step_e208 chain). E214 vs uniform under corrected laws: smooth +2.886%, step_e208 +1.921%. Guarded forward minimax re-optimum is worth only +0.079% over the shipped table (worst prompt +0.0002%), about 1/5 MUE and far below the 0.689% receipt sigma: NO scored retune. Depth-table axis stays closed. Script research/e211_measured_curve_check.py, artifact research/e211-artifacts/measured-curve-check.json."
+    "566": "E216 m=7 width-shape anomaly, unresolved: m=7 is the only positive moved width for coop (+1.144 +/- 0.126 ms/round, n=2). Schedule-driven census gives no usable n at m=6/7/8. Width-shape prior only; settle with a pinned-width session only if a live decision needs it. UPDATE (Entry 437/E217): replicates in SIGN on a second M4 Pro host (+1.487 +/- 0.153, n=2, coop mapping). Two hosts, still n=2 per host; remains a width-shape prior only.",
+    "567": "Desk (harness=ranked, FINDING 520 instrument, reproduction gate PASS): re-deriving the stepq free optimum with the measured width curve CONFIRMS the shipped E214 table. Corrections: m=6 ranked -2.172 ms (E195 selective-m6, 9.152 ms local within-shape at matched-vintage ratio 0.23731, INFERRED); m=9 residual measured 19.113 vs constructed 19.053 ms (0.06 ms agreement - independent confirmation of the E186/FINDING 543/FINDING 505 step_e208 chain). E214 vs uniform under corrected laws: smooth +2.886%, step_e208 +1.921%. Guarded forward minimax re-optimum is worth only +0.079% over the shipped table (worst prompt +0.0002%), about 1/5 MUE and far below the 0.689% receipt sigma: NO scored retune. Depth-table axis stays closed. Script research/e211_measured_curve_check.py, artifact research/e211-artifacts/measured-curve-check.json.",
+    "568": "Bandwidth arithmetic caps the streamed share of a QMV pass: one full pass moves 14.4123 GB unique weight bytes; at M4 Pro DRAM peak 273 GB/s that is >=52.8 ms fully streamed, but the directly measured in-situ marginal pass is 20.774 ms (FINDING 543, CI [20.396,21.152]) -> implied 694 GB/s -> majority of pass bytes are cache-served. FINDING 536 per-cell totals (sum 43.301 vs 40.051 headline) were byte-share ALLOCATION, not direct measurement -> demoted to an allocation prior; FINDING 543 is the reconciliation anchor. Census cells mlp.gate_up/mlp.down/gdn.in_proj carry 82.6% of pass stream bytes.",
+    "569": "E217 decisive negative (harness=local, ungated palindrome off-coop-staged-staged-coop-off, PR 215 closed, W&B tjrl0kzd): explicit TG staging of packed QMV weight bytes (8 rows/4 simdgroups, 2048 B TG memory, point-of-use reads) is much SLOWER. staged-off pooled (FINDING 564 census) -5.866 +/- 0.131 ms/round (CI [-6.122,-5.609]); public -11.406; m5 control clean +0.135 +/- 0.198 (n=11); m9 -11.06 (n=55). staged-coop pooled -4.639: staging loses even to the losing coop mapping (TG round-trip + barriers on top of L1 service the off mapping already gets). Cross-host replication: coop-off pooled -1.226 +/- 0.160 vs FINDING 565 band -1.323 +/- 0.5 (agrees); m9 -3.196 +/- 0.392 vs -3.256 -> FINDING 565 stands on two M4 Pro hosts. m=7 anomaly replicates in sign (+1.487 +/- 0.153, n=2) updating FINDING 566. Consequence: 8-rows/TG coalesced private weight streams are the measured optimum; the QMV weight-sharing family is closed."
   },
   "fleetReprovision20260824": {
     "at": "2026-08-24T07:30Z",
@@ -1186,7 +1208,7 @@
     "10f3a0d1 vibecodooor",
     "8886ec88 jungjipdo"
   ],
-  "lastAdvisorUpdate": "2026-08-25T06:55:00Z",
+  "lastAdvisorUpdate": "2026-08-25T07:45:00Z",
   "lastTerminalSubmission": {
     "advisorError": "ADVISOR ERROR 215. I priced B1 from a local candidate-leg medpair of -0.4163 % and quoted 78-91 % win probability. The correct prior was about 37 %.",
     "commit": "08f811009c9628785ba2ec0f19ca2e8fb3795689",
@@ -1219,7 +1241,7 @@
     "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zhs21ryd",
     "yukonCommitShown": "a49f536c"
   },
-  "ledgerEntry": 436,
+  "ledgerEntry": 437,
   "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
   "localBaselines": {
     "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
@@ -2545,7 +2567,9 @@
     "401": "A failed no-score receipt is the fourth outcome branch: discriminates nothing, never a negative, invalidates nothing about the frozen candidate, and frees the slot for the STRONGEST frozen candidate under the 15-minute rule, not an automatic retry. Retry the identical archive only if it is still the strongest frozen candidate.",
     "402": "Swift release links are not bit-reproducible; a binary digest certifies an arm only within one build. Across rebuilds certify arms by required/forbidden symbol assertions plus the binary\\u2019s printed arm witness; digests are session provenance, not identity.",
     "403": "A no-difference numerics result cannot prove write coverage: a wrong grid/index mapping leaves cells UNWRITTEN, and MLX buffer recycling returns stale-correct values from an earlier identical call (E216 gate defect). Any change to grid mapping, dispatch geometry, or write ownership must pair the value gate with a deterministic write-coverage walk: every output cell written exactly once per arm, coverage multisets equal, and a known-bad mapping must produce 0s and 2s as positive control. Reference implementation: e216WriteCensus (PR 214).",
-    "404": "A fetch-sharing hypothesis must name the physical dedup resource. A mapping/geometry change with staticThreadgroupMemoryLength=0 shares nothing by construction; it only bets on cache temporal locality, and E216/FINDING 565 measured that bet as net negative once displaced geometry is paid. Reject co-residency-only sharing proposals unless they stage explicitly (threadgroup memory or registers) and price the geometry cost."
+    "404": "A fetch-sharing hypothesis must name the physical dedup resource. A mapping/geometry change with staticThreadgroupMemoryLength=0 shares nothing by construction; it only bets on cache temporal locality, and E216/FINDING 565 measured that bet as net negative once displaced geometry is paid. Reject co-residency-only sharing proposals unless they stage explicitly (threadgroup memory or registers) and price the geometry cost.",
+    "405": "Microbench reconciliation is bracket containment against a directly measured anchor. A standalone-harness census reports hot (all-cache) and cold (cache-defeating) brackets per cell family; gate (a): [hot,cold] must contain the in-situ anchor (FINDING 543: 20.774, CI [20.396,21.152]); gate (b): the FINDING 559 total-ratio band [1.80,1.91] must lie within [hot_ratio,cold_ratio]. Required headline: phi = (cold-insitu)/(cold-hot), the cache-served fraction. Every fetch/traffic mechanism is priced against the (1-phi) residual streamed bytes only, reported as decision_ms_per_round; pricing against total bytes overstates by ~1/(1-phi).",
+    "406": "Replica-ring microbenches must warm EVERY replica before timing (first-touch residency: E219's first groups session warmed only 4/16 replicas and was invalid; disclosed and repaired). Physically impossible slope signatures - cost falling with chain length, a smaller shape costing more than a larger one - are mandatory validity checks that invalidate the session; they are not noise."
   },
   "schemaVersion": 1,
   "serialDriftHeadwind": {
