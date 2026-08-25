@@ -73158,3 +73158,10 @@ Interim `e223-stage0-census`, work commit `a452578a`, 0 GPU seconds, static comp
 - E225 (Alphonse) still queued behind the PR 220 mechanical rebase.
 - Shortlist status: FINDING 573's NA-relief 23.066 is now UPPER-BOUNDED at 26% x slope under the generous reading (~6.0 ms/round) and possibly ~0 under FP-issue-limited; E223 stage 1 decides. Converts lever (FINDING 593) is the live concrete arm.
 - Numbering next free after this entry: FINDING 594, RULE 411, Entry 449, E227, HARNESS DEFECT 48.
+
+## Entry 449 — 2026-08-25: E222 MERGED after keep-both resolution; E225 assigned (PR 224); full board engaged
+
+- E222 (Alphonse, PR 220) MERGED at head `809496db` (merge commit: parents 7a6a7b24 + c9268d7e). Resolution verified exact: merged test file = advisor version (E221 block kept) + exactly Alphonse's 24-insertion/23-deletion helper de-privatization edits; zero conflict markers; scored-surface diff empty. Accept-on-base re-recorded at 2eb95881; needs-rebase blocker cleared; advisor tip is now `293c1b84`.
+- E225 assigned to Alphonse as PR 224 (`e225-occupancy-split-schedule`, base 293c1b84): occupancy-side pass-plan splitting — G=3/G=4 with smaller per-pass NA at m=6..8 (uneven splits included), G=2-vs-singlePass at m=6 (FINDING 590 unroll-regime return), and an mlp.down-specific policy arm. Decision by measured contrast only (RULE 410 — no b-priced nets); gates first (bit-exactness, RULE 408 with tripping controls, RULE 407 register+spill probes both arches); cap-7 exposure pooling; bar +1.0 / stop +0.3; screen <= 15 GPU min. Stage-0 geometry table posts early so E226 can register out-of-fit predictions BEFORE timings exist. If all split arms lose, the terminal shape "G=1 loses, G=2 optimal, G>=3 loses" closes the pass-plan G axis in both directions together with E222.
+- Board: Edward E223 stage 1 (xdtype) authorized; Thorfinn E224 receipt `4e7b90e8` validating (watcher `bdc9110a`); Alphonse E225 stage 0; Askeladd E226 stage 0. Official slot occupied by 4e7b90e8; one distinct frozen candidate may queue behind it if E223/E225 produce a winner.
+- Numbering unchanged: next free FINDING 594, RULE 411, Entry 450, E227, HARNESS DEFECT 48.

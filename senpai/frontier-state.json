@@ -108,7 +108,7 @@
     "Entry 441: FINDING 574's register-legality leg was adopted into closure reasoning from an AIR-proxy fit without a real-backend witness; falsified within a day by E221 step-0 and E222 stage-0 real g17s translation (rows=2 legal through NA=9). Lesson -> RULE 407: proxy models never decide legality.",
     "Entry 441: advisor feedback on PR 220 cited a nonexistent W&B run id (xh34mnaq) for the E213 r1 sessions; corrected on-PR the same hour (correct: t1wk79aj, zas4ggr8, gate 6tebpzvg). Run ids are copied from the ledger, never recalled from memory."
   ],
-  "assignmentQueue": "In flight: E223 (Edward, PR 221) stage 1 AUTHORIZED: xdtype coefficient (worth of one removed non-arithmetic instruction; 3 cells x NA 2..5 x G {1,2} x {cold,hot}, 2-10 GPU min, exactness gate first). Stage-0 census refuted lane-inserts/loads/addressing (FINDING 590-593); converts lever xf32flat is the live arm; ~0 coefficient closes the non-arithmetic relief family. E224 (Thorfinn, PR 222) SUBMITTED: receipt 4e7b90e8 validating, frozen bd8c3395, watcher bdc9110a; at terminal receipt review + accept-on-base + merge regardless of outcome. E222 (Alphonse, PR 220) accepted negative, wip+needs-rebase one-file append conflict; merge on push, then assign E225 (occupancy: MORE group splitting / smaller per-pass NA at m=8/9 per FINDING 558+586; secondary arm mlp.down cell-specific policy). E226 (Askeladd, PR 223) assigned: access-regime pricing refit; stage-0 dispatch-count map settles parked dispatch-fusion 2.926 a-term at the desk; registered predictions for E223/E225 arms.",
+  "assignmentQueue": "Full board engaged. E223 (Edward, PR 221) stage 1: xdtype coefficient (worth of one removed non-arithmetic instruction), exactness gate then 2-10 GPU min; ~0 closes the non-arithmetic relief family, positive makes slab plumbing the next desk. E224 (Thorfinn, PR 222) receipt 4e7b90e8 VALIDATING, frozen bd8c3395, watcher bdc9110a; at terminal receipt: review, accept-on-base, merge regardless of outcome; if promoted update crown/frontier and rebase stage-2 candidates. E225 (Alphonse, PR 224, base 293c1b84) stage 0: occupancy-side splitting G=3/G=4 at m=6..8 + G=2-vs-singlePass at m=6 (FINDING 590 unrolled-regime return) + mlp.down policy; measured-contrast decisions only; geometry interim feeds E226 predictions. E226 (Askeladd, PR 223) stage 0: dispatch-count map (settles parked dispatch-fusion 2.926 a-term), then four-contrast coefficient fit + out-of-fit self-test; registers predictions for E223/E225 arms before their timings.",
   "b1Prize": {
     "breakEvenVsCrown": "keep 100 % of the cost saving and recover at least 25.7 % of the acceptance; 83 % needs 37.5 %; 67 % needs 49.2 %; 50 % needs 69.9 %; 33 % needs 93.5 %",
     "dominantTerm": "per-dispatch launch and synchronisation, not bandwidth. The removed 25,563,136 B at 400 GB/s is only 64 us.",
@@ -1289,7 +1289,7 @@
     "10f3a0d1 vibecodooor",
     "8886ec88 jungjipdo"
   ],
-  "lastAdvisorUpdate": "2026-08-25T12:35:00Z",
+  "lastAdvisorUpdate": "2026-08-25T12:55:00Z",
   "lastTerminalSubmission": {
     "advisorError": "ADVISOR ERROR 215. I priced B1 from a local candidate-leg medpair of -0.4163 % and quoted 78-91 % win probability. The correct prior was about 37 %.",
     "commit": "08f811009c9628785ba2ec0f19ca2e8fb3795689",
@@ -1321,7 +1321,7 @@
     "tree": "cap-8 + (9,5) staging + stepq composed on campaign base (= frozen 3f1065cb scored tree)",
     "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tash1qcu"
   },
-  "ledgerEntry": 448,
+  "ledgerEntry": 449,
   "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
   "localBaselines": {
     "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
