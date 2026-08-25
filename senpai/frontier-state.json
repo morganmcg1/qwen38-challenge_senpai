@@ -413,6 +413,10 @@
     "qmv_rows_reduction_shipped_kernel": {
       "closedAt": "2026-08-25T09:12:00Z",
       "reason": "E221 r0 measured rows_per_simd 4->2 negative in every cell at NA{4,5} x G{1,2}, cold and hot (24/24 slower, disjoint CI95 in 20; FINDING 580). By FINDING 557 dose, 4->1 also negative. Reopen only if the per-column inner-loop cost is first removed (E223), which changes the overhead balance the route pays."
+    },
+    "ranked_depth_cap_retune": {
+      "closedAt": "2026-08-25T09:55:00Z",
+      "reason": "Three-point ranked curve (FINDING 581): cap5 -4.97%, cap7 0, cap8 -1.90% depth-attributable; quadratic optimum ~6.85 => cap 7 optimal under stepq. Cap-6 desk-rejected (-1.06% to -2.5%). Closed in BOTH directions. Reopen only with receipt-grade evidence that a materially changed schedule or proposal head moves the optimum."
     }
   },
   "commitPhaseCommonModeGrowth": {
@@ -819,7 +823,7 @@
     }
   },
   "e198EvidenceChannel": "SETTLED by E202: E198 census warm-up contamination quantified and subtracted exactly; FINDING 522(b) confirmed. See FINDING 531 / RULE 395 for census admissibility.",
-  "e199Cap8Receipt": "E199 r1 (Thorfinn, PR 196): composed 9a91ba76 submitted 03:37Z, receipt 5f508da validating; guard BASE_SHA=770a3ff2 (trusted anchor; advisor step-4 SHA named the checkout - reading confirmed correct). At terminal receipt: verbatim report, per-prompt rows if exposed; then E205 Stage-B reading, FINDING 520 revalidation vs composed prediction, Entry 418 re-derivations.",
+  "e199Cap8Receipt": "TERMINAL (Entry 443): receipt 5f508da5 REJECTED 3.6365; dR9 < 0 decisive via internal control (FINDING 581). PR 196 merged at 7ffd2422 as paid decisive negative (research-only diff). Desk queue remaining: E205 Stage-B reading, FINDING 520 full revalidation, E213/E212 re-weighting under FINDING 582, Entry 418 re-derivations.",
   "e200DeskPriceNegative": "NARROWED (Entry 425): E200's +0.17% negative is valid only for its uniform<->measured-cost blend family. FINDING 546 shows the free-shape axis pays +1.7-2.7% in-sample at the same price level and +2.3-3.4% LOO-honest at the optimum. Superseded as an axis verdict by FINDING 546.",
   "e204SeamOverlap": "CLOSED unmerged (Entry 421): Stage 3 relocation-null \u2014 ON 0.0975% slower whole-leg in the predeclared band, both pairs sign-agreeing, serial control null, fidelity identical. Stage-2 round-anchored gain (+2532.5 us/round, 3.20 sigma) relocated into the 20.1% outside-anchor pool (FINDING 539) with zero leg value \u2014 RULE 397 confirmed. W&B gu09fsxe. Successor question: E210 GPU-idle census (Alphonse). CORRECTION (Entry 422/FINDING 542): the 20.1% outside-anchor pool was a reader artifact; real turnaround 0.32%. Close decision unchanged.",
   "e207EmaSubtraction": "TERMINAL (Entry 421): REFUTED premise, decisive desk negative, merged research-only at 056fd48e with zero GPU timing spent. FINDING 538 (EMA = prompt-level difficulty controller; freeze loses ~0.93% prose median) + FINDING 540 (oracle ceiling reopens the depth-policy family: +2.589% prose median in per-prompt fixed depth, 95% variance). Successor: E209 variance-tax controller (Askeladd, desk-first).",
@@ -1127,7 +1131,10 @@
     "577": "Per-generation register budgets: g16s=96, g17s=126 (first frame at 72/96 live floats). Double-witnessed same hour: E221 step-0 agx_crossarch wall selftest (Edward) + E222 stage-0 dependent-fma sweep (Alphonse). Local M4 Pro is NOT register-representative of ranked M5: a geometry can be ranked-legal and locally spilling (30-register gap); g16s-clean implies g17s-clean, not vice versa. FINDING 549 corrected: wall (125,144] is g17s at 126; real rows=4 spill onset on g17s is NA=6->7 (126+16B/+64B/+112B at NA=7/8/9, table path), not NA=5->6; proxy grid NA=8/9 = 173/191 real vs 175/195 published. FINDING 575's parked m6_ipg6 'occupancy lever' is a local-only spill (114 regs = clean on g17s).",
     "578": "rows=2 is register-legal through NA=9 on g17s (114 regs, no frame; Edward table path 93/92/96/105/114 at NA 5..9, Alphonse plain path 89/91/96/102/114). FINDING 574's accumulator-subtraction register model REFUTED: measured AIR slopes NA 5..9 are rows1 10.00, rows2 13.00 (predicted 15.10; NA=5 91 vs bracket 95-115), rows3 18.60, rows4 16.10 - non-monotone in rows. qmv_single_pass_g1_via_rows STAYS CLOSED on its two measured legs only (FINDING 557 amortization dose; FINDING 558 negative G-value for the NA-widened chain); the register leg is removed. E222's fused two-chain geometry is NOT inside the closed axis.",
     "579": "E222 stage-0 (176 geometries, 0 GPU s): TG staging dominated at op level (per (row,i) unit shipped pays 8 ops twice; tgshare float 11 ops = 0.625 ideal + 16KB TG + 2 barriers/k-block; bfloat 19 / uchar 21 WORSE than shipped repeat - narrower-than-compute storage re-pays 4 conversion ops per consumer). Candidate 2 dropped. Survivor A: fused rows=2 + lazyw + latesb, clean both generations all G=2 widths (g17s 73/77/84/93 at m=6/7/8/9; keeps 8 rows/TG via 4 simdgroups x 2 rows, E216 -1.323 does not apply) BUT issues 174 vs 105 B/output-row/k-block at (9,5) (+69 B activation/sums excess; FINDING 557 conversion prices ~ -30 ms/round at m=9). Survivor B: fused rows=4 strictly dominates shipped on paper (ideal ops, 93 vs 105 B issued, one dispatch, NO activation penalty); g17s-clean m6/7/8, spills m9; g16s-spilling at all widths -> ranked-only per RULE 407 with a one-sided local screen (local win = ranked lower bound).",
-    "580": "E221 r0 (PR 219 merged a3845598, W&B rmgosylr): the QMV NA cost slope is a per-column inner-loop instruction cost, NOT register pressure and NOT activation-byte volume. rows_per_simd 4->2 on the shipped kernel is SLOWER in 24/24 cells (disjoint CI95 in 20); pooled doses na4/g1 -3.210 cold, na4/g2 -5.824, na5/g1 -6.594, na5/g2 -17.805 ms/round. NA slope STEEPER at rows=2 on gdn.in_proj (+1.980 vs +1.321) and mlp.gate_up (+7.225 vs +4.132). Separator: rows 4->2 raises issued bytes x1.75-1.79 but time only x1.02-1.21; cold us per extra ISSUED MB geometry-route 0.05-0.30 vs width-route 0.52-2.33 (3.6-27x cheaper). The slope is charged in the a0[m]=xv[k] lane-insert register transpose (16*NA per k-block per row-quad), NA per-column address computations, and NA separate 8-byte loads per i-step (qwen35E120QMVHeader, Qwen35.swift ~1489-1511). Parameterized header inert (CI95 overlap 23/24). CONSEQUENCE: FINDING 557/576 byte-linear cross-geometry pricing WITHDRAWN as a model (measurements stand); geometry-route bytes are cheap. harness=local-microbench, not gate-qualified."
+    "580": "E221 r0 (PR 219 merged a3845598, W&B rmgosylr): the QMV NA cost slope is a per-column inner-loop instruction cost, NOT register pressure and NOT activation-byte volume. rows_per_simd 4->2 on the shipped kernel is SLOWER in 24/24 cells (disjoint CI95 in 20); pooled doses na4/g1 -3.210 cold, na4/g2 -5.824, na5/g1 -6.594, na5/g2 -17.805 ms/round. NA slope STEEPER at rows=2 on gdn.in_proj (+1.980 vs +1.321) and mlp.gate_up (+7.225 vs +4.132). Separator: rows 4->2 raises issued bytes x1.75-1.79 but time only x1.02-1.21; cold us per extra ISSUED MB geometry-route 0.05-0.30 vs width-route 0.52-2.33 (3.6-27x cheaper). The slope is charged in the a0[m]=xv[k] lane-insert register transpose (16*NA per k-block per row-quad), NA per-column address computations, and NA separate 8-byte loads per i-step (qwen35E120QMVHeader, Qwen35.swift ~1489-1511). Parameterized header inert (CI95 overlap 23/24). CONSEQUENCE: FINDING 557/576 byte-linear cross-geometry pricing WITHDRAWN as a model (measurements stand); geometry-route bytes are cheap. harness=local-microbench, not gate-qualified.",
+    "581": "Receipt 5f508da5 (composed 9a91ba76 = cap-8+(9,5)+stepq) REJECTED at 3.63645107265355: dR9 < 0 decisive. Internal control: only segmentedVerifyDepthCap moves effective_mean_draft_len and width-9 rounds cannot exist below cap 8, so (9,5) is inert without cap-8. 3 control prompts +0.111% MTP (floor, absorbs stepq/E195/E211/prefetch drift); 5 deepened prompts (mean +0.303 dlen) +2.009%, slower 5/5. Depth-attributable ~ +1.90%. Ranked depth curve now three-point: cap5 -4.97% (E190 04710829, pre-stepq), cap7 0 (A 3.7078/crown 3.7291 byte-identical, mean 3.71848), cap8 -1.90%. Quadratic optimum d0~6.85 => CAP 7 IS THE RANKED OPTIMUM under stepq; cap-6 desk-rejected (f(6) -1.06% quadratic to -2.5% linear). Stepped-continuation branch (~3.68) confirmed over flat (~3.82) - the FINDING 520 paid observation. Pre-receipt desk refit (3.7153, P=0.465) mispriced dR9 sign: composed desk models cannot price ranked depth, only receipts can. Cap-8-alone retry pointless (receipt priced cap-8 with its best width-9 kernel). harness=ranked. W&B tash1qcu.",
+    "582": "Median order-statistic fragility (receipt 5f508da5 vs A): largest regression -0.1464 hit 192fb621 (was A's best prompt, rank 8->5, dragged into central pair). Central pairs: A = 919318e1 3.5453 + a2ea8b60 3.8704; new = 919318e1 3.4861 + 192fb621 3.7868. 919318e1 is the 4th order statistic in BOTH receipts = single highest-leverage prompt. Mechanisms lifting only fast prompts cannot move the median; weight FINDING 455 exposure by distance from the central pair; a mechanism helping slow low-ratio prompts buys median directly. harness=ranked.",
+    "583": "Ranked serial numerator empirically stable across receipts: baseline serial mean 0.03791070 s/token, spread 0.00011230 (~0.30%) across the 5f508da5/A pair. Measured reconfirmation of the ranked causal boundary (candidate edits cannot move the numerator). harness=ranked."
   },
   "fleetReprovision20260824": {
     "at": "2026-08-24T07:30Z",
@@ -1264,7 +1271,7 @@
     "10f3a0d1 vibecodooor",
     "8886ec88 jungjipdo"
   ],
-  "lastAdvisorUpdate": "2026-08-25T09:12:00Z",
+  "lastAdvisorUpdate": "2026-08-25T09:55:00Z",
   "lastTerminalSubmission": {
     "advisorError": "ADVISOR ERROR 215. I priced B1 from a local candidate-leg medpair of -0.4163 % and quoted 78-91 % win probability. The correct prior was about 37 %.",
     "commit": "08f811009c9628785ba2ec0f19ca2e8fb3795689",
@@ -1283,21 +1290,20 @@
     "verdict": "FINDING 371. B1 is a tie that lost the coin flip, not a refuted mechanism. Its per-prompt serial draw against ours averaged -0.1960 % with sd 0.1281 %, and republic drew worst of the eight (-0.4636 %) while also becoming B1 fifth order statistic. FINDING 372: R fell on all seven drafting prompts and edl fell on six of eight, so B1 bought round cost and sold acceptance. The prize is to keep the cost and recover the acceptance."
   },
   "latestOfficialReceipt": {
-    "benchmarkId": "5d1ee4d7-80bd-4555-b182-6505f26ef495",
-    "candidateSurfaceCommit": "913b0d59",
-    "firedAt": "2026-08-24T15:33Z",
-    "keyResult": "FINDINGs 504-506: both laws falsified; dR6 = +8.940 ms = 15.77 MUE",
-    "officialScore": 3.52363580183674,
-    "parityAllOk": true,
-    "rejectionReason": "score did not improve current best (law purchase, rejection predeclared)",
+    "submissionId": "5f508da5-2d0c-43ee-b0c3-8f9f83367d49",
+    "candidateSurfaceCommit": "9a91ba76",
+    "submissionCommitShaYukon": "8441f0a1",
+    "tree": "cap-8 + (9,5) staging + stepq composed on campaign base (= frozen 3f1065cb scored tree)",
+    "officialScore": 3.63645107265355,
     "status": "rejected",
-    "submissionId": "04710829-3c7e-4ace-9751-f1fda9e368e9",
-    "terminalAt": "2026-08-24T17:56Z",
-    "tree": "campaign lineage with segmentedVerifyDepthCap 7->5 (E190 cap-5 law purchase)",
-    "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/zhs21ryd",
-    "yukonCommitShown": "a49f536c"
+    "rejectionReason": "score did not improve current best",
+    "parityAllOk": true,
+    "terminalAt": "2026-08-25T08:55:22Z",
+    "queueDuration": "5h19m",
+    "keyResult": "FINDING 581: dR9 < 0 decisive (+1.90% depth-attributable, 5/5 deepened slower); depth axis closed both directions at cap 7; FINDING 582 median order statistics; FINDING 583 serial numerator stable",
+    "wandb": "https://wandb.ai/wandb-applied-ai-team/qwen38-mlx-challenge-senpai/runs/tash1qcu"
   },
-  "ledgerEntry": 442,
+  "ledgerEntry": 443,
   "liveSubmittedSurface": "Base cd3e7688 (Entry 402): E195 selective QMV plan is the first submitted-surface change of this round on the maintained base (Qwen35.swift plan function + Qwen36MTPBlockSession build witness). E199's frozen candidate 4b967648 predates it by design (submits its own tree).",
   "localBaselines": {
     "edward-m4pro-organizer-pure-2026-08-24": "512-token --local-submit, real gate, worker bc65996e: serial 0.073520691 s/tok, MTP 0.031557740 s/tok, speedup 2.3297, edl 6.3766, W&B 3v471wnd"
@@ -1479,7 +1485,7 @@
   },
   "observedAt": "2026-08-24T05:50:00Z",
   "observedAtNote": "Base b51f893a after merging E169 (PR 169) and E165 (PR 165). Board snapshot /tmp/board_t15.json at 2026-08-24T05:22Z, 1306 rows.",
-  "officialSlot": "Receipt 5f508da5 (composed 9a91ba76, cap-8+(9,5)) validating; measured queue drain 1.3 rows/h, six ahead -> ETA ~09:30Z (Thorfinn, Entry 433). Watcher 1d2c3f2a healthy. Frozen behind: 3f1065cb (E214 stepq). Board: i34-9 rejected 3.658, no threat to crown 3.7291 or our 3.7078.",
+  "officialSlot": "FREE since 08:55:22Z (receipt 5f508da5 terminal REJECTED 3.6365, watcher retired). No frozen candidate behind: 3f1065cb INVALIDATED (its scored tree = cap-8+(9,5)+stepq = the exact surface 5f508da5 measured at -1.925% vs A; overlapping receipt evidence against its defining lever). E224 ship chain assigned (Thorfinn): cap-7 revert on maintained base, 512-token gate, freeze, submit, watcher. Desk: predicted mean 3.7144, P(beat crown)~0.28, sigma 0.689%.",
   "onlyExactRoundCostOnBoard": {
     "note": "FINDING 316 and 317, ledger 335. A receipt with q=0 on all eight prompts has rounds=512 exactly, so R equals mtp with no assumption. Five exist.",
     "optimised": {
@@ -2089,7 +2095,7 @@
     "naiveDesign": "within-prompt slope of decode s/tok on edl is the A-to-B build gap re-signed by whichever cluster drafts deeper on that prompt",
     "status": "superseded in part: two controlled ranked depth points now exist \u2014 cap-7 (A) 3.70784519415395 and cap-4 (90c131dc) 3.54742900664627, single-factor. Board-only inference remains unidentifiable; law recovery from the paid receipts is E177 (qwen-askeladd)."
   },
-  "rankedDepthOptimum": "Entry 436 / FINDING 567: the E214 forward-guarded stepq table is confirmed optimal within MUE under the measured FINDING 556/559 width curve (retune +0.079% guarded, sub-MUE). Depth-price axis closed pending receipt 5f508da5, whose paid 9-row observation is the FINDING 520 law-discrimination datum.",
+  "rankedDepthOptimum": "CLOSED both directions at cap 7 (Entry 443, FINDING 581): ranked three-point curve cap5 -4.97% (E190), cap7 0 (A/crown byte-identical tree), cap8 -1.90% depth-attributable (5f508da5). Quadratic optimum ~6.85. Cap-6 desk-rejected. FINDING 567 stepq-table-optimal claim now carries ranked confirmation of the stepped regime (realized 3.6365 vs stepped ~3.68 / flat ~3.82). E224 reverts the maintained base to cap 7.",
   "rankedDepthTwoPointLaw": {
     "note": "kept for provenance: the two controlled points cap7=3.70784519, cap4=3.54742901 are the fit inputs",
     "status": "SUPERSEDED by rankedRoundCostConvexLaw (FINDING 456)"
@@ -2670,7 +2676,7 @@
     "discoveredBy": "edward E167, cost one round trip",
     "documentedIn": "senpai/experiment-runbook.md"
   },
-  "submissionQueue": "In flight: 9a91ba76 (cap-8+(9,5)) via receipt 5f508da, validating. Frozen behind: 3f1065cb (base + stepq, E214 merge commit; scored tree identical to gated-confirmed head 02e7dc42). c47c7284 stood down (Entry 427).",
+  "submissionQueue": "Empty. 3f1065cb invalidated by receipt 5f508da5 (Entry 443). Next frozen candidate: E224 (base + segmentedVerifyDepthCap 8->7 revert) once the 512-token local-submit gate passes.",
   "submitGuardMainSideBase": {
     "fact": "submit-official.sh requires BASE_SHA to be an ancestor of both HEAD and origin/main; while the advisor branch is ahead of main, the valid value is the merge base, currently 770a3ff2",
     "ledgerEntry": 366,
