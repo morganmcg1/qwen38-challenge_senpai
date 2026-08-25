@@ -66,6 +66,16 @@ def read_rounds(tag):
             continue
         fields = dict(FIELD_RE.findall(line))
         row = {key: int(fields[key]) for key in INT_FIELDS if key in fields}
+        # The repair sub-phase timers are last-value counters inside the
+        # session, so a round that never enters the repair site still prints
+        # the previous repair's split. The site total repair_us IS reset per
+        # round and reads zero there, which proves the sub-phases must also be
+        # zero on those rounds; hold them to zero so a paired delta cannot
+        # subtract a stale split.
+        if row.get("repair_path", 0) == 0:
+            for key in ("repair_replay_us", "repair_trim_us",
+                        "repair_prefetch_us", "repair_generic_us"):
+                row[key] = 0
         rounds.append(row)
     return rounds
 
@@ -121,6 +131,8 @@ def paired_report(pairs):
         out["baseline_round_us_mean"] = statistics.fmean(base) if base else 0.0
         out["depths"] = sorted({a["d"] for a, _ in pairs})
         out["applied"] = sorted({b["e205_trunc_applied"] for _, b in pairs})
+        out["replayed_rows_mean"] = statistics.fmean(
+            [b["acc"] + 1 for _, b in pairs])
     return out
 
 
@@ -162,6 +174,11 @@ def leg_report(tag):
                   if b["e205_trunc_applied"] == applied]
         if len(subset) >= 2:
             by_j[str(applied)] = paired_report(subset)
+    by_rows = {}
+    for kappa in sorted({b["acc"] for _, b in pairs}):
+        subset = [(a, b) for a, b in pairs if b["acc"] == kappa]
+        if len(subset) >= 2:
+            by_rows[str(kappa + 1)] = paired_report(subset)
     committed = sum(1 + r.get("acc", 0) for r in rounds)
     return {
         "tag": tag,
@@ -193,6 +210,7 @@ def leg_report(tag):
         "committed_tokens_from_trace": committed,
         "paired_all": paired_report(pairs),
         "paired_by_applied_j": by_j,
+        "paired_by_replayed_rows": by_rows,
     }
 
 
@@ -213,7 +231,9 @@ def render(report):
         f"  repair_path {report['repair_path_hist']}")
     for label, block in [("ALL", report["paired_all"])] + [
             (f"j={key}", value)
-            for key, value in report["paired_by_applied_j"].items()]:
+            for key, value in report["paired_by_applied_j"].items()] + [
+            (f"rows={key}", value)
+            for key, value in report["paired_by_replayed_rows"].items()]:
         if not block.get("pair_count"):
             continue
         base = block.get("baseline_round_us_mean", 0.0)
@@ -269,6 +289,42 @@ def verdicts(reports):
     return out
 
 
+def premium_by_replayed_rows(reports):
+    """Pool the endpoint premium across legs by the number of replayed rows.
+
+    A rejecting round replays ``kappa + 1`` target rows, where ``kappa`` is the
+    accepted count, so this is the index the stage-B premium model needs. Each
+    point is weighted by its pair count.
+    """
+    buckets = {}
+    for report in reports:
+        for rows, block in report["paired_by_replayed_rows"].items():
+            entry = block.get("round_us")
+            if not entry:
+                continue
+            bucket = buckets.setdefault(int(rows), {"n": 0, "sum": 0.0})
+            bucket["n"] += entry["n"]
+            bucket["sum"] += entry["mean"] * entry["n"]
+    points = [{"replayed_rows": rows,
+               "endpoint_premium_ms": buckets[rows]["sum"] / buckets[rows]["n"]
+                                      / 1000.0,
+               "weight": buckets[rows]["n"]}
+              for rows in sorted(buckets)]
+    if points:
+        return points
+    # Too few pairs to resolve any single row count: fall back to the pooled
+    # measurement placed at its own mean replayed-row count, which stage B
+    # then uses as a constant.
+    for report in reports:
+        block = report["paired_all"]
+        entry = block.get("round_us")
+        if entry and block.get("replayed_rows_mean"):
+            points.append({"replayed_rows": block["replayed_rows_mean"],
+                           "endpoint_premium_ms": entry["mean"] / 1000.0,
+                           "weight": entry["n"]})
+    return points
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("tags", nargs="+")
@@ -290,11 +346,21 @@ def main():
               f"  site-endpoint {value['site_minus_endpoint_us']}"
               f"  {value['verdict']}")
 
+    points = premium_by_replayed_rows(reports)
+    print("\n== endpoint premium by replayed rows (stage-B input)")
+    for point in points:
+        print(f"   rows {point['replayed_rows']:5.2f}  "
+              f"premium {point['endpoint_premium_ms']:+7.3f} ms  "
+              f"pairs {point['weight']}")
+
     if args.json_path:
         path = Path(args.json_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(
-            {"legs": reports, "verdicts": verdict}, indent=2) + "\n")
+            {"legs": reports, "verdicts": verdict,
+             "premium_by_replayed_rows": points,
+             "source": "e205 stage A forced-truncation paired endpoint, "
+                       + ",".join(args.tags)}, indent=2) + "\n")
         print(f"wrote {args.json_path}")
     return 0
 
