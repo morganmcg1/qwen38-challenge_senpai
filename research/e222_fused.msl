@@ -1,0 +1,231 @@
+// E222 fused wide-QMV: one thread owns BOTH token groups of a G >= 2 staged
+// entry, so a dequantised nibble becomes a float once and feeds two fma chains
+// from the register that produced it.
+//
+// SINGLE SOURCE OF TRUTH. `research/e222_geometry.py` compiles this text for
+// the register/spill screen and `Tests/MLXFastTests/E222ValueSharingTests.swift`
+// JITs the same text for the timed arms, so the screened geometry and the timed
+// geometry cannot diverge.
+//
+// Every arithmetic property of the shipped `qwen_e120_qmv_wide` is preserved,
+// so each output is bit-identical to the shipped dispatch: the k blocks, the
+// per-lane 16-value slice and the four `i` sub-steps run in the shipped order;
+// each output's chain is still `a0*n0 + a1*n1 + a2*n2 + a3*n3` accumulated into
+// `partial`, closed by `acc += scale * partial + sums * bias` and one
+// `simd_sum`; and the activation, chunk-sum and `y` offsets are the absolute
+// column indices the two staged passes use at `first_m = 0` and `first_m = NA0`.
+//
+// The template knobs are pure scheduling and cannot move a value:
+//
+//   LAZY     load the packed word inside the `i` loop instead of prefetching
+//            all four words per row before it. Trades four live registers per
+//            row for a load on the critical path.
+//   LATE_SB  read `scales`/`biases` after the `i` loop instead of before it.
+//   SEQ      run the two token groups as two phases of each `i` step instead of
+//            interleaving them. The intent was to cut peak activation liveness
+//            from 4*(NA0+NA1) floats to 4*max(NA0,NA1).
+//
+//            FALSIFIED by the Stage 0 compile screen, and kept only so the
+//            negative result stays reproducible. SEQ never saves a register and
+//            usually costs several. At rows = 4 on g17s it moves m6 107 -> 119,
+//            m7 118 -> 126+16, m8 124 -> 126+32 and m9 126+48 -> 126+96. It
+//            also RAISES the AIR floating-point op count at m = 6 and m = 8,
+//            52 -> 60, which is the re-derived dequantisation showing up
+//            directly. The compiler already schedules the activation loads to
+//            minimise liveness, so sequencing only forces the packed word and
+//            its nibbles to stay live across two phases. No timed arm uses it.
+
+//   CENSUS   replace the value store with one atomic increment at the SAME key
+//            the value store would have used, so the RULE 408 write-coverage
+//            gate reads this body's own address arithmetic instead of a
+//            re-derived copy of it. `CENSUS` is a template argument, so the
+//            timed instantiations contain no census branch at all.
+
+/// RULE 408 write hook. Both arms use one `key`, computed once by the caller.
+template <bool CENSUS>
+inline void qwen_e222_store(
+    device bfloat16_t* y,
+    device atomic_uint* census,
+    const int key,
+    const float value
+) {
+    if (CENSUS) {
+        atomic_fetch_add_explicit(&census[key], 1u, memory_order_relaxed);
+    } else {
+        y[key] = static_cast<bfloat16_t>(value);
+    }
+}
+
+template <int NA0, int NA1, int R, bool LAZY, bool LATE_SB, bool SEQ,
+          bool USE_TABLE, bool CENSUS>
+inline void qwen_e222_fused(
+    const device uint32_t* w,
+    const device bfloat16_t* scales,
+    const device bfloat16_t* biases,
+    const device bfloat16_t* x,
+    const device float* xsums,
+    device bfloat16_t* y,
+    device atomic_uint* census,
+    const int in_vec_size,
+    const int out_vec_size,
+    const int sums_stride,
+    int out_row,
+    uint simd_lid
+) {
+    typedef vec<float, NA0> VF0;
+    typedef vec<float, NA1> VF1;
+    constexpr int rows_per_simd = R;
+    constexpr int values_per_thread = 16;
+    constexpr int block_size = values_per_thread * 32;
+    constexpr int bytes_per_lane = 8;
+    const int in_vec_size_w = in_vec_size / 2;
+    const int in_vec_size_g = in_vec_size / 64;
+
+    VF0 acc0[rows_per_simd];
+    VF1 acc1[rows_per_simd];
+    for (int r = 0; r < rows_per_simd; r++) {
+        acc0[r] = VF0(0.0f);
+        acc1[r] = VF1(0.0f);
+    }
+
+    for (int k = 0; k < in_vec_size; k += block_size) {
+        thread uint16_t packed[rows_per_simd][4];
+        thread float scale_local[rows_per_simd];
+        thread float bias_local[rows_per_simd];
+        for (int r = 0; r < rows_per_simd; r++) {
+            const int row = out_row + r;
+            if (!LAZY) {
+                const device uint16_t* ws =
+                    reinterpret_cast<const device uint16_t*>(
+                        reinterpret_cast<const device uint8_t*>(w) +
+                        row * in_vec_size_w + k / 2 +
+                        simd_lid * bytes_per_lane);
+                for (int i = 0; i < 4; i++) {
+                    packed[r][i] = ws[i];
+                }
+            }
+            if (!LATE_SB) {
+                const int group_index =
+                    row * in_vec_size_g + k / 64 + int(simd_lid) / 4;
+                scale_local[r] = scales[group_index];
+                bias_local[r] = biases[group_index];
+            }
+        }
+
+        VF0 sums0 = VF0(0.0f);
+        VF1 sums1 = VF1(0.0f);
+        if (USE_TABLE) {
+            const device float* st =
+                xsums + ((k / block_size) * 32 + int(simd_lid)) * sums_stride;
+            for (int m = 0; m < NA0; m++) {
+                sums0[m] = st[m];
+            }
+            for (int m = 0; m < NA1; m++) {
+                sums1[m] = st[NA0 + m];
+            }
+        }
+        VF0 partial0[rows_per_simd];
+        VF1 partial1[rows_per_simd];
+        for (int r = 0; r < rows_per_simd; r++) {
+            partial0[r] = VF0(0.0f);
+            partial1[r] = VF1(0.0f);
+        }
+        for (int i = 0; i < 4; i++) {
+            VF0 a0, a1, a2, a3;
+            for (int m = 0; m < NA0; m++) {
+                const device bfloat16_t* xm =
+                    x + m * in_vec_size + k +
+                    simd_lid * values_per_thread + 4 * i;
+                const vec<bfloat16_t, 4> xv =
+                    *reinterpret_cast<const device vec<bfloat16_t, 4>*>(xm);
+                a0[m] = static_cast<float>(xv[0]);
+                a1[m] = static_cast<float>(xv[1]);
+                a2[m] = static_cast<float>(xv[2]);
+                a3[m] = static_cast<float>(xv[3]);
+                if (!USE_TABLE) {
+                    sums0[m] += xv[0] + xv[1] + xv[2] + xv[3];
+                }
+            }
+            if (SEQ) {
+                for (int r = 0; r < rows_per_simd; r++) {
+                    uint16_t word = packed[r][i];
+                    if (LAZY) {
+                        const device uint16_t* ws =
+                            reinterpret_cast<const device uint16_t*>(
+                                reinterpret_cast<const device uint8_t*>(w) +
+                                (out_row + r) * in_vec_size_w + k / 2 +
+                                simd_lid * bytes_per_lane);
+                        word = ws[i];
+                    }
+                    const int n0 = word & 0x000f;
+                    const int n1 = (word >> 4) & 0x000f;
+                    const int n2 = (word >> 8) & 0x000f;
+                    const int n3 = (word >> 12) & 0x000f;
+                    partial0[r] += (a0 * n0 + a1 * n1 + a2 * n2 + a3 * n3);
+                }
+            }
+            VF1 b0, b1, b2, b3;
+            for (int m = 0; m < NA1; m++) {
+                const device bfloat16_t* xm =
+                    x + (NA0 + m) * in_vec_size + k +
+                    simd_lid * values_per_thread + 4 * i;
+                const vec<bfloat16_t, 4> xv =
+                    *reinterpret_cast<const device vec<bfloat16_t, 4>*>(xm);
+                b0[m] = static_cast<float>(xv[0]);
+                b1[m] = static_cast<float>(xv[1]);
+                b2[m] = static_cast<float>(xv[2]);
+                b3[m] = static_cast<float>(xv[3]);
+                if (!USE_TABLE) {
+                    sums1[m] += xv[0] + xv[1] + xv[2] + xv[3];
+                }
+            }
+            for (int r = 0; r < rows_per_simd; r++) {
+                uint16_t word = packed[r][i];
+                if (LAZY) {
+                    const device uint16_t* ws =
+                        reinterpret_cast<const device uint16_t*>(
+                            reinterpret_cast<const device uint8_t*>(w) +
+                            (out_row + r) * in_vec_size_w + k / 2 +
+                            simd_lid * bytes_per_lane);
+                    word = ws[i];
+                }
+                const int n0 = word & 0x000f;
+                const int n1 = (word >> 4) & 0x000f;
+                const int n2 = (word >> 8) & 0x000f;
+                const int n3 = (word >> 12) & 0x000f;
+                if (!SEQ) {
+                    partial0[r] += (a0 * n0 + a1 * n1 + a2 * n2 + a3 * n3);
+                }
+                partial1[r] += (b0 * n0 + b1 * n1 + b2 * n2 + b3 * n3);
+            }
+        }
+        for (int r = 0; r < rows_per_simd; r++) {
+            if (LATE_SB) {
+                const int group_index =
+                    (out_row + r) * in_vec_size_g + k / 64 +
+                    int(simd_lid) / 4;
+                scale_local[r] = scales[group_index];
+                bias_local[r] = biases[group_index];
+            }
+            acc0[r] += scale_local[r] * partial0[r] + sums0 * bias_local[r];
+            acc1[r] += scale_local[r] * partial1[r] + sums1 * bias_local[r];
+        }
+    }
+
+    for (int r = 0; r < rows_per_simd; r++) {
+        for (int m = 0; m < NA0; m++) {
+            const float reduced = simd_sum(acc0[r][m]);
+            if (simd_lid == 0) {
+                qwen_e222_store<CENSUS>(
+                    y, census, m * out_vec_size + out_row + r, reduced);
+            }
+        }
+        for (int m = 0; m < NA1; m++) {
+            const float reduced = simd_sum(acc1[r][m]);
+            if (simd_lid == 0) {
+                qwen_e222_store<CENSUS>(
+                    y, census, (NA0 + m) * out_vec_size + out_row + r, reduced);
+            }
+        }
+    }
+}
